@@ -1,12 +1,8 @@
 # BGA TM Scraper Registry
 
-Azure Functions project for managing Board Game Arena Terraforming Mars player data.
+Azure Functions API for a central registry for Terraforming Mars games scraped from Boardgame Arena
 
 ## Functions
-
-### HelloWorldFunction
-- **Method**: GET/POST
-- **Purpose**: Basic hello world function for testing
 
 ### UpdatePlayersFunction
 - **Method**: POST
@@ -54,13 +50,6 @@ Error response:
 }
 ```
 
-### Features
-- **Batch Processing**: Processes players in batches of 1000 for optimal performance
-- **Upsert Operations**: Inserts new players and updates existing ones
-- **Data Validation**: Validates player data and logs warnings for invalid entries
-- **Error Handling**: Comprehensive error handling with Application Insights logging
-- **Transaction Safety**: Each batch is processed in a database transaction
-
 ### Database Operations
 - **Insert**: New players are added to the database
 - **Update**: Existing players have their Name, Country, Elo, and UpdatedAt fields updated
@@ -71,27 +60,11 @@ Error response:
 ### Environment Variables
 - `SqlConnectionString`: Connection string to Azure SQL Database
 
-### Database Requirements
-- SQL Server table named `Players` with the following schema:
-```sql
-CREATE TABLE Players
-(
-    PlayerId INT PRIMARY KEY NOT NULL,
-    Name NVARCHAR(255) NOT NULL,
-    Country NVARCHAR(255),
-    Elo INT,
-    UpdatedAt DATETIME
-)
-```
-
-- The function will automatically create a table type `PlayerTableType` if it doesn't exist
-
 ## Development
 
 ### Prerequisites
 - .NET 8.0
 - Azure Functions Core Tools
-- Azure SQL Database
 
 ### Dependencies
 - Microsoft.NET.Sdk.Functions
@@ -103,6 +76,3 @@ CREATE TABLE Players
 2. Run `dotnet restore` to install dependencies
 3. Run `dotnet build` to build the project
 4. Use Azure Functions Core Tools to run locally: `func start`
-
-### Testing
-Use the provided `players_sample.json` file to test the UpdatePlayersFunction endpoint.
