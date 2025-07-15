@@ -102,14 +102,30 @@ namespace BgaTmScraperRegistry
 
                 log.LogInformation($"Processing {validPlayers.Count} valid players out of {players.Count} total players");
 
+                // Deduplicate players - keep only the newest version of each player based on UpdatedAt
+                var deduplicatedPlayers = validPlayers
+                    .GroupBy(p => p.PlayerId)
+                    .Select(group => group.OrderByDescending(p => p.UpdatedAt).First())
+                    .ToList();
+
+                var duplicatesRemoved = validPlayers.Count - deduplicatedPlayers.Count;
+                if (duplicatesRemoved > 0)
+                {
+                    log.LogInformation($"After deduplication: {deduplicatedPlayers.Count} unique players ({duplicatesRemoved} duplicates removed)");
+                }
+                else
+                {
+                    log.LogInformation($"No duplicates found. Processing {deduplicatedPlayers.Count} unique players");
+                }
+
                 // Initialize database service and ensure table type exists
-                var dbService = new PlayerDatabaseService(connectionString, log);                
+                var dbService = new PlayerDatabaseService(connectionString, log);
 
                 // Process players
                 int processedCount;
                 try
                 {
-                    processedCount = await dbService.UpsertPlayersAsync(validPlayers);
+                    processedCount = await dbService.UpsertPlayersAsync(deduplicatedPlayers);
                 }
                 catch (Exception ex)
                 {
