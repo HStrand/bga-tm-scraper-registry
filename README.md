@@ -4,17 +4,27 @@ Azure Functions API for a central registry for Terraforming Mars games scraped f
 
 ## Functions
 
-### UpdatePlayersFunction
+### UpdatePlayers
 - **Method**: POST
 - **Purpose**: Bulk insert/update player data in Azure SQL Database
-- **Endpoint**: `/api/UpdatePlayersFunction`
+- **Endpoint**: `/api/UpdatePlayers`
 
-### UpdateGamesFunction
+### UpdateGames
 - **Method**: POST
 - **Purpose**: Bulk insert/update game data and associated player data in Azure SQL Database
-- **Endpoint**: `/api/UpdateGamesFunction`
+- **Endpoint**: `/api/UpdateGames`
 
-## UpdatePlayersFunction Usage
+### GetIndexedGamesByPlayer
+- **Method**: GET
+- **Purpose**: Retrieve list of indexed game tableIds for a specific player
+- **Endpoint**: `/api/GetIndexedGamesByPlayer?playerId={playerId}`
+
+### GetNextPlayerToIndex
+- **Method**: GET
+- **Purpose**: Get the next player ID that should be indexed by external indexing service
+- **Endpoint**: `/api/GetNextPlayerToIndex`
+
+## UpdatePlayers Usage
 
 ### Request Format
 Send a POST request with JSON array of player objects:
@@ -60,7 +70,7 @@ Error response:
 - **Update**: Existing players have their Name, Country, Elo, and UpdatedAt fields updated
 - **Ignore**: Existing players not in the JSON request are left unchanged
 
-## UpdateGamesFunction Usage
+## UpdateGames Usage
 
 ### Request Format
 Send a POST request with JSON object containing game data:
@@ -132,9 +142,95 @@ Error response:
 - **Indexing vs Scraping**: This function indexes already-scraped data. ScrapedAt comes from JSON, IndexedAt is set to current time, ScrapedBy is left NULL (to be set later by scraper)
 
 ### Database Setup
-Before using UpdateGamesFunction, run the SQL script `database_setup.sql` to create the required table-valued parameter types:
+Before using UpdateGames, run the SQL script `database_setup.sql` to create the required table-valued parameter types:
 - `dbo.GameTableType`
 - `dbo.GamePlayerTableType`
+
+## GetIndexedGamesByPlayer Usage
+
+### Request Format
+Send a GET request with playerId as query parameter:
+
+```
+GET /api/GetIndexedGamesByPlayer?playerId=86296239
+```
+
+### Response Format
+Success response (array of tableIds):
+```json
+[701730443, 701682467, 701309240, 701299671, 700805200]
+```
+
+Empty response (no games found):
+```json
+[]
+```
+
+Error response:
+```json
+{
+    "message": "playerId parameter is required",
+    "success": false
+}
+```
+
+### Parameters
+- **playerId** (required): Integer representing the player ID to get games for
+
+### Database Operations
+- Queries the Games table for all records where PlayerPerspective matches the provided playerId
+- Returns only the TableId values as a simple integer array
+- No filtering applied - returns all indexed games for the player
+
+## GetNextPlayerToIndex Usage
+
+### Request Format
+Send a GET request with no parameters:
+
+```
+GET /api/GetNextPlayerToIndex
+```
+
+### Response Format
+Success response (player found):
+```json
+{
+    "playerId": 86296239
+}
+```
+
+Not found response (no suitable player):
+```json
+{
+    "message": "No player found to index"
+}
+```
+
+Error response:
+```json
+{
+    "message": "Internal server error"
+}
+```
+
+### Selection Logic
+The function implements a prioritized selection algorithm:
+
+1. **First Priority**: Among the top 1000 highest Elo players, select the highest Elo player who has never been indexed (LastIndexedAt = NULL)
+2. **Second Priority**: If all top 1000 players have been indexed at least once, select the player with the oldest LastIndexedAt timestamp
+3. **No Match**: Returns HTTP 404 if no players exist in the database
+
+### Database Operations
+- Queries top 1000 players by Elo with their last indexed game timestamp
+- Uses LEFT JOIN between Players and Games tables on PlayerId = PlayerPerspective
+- Groups by player to get the most recent IndexedAt timestamp per player
+- Applies prioritization logic in C# code for optimal performance
+
+### Use Case
+This function is designed for external indexing services that need to determine which player's games should be scraped next, ensuring:
+- High Elo players are prioritized for indexing
+- All players eventually get indexed
+- Players with stale data (old LastIndexedAt) get re-indexed periodically
 
 ## Configuration
 

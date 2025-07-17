@@ -15,14 +15,14 @@ using Newtonsoft.Json;
 
 namespace BgaTmScraperRegistry
 {
-    public static class UpdatePlayersFunction
+    public static class UpdatePlayers
     {
-        [FunctionName(nameof(UpdatePlayersFunction))]
+        [FunctionName(nameof(UpdatePlayers))]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
             ILogger log)
         {
-            log.LogInformation("UpdatePlayersFunction HTTP trigger function processed a request.");
+            log.LogInformation("UpdatePlayers HTTP trigger function processed a request.");
 
             try
             {
@@ -143,7 +143,7 @@ namespace BgaTmScraperRegistry
             }
             catch (Exception ex)
             {
-                log.LogError(ex, "Unexpected error in UpdatePlayersFunction");
+                log.LogError(ex, "Unexpected error in UpdatePlayers");
                 return new StatusCodeResult(500);
             }
         }

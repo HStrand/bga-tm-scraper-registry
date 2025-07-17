@@ -136,5 +136,66 @@ namespace BgaTmScraperRegistry.Services
 
             return dataTable;
         }
+
+        public async Task<int?> GetNextPlayerToIndexAsync()
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var query = @"
+                SELECT TOP 1000
+                    p.PlayerId,
+                    p.Name,
+                    p.Elo,
+                    MAX(g.IndexedAt) AS LastIndexedAt
+                FROM Players p
+                LEFT JOIN Games g ON p.PlayerId = g.PlayerPerspective
+                GROUP BY p.PlayerId, p.Name, p.Elo
+                ORDER BY p.Elo DESC";
+
+            var results = await connection.QueryAsync<PlayerIndexingInfo>(query);
+            var playerList = results.ToList();
+
+            if (!playerList.Any())
+            {
+                _logger.LogInformation("No players found in database");
+                return null;
+            }
+
+            // First priority: Highest Elo player that has never been indexed
+            var unindexedPlayer = playerList
+                .Where(p => p.LastIndexedAt == null)
+                .OrderByDescending(p => p.Elo)
+                .FirstOrDefault();
+
+            if (unindexedPlayer != null)
+            {
+                _logger.LogInformation($"Found unindexed player: {unindexedPlayer.PlayerId} (Elo: {unindexedPlayer.Elo})");
+                return unindexedPlayer.PlayerId;
+            }
+
+            // Second priority: Player with oldest LastIndexedAt
+            var oldestIndexedPlayer = playerList
+                .Where(p => p.LastIndexedAt.HasValue)
+                .OrderBy(p => p.LastIndexedAt.Value)
+                .FirstOrDefault();
+
+            if (oldestIndexedPlayer != null)
+            {
+                _logger.LogInformation($"Found oldest indexed player: {oldestIndexedPlayer.PlayerId} (Last indexed: {oldestIndexedPlayer.LastIndexedAt})");
+                return oldestIndexedPlayer.PlayerId;
+            }
+
+            _logger.LogInformation("No suitable player found for indexing");
+            return null;
+        }
+
+        private class PlayerIndexingInfo
+        {
+            public int PlayerId { get; set; }
+            public string Name { get; set; }
+            public int Elo { get; set; }
+            public DateTime? LastIndexedAt { get; set; }
+        }
     }
 }

@@ -228,6 +228,18 @@ namespace BgaTmScraperRegistry.Services
             return value;
         }
 
+        public async Task<List<int>> GetPlayerGameTableIdsAsync(int playerId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var query = "SELECT TableId FROM Games WHERE PlayerPerspective = @playerId";
+            
+            var results = await connection.QueryAsync<int>(query, new { playerId });
+            
+            return results.ToList();
+        }
+
         private class GameIdMapping
         {
             public int Id { get; set; }
