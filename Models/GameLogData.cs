@@ -35,9 +35,6 @@ namespace BgaTmScraperRegistry.Models
         [Required]
         public List<GameLogMove> Moves { get; set; }
 
-        [JsonProperty("final_state")]
-        public GameLogFinalState FinalState { get; set; }
-
         [JsonProperty("parameter_progression")]
         public List<GameLogParameterProgression> ParameterProgression { get; set; }
 
@@ -127,36 +124,6 @@ namespace BgaTmScraperRegistry.Models
 
         [JsonProperty("game_state")]
         public object GameState { get; set; }
-    }
-
-    public class GameLogFinalState
-    {
-        [JsonProperty("move_number")]
-        public int? MoveNumber { get; set; }
-
-        [JsonProperty("generation")]
-        public int? Generation { get; set; }
-
-        [JsonProperty("temperature")]
-        public int? Temperature { get; set; }
-
-        [JsonProperty("oxygen")]
-        public int? Oxygen { get; set; }
-
-        [JsonProperty("oceans")]
-        public int? Oceans { get; set; }
-
-        [JsonProperty("player_vp")]
-        public Dictionary<string, object> PlayerVp { get; set; }
-
-        [JsonProperty("milestones")]
-        public Dictionary<string, object> Milestones { get; set; }
-
-        [JsonProperty("awards")]
-        public Dictionary<string, object> Awards { get; set; }
-
-        [JsonProperty("player_trackers")]
-        public Dictionary<string, object> PlayerTrackers { get; set; }
     }
 
     public class GameLogParameterProgression
