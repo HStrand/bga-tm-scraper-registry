@@ -28,10 +28,14 @@ namespace BgaTmScraperRegistry.Models
         [Required]
         public DateTime IndexedAt { get; set; }
 
-        [Required]
-        public DateTime ScrapedAt { get; set; }
+        public DateTime? ScrapedAt { get; set; }
 
         [StringLength(255)]
         public string ScrapedBy { get; set; }
+
+        [StringLength(255)]
+        public string AssignedTo { get; set; }
+
+        public DateTime? AssignedAt { get; set; }
     }
 }

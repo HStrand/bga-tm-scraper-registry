@@ -110,8 +110,8 @@ namespace BgaTmScraperRegistry.Services
                 MERGE Games AS target
                 USING @GameData AS source ON target.TableId = source.TableId AND target.PlayerPerspective = source.PlayerPerspective
                 WHEN NOT MATCHED THEN
-                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, ScrapedAt, ScrapedBy)
-                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.ScrapedAt, source.ScrapedBy)
+                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, ScrapedAt, ScrapedBy, AssignedTo, AssignedAt)
+                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.ScrapedAt, source.ScrapedBy, source.AssignedTo, source.AssignedAt)
                 OUTPUT INSERTED.Id, INSERTED.TableId, INSERTED.PlayerPerspective;";
 
             var results = await connection.QueryAsync<GameIdMapping>(
@@ -151,6 +151,8 @@ namespace BgaTmScraperRegistry.Services
             dataTable.Columns.Add("IndexedAt", typeof(DateTime));
             dataTable.Columns.Add("ScrapedAt", typeof(DateTime));
             dataTable.Columns.Add("ScrapedBy", typeof(string));
+            dataTable.Columns.Add("AssignedTo", typeof(string));
+            dataTable.Columns.Add("AssignedAt", typeof(DateTime));
 
             foreach (var game in games)
             {
@@ -159,6 +161,7 @@ namespace BgaTmScraperRegistry.Services
                 var rawDateTime = ValidateAndTruncateString(game.RawDateTime, 255, $"Game TableId {game.TableId} RawDateTime");
                 var gameMode = ValidateAndTruncateString(game.GameMode, 255, $"Game TableId {game.TableId} GameMode");
                 var scrapedBy = ValidateAndTruncateString(game.ScrapedBy, 255, $"Game TableId {game.TableId} ScrapedBy");
+                var assignedTo = ValidateAndTruncateString(game.AssignedTo, 255, $"Game TableId {game.TableId} AssignedTo");
 
                 dataTable.Rows.Add(
                     game.TableId,
@@ -169,7 +172,9 @@ namespace BgaTmScraperRegistry.Services
                     gameMode,
                     game.IndexedAt,
                     game.ScrapedAt,
-                    scrapedBy);
+                    scrapedBy,
+                    assignedTo,
+                    game.AssignedAt);
             }
 
             return dataTable;
@@ -354,11 +359,166 @@ namespace BgaTmScraperRegistry.Services
             return rowsAffected > 0;
         }
 
+        public async Task<int> GetUnscrapedGameCountAsync()
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var query = @"
+                SELECT COUNT(1) 
+                FROM Games 
+                WHERE ScrapedAt IS NULL 
+                AND (AssignedTo IS NULL OR AssignedAt < DATEADD(hour, -24, GETUTCDATE()))";
+
+            var count = await connection.QuerySingleAsync<int>(query);
+            _logger.LogInformation($"Found {count} unscraped games available for assignment");
+            
+            return count;
+        }
+
+        public async Task<List<GameAssignmentDetails>> GetAndAssignUnscrapedGamesAsync(int count, string assignedTo)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                // First, get the games to assign
+                var selectQuery = @"
+                    SELECT TOP (@count)
+                        g.Id,
+                        g.TableId,
+                        g.PlayerPerspective,
+                        g.VersionId,
+                        g.GameMode,
+                        p.Name as PlayerName
+                    FROM Games g
+                    INNER JOIN Players p ON g.PlayerPerspective = p.PlayerId
+                    WHERE g.ScrapedAt IS NULL 
+                    AND (g.AssignedTo IS NULL OR g.AssignedAt < DATEADD(hour, -24, GETUTCDATE()))
+                    ORDER BY g.Id";
+
+                var games = await connection.QueryAsync<GameAssignmentDetails>(
+                    selectQuery, 
+                    new { count }, 
+                    transaction);
+
+                var gameList = games.ToList();
+                
+                if (!gameList.Any())
+                {
+                    transaction.Rollback();
+                    return gameList;
+                }
+
+                // Get the game IDs to update
+                var gameIds = gameList.Select(g => g.TableId).ToList();
+
+                // Mark these games as assigned
+                var updateQuery = @"
+                    UPDATE Games 
+                    SET AssignedTo = @assignedTo, AssignedAt = GETUTCDATE()
+                    WHERE TableId IN @gameIds 
+                    AND ScrapedAt IS NULL 
+                    AND (AssignedTo IS NULL OR AssignedAt < DATEADD(hour, -24, GETUTCDATE()))";
+
+                var updatedRows = await connection.ExecuteAsync(
+                    updateQuery, 
+                    new { assignedTo, gameIds }, 
+                    transaction);
+
+                _logger.LogInformation($"Assigned {updatedRows} games to {assignedTo}");
+
+                // Get all player information for all games in a single query
+                var gameTableIds = gameList.Select(g => g.TableId).ToList();
+                var gamePlayerPerspectives = gameList.Select(g => g.PlayerPerspective).ToList();
+
+                var playersQuery = @"
+                    SELECT 
+                        gp.TableId,
+                        gp.PlayerPerspective,
+                        gp.PlayerId,
+                        gp.PlayerName,
+                        gp.Elo,
+                        gp.Position
+                    FROM GamePlayers gp
+                    WHERE gp.TableId IN @tableIds 
+                    AND gp.PlayerPerspective IN @playerPerspectives
+                    ORDER BY gp.TableId, gp.PlayerPerspective, gp.Position";
+
+                var allPlayers = await connection.QueryAsync<GamePlayerInfoWithKeys>(
+                    playersQuery,
+                    new { tableIds = gameTableIds, playerPerspectives = gamePlayerPerspectives },
+                    transaction);
+
+                // Group players by game and assign to the corresponding games
+                var playersByGame = allPlayers
+                    .GroupBy(p => new { p.TableId, p.PlayerPerspective })
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(p => new GamePlayerInfo
+                        {
+                            PlayerId = p.PlayerId,
+                            PlayerName = p.PlayerName,
+                            Elo = p.Elo,
+                            Position = p.Position
+                        }).ToList()
+                    );
+
+                // Assign players to their respective games
+                foreach (var game in gameList)
+                {
+                    var key = new { TableId = game.TableId, PlayerPerspective = game.PlayerPerspective };
+                    if (playersByGame.TryGetValue(key, out var players))
+                    {
+                        game.Players = players;
+                    }
+                    else
+                    {
+                        game.Players = new List<GamePlayerInfo>();
+                        _logger.LogWarning($"No players found for game TableId {game.TableId}, PlayerPerspective {game.PlayerPerspective}");
+                    }
+                }
+
+                transaction.Commit();
+                return gameList;
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                _logger.LogError(ex, $"Error assigning games to {assignedTo}");
+                throw;
+            }
+        }
+
+        public async Task<string> GetPlayerNameAsync(int playerId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var query = "SELECT Name FROM Players WHERE PlayerId = @playerId";
+            
+            var playerName = await connection.QuerySingleOrDefaultAsync<string>(query, new { playerId });
+            
+            return playerName;
+        }
+
         private class GameIdMapping
         {
             public int Id { get; set; }
             public int TableId { get; set; }
             public int PlayerPerspective { get; set; }
+        }
+
+        private class GamePlayerInfoWithKeys
+        {
+            public int TableId { get; set; }
+            public int PlayerPerspective { get; set; }
+            public int PlayerId { get; set; }
+            public string PlayerName { get; set; }
+            public int Elo { get; set; }
+            public int Position { get; set; }
         }
     }
 }
