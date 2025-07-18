@@ -317,6 +317,43 @@ namespace BgaTmScraperRegistry.Services
             return results.ToList();
         }
 
+        public async Task<bool> GameExistsAsync(int tableId, int playerPerspective)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var query = "SELECT COUNT(1) FROM Games WHERE TableId = @tableId AND PlayerPerspective = @playerPerspective";
+            
+            var count = await connection.QuerySingleAsync<int>(query, new { tableId, playerPerspective });
+            
+            return count > 0;
+        }
+
+        public async Task<bool> UpdateGameScrapedInfoAsync(int tableId, int playerPerspective, DateTime scrapedAt, string scrapedBy)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var scrapedByTruncated = ValidateAndTruncateString(scrapedBy, 255, $"Game TableId {tableId} ScrapedBy");
+
+            var query = @"
+                UPDATE Games 
+                SET ScrapedAt = @scrapedAt, ScrapedBy = @scrapedBy 
+                WHERE TableId = @tableId AND PlayerPerspective = @playerPerspective";
+            
+            var rowsAffected = await connection.ExecuteAsync(query, new 
+            { 
+                tableId, 
+                playerPerspective, 
+                scrapedAt, 
+                scrapedBy = scrapedByTruncated 
+            });
+            
+            _logger.LogInformation($"Updated {rowsAffected} game record(s) for TableId {tableId}, PlayerPerspective {playerPerspective}");
+            
+            return rowsAffected > 0;
+        }
+
         private class GameIdMapping
         {
             public int Id { get; set; }
