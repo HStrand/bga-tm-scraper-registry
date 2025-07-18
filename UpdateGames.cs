@@ -122,7 +122,6 @@ namespace BgaTmScraperRegistry
                         GameMode = gameData.GameMode,
                         IndexedAt = DateTime.UtcNow,
                         ScrapedAt = gameData.ScrapedAt,
-                        SubmittedAt = null,
                         ScrapedBy = null // Will be set later by the scraper
                     };
 

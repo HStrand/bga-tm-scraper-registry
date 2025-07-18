@@ -228,6 +228,83 @@ namespace BgaTmScraperRegistry.Services
             return value;
         }
 
+        public async Task<int> UpsertSingleGameAsync(Game game, IEnumerable<GamePlayer> gamePlayers)
+        {
+            var gamePlayerList = gamePlayers.ToList();
+            
+            _logger.LogInformation($"Processing single game with TableId {game.TableId} and {gamePlayerList.Count} players");
+
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                // Step 1: Upsert the game and get its ID
+                var gameId = await UpsertSingleGameAndGetIdAsync(connection, transaction, game);
+
+                // Step 2: Update GamePlayer records with the correct GameId and upsert them
+                foreach (var gamePlayer in gamePlayerList)
+                {
+                    gamePlayer.GameId = gameId;
+                }
+
+                if (gamePlayerList.Any())
+                {
+                    await UpsertGamePlayersAsync(connection, transaction, gamePlayerList);
+                }
+
+                transaction.Commit();
+                _logger.LogInformation($"Successfully processed single game with TableId {game.TableId}");
+                return gameId;
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                _logger.LogError(ex, $"Error executing single game upsert operation for TableId {game.TableId}");
+                throw;
+            }
+        }
+
+        private async Task<int> UpsertSingleGameAndGetIdAsync(SqlConnection connection, SqlTransaction transaction, Game game)
+        {
+            // Validate and truncate string fields
+            var versionId = ValidateAndTruncateString(game.VersionId, 255, $"Game TableId {game.TableId} VersionId");
+            var rawDateTime = ValidateAndTruncateString(game.RawDateTime, 255, $"Game TableId {game.TableId} RawDateTime");
+            var gameMode = ValidateAndTruncateString(game.GameMode, 255, $"Game TableId {game.TableId} GameMode");
+            var scrapedBy = ValidateAndTruncateString(game.ScrapedBy, 255, $"Game TableId {game.TableId} ScrapedBy");
+
+            var mergeQuery = @"
+                MERGE Games AS target
+                USING (SELECT @TableId AS TableId, @PlayerPerspective AS PlayerPerspective, @VersionId AS VersionId, 
+                              @RawDateTime AS RawDateTime, @ParsedDateTime AS ParsedDateTime, @GameMode AS GameMode,
+                              @IndexedAt AS IndexedAt, @ScrapedBy AS ScrapedBy) AS source
+                ON target.TableId = source.TableId AND target.PlayerPerspective = source.PlayerPerspective
+                WHEN NOT MATCHED THEN
+                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, ScrapedBy)
+                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.ScrapedBy);
+
+                SELECT Id FROM Games 
+                WHERE TableId = @TableId AND PlayerPerspective = @PlayerPerspective;";
+
+            var result = await connection.QuerySingleAsync<int>(
+                mergeQuery,
+                new
+                {
+                    TableId = game.TableId,
+                    PlayerPerspective = game.PlayerPerspective,
+                    VersionId = versionId,
+                    RawDateTime = rawDateTime,
+                    ParsedDateTime = game.ParsedDateTime,
+                    GameMode = gameMode,
+                    IndexedAt = game.IndexedAt,
+                    ScrapedBy = scrapedBy
+                },
+                transaction);
+
+            return result;
+        }
+
         public async Task<List<int>> GetPlayerGameTableIdsAsync(int playerId)
         {
             using var connection = new SqlConnection(_connectionString);

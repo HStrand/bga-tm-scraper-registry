@@ -31,8 +31,6 @@ namespace BgaTmScraperRegistry.Models
         [Required]
         public DateTime ScrapedAt { get; set; }
 
-        public DateTime? SubmittedAt { get; set; }
-
         [StringLength(255)]
         public string ScrapedBy { get; set; }
     }
