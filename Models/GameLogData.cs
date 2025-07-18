@@ -35,9 +35,6 @@ namespace BgaTmScraperRegistry.Models
         [Required]
         public List<GameLogMove> Moves { get; set; }
 
-        [JsonProperty("parameter_progression")]
-        public List<GameLogParameterProgression> ParameterProgression { get; set; }
-
         [JsonProperty("metadata")]
         public GameLogMetadata Metadata { get; set; }
     }
@@ -126,24 +123,6 @@ namespace BgaTmScraperRegistry.Models
         public object GameState { get; set; }
     }
 
-    public class GameLogParameterProgression
-    {
-        [JsonProperty("move_number")]
-        public int? MoveNumber { get; set; }
-
-        [JsonProperty("generation")]
-        public int? Generation { get; set; }
-
-        [JsonProperty("temperature")]
-        public int? Temperature { get; set; }
-
-        [JsonProperty("oxygen")]
-        public int? Oxygen { get; set; }
-
-        [JsonProperty("oceans")]
-        public int? Oceans { get; set; }
-    }
-
     public class GameLogMetadata
     {
         [JsonProperty("parsed_at")]
@@ -152,19 +131,10 @@ namespace BgaTmScraperRegistry.Models
         [JsonProperty("total_moves")]
         public int? TotalMoves { get; set; }
 
-        [JsonProperty("html_length")]
-        public int? HtmlLength { get; set; }
-
         [JsonProperty("elo_data_included")]
         public bool? EloDataIncluded { get; set; }
 
         [JsonProperty("elo_players_found")]
         public int? EloPlayersFound { get; set; }
-
-        [JsonProperty("has_meaningful_data")]
-        public bool? HasMeaningfulData { get; set; }
-
-        [JsonProperty("elo_only_fallback")]
-        public bool? EloOnlyFallback { get; set; }
     }
 }
