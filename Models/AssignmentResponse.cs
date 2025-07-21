@@ -49,6 +49,9 @@ namespace BgaTmScraperRegistry.Models
         public int PlayerId { get; set; }
         public string PlayerName { get; set; }
         public int Elo { get; set; }
+        public int EloChange { get; set; }
+        public int? ArenaPoints { get; set; }
+        public int? ArenaPointsChange { get; set; }
         public int Position { get; set; }
     }
 }

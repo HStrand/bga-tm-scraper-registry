@@ -441,6 +441,9 @@ namespace BgaTmScraperRegistry.Services
                         gp.PlayerId,
                         gp.PlayerName,
                         gp.Elo,
+                        gp.EloChange,
+                        gp.ArenaPoints,
+                        gp.ArenaPointsChange,
                         gp.Position
                     FROM GamePlayers gp
                     WHERE gp.TableId IN @tableIds 
@@ -462,6 +465,9 @@ namespace BgaTmScraperRegistry.Services
                             PlayerId = p.PlayerId,
                             PlayerName = p.PlayerName,
                             Elo = p.Elo,
+                            EloChange = p.EloChange ?? 0,
+                            ArenaPoints = p.ArenaPoints,
+                            ArenaPointsChange = p.ArenaPointsChange,
                             Position = p.Position
                         }).ToList()
                     );
@@ -518,6 +524,9 @@ namespace BgaTmScraperRegistry.Services
             public int PlayerId { get; set; }
             public string PlayerName { get; set; }
             public int Elo { get; set; }
+            public int? EloChange { get; set; }
+            public int? ArenaPoints { get; set; }
+            public int? ArenaPointsChange { get; set; }
             public int Position { get; set; }
         }
     }
