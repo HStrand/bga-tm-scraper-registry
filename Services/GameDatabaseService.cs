@@ -510,6 +510,74 @@ namespace BgaTmScraperRegistry.Services
             return playerName;
         }
 
+        public async Task<Statistics> GetStatisticsAsync(string userEmail = null)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            // Get total indexed games
+            var totalGamesQuery = "SELECT COUNT(*) FROM Games";
+            var totalGames = await connection.QuerySingleAsync<int>(totalGamesQuery);
+
+            // Get scraped games total
+            var scrapedGamesTotalQuery = "SELECT COUNT(*) FROM Games WHERE ScrapedAt IS NOT NULL";
+            var scrapedGamesTotal = await connection.QuerySingleAsync<int>(scrapedGamesTotalQuery);
+
+            // Get scraped games by user (if email provided)
+            var scrapedGamesByUser = 0;
+            if (!string.IsNullOrEmpty(userEmail))
+            {
+                var scrapedGamesByUserQuery = "SELECT COUNT(*) FROM Games WHERE ScrapedBy = @userEmail";
+                scrapedGamesByUser = await connection.QuerySingleAsync<int>(scrapedGamesByUserQuery, new { userEmail });
+            }
+
+            // Get total players
+            var totalPlayersQuery = "SELECT COUNT(*) FROM Players";
+            var totalPlayers = await connection.QuerySingleAsync<int>(totalPlayersQuery);
+
+            // Get average Elo in scraped games
+            var averageEloQuery = @"
+                SELECT AVG(CAST(gp.Elo AS FLOAT)) 
+                FROM GamePlayers gp
+                INNER JOIN Games g ON gp.GameId = g.Id
+                WHERE g.ScrapedAt IS NOT NULL";
+            var averageEloDouble = await connection.QuerySingleOrDefaultAsync<double?>(averageEloQuery);
+            var averageElo = averageEloDouble.HasValue ? (int?)Math.Round(averageEloDouble.Value) : null;
+
+            // Get median Elo in scraped games using a simpler approach
+            var medianEloQuery = @"
+                WITH OrderedElos AS (
+                    SELECT gp.Elo,
+                           ROW_NUMBER() OVER (ORDER BY gp.Elo) as RowNum,
+                           COUNT(*) OVER() as TotalCount
+                    FROM GamePlayers gp
+                    INNER JOIN Games g ON gp.GameId = g.Id
+                    WHERE g.ScrapedAt IS NOT NULL
+                ),
+                MedianValues AS (
+                    SELECT Elo
+                    FROM OrderedElos
+                    WHERE RowNum IN ((TotalCount + 1) / 2, (TotalCount + 2) / 2)
+                )
+                SELECT AVG(CAST(Elo AS FLOAT)) as MedianElo
+                FROM MedianValues";
+            
+            var medianElo = await connection.QuerySingleOrDefaultAsync<double?>(medianEloQuery);
+            var medianEloInt = medianElo.HasValue ? (int?)Math.Round(medianElo.Value) : null;
+
+            _logger.LogInformation($"Retrieved statistics: {totalGames} total indexed games, {scrapedGamesTotal} scraped games, {scrapedGamesByUser} scraped by user, {totalPlayers} total players");
+            
+            return new Statistics
+            {
+                TotalIndexedGames = totalGames,
+                ScrapedGamesTotal = scrapedGamesTotal,
+                ScrapedGamesByUser = scrapedGamesByUser,
+                TotalPlayers = totalPlayers,
+                AverageEloInScrapedGames = averageElo,
+                MedianEloInScrapedGames = medianEloInt
+            };
+        }
+
         private class GameIdMapping
         {
             public int Id { get; set; }
