@@ -24,6 +24,21 @@ Azure Functions API for a central registry for Terraforming Mars games scraped f
 - **Purpose**: Get the next player ID that should be indexed by external indexing service
 - **Endpoint**: `/api/GetNextPlayerToIndex`
 
+### ZipGameLogsScheduled
+- **Method**: Timer Trigger
+- **Purpose**: Automatically creates ZIP archives of all JSON game logs daily at 2 AM UTC
+- **Schedule**: `0 0 2 * * *` (Daily at 2:00 AM UTC)
+
+### ZipGameLogsOnDemand
+- **Method**: POST
+- **Purpose**: Manually trigger creation of ZIP archive containing all JSON game logs
+- **Endpoint**: `/api/zip-game-logs`
+
+### DownloadLatestZip
+- **Method**: GET
+- **Purpose**: Download the most recently created ZIP archive of game logs
+- **Endpoint**: `/api/download-latest-zip`
+
 ## UpdatePlayers Usage
 
 ### Request Format
@@ -232,10 +247,111 @@ This function is designed for external indexing services that need to determine 
 - All players eventually get indexed
 - Players with stale data (old LastIndexedAt) get re-indexed periodically
 
+## ZipGameLogsOnDemand Usage
+
+### Request Format
+Send a POST request with no body:
+
+```
+POST /api/zip-game-logs
+```
+
+### Response Format
+Success response:
+```json
+{
+    "success": true,
+    "archiveFileName": "game-logs-archive-2025-01-22-020000.zip",
+    "filesIncluded": 1250,
+    "archiveSize": "45.2 MB",
+    "createdAt": "2025-01-22T02:00:00Z"
+}
+```
+
+Error response:
+```json
+{
+    "success": false,
+    "error": "No JSON blobs found to archive"
+}
+```
+
+### Archive Operations
+- **Source Container**: `games` - Contains all JSON game log files
+- **Destination Container**: `archives` - Stores the created ZIP files
+- **File Structure**: ZIP maintains original folder structure (`{player_perspective}/game_{table_id}_{player_perspective}.json`)
+- **Archive Naming**: `game-logs-archive-{yyyy-MM-dd-HHmmss}.zip`
+- **Compression**: Uses optimal compression level for best space efficiency
+- **Memory Efficient**: Streams files directly into ZIP without loading all content into memory
+
+### ZipGameLogsScheduled Behavior
+- **Automatic Execution**: Runs daily at 2:00 AM UTC
+- **Same Process**: Uses identical logic as the on-demand endpoint
+- **Logging**: Comprehensive logging for monitoring and troubleshooting
+- **Error Handling**: Continues operation even if individual files fail to process
+- **No Response**: Timer functions don't return HTTP responses, only log results
+
+### Error Handling
+- **Missing Connection String**: Returns error if `BlobStorageConnectionString` environment variable is not set
+- **No Files Found**: Returns error if no JSON files exist in the source container
+- **Individual File Failures**: Logs warnings but continues processing remaining files
+- **Upload Failures**: Returns error if ZIP upload to blob storage fails
+
+## DownloadLatestZip Usage
+
+### Request Format
+Send a GET request with no parameters:
+
+```
+GET /api/download-latest-zip
+```
+
+### Response Format
+**Success**: Direct file download with proper headers
+- **Content-Type**: `application/zip`
+- **Content-Disposition**: `attachment; filename="game-logs-archive-{timestamp}.zip"`
+- **Body**: Binary ZIP file stream
+
+**Not Found** (404):
+```json
+{
+    "success": false,
+    "error": "No ZIP archives found"
+}
+```
+
+**Error** (400):
+```json
+{
+    "success": false,
+    "error": "BlobStorageConnectionString environment variable is not set"
+}
+```
+
+### Download Behavior
+- **Latest Selection**: Automatically finds the most recent ZIP archive based on filename timestamp
+- **Direct Streaming**: Streams the ZIP file directly from blob storage to the client
+- **Memory Efficient**: Does not load the entire file into memory
+- **Browser Compatible**: Sets proper headers for browser download dialogs
+- **File Naming**: Downloaded file retains original archive name with timestamp
+
+### Archive Selection Logic
+1. Lists all files in the "archives" container
+2. Filters for files matching pattern: `game-logs-archive-*.zip`
+3. Sorts filenames alphabetically (which corresponds to chronological order due to timestamp format)
+4. Selects the last file in the sorted list (most recent)
+
+### Error Scenarios
+- **No Archives**: Returns 404 if no ZIP files exist in the archives container
+- **Missing Connection**: Returns 400 if blob storage connection string is not configured
+- **Access Errors**: Returns 500 for blob storage access failures
+- **Download Failures**: Returns 500 if the selected archive cannot be downloaded
+
 ## Configuration
 
 ### Environment Variables
 - `SqlConnectionString`: Connection string to Azure SQL Database
+- `BlobStorageConnectionString`: Connection string to Azure Blob Storage (required for ZIP functions)
 
 ## Development
 

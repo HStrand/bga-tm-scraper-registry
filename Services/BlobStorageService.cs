@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -95,6 +96,152 @@ namespace BgaTmScraperRegistry.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error downloading blob content for player {playerPerspective}, table {tableId}");
+                throw;
+            }
+        }
+
+        public async Task<List<string>> GetAllJsonBlobsAsync()
+        {
+            try
+            {
+                var blobPaths = new List<string>();
+                var containerClient = _blobServiceClient.GetBlobContainerClient(ContainerName);
+
+                _logger.LogInformation("Listing all JSON blobs in container");
+
+                await foreach (var blobItem in containerClient.GetBlobsAsync())
+                {
+                    if (blobItem.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                    {
+                        blobPaths.Add(blobItem.Name);
+                    }
+                }
+
+                _logger.LogInformation($"Found {blobPaths.Count} JSON blobs");
+                return blobPaths;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error listing JSON blobs");
+                throw;
+            }
+        }
+
+        public async Task<Stream> DownloadBlobAsStreamAsync(string blobPath)
+        {
+            try
+            {
+                var containerClient = _blobServiceClient.GetBlobContainerClient(ContainerName);
+                var blobClient = containerClient.GetBlobClient(blobPath);
+
+                var response = await blobClient.DownloadStreamingAsync();
+                return response.Value.Content;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error downloading blob as stream: {blobPath}");
+                throw;
+            }
+        }
+
+        public async Task<string> UploadZipArchiveAsync(Stream zipStream, string fileName)
+        {
+            try
+            {
+                const string archiveContainerName = "archives";
+                
+                _logger.LogInformation($"Uploading ZIP archive: {fileName}");
+
+                // Get container client for archives
+                var containerClient = _blobServiceClient.GetBlobContainerClient(archiveContainerName);
+                
+                // Ensure container exists
+                await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
+
+                // Get blob client
+                var blobClient = containerClient.GetBlobClient(fileName);
+
+                // Set content type
+                var blobHttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = "application/zip"
+                };
+
+                // Reset stream position
+                zipStream.Position = 0;
+
+                // Upload the ZIP file
+                await blobClient.UploadAsync(zipStream, new BlobUploadOptions
+                {
+                    HttpHeaders = blobHttpHeaders
+                });
+
+                _logger.LogInformation($"Successfully uploaded ZIP archive: {fileName}");
+                return $"{archiveContainerName}/{fileName}";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error uploading ZIP archive: {fileName}");
+                throw;
+            }
+        }
+
+        public async Task<string> GetLatestZipArchiveAsync()
+        {
+            try
+            {
+                const string archiveContainerName = "archives";
+                var containerClient = _blobServiceClient.GetBlobContainerClient(archiveContainerName);
+
+                _logger.LogInformation("Finding latest ZIP archive");
+
+                var zipFiles = new List<string>();
+
+                await foreach (var blobItem in containerClient.GetBlobsAsync())
+                {
+                    if (blobItem.Name.StartsWith("game-logs-archive-") && 
+                        blobItem.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                    {
+                        zipFiles.Add(blobItem.Name);
+                    }
+                }
+
+                if (zipFiles.Count == 0)
+                {
+                    _logger.LogWarning("No ZIP archives found");
+                    return null;
+                }
+
+                // Sort by filename (which contains timestamp) to get the latest
+                zipFiles.Sort();
+                var latestZip = zipFiles[zipFiles.Count - 1];
+
+                _logger.LogInformation($"Latest ZIP archive found: {latestZip}");
+                return latestZip;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error finding latest ZIP archive");
+                throw;
+            }
+        }
+
+        public async Task<Stream> DownloadZipArchiveAsStreamAsync(string fileName)
+        {
+            try
+            {
+                const string archiveContainerName = "archives";
+                var containerClient = _blobServiceClient.GetBlobContainerClient(archiveContainerName);
+                var blobClient = containerClient.GetBlobClient(fileName);
+
+                _logger.LogInformation($"Downloading ZIP archive: {fileName}");
+
+                var response = await blobClient.DownloadStreamingAsync();
+                return response.Value.Content;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error downloading ZIP archive: {fileName}");
                 throw;
             }
         }
