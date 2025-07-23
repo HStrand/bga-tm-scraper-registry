@@ -245,5 +245,28 @@ namespace BgaTmScraperRegistry.Services
                 throw;
             }
         }
+
+        public async Task<long> GetZipArchiveSizeAsync(string fileName)
+        {
+            try
+            {
+                const string archiveContainerName = "archives";
+                var containerClient = _blobServiceClient.GetBlobContainerClient(archiveContainerName);
+                var blobClient = containerClient.GetBlobClient(fileName);
+
+                _logger.LogInformation($"Getting size of ZIP archive: {fileName}");
+
+                var properties = await blobClient.GetPropertiesAsync();
+                var sizeInBytes = properties.Value.ContentLength;
+
+                _logger.LogInformation($"ZIP archive {fileName} size: {sizeInBytes} bytes");
+                return sizeInBytes;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error getting ZIP archive size: {fileName}");
+                throw;
+            }
+        }
     }
 }
