@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace BgaTmScraperRegistry.Models
@@ -36,6 +37,14 @@ namespace BgaTmScraperRegistry.Models
         public string VersionId { get; set; }
         public string GameMode { get; set; }
         public string PlayerName { get; set; }  // Name of PlayerPerspective
+        public DateTime PlayedAt { get; set; } // From ParsedDateTime in DB
+        public string Map { get; set; }  // From DB
+        public bool? PreludeOn {  get; set; } // From DB
+        public bool? ColoniesOn { get; set; } // From DB
+        public bool? CorporateEraOn { get; set; } // From DB
+        public bool? DraftOn { get; set; } // From DB
+        public bool? BeginnersCorporationsOn { get; set; } // From DB
+
         public List<GamePlayerInfo> Players { get; set; }  // All players in the game
 
         public GameAssignmentDetails()

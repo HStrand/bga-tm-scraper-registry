@@ -47,6 +47,24 @@ namespace BgaTmScraperRegistry.Models
         [Required]
         public DateTime ScrapedAt { get; set; }
 
+        [JsonProperty("map")]
+        public string Map { get; set; }
+
+        [JsonProperty("prelude_on")]
+        public bool PreludeOn { get; set; }
+
+        [JsonProperty("colonies_on")]
+        public bool ColoniesOn { get; set; }
+
+        [JsonProperty("corporate_era_on")]
+        public bool CorporateEraOn { get; set; }
+
+        [JsonProperty("draft_on")]
+        public bool DraftOn { get; set; }
+
+        [JsonProperty("beginners_corporations_on")]
+        public bool BeginnersCorporationsOn { get; set; }
+
         [JsonProperty("players")]
         [Required]
         public List<PlayerData> Players { get; set; }

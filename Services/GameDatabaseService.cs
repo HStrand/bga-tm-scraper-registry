@@ -110,8 +110,8 @@ namespace BgaTmScraperRegistry.Services
                 MERGE Games AS target
                 USING @GameData AS source ON target.TableId = source.TableId AND target.PlayerPerspective = source.PlayerPerspective
                 WHEN NOT MATCHED THEN
-                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, ScrapedAt, ScrapedBy, AssignedTo, AssignedAt)
-                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.ScrapedAt, source.ScrapedBy, source.AssignedTo, source.AssignedAt)
+                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, ScrapedAt, ScrapedBy, AssignedTo, AssignedAt, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn)
+                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.ScrapedAt, source.ScrapedBy, source.AssignedTo, source.AssignedAt, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn)
                 OUTPUT INSERTED.Id, INSERTED.TableId, INSERTED.PlayerPerspective;";
 
             var results = await connection.QueryAsync<GameIdMapping>(
@@ -153,6 +153,12 @@ namespace BgaTmScraperRegistry.Services
             dataTable.Columns.Add("ScrapedBy", typeof(string));
             dataTable.Columns.Add("AssignedTo", typeof(string));
             dataTable.Columns.Add("AssignedAt", typeof(DateTime));
+            dataTable.Columns.Add("Map", typeof(string));
+            dataTable.Columns.Add("PreludeOn", typeof(bool));
+            dataTable.Columns.Add("ColoniesOn", typeof(bool));
+            dataTable.Columns.Add("CorporateEraOn", typeof(bool));
+            dataTable.Columns.Add("DraftOn", typeof(bool));
+            dataTable.Columns.Add("BeginnersCorporationsOn", typeof(bool));
 
             foreach (var game in games)
             {
@@ -162,6 +168,8 @@ namespace BgaTmScraperRegistry.Services
                 var gameMode = ValidateAndTruncateString(game.GameMode, 255, $"Game TableId {game.TableId} GameMode");
                 var scrapedBy = ValidateAndTruncateString(game.ScrapedBy, 255, $"Game TableId {game.TableId} ScrapedBy");
                 var assignedTo = ValidateAndTruncateString(game.AssignedTo, 255, $"Game TableId {game.TableId} AssignedTo");
+
+                var map = ValidateAndTruncateString(game.Map, 255, $"Game TableId {game.TableId} Map");
 
                 dataTable.Rows.Add(
                     game.TableId,
@@ -174,7 +182,13 @@ namespace BgaTmScraperRegistry.Services
                     game.ScrapedAt,
                     scrapedBy,
                     assignedTo,
-                    game.AssignedAt);
+                    game.AssignedAt,
+                    map,
+                    game.PreludeOn,
+                    game.ColoniesOn,
+                    game.CorporateEraOn,
+                    game.DraftOn,
+                    game.BeginnersCorporationsOn);
             }
 
             return dataTable;
@@ -278,16 +292,19 @@ namespace BgaTmScraperRegistry.Services
             var rawDateTime = ValidateAndTruncateString(game.RawDateTime, 255, $"Game TableId {game.TableId} RawDateTime");
             var gameMode = ValidateAndTruncateString(game.GameMode, 255, $"Game TableId {game.TableId} GameMode");
             var scrapedBy = ValidateAndTruncateString(game.ScrapedBy, 255, $"Game TableId {game.TableId} ScrapedBy");
+            var map = ValidateAndTruncateString(game.Map, 255, $"Game TableId {game.TableId} Map");
 
             var mergeQuery = @"
                 MERGE Games AS target
                 USING (SELECT @TableId AS TableId, @PlayerPerspective AS PlayerPerspective, @VersionId AS VersionId, 
                               @RawDateTime AS RawDateTime, @ParsedDateTime AS ParsedDateTime, @GameMode AS GameMode,
-                              @IndexedAt AS IndexedAt, @ScrapedBy AS ScrapedBy) AS source
+                              @IndexedAt AS IndexedAt, @ScrapedBy AS ScrapedBy, @Map AS Map, @PreludeOn AS PreludeOn,
+                              @ColoniesOn AS ColoniesOn, @CorporateEraOn AS CorporateEraOn, @DraftOn AS DraftOn,
+                              @BeginnersCorporationsOn AS BeginnersCorporationsOn) AS source
                 ON target.TableId = source.TableId AND target.PlayerPerspective = source.PlayerPerspective
                 WHEN NOT MATCHED THEN
-                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, ScrapedBy)
-                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.ScrapedBy);
+                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, ScrapedBy, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn)
+                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.ScrapedBy, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn);
 
                 SELECT Id FROM Games 
                 WHERE TableId = @TableId AND PlayerPerspective = @PlayerPerspective;";
@@ -303,7 +320,13 @@ namespace BgaTmScraperRegistry.Services
                     ParsedDateTime = game.ParsedDateTime,
                     GameMode = gameMode,
                     IndexedAt = game.IndexedAt,
-                    ScrapedBy = scrapedBy
+                    ScrapedBy = scrapedBy,
+                    Map = map,
+                    PreludeOn = game.PreludeOn,
+                    ColoniesOn = game.ColoniesOn,
+                    CorporateEraOn = game.CorporateEraOn,
+                    DraftOn = game.DraftOn,
+                    BeginnersCorporationsOn = game.BeginnersCorporationsOn
                 },
                 transaction);
 
@@ -392,6 +415,13 @@ namespace BgaTmScraperRegistry.Services
                         g.PlayerPerspective,
                         g.VersionId,
                         g.GameMode,
+                        g.ParsedDateTime as PlayedAt,
+                        g.Map,
+                        g.PreludeOn,
+                        g.ColoniesOn,
+                        g.CorporateEraOn,
+                        g.DraftOn,
+                        g.BeginnersCorporationsOn,
                         p.Name as PlayerName
                     FROM Games g
                     INNER JOIN Players p ON g.PlayerPerspective = p.PlayerId

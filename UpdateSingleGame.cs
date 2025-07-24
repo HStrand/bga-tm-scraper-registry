@@ -115,7 +115,13 @@ namespace BgaTmScraperRegistry
                     ParsedDateTime = gameData.ParsedDateTime,
                     GameMode = gameData.GameMode,
                     IndexedAt = DateTime.UtcNow,
-                    ScrapedBy = null // Will be set later by the scraper
+                    ScrapedBy = null, // Will be set later by the scraper
+                    Map = gameData.Map,
+                    PreludeOn = gameData.PreludeOn,
+                    ColoniesOn = gameData.ColoniesOn,
+                    CorporateEraOn = gameData.CorporateEraOn,
+                    DraftOn = gameData.DraftOn,
+                    BeginnersCorporationsOn = gameData.BeginnersCorporationsOn
                 };
 
                 // Validate Game object

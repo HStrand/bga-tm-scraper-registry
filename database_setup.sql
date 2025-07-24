@@ -14,7 +14,13 @@ BEGIN
         GameMode NVARCHAR(255),
         IndexedAt DATETIME NOT NULL,
         ScrapedAt DATETIME NOT NULL,
-        ScrapedBy NVARCHAR(255)
+        ScrapedBy NVARCHAR(255),
+        Map NVARCHAR(255),
+        PreludeOn BIT,
+        ColoniesOn BIT,
+        CorporateEraOn BIT,
+        DraftOn BIT,
+        BeginnersCorporationsOn BIT
     )
 END
 

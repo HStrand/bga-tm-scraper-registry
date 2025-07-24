@@ -1,18 +1,23 @@
--- SQL Migration Script for GetNextAssignment Feature
--- This script adds the required fields and updates the table-valued parameter types
+-- Database migration script to add new fields to Games table
+-- Run this script in your SQL Server database to add the new expansion-related fields
 
--- Step 1: Make ScrapedAt nullable in Games table
-ALTER TABLE Games ALTER COLUMN ScrapedAt DATETIME NULL;
+-- Add new columns to Games table
+ALTER TABLE Games ADD 
+    Map NVARCHAR(255) NULL,
+    PreludeOn BIT NULL,
+    ColoniesOn BIT NULL,
+    CorporateEraOn BIT NULL,
+    DraftOn BIT NULL,
+    BeginnersCorporationsOn BIT NULL;
 
--- Step 2: Add new assignment tracking columns to Games table
-ALTER TABLE Games ADD AssignedTo NVARCHAR(255) NULL;
-ALTER TABLE Games ADD AssignedAt DATETIME NULL;
-
--- Step 3: Update the GameTableType table-valued parameter
+-- Update the GameTableType to include new fields
 -- First drop the existing type
-DROP TYPE IF EXISTS dbo.GameTableType;
+IF EXISTS (SELECT * FROM sys.types WHERE name = 'GameTableType' AND is_table_type = 1)
+BEGIN
+    DROP TYPE dbo.GameTableType;
+END
 
--- Recreate with updated schema
+-- Recreate the type with new fields
 CREATE TYPE dbo.GameTableType AS TABLE
 (
     TableId INT NOT NULL,
@@ -22,22 +27,17 @@ CREATE TYPE dbo.GameTableType AS TABLE
     ParsedDateTime DATETIME,
     GameMode NVARCHAR(255),
     IndexedAt DATETIME NOT NULL,
-    ScrapedAt DATETIME NULL,        -- Now nullable
+    ScrapedAt DATETIME NOT NULL,
     ScrapedBy NVARCHAR(255),
-    AssignedTo NVARCHAR(255) NULL,  -- New field
-    AssignedAt DATETIME NULL        -- New field
+    Map NVARCHAR(255),
+    PreludeOn BIT,
+    ColoniesOn BIT,
+    CorporateEraOn BIT,
+    DraftOn BIT,
+    BeginnersCorporationsOn BIT
 );
 
--- Step 4: Add indexes for performance on assignment queries
-CREATE INDEX IX_Games_Assignment_Status 
-ON Games (ScrapedAt, AssignedTo, AssignedAt)
-WHERE ScrapedAt IS NULL;
-
-CREATE INDEX IX_Games_AssignedAt 
-ON Games (AssignedAt)
-WHERE AssignedAt IS NOT NULL;
-
--- Step 5: Verify the changes
+-- Verify the changes
 SELECT 
     COLUMN_NAME,
     DATA_TYPE,
@@ -45,22 +45,14 @@ SELECT
     CHARACTER_MAXIMUM_LENGTH
 FROM INFORMATION_SCHEMA.COLUMNS 
 WHERE TABLE_NAME = 'Games' 
-AND COLUMN_NAME IN ('ScrapedAt', 'AssignedTo', 'AssignedAt')
+AND COLUMN_NAME IN ('Map', 'PreludeOn', 'ColoniesOn', 'CorporateEraOn', 'DraftOn', 'BeginnersCorporationsOn')
 ORDER BY COLUMN_NAME;
 
--- Verify the table-valued parameter type was updated
+-- Verify the type was recreated
 SELECT 
     name,
     type_table_object_id,
     is_table_type
 FROM sys.types 
 WHERE name = 'GameTableType'
-AND is_table_type = 1;
-
-PRINT 'Migration completed successfully!';
-PRINT 'The following changes have been made:';
-PRINT '1. ScrapedAt column is now nullable';
-PRINT '2. AssignedTo column added (NVARCHAR(255) NULL)';
-PRINT '3. AssignedAt column added (DATETIME NULL)';
-PRINT '4. GameTableType table-valued parameter updated';
-PRINT '5. Performance indexes added for assignment queries';
+ORDER BY name;
