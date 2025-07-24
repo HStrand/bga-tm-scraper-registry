@@ -65,6 +65,9 @@ namespace BgaTmScraperRegistry.Models
         [JsonProperty("beginners_corporations_on")]
         public bool BeginnersCorporationsOn { get; set; }
 
+        [JsonProperty("game_speed")]
+        public string GameSpeed { get; set; }
+
         [JsonProperty("players")]
         [Required]
         public List<PlayerData> Players { get; set; }

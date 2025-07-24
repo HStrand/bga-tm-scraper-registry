@@ -38,12 +38,13 @@ namespace BgaTmScraperRegistry.Models
         public string GameMode { get; set; }
         public string PlayerName { get; set; }  // Name of PlayerPerspective
         public DateTime PlayedAt { get; set; } // From ParsedDateTime in DB
-        public string Map { get; set; }  // From DB
-        public bool? PreludeOn {  get; set; } // From DB
-        public bool? ColoniesOn { get; set; } // From DB
-        public bool? CorporateEraOn { get; set; } // From DB
-        public bool? DraftOn { get; set; } // From DB
-        public bool? BeginnersCorporationsOn { get; set; } // From DB
+        public string Map { get; set; }
+        public bool? PreludeOn {  get; set; }
+        public bool? ColoniesOn { get; set; }
+        public bool? CorporateEraOn { get; set; }
+        public bool? DraftOn { get; set; }
+        public bool? BeginnersCorporationsOn { get; set; }
+        public string GameSpeed { get; set; }
 
         public List<GamePlayerInfo> Players { get; set; }  // All players in the game
 

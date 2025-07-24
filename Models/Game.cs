@@ -50,5 +50,6 @@ namespace BgaTmScraperRegistry.Models
         public bool? DraftOn { get; set; }
 
         public bool? BeginnersCorporationsOn { get; set; }
+        public string GameSpeed { get; set; }
     }
 }

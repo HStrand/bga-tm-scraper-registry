@@ -121,7 +121,8 @@ namespace BgaTmScraperRegistry
                     ColoniesOn = gameData.ColoniesOn,
                     CorporateEraOn = gameData.CorporateEraOn,
                     DraftOn = gameData.DraftOn,
-                    BeginnersCorporationsOn = gameData.BeginnersCorporationsOn
+                    BeginnersCorporationsOn = gameData.BeginnersCorporationsOn,
+                    GameSpeed = gameData.GameSpeed
                 };
 
                 // Validate Game object

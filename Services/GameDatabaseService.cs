@@ -119,10 +119,11 @@ namespace BgaTmScraperRegistry.Services
                         ColoniesOn = source.ColoniesOn,
                         CorporateEraOn = source.CorporateEraOn,
                         DraftOn = source.DraftOn,
-                        BeginnersCorporationsOn = source.BeginnersCorporationsOn
+                        BeginnersCorporationsOn = source.BeginnersCorporationsOn,
+                        GameSpeed = source.GameSpeed
                 WHEN NOT MATCHED THEN
-                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, ScrapedAt, AssignedTo, AssignedAt, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn)
-                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.ScrapedAt, source.AssignedTo, source.AssignedAt, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn)
+                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, ScrapedAt, AssignedTo, AssignedAt, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn, GameSpeed)
+                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.ScrapedAt, source.AssignedTo, source.AssignedAt, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn, source.GameSpeed)
                 OUTPUT INSERTED.Id, INSERTED.TableId, INSERTED.PlayerPerspective;";
 
             var results = await connection.QueryAsync<GameIdMapping>(
@@ -170,6 +171,7 @@ namespace BgaTmScraperRegistry.Services
             dataTable.Columns.Add("CorporateEraOn", typeof(bool));
             dataTable.Columns.Add("DraftOn", typeof(bool));
             dataTable.Columns.Add("BeginnersCorporationsOn", typeof(bool));
+            dataTable.Columns.Add("GameSpeed", typeof(string));
 
             foreach (var game in games)
             {
@@ -199,7 +201,8 @@ namespace BgaTmScraperRegistry.Services
                     game.ColoniesOn,
                     game.CorporateEraOn,
                     game.DraftOn,
-                    game.BeginnersCorporationsOn);
+                    game.BeginnersCorporationsOn,
+                    game.GameSpeed);
             }
 
             return dataTable;
@@ -311,7 +314,7 @@ namespace BgaTmScraperRegistry.Services
                               @RawDateTime AS RawDateTime, @ParsedDateTime AS ParsedDateTime, @GameMode AS GameMode,
                               @IndexedAt AS IndexedAt, @Map AS Map, @PreludeOn AS PreludeOn,
                               @ColoniesOn AS ColoniesOn, @CorporateEraOn AS CorporateEraOn, @DraftOn AS DraftOn,
-                              @BeginnersCorporationsOn AS BeginnersCorporationsOn) AS source
+                              @BeginnersCorporationsOn AS BeginnersCorporationsOn, @GameSpeed AS GameSpeed) AS source
                 ON target.TableId = source.TableId AND target.PlayerPerspective = source.PlayerPerspective
                 WHEN MATCHED THEN
                     UPDATE SET 
@@ -323,10 +326,11 @@ namespace BgaTmScraperRegistry.Services
                         ColoniesOn = source.ColoniesOn,
                         CorporateEraOn = source.CorporateEraOn,
                         DraftOn = source.DraftOn,
-                        BeginnersCorporationsOn = source.BeginnersCorporationsOn
+                        BeginnersCorporationsOn = source.BeginnersCorporationsOn,
+                        GameSpeed = source.GameSpeed
                 WHEN NOT MATCHED THEN
-                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn)
-                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn);
+                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn, GameSpeed)
+                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn, source.GameSpeed);
 
                 SELECT Id FROM Games 
                 WHERE TableId = @TableId AND PlayerPerspective = @PlayerPerspective;";
@@ -347,7 +351,8 @@ namespace BgaTmScraperRegistry.Services
                     ColoniesOn = game.ColoniesOn,
                     CorporateEraOn = game.CorporateEraOn,
                     DraftOn = game.DraftOn,
-                    BeginnersCorporationsOn = game.BeginnersCorporationsOn
+                    BeginnersCorporationsOn = game.BeginnersCorporationsOn,
+                    GameSpeed = game.GameSpeed
                 },
                 transaction);
 
@@ -443,6 +448,7 @@ namespace BgaTmScraperRegistry.Services
                         g.CorporateEraOn,
                         g.DraftOn,
                         g.BeginnersCorporationsOn,
+                        g.GameSpeed,
                         p.Name as PlayerName
                     FROM Games g
                     INNER JOIN Players p ON g.PlayerPerspective = p.PlayerId

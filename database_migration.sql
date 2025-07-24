@@ -34,7 +34,8 @@ CREATE TYPE dbo.GameTableType AS TABLE
     ColoniesOn BIT,
     CorporateEraOn BIT,
     DraftOn BIT,
-    BeginnersCorporationsOn BIT
+    BeginnersCorporationsOn BIT,
+    GameSpeed NVARCHAR(255)
 );
 
 -- Verify the changes
@@ -45,7 +46,7 @@ SELECT
     CHARACTER_MAXIMUM_LENGTH
 FROM INFORMATION_SCHEMA.COLUMNS 
 WHERE TABLE_NAME = 'Games' 
-AND COLUMN_NAME IN ('Map', 'PreludeOn', 'ColoniesOn', 'CorporateEraOn', 'DraftOn', 'BeginnersCorporationsOn')
+AND COLUMN_NAME IN ('Map', 'PreludeOn', 'ColoniesOn', 'CorporateEraOn', 'DraftOn', 'BeginnersCorporationsOn', 'GameSpeed')
 ORDER BY COLUMN_NAME;
 
 -- Verify the type was recreated
