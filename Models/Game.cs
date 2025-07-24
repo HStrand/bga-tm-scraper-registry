@@ -41,14 +41,14 @@ namespace BgaTmScraperRegistry.Models
         [StringLength(255)]
         public string Map { get; set; }
 
-        public bool PreludeOn { get; set; }
+        public bool? PreludeOn { get; set; }
 
-        public bool ColoniesOn { get; set; }
+        public bool? ColoniesOn { get; set; }
 
-        public bool CorporateEraOn { get; set; }
+        public bool? CorporateEraOn { get; set; }
 
-        public bool DraftOn { get; set; }
+        public bool? DraftOn { get; set; }
 
-        public bool BeginnersCorporationsOn { get; set; }
+        public bool? BeginnersCorporationsOn { get; set; }
     }
 }

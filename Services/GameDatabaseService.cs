@@ -109,6 +109,17 @@ namespace BgaTmScraperRegistry.Services
             var mergeQuery = @"
                 MERGE Games AS target
                 USING @GameData AS source ON target.TableId = source.TableId AND target.PlayerPerspective = source.PlayerPerspective
+                WHEN MATCHED THEN
+                    UPDATE SET 
+                        VersionId = source.VersionId,
+                        GameMode = source.GameMode,
+                        IndexedAt = source.IndexedAt,
+                        Map = source.Map,
+                        PreludeOn = source.PreludeOn,
+                        ColoniesOn = source.ColoniesOn,
+                        CorporateEraOn = source.CorporateEraOn,
+                        DraftOn = source.DraftOn,
+                        BeginnersCorporationsOn = source.BeginnersCorporationsOn
                 WHEN NOT MATCHED THEN
                     INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, ScrapedAt, AssignedTo, AssignedAt, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn)
                     VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.ScrapedAt, source.AssignedTo, source.AssignedAt, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn)
@@ -302,6 +313,17 @@ namespace BgaTmScraperRegistry.Services
                               @ColoniesOn AS ColoniesOn, @CorporateEraOn AS CorporateEraOn, @DraftOn AS DraftOn,
                               @BeginnersCorporationsOn AS BeginnersCorporationsOn) AS source
                 ON target.TableId = source.TableId AND target.PlayerPerspective = source.PlayerPerspective
+                WHEN MATCHED THEN
+                    UPDATE SET 
+                        VersionId = source.VersionId,
+                        GameMode = source.GameMode,
+                        IndexedAt = source.IndexedAt,
+                        Map = source.Map,
+                        PreludeOn = source.PreludeOn,
+                        ColoniesOn = source.ColoniesOn,
+                        CorporateEraOn = source.CorporateEraOn,
+                        DraftOn = source.DraftOn,
+                        BeginnersCorporationsOn = source.BeginnersCorporationsOn
                 WHEN NOT MATCHED THEN
                     INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn)
                     VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn);
