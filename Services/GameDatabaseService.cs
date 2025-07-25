@@ -635,6 +635,34 @@ namespace BgaTmScraperRegistry.Services
             };
         }
 
+        public async Task<List<GameMetadata>> GetAllGamesMetadataAsync()
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var query = @"
+                SELECT 
+                    TableId,
+                    PlayerPerspective,
+                    ParsedDateTime,
+                    Map,
+                    PreludeOn,
+                    ColoniesOn,
+                    CorporateEraOn,
+                    DraftOn,
+                    BeginnersCorporationsOn,
+                    GameSpeed
+                FROM Games 
+                WHERE ScrapedAt IS NOT NULL
+                ORDER BY TableId, PlayerPerspective";
+
+            var results = await connection.QueryAsync<GameMetadata>(query);
+            var gamesList = results.ToList();
+            
+            _logger.LogInformation($"Retrieved metadata for {gamesList.Count} games");
+            return gamesList;
+        }
+
         private class GameIdMapping
         {
             public int Id { get; set; }

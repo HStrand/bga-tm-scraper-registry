@@ -27,6 +27,27 @@ namespace BgaTmScraperRegistry.Models
         [JsonProperty("generations")]
         public int? Generations { get; set; }
 
+        [JsonProperty("map")]
+        public string Map { get; set; }
+
+        [JsonProperty("prelude_on")]
+        public bool? PreludeOn { get; set; }
+
+        [JsonProperty("colonies_on")]
+        public bool? ColoniesOn { get; set; }
+
+        [JsonProperty("corporate_era_on")]
+        public bool? CorporateEraOn { get; set; }
+
+        [JsonProperty("draft_on")]
+        public bool? DraftOn { get; set; }
+
+        [JsonProperty("beginners_corporations_on")]
+        public bool? BeginnersCorporationsOn { get; set; }
+
+        [JsonProperty("game_speed")]
+        public string GameSpeed { get; set; }
+
         [JsonProperty("players")]
         [Required]
         public Dictionary<string, GameLogPlayer> Players { get; set; }
