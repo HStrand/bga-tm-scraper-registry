@@ -32,9 +32,6 @@ namespace BgaTmScraperRegistry.Services
 
                 // Get container client
                 var containerClient = _blobServiceClient.GetBlobContainerClient(ContainerName);
-                
-                // Ensure container exists
-                await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
 
                 // Get blob client
                 var blobClient = containerClient.GetBlobClient(blobPath);
@@ -153,10 +150,7 @@ namespace BgaTmScraperRegistry.Services
                 _logger.LogInformation($"Uploading ZIP archive: {fileName}");
 
                 // Get container client for archives
-                var containerClient = _blobServiceClient.GetBlobContainerClient(archiveContainerName);
-                
-                // Ensure container exists
-                await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
+                var containerClient = _blobServiceClient.GetBlobContainerClient(archiveContainerName);               
 
                 // Get blob client
                 var blobClient = containerClient.GetBlobClient(fileName);
