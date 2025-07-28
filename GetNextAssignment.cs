@@ -31,6 +31,20 @@ namespace BgaTmScraperRegistry
                     return new BadRequestObjectResult(new { message = "Email parameter is required" });
                 }
 
+                // Parse count parameter with default of 200 and max validation
+                int count = 200; // default value
+                string countParam = req.Query["count"];
+                if (!string.IsNullOrEmpty(countParam))
+                {
+                    if (int.TryParse(countParam, out int parsedCount))
+                    {
+                        count = Math.Min(parsedCount, 200); // Cap at maximum 200
+                    }
+                    // If parsing fails, keep default of 200
+                }
+
+                log.LogInformation($"Using count parameter: {count}");
+
                 var connectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
                 if (string.IsNullOrEmpty(connectionString))
                 {
@@ -51,7 +65,7 @@ namespace BgaTmScraperRegistry
                 {
                     log.LogInformation("Assigning replay scraping work");
                     
-                    var games = await gameService.GetAndAssignUnscrapedGamesAsync(200, email);
+                    var games = await gameService.GetAndAssignUnscrapedGamesAsync(count, email);
                     
                     if (!games.Any())
                     {
