@@ -682,5 +682,24 @@ namespace BgaTmScraperRegistry.Services
             public int? ArenaPointsChange { get; set; }
             public int Position { get; set; }
         }
+
+        public async Task<IEnumerable<ScraperLeaderboardEntry>> GetScraperLeaderboardAsync()
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var query = @"
+                SELECT 
+	                ISNULL(um.DisplayName, 'Anonymous') AS Scraper,
+	                COUNT(1) AS ScrapedCount
+                  FROM Games g
+                  LEFT JOIN UserMappings um ON um.Username = g.ScrapedBy
+                  WHERE g.ScrapedBy IS NOT NULL
+                  GROUP BY um.DisplayName, g.ScrapedBy
+                  ORDER BY ScrapedCount DESC";
+
+            var result = await connection.QueryAsync<ScraperLeaderboardEntry>(query);
+            return result;
+        }
     }
 }
