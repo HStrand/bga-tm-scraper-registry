@@ -24,6 +24,13 @@ namespace BgaTmScraperRegistry
         {
             log.LogInformation("UpdateSingleGame HTTP trigger function processed a request.");
 
+            // Get optional version parameter
+            string version = req.Query["version"];
+            if (!string.IsNullOrEmpty(version))
+            {
+                log.LogInformation($"Request received from version: {version}");
+            }
+
             try
             {
                 // Get connection string from environment variables

@@ -24,6 +24,13 @@ namespace BgaTmScraperRegistry
         {
             log.LogInformation("StoreGameLog processed a request.");
 
+            // Get optional version parameter
+            string version = req.Query["version"];
+            if (!string.IsNullOrEmpty(version))
+            {
+                log.LogInformation($"Request received from version: {version}");
+            }
+
             try
             {
                 // Get connection strings from environment variables

@@ -20,12 +20,21 @@ namespace BgaTmScraperRegistry
         {
             log.LogInformation("GetNextAssignment function processed a request.");
 
+            // Get optional version parameter
+            string version = req.Query["version"];
+            if (!string.IsNullOrEmpty(version))
+            {
+                log.LogInformation($"Request received from version: {version}");
+            }
+
             try
             {
                 // Get email from query parameter or request body
-                string email = req.Query["email"];
-                
-                if (string.IsNullOrEmpty(email))
+                string username = req.Query["email"];
+
+                log.LogInformation($"User {username} requested a new assignment");
+
+                if (string.IsNullOrEmpty(username))
                 {
                     log.LogError("Email parameter is required");
                     return new BadRequestObjectResult(new { message = "Email parameter is required" });
@@ -65,7 +74,7 @@ namespace BgaTmScraperRegistry
                 {
                     log.LogInformation("Assigning replay scraping work");
                     
-                    var games = await gameService.GetAndAssignUnscrapedGamesAsync(count, email);
+                    var games = await gameService.GetAndAssignUnscrapedGamesAsync(count, username);
                     
                     if (!games.Any())
                     {
@@ -78,7 +87,7 @@ namespace BgaTmScraperRegistry
                         Games = games
                     };
 
-                    log.LogInformation($"Assigned {games.Count} games for replay scraping to {email}");
+                    log.LogInformation($"Assigned {games.Count} games for replay scraping to {username}");
                     return new OkObjectResult(assignment);
                 }
                 else
@@ -109,7 +118,7 @@ namespace BgaTmScraperRegistry
                         PlayerName = playerName
                     };
 
-                    log.LogInformation($"Assigned indexing work for player {nextPlayerId.Value} ({playerName}) to {email}");
+                    log.LogInformation($"Assigned indexing work for player {nextPlayerId.Value} ({playerName}) to {username}");
                     return new OkObjectResult(assignment);
                 }
             }
