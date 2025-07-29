@@ -53,11 +53,19 @@ namespace BgaTmScraperRegistry.Services
                 using var connection = new SqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                var insertQuery = @"
-                    INSERT INTO UserMappings (Username, DisplayName, UpdatedAt)
-                    VALUES (@Username, @DisplayName, @UpdatedAt)";
+                var mergeQuery = @"
+                    MERGE UserMappings AS target
+                    USING (SELECT @Username AS Username) AS source
+                    ON target.Username = source.Username
+                    WHEN MATCHED THEN
+                        UPDATE SET
+                            DisplayName = @DisplayName,
+                            UpdatedAt = @UpdatedAt
+                    WHEN NOT MATCHED THEN
+                        INSERT (Username, DisplayName, UpdatedAt)
+                        VALUES (@Username, @DisplayName, @UpdatedAt);";
 
-                var rowsAffected = await connection.ExecuteAsync(insertQuery, userMapping);
+                var rowsAffected = await connection.ExecuteAsync(mergeQuery, userMapping);
 
                 _logger.LogInformation($"Successfully saved user mapping: {userMapping.Username} -> {userMapping.DisplayName}");
                 return rowsAffected > 0;
