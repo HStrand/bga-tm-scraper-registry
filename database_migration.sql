@@ -57,3 +57,32 @@ SELECT
 FROM sys.types 
 WHERE name = 'GameTableType'
 ORDER BY name;
+
+-- Create UserMappings table
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='UserMappings' AND xtype='U')
+BEGIN
+    CREATE TABLE UserMappings (
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        Username NVARCHAR(255) NOT NULL,
+        DisplayName NVARCHAR(255) NOT NULL,
+        UpdatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),
+        INDEX IX_UserMappings_Username (Username),
+        INDEX IX_UserMappings_DisplayName (DisplayName)
+    );
+END
+ELSE
+BEGIN
+    -- Alter existing table to rename CreatedAt to UpdatedAt
+    EXEC sp_rename 'UserMappings.CreatedAt', 'UpdatedAt', 'COLUMN';
+END
+
+-- Verify the UserMappings table was created
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE,
+    IS_NULLABLE,
+    CHARACTER_MAXIMUM_LENGTH,
+    COLUMN_DEFAULT
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = 'UserMappings'
+ORDER BY ORDINAL_POSITION;
