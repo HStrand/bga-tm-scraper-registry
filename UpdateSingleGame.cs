@@ -31,6 +31,9 @@ namespace BgaTmScraperRegistry
                 log.LogInformation($"Request received from version: {version}");
             }
 
+            // Get optional indexedBy parameter
+            string indexedBy = req.Query["indexedBy"];
+
             try
             {
                 // Get connection string from environment variables
@@ -122,6 +125,7 @@ namespace BgaTmScraperRegistry
                     ParsedDateTime = gameData.ParsedDateTime,
                     GameMode = gameData.GameMode,
                     IndexedAt = DateTime.UtcNow,
+                    IndexedBy = indexedBy,
                     ScrapedBy = null, // Will be set later by the scraper
                     Map = gameData.Map,
                     PreludeOn = gameData.PreludeOn,

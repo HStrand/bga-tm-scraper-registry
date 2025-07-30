@@ -34,6 +34,9 @@ namespace BgaTmScraperRegistry.Models
         public string ScrapedBy { get; set; }
 
         [StringLength(255)]
+        public string IndexedBy { get; set; }
+
+        [StringLength(255)]
         public string AssignedTo { get; set; }
 
         public DateTime? AssignedAt { get; set; }

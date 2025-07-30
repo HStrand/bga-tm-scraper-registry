@@ -2,7 +2,8 @@
 -- Run this script in your SQL Server database to add the new expansion-related fields
 
 -- Add new columns to Games table
-ALTER TABLE Games ADD 
+ALTER TABLE Games ADD
+    IndexedBy NVARCHAR(255) NULL,
     Map NVARCHAR(255) NULL,
     PreludeOn BIT NULL,
     ColoniesOn BIT NULL,
@@ -27,6 +28,7 @@ CREATE TYPE dbo.GameTableType AS TABLE
     ParsedDateTime DATETIME,
     GameMode NVARCHAR(255),
     IndexedAt DATETIME NOT NULL,
+    IndexedBy NVARCHAR(255),
     ScrapedAt DATETIME NOT NULL,
     ScrapedBy NVARCHAR(255),
     Map NVARCHAR(255),
@@ -46,7 +48,7 @@ SELECT
     CHARACTER_MAXIMUM_LENGTH
 FROM INFORMATION_SCHEMA.COLUMNS 
 WHERE TABLE_NAME = 'Games' 
-AND COLUMN_NAME IN ('Map', 'PreludeOn', 'ColoniesOn', 'CorporateEraOn', 'DraftOn', 'BeginnersCorporationsOn', 'GameSpeed')
+AND COLUMN_NAME IN ('IndexedBy', 'Map', 'PreludeOn', 'ColoniesOn', 'CorporateEraOn', 'DraftOn', 'BeginnersCorporationsOn', 'GameSpeed')
 ORDER BY COLUMN_NAME;
 
 -- Verify the type was recreated

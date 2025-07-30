@@ -114,6 +114,7 @@ namespace BgaTmScraperRegistry.Services
                         VersionId = source.VersionId,
                         GameMode = source.GameMode,
                         IndexedAt = source.IndexedAt,
+                        IndexedBy = source.IndexedBy,
                         Map = source.Map,
                         PreludeOn = source.PreludeOn,
                         ColoniesOn = source.ColoniesOn,
@@ -122,8 +123,8 @@ namespace BgaTmScraperRegistry.Services
                         BeginnersCorporationsOn = source.BeginnersCorporationsOn,
                         GameSpeed = source.GameSpeed
                 WHEN NOT MATCHED THEN
-                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, ScrapedAt, AssignedTo, AssignedAt, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn, GameSpeed)
-                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.ScrapedAt, source.AssignedTo, source.AssignedAt, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn, source.GameSpeed)
+                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, IndexedBy, ScrapedAt, AssignedTo, AssignedAt, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn, GameSpeed)
+                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.IndexedBy, source.ScrapedAt, source.AssignedTo, source.AssignedAt, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn, source.GameSpeed)
                 OUTPUT INSERTED.Id, INSERTED.TableId, INSERTED.PlayerPerspective;";
 
             var results = await connection.QueryAsync<GameIdMapping>(
@@ -161,6 +162,7 @@ namespace BgaTmScraperRegistry.Services
             dataTable.Columns.Add("ParsedDateTime", typeof(DateTime));
             dataTable.Columns.Add("GameMode", typeof(string));
             dataTable.Columns.Add("IndexedAt", typeof(DateTime));
+            dataTable.Columns.Add("IndexedBy", typeof(string));
             dataTable.Columns.Add("ScrapedAt", typeof(DateTime));
             dataTable.Columns.Add("ScrapedBy", typeof(string));
             dataTable.Columns.Add("AssignedTo", typeof(string));
@@ -179,6 +181,7 @@ namespace BgaTmScraperRegistry.Services
                 var versionId = ValidateAndTruncateString(game.VersionId, 255, $"Game TableId {game.TableId} VersionId");
                 var rawDateTime = ValidateAndTruncateString(game.RawDateTime, 255, $"Game TableId {game.TableId} RawDateTime");
                 var gameMode = ValidateAndTruncateString(game.GameMode, 255, $"Game TableId {game.TableId} GameMode");
+                var indexedBy = ValidateAndTruncateString(game.IndexedBy, 255, $"Game TableId {game.TableId} IndexedBy");
                 var scrapedBy = ValidateAndTruncateString(game.ScrapedBy, 255, $"Game TableId {game.TableId} ScrapedBy");
                 var assignedTo = ValidateAndTruncateString(game.AssignedTo, 255, $"Game TableId {game.TableId} AssignedTo");
 
@@ -192,6 +195,7 @@ namespace BgaTmScraperRegistry.Services
                     game.ParsedDateTime,
                     gameMode,
                     game.IndexedAt,
+                    indexedBy,
                     game.ScrapedAt,
                     scrapedBy,
                     assignedTo,
@@ -305,6 +309,7 @@ namespace BgaTmScraperRegistry.Services
             var versionId = ValidateAndTruncateString(game.VersionId, 255, $"Game TableId {game.TableId} VersionId");
             var rawDateTime = ValidateAndTruncateString(game.RawDateTime, 255, $"Game TableId {game.TableId} RawDateTime");
             var gameMode = ValidateAndTruncateString(game.GameMode, 255, $"Game TableId {game.TableId} GameMode");
+            var indexedBy = ValidateAndTruncateString(game.IndexedBy, 255, $"Game TableId {game.TableId} IndexedBy");
             var scrapedBy = ValidateAndTruncateString(game.ScrapedBy, 255, $"Game TableId {game.TableId} ScrapedBy");
             var map = ValidateAndTruncateString(game.Map, 255, $"Game TableId {game.TableId} Map");
 
@@ -312,7 +317,7 @@ namespace BgaTmScraperRegistry.Services
                 MERGE Games AS target
                 USING (SELECT @TableId AS TableId, @PlayerPerspective AS PlayerPerspective, @VersionId AS VersionId, 
                               @RawDateTime AS RawDateTime, @ParsedDateTime AS ParsedDateTime, @GameMode AS GameMode,
-                              @IndexedAt AS IndexedAt, @Map AS Map, @PreludeOn AS PreludeOn,
+                              @IndexedAt AS IndexedAt, @IndexedBy AS IndexedBy, @Map AS Map, @PreludeOn AS PreludeOn,
                               @ColoniesOn AS ColoniesOn, @CorporateEraOn AS CorporateEraOn, @DraftOn AS DraftOn,
                               @BeginnersCorporationsOn AS BeginnersCorporationsOn, @GameSpeed AS GameSpeed) AS source
                 ON target.TableId = source.TableId AND target.PlayerPerspective = source.PlayerPerspective
@@ -321,6 +326,7 @@ namespace BgaTmScraperRegistry.Services
                         VersionId = source.VersionId,
                         GameMode = source.GameMode,
                         IndexedAt = source.IndexedAt,
+                        IndexedBy = source.IndexedBy,
                         Map = source.Map,
                         PreludeOn = source.PreludeOn,
                         ColoniesOn = source.ColoniesOn,
@@ -329,8 +335,8 @@ namespace BgaTmScraperRegistry.Services
                         BeginnersCorporationsOn = source.BeginnersCorporationsOn,
                         GameSpeed = source.GameSpeed
                 WHEN NOT MATCHED THEN
-                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn, GameSpeed)
-                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn, source.GameSpeed);
+                    INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, IndexedBy, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn, GameSpeed)
+                    VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.IndexedBy, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn, source.GameSpeed);
 
                 SELECT Id FROM Games 
                 WHERE TableId = @TableId AND PlayerPerspective = @PlayerPerspective;";
@@ -346,6 +352,7 @@ namespace BgaTmScraperRegistry.Services
                     ParsedDateTime = game.ParsedDateTime,
                     GameMode = gameMode,
                     IndexedAt = game.IndexedAt,
+                    IndexedBy = indexedBy,
                     Map = map,
                     PreludeOn = game.PreludeOn,
                     ColoniesOn = game.ColoniesOn,

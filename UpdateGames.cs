@@ -34,6 +34,9 @@ namespace BgaTmScraperRegistry
                     return new BadRequestObjectResult(new { message = "Database connection not configured", success = false });
                 }
 
+                // Get optional indexedBy parameter
+                string indexedBy = req.Query["indexedBy"];
+
                 // Read and validate request body
                 string requestBody;
                 try
@@ -122,6 +125,7 @@ namespace BgaTmScraperRegistry
                         GameMode = gameData.GameMode,
                         IndexedAt = DateTime.UtcNow,
                         ScrapedAt = gameData.ScrapedAt,
+                        IndexedBy = indexedBy,
                         ScrapedBy = null, // Will be set later by the scraper
                         Map = gameData.Map,
                         PreludeOn = gameData.PreludeOn,
