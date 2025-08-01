@@ -715,5 +715,17 @@ namespace BgaTmScraperRegistry.Services
             var result = await connection.QueryAsync<ScraperLeaderboardEntry>(query);
             return result;
         }
+
+        public async Task<Game> GetGameAsync(int tableId, int playerPerspective)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var query = "SELECT * FROM Games WHERE TableId = @tableId AND PlayerPerspective = @playerPerspective";
+            
+            var game = await connection.QuerySingleOrDefaultAsync<Game>(query, new { tableId, playerPerspective });
+            
+            return game;
+        }
     }
 }
