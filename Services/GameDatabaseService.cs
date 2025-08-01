@@ -333,7 +333,9 @@ namespace BgaTmScraperRegistry.Services
                         CorporateEraOn = source.CorporateEraOn,
                         DraftOn = source.DraftOn,
                         BeginnersCorporationsOn = source.BeginnersCorporationsOn,
-                        GameSpeed = source.GameSpeed
+                        GameSpeed = source.GameSpeed,
+                        RawDateTime = source.RawDateTime,
+                        ParsedDateTime = source.ParsedDateTime
                 WHEN NOT MATCHED THEN
                     INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, IndexedBy, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn, GameSpeed)
                     VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.IndexedBy, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn, source.GameSpeed);
