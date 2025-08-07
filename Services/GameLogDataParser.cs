@@ -81,6 +81,52 @@ namespace BgaTmScraperRegistry.Services
             return allPlayerStats;
         }
 
+        public List<StartingHandCorporations> ParseStartingHandCorporations(GameLogData gameLogData)
+        {
+            if (gameLogData == null)
+                throw new ArgumentNullException(nameof(gameLogData));
+
+            if (!int.TryParse(gameLogData.ReplayId, out int gameId))
+                throw new ArgumentException($"Cannot parse ReplayId '{gameLogData.ReplayId}' to integer", nameof(gameLogData));
+
+            var allStartingHandCorporations = new List<StartingHandCorporations>();
+
+            foreach (var playerEntry in gameLogData.Players)
+            {
+                if (!int.TryParse(playerEntry.Key, out int playerId))
+                {
+                    // Log or handle the error for the specific player, but continue with others
+                    Console.WriteLine($"Could not parse player ID '{playerEntry.Key}' for game '{gameId}'. Skipping player.");
+                    continue;
+                }
+
+                var playerLog = playerEntry.Value;
+
+                // Check if starting hand exists and has corporations
+                if (playerLog.StartingHand?.Corporations != null && playerLog.StartingHand.Corporations.Count > 0)
+                {
+                    foreach (var corporation in playerLog.StartingHand.Corporations)
+                    {
+                        if (!string.IsNullOrWhiteSpace(corporation))
+                        {
+                            var startingHandCorp = new StartingHandCorporations
+                            {
+                                GameId = gameId,
+                                PlayerId = playerId,
+                                Corporation = corporation,
+                                Kept = string.Equals(corporation, playerLog.Corporation, StringComparison.OrdinalIgnoreCase),
+                                UpdatedAt = DateTime.UtcNow
+                            };
+
+                            allStartingHandCorporations.Add(startingHandCorp);
+                        }
+                    }
+                }
+            }
+
+            return allStartingHandCorporations;
+        }
+
         private int? GetVpBreakdownValue(Dictionary<string, object> vpBreakdown, string key)
         {
             if (vpBreakdown.TryGetValue(key, out object value) && value != null)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using BgaTmScraperRegistry.Models;
 using Dapper;
@@ -28,6 +29,7 @@ namespace BgaTmScraperRegistry.Services
             var parser = new GameLogDataParser();
             var gameStats = parser.ParseGameStats(gameLogData);
             var playerStats = parser.ParseGamePlayerStats(gameLogData);
+            var startingHandCorporations = parser.ParseStartingHandCorporations(gameLogData);
 
             _logger.LogInformation($"Upserting GameStats for TableId {gameStats.TableId}: Generations={gameStats.Generations}, DurationMinutes={gameStats.DurationMinutes}");
 
@@ -39,6 +41,7 @@ namespace BgaTmScraperRegistry.Services
             {
                 await UpsertGameStatsAsync(connection, transaction, gameStats);
                 await UpsertGamePlayerStatsAsync(connection, transaction, playerStats);
+                await UpsertStartingHandCorporationsAsync(connection, transaction, startingHandCorporations);
                 transaction.Commit();
                 
                 _logger.LogInformation($"Successfully upserted GameStats for TableId {gameStats.TableId}");
@@ -102,6 +105,32 @@ namespace BgaTmScraperRegistry.Services
             foreach (var stats in playerStats)
             {
                 await connection.ExecuteAsync(mergeQuery, stats, transaction);
+            }
+        }
+
+        private async Task UpsertStartingHandCorporationsAsync(SqlConnection connection, SqlTransaction transaction, List<StartingHandCorporations> startingHandCorporations)
+        {
+            // Group by GameId + PlayerId to handle the sync approach
+            var playerGroups = startingHandCorporations.GroupBy(x => new { x.GameId, x.PlayerId });
+
+            foreach (var playerGroup in playerGroups)
+            {
+                // First, delete existing records for this GameId + PlayerId combination
+                var deleteQuery = @"
+                    DELETE FROM StartingHandCorporations 
+                    WHERE GameId = @GameId AND PlayerId = @PlayerId";
+
+                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.GameId, playerGroup.Key.PlayerId }, transaction);
+
+                // Then, insert all new records for this player
+                var insertQuery = @"
+                    INSERT INTO StartingHandCorporations (GameId, PlayerId, Corporation, Kept, UpdatedAt)
+                    VALUES (@GameId, @PlayerId, @Corporation, @Kept, @UpdatedAt)";
+
+                foreach (var corp in playerGroup)
+                {
+                    await connection.ExecuteAsync(insertQuery, corp, transaction);
+                }
             }
         }
     }

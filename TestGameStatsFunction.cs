@@ -43,13 +43,15 @@ namespace BgaTmScraperRegistry
                 var parser = new GameLogDataParser();
                 var gameStats = parser.ParseGameStats(gameLogData);
                 var playerStats = parser.ParseGamePlayerStats(gameLogData);
+                var startingHandCorporations = parser.ParseStartingHandCorporations(gameLogData);
 
                 return new OkObjectResult(new
                 {
                     success = true,
-                    message = "GameStats and GamePlayerStats parsing test completed",
+                    message = "GameStats, GamePlayerStats, and StartingHandCorporations parsing test completed",
                     gameStats,
-                    playerStats
+                    playerStats,
+                    startingHandCorporations
                 });
             }
             catch (JsonException jsonEx)
