@@ -86,7 +86,7 @@ namespace BgaTmScraperRegistry.Services
             if (gameLogData == null)
                 throw new ArgumentNullException(nameof(gameLogData));
 
-            if (!int.TryParse(gameLogData.ReplayId, out int gameId))
+            if (!int.TryParse(gameLogData.ReplayId, out int tableId))
                 throw new ArgumentException($"Cannot parse ReplayId '{gameLogData.ReplayId}' to integer", nameof(gameLogData));
 
             var allStartingHandCorporations = new List<StartingHandCorporations>();
@@ -96,7 +96,7 @@ namespace BgaTmScraperRegistry.Services
                 if (!int.TryParse(playerEntry.Key, out int playerId))
                 {
                     // Log or handle the error for the specific player, but continue with others
-                    Console.WriteLine($"Could not parse player ID '{playerEntry.Key}' for game '{gameId}'. Skipping player.");
+                    Console.WriteLine($"Could not parse player ID '{playerEntry.Key}' for table '{tableId}'. Skipping player.");
                     continue;
                 }
 
@@ -111,7 +111,7 @@ namespace BgaTmScraperRegistry.Services
                         {
                             var startingHandCorp = new StartingHandCorporations
                             {
-                                GameId = gameId,
+                                TableId = tableId,
                                 PlayerId = playerId,
                                 Corporation = corporation,
                                 Kept = string.Equals(corporation, playerLog.Corporation, StringComparison.OrdinalIgnoreCase),
@@ -125,6 +125,261 @@ namespace BgaTmScraperRegistry.Services
             }
 
             return allStartingHandCorporations;
+        }
+
+        public List<GameMilestone> ParseGameMilestones(GameLogData gameLogData)
+        {
+            if (gameLogData == null)
+                throw new ArgumentNullException(nameof(gameLogData));
+
+            if (!int.TryParse(gameLogData.ReplayId, out int tableId))
+                throw new ArgumentException($"Cannot parse ReplayId '{gameLogData.ReplayId}' to integer", nameof(gameLogData));
+
+            var results = new List<GameMilestone>();
+
+            // The milestones should be present on the final move's game_state
+            var finalMove = gameLogData.Moves != null && gameLogData.Moves.Count > 0
+                ? gameLogData.Moves[gameLogData.Moves.Count - 1]
+                : null;
+
+            var finalMilestones = finalMove?.GameState?.Milestones;
+            if (finalMilestones == null || finalMilestones.Count == 0)
+            {
+                return results;
+            }
+
+            foreach (var kvp in finalMilestones)
+            {
+                var milestoneName = kvp.Key;
+                var info = kvp.Value;
+                if (info == null) continue;
+
+                // Parse player ID (claimed by)
+                if (!int.TryParse(info.PlayerId, out int claimedBy))
+                {
+                    // If we cannot parse claimedBy, skip this record
+                    Console.WriteLine($"Table {tableId}: Unable to parse PlayerId '{info.PlayerId}' for milestone '{milestoneName}', skipping.");
+                    continue;
+                }
+
+                // Find the move where the milestone was claimed to get the generation
+                int claimedGen = 0;
+                if (info.MoveNumber.HasValue && gameLogData.Moves != null)
+                {
+                    var claimedMove = gameLogData.Moves.FirstOrDefault(m => m.MoveNumber == info.MoveNumber.Value);
+                    claimedGen = claimedMove?.GameState?.Generation ?? 0;
+                }
+
+                results.Add(new GameMilestone
+                {
+                    TableId = tableId,
+                    Milestone = milestoneName,
+                    ClaimedBy = claimedBy,
+                    ClaimedGen = claimedGen,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+
+            return results;
+        }
+
+        public List<GamePlayerAward> ParseGamePlayerAwards(GameLogData gameLogData)
+        {
+            if (gameLogData == null)
+                throw new ArgumentNullException(nameof(gameLogData));
+
+            if (!int.TryParse(gameLogData.ReplayId, out int tableId))
+                throw new ArgumentException($"Cannot parse ReplayId '{gameLogData.ReplayId}' to integer", nameof(gameLogData));
+
+            var awardsRows = new List<GamePlayerAward>();
+
+            // Use the final move's state as authoritative
+            var finalMove = gameLogData.Moves != null && gameLogData.Moves.Count > 0
+                ? gameLogData.Moves[gameLogData.Moves.Count - 1]
+                : null;
+
+            var finalState = finalMove?.GameState;
+            var finalAwards = finalState?.Awards;
+            var finalPlayerVp = finalState?.PlayerVp;
+
+            if (finalAwards == null || finalAwards.Count == 0 || finalPlayerVp == null || finalPlayerVp.Count == 0)
+            {
+                return awardsRows;
+            }
+
+            // Precompute funded-by and funded generation for each award
+            var fundedByMap = new Dictionary<string, (int FundedBy, int FundedGen)>(StringComparer.OrdinalIgnoreCase);
+            foreach (var kvp in finalAwards)
+            {
+                var awardName = kvp.Key;
+                var info = kvp.Value;
+                if (info == null) continue;
+
+                // FundedBy comes from AwardInfo.PlayerId
+                if (!int.TryParse(info.PlayerId, out int fundedBy))
+                {
+                    // If fundedBy cannot be parsed, skip this award
+                    Console.WriteLine($"Table {tableId}: Unable to parse AwardInfo.PlayerId '{info.PlayerId}' for award '{awardName}', skipping funding info.");
+                    continue;
+                }
+
+                int fundedGen = 0;
+                if (info.MoveNumber.HasValue && gameLogData.Moves != null)
+                {
+                    var fundedMove = gameLogData.Moves.FirstOrDefault(m => m.MoveNumber == info.MoveNumber.Value);
+                    fundedGen = fundedMove?.GameState?.Generation ?? 0;
+                }
+
+                fundedByMap[awardName] = (fundedBy, fundedGen);
+            }
+
+            if (fundedByMap.Count == 0)
+            {
+                return awardsRows;
+            }
+
+            // For each player, read their award details (place, counter) for each funded award
+            foreach (var playerEntry in finalPlayerVp)
+            {
+                if (!int.TryParse(playerEntry.Key, out int playerId))
+                {
+                    Console.WriteLine($"Table {tableId}: Unable to parse PlayerVp key '{playerEntry.Key}' to int, skipping player.");
+                    continue;
+                }
+
+                var playerVp = playerEntry.Value;
+                var awardDetails = playerVp?.Details?.Awards; // Dictionary<string, AwardVictoryPoints>
+
+                if (awardDetails == null || awardDetails.Count == 0)
+                {
+                    continue;
+                }
+
+                foreach (var awardName in fundedByMap.Keys)
+                {
+                    if (!awardDetails.TryGetValue(awardName, out var awardVp) || awardVp == null)
+                    {
+                        // If the player doesn't have an entry for this award, skip creating a row for them
+                        continue;
+                    }
+
+                    var (fundedBy, fundedGen) = fundedByMap[awardName];
+
+                    awardsRows.Add(new GamePlayerAward
+                    {
+                        TableId = tableId,
+                        PlayerId = playerId,
+                        Award = awardName,
+                        FundedBy = fundedBy,
+                        FundedGen = fundedGen,
+                        PlayerPlace = awardVp.Place,
+                        PlayerCounter = awardVp.Counter,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            return awardsRows;
+        }
+
+        public List<ParameterChange> ParseParameterChanges(GameLogData gameLogData)
+        {
+            if (gameLogData == null)
+                throw new ArgumentNullException(nameof(gameLogData));
+
+            if (!int.TryParse(gameLogData.ReplayId, out int tableId))
+                throw new ArgumentException($"Cannot parse ReplayId '{gameLogData.ReplayId}' to integer", nameof(gameLogData));
+
+            var changes = new List<ParameterChange>();
+
+            if (gameLogData.Moves == null || gameLogData.Moves.Count == 0)
+                return changes;
+
+            int? prevTemp = null;
+            int? prevOxy = null;
+            int? prevOce = null;
+
+            foreach (var move in gameLogData.Moves)
+            {
+                var state = move?.GameState;
+                if (state == null)
+                {
+                    continue;
+                }
+
+                var currTemp = state.Temperature;
+                var currOxy = state.Oxygen;
+                var currOce = state.Oceans;
+                var gen = state.Generation;
+                int? actorId = null;
+                if (int.TryParse(move.PlayerId, out int actor)) actorId = actor;
+
+                // Only record changes if generation is known
+                if (gen.HasValue)
+                {
+                    // temperature: step size is 2 per unit increase on the track
+                    if (prevTemp.HasValue && currTemp.HasValue && currTemp.Value > prevTemp.Value)
+                    {
+                        int stepSize = 2;
+                        int diff = currTemp.Value - prevTemp.Value;
+                        int steps = diff / stepSize; // expected to divide evenly; if not, floor
+                        for (int k = 1; k <= steps; k++)
+                        {
+                            int increasedTo = prevTemp.Value + k * stepSize;
+                            changes.Add(new ParameterChange
+                            {
+                                TableId = tableId,
+                                Parameter = "temperature",
+                                Generation = gen.Value,
+                                IncreasedTo = increasedTo,
+                                IncreasedBy = actorId,
+                                UpdatedAt = DateTime.UtcNow
+                            });
+                        }
+                    }
+
+                    // oxygen: step size is 1
+                    if (prevOxy.HasValue && currOxy.HasValue && currOxy.Value > prevOxy.Value)
+                    {
+                        for (int v = prevOxy.Value + 1; v <= currOxy.Value; v++)
+                        {
+                            changes.Add(new ParameterChange
+                            {
+                                TableId = tableId,
+                                Parameter = "oxygen",
+                                Generation = gen.Value,
+                                IncreasedTo = v,
+                                IncreasedBy = actorId,
+                                UpdatedAt = DateTime.UtcNow
+                            });
+                        }
+                    }
+
+                    // oceans: step size is 1
+                    if (prevOce.HasValue && currOce.HasValue && currOce.Value > prevOce.Value)
+                    {
+                        for (int v = prevOce.Value + 1; v <= currOce.Value; v++)
+                        {
+                            changes.Add(new ParameterChange
+                            {
+                                TableId = tableId,
+                                Parameter = "oceans",
+                                Generation = gen.Value,
+                                IncreasedTo = v,
+                                IncreasedBy = actorId,
+                                UpdatedAt = DateTime.UtcNow
+                            });
+                        }
+                    }
+                }
+
+                // update previous values after processing this move
+                if (currTemp.HasValue) prevTemp = currTemp.Value;
+                if (currOxy.HasValue) prevOxy = currOxy.Value;
+                if (currOce.HasValue) prevOce = currOce.Value;
+            }
+
+            return changes;
         }
 
         private int? GetVpBreakdownValue(Dictionary<string, object> vpBreakdown, string key)

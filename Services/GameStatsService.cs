@@ -30,6 +30,9 @@ namespace BgaTmScraperRegistry.Services
             var gameStats = parser.ParseGameStats(gameLogData);
             var playerStats = parser.ParseGamePlayerStats(gameLogData);
             var startingHandCorporations = parser.ParseStartingHandCorporations(gameLogData);
+            var gameMilestones = parser.ParseGameMilestones(gameLogData);
+            var gamePlayerAwards = parser.ParseGamePlayerAwards(gameLogData);
+            var parameterChanges = parser.ParseParameterChanges(gameLogData);
 
             _logger.LogInformation($"Upserting GameStats for TableId {gameStats.TableId}: Generations={gameStats.Generations}, DurationMinutes={gameStats.DurationMinutes}");
 
@@ -42,6 +45,9 @@ namespace BgaTmScraperRegistry.Services
                 await UpsertGameStatsAsync(connection, transaction, gameStats);
                 await UpsertGamePlayerStatsAsync(connection, transaction, playerStats);
                 await UpsertStartingHandCorporationsAsync(connection, transaction, startingHandCorporations);
+                await UpsertGameMilestonesAsync(connection, transaction, gameMilestones);
+                await UpsertGamePlayerAwardsAsync(connection, transaction, gamePlayerAwards);
+                await UpsertParameterChangesAsync(connection, transaction, parameterChanges);
                 transaction.Commit();
                 
                 _logger.LogInformation($"Successfully upserted GameStats for TableId {gameStats.TableId}");
@@ -110,27 +116,115 @@ namespace BgaTmScraperRegistry.Services
 
         private async Task UpsertStartingHandCorporationsAsync(SqlConnection connection, SqlTransaction transaction, List<StartingHandCorporations> startingHandCorporations)
         {
-            // Group by GameId + PlayerId to handle the sync approach
-            var playerGroups = startingHandCorporations.GroupBy(x => new { x.GameId, x.PlayerId });
+            // Group by TableId + PlayerId to handle the sync approach
+            var playerGroups = startingHandCorporations.GroupBy(x => new { x.TableId, x.PlayerId });
 
             foreach (var playerGroup in playerGroups)
             {
                 // First, delete existing records for this GameId + PlayerId combination
                 var deleteQuery = @"
                     DELETE FROM StartingHandCorporations 
-                    WHERE GameId = @GameId AND PlayerId = @PlayerId";
+                    WHERE TableId = @TableId AND PlayerId = @PlayerId";
 
-                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.GameId, playerGroup.Key.PlayerId }, transaction);
+                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.TableId, playerGroup.Key.PlayerId }, transaction);
 
                 // Then, insert all new records for this player
                 var insertQuery = @"
-                    INSERT INTO StartingHandCorporations (GameId, PlayerId, Corporation, Kept, UpdatedAt)
-                    VALUES (@GameId, @PlayerId, @Corporation, @Kept, @UpdatedAt)";
+                    INSERT INTO StartingHandCorporations (TableId, PlayerId, Corporation, Kept, UpdatedAt)
+                    VALUES (@TableId, @PlayerId, @Corporation, @Kept, @UpdatedAt)";
 
                 foreach (var corp in playerGroup)
                 {
                     await connection.ExecuteAsync(insertQuery, corp, transaction);
                 }
+            }
+        }
+
+        private async Task UpsertGameMilestonesAsync(SqlConnection connection, SqlTransaction transaction, List<GameMilestone> milestones)
+        {
+            if (milestones == null || milestones.Count == 0)
+            {
+                return;
+            }
+
+            // Sync strategy: replace all for the TableId
+            var tableId = milestones[0].TableId;
+
+            var deleteQuery = @"
+                DELETE FROM GameMilestones
+                WHERE TableId = @TableId";
+
+            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction);
+
+            var insertQuery = @"
+                INSERT INTO GameMilestones (TableId, Milestone, ClaimedBy, ClaimedGen, UpdatedAt)
+                VALUES (@TableId, @Milestone, @ClaimedBy, @ClaimedGen, @UpdatedAt)";
+
+            foreach (var ms in milestones)
+            {
+                await connection.ExecuteAsync(insertQuery, ms, transaction);
+            }
+        }
+
+        private async Task UpsertGamePlayerAwardsAsync(SqlConnection connection, SqlTransaction transaction, List<GamePlayerAward> awards)
+        {
+            if (awards == null || awards.Count == 0)
+            {
+                return;
+            }
+
+            // Sync strategy: replace all awards for the TableId
+            var tableId = awards[0].TableId;
+
+            var deleteQuery = @"
+                DELETE FROM GamePlayerAwards
+                WHERE TableId = @TableId";
+
+            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction);
+
+            var insertQuery = @"
+                INSERT INTO GamePlayerAwards (TableId, PlayerId, Award, FundedBy, FundedGen, PlayerPlace, PlayerCounter, UpdatedAt)
+                VALUES (@TableId, @PlayerId, @Award, @FundedBy, @FundedGen, @PlayerPlace, @PlayerCounter, @UpdatedAt)";
+
+            foreach (var row in awards)
+            {
+                await connection.ExecuteAsync(insertQuery, row, transaction);
+            }
+        }
+
+        private async Task UpsertParameterChangesAsync(SqlConnection connection, SqlTransaction transaction, List<ParameterChange> changes)
+        {
+            // Even if there are no changes we still want to clear existing to maintain sync if reupload happens
+            int tableId = 0;
+            if (changes != null && changes.Count > 0)
+            {
+                tableId = changes[0].TableId;
+            }
+            else
+            {
+                // Derive TableId from transaction context is not available; if list is empty, we cannot know TableId.
+                // In our workflow, ParseParameterChanges is executed with the same GameLogData. We can safely skip if empty.
+                return;
+            }
+
+            var deleteQuery = @"
+                DELETE FROM ParameterChanges
+                WHERE TableId = @TableId";
+
+            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction);
+
+            if (changes.Count == 0)
+            {
+                return;
+            }
+
+            var insertQuery = @"
+                INSERT INTO ParameterChanges (TableId, Parameter, Generation, IncreasedTo, IncreasedBy, UpdatedAt)
+                VALUES (@TableId, @Parameter, @Generation, @IncreasedTo, @IncreasedBy, @UpdatedAt)";
+
+            foreach (var row in changes)
+            {
+                await connection.ExecuteAsync(insertQuery, row, transaction);
             }
         }
     }
