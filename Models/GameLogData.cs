@@ -91,6 +91,21 @@ namespace BgaTmScraperRegistry.Models
 
         [JsonProperty("elo_data")]
         public GameLogEloData EloData { get; set; }
+
+        [JsonProperty("starting_hand")]
+        public StartingHand StartingHand { get; set; }
+    }
+
+    public class StartingHand
+    {
+        [JsonProperty("corporations")]
+        public List<string> Corporations { get; set; }
+
+        [JsonProperty("preludes")]
+        public List<string> Preludes { get; set; }
+
+        [JsonProperty("project_cards")]
+        public List<string> ProjectCards { get; set; }
     }
 
     public class GameLogEloData
@@ -141,7 +156,7 @@ namespace BgaTmScraperRegistry.Models
         public string TileLocation { get; set; }
 
         [JsonProperty("game_state")]
-        public object GameState { get; set; }
+        public GameState GameState { get; set; }
     }
 
     public class GameLogMetadata
