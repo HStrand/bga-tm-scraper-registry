@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using BgaTmScraperRegistry.Models;
@@ -24,27 +25,11 @@ namespace BgaTmScraperRegistry.Services
             if (gameLogData == null)
                 throw new ArgumentNullException(nameof(gameLogData));
 
-            // Parse TableId from ReplayId - fail if this fails
-            if (!int.TryParse(gameLogData.ReplayId, out int tableId))
-            {
-                throw new ArgumentException($"Cannot parse ReplayId '{gameLogData.ReplayId}' to integer", nameof(gameLogData));
-            }
+            var parser = new GameLogDataParser();
+            var gameStats = parser.ParseGameStats(gameLogData);
+            var playerStats = parser.ParseGamePlayerStats(gameLogData);
 
-            // Parse duration - set to null if parsing fails
-            int? durationMinutes = ParseDurationToMinutes(gameLogData.GameDuration);
-
-            // Generations can be null
-            int? generations = gameLogData.Generations;
-
-            var gameStats = new GameStats
-            {
-                TableId = tableId,
-                Generations = generations,
-                DurationMinutes = durationMinutes,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            _logger.LogInformation($"Upserting GameStats for TableId {tableId}: Generations={generations}, DurationMinutes={durationMinutes}");
+            _logger.LogInformation($"Upserting GameStats for TableId {gameStats.TableId}: Generations={gameStats.Generations}, DurationMinutes={gameStats.DurationMinutes}");
 
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -53,14 +38,15 @@ namespace BgaTmScraperRegistry.Services
             try
             {
                 await UpsertGameStatsAsync(connection, transaction, gameStats);
+                await UpsertGamePlayerStatsAsync(connection, transaction, playerStats);
                 transaction.Commit();
                 
-                _logger.LogInformation($"Successfully upserted GameStats for TableId {tableId}");
+                _logger.LogInformation($"Successfully upserted GameStats for TableId {gameStats.TableId}");
             }
             catch (Exception ex)
             {
                 transaction.Rollback();
-                _logger.LogError(ex, $"Error upserting GameStats for TableId {tableId}");
+                _logger.LogError(ex, $"Error upserting GameStats for TableId {gameStats.TableId}");
                 throw;
             }
         }
@@ -84,49 +70,38 @@ namespace BgaTmScraperRegistry.Services
                 mergeQuery,
                 new
                 {
-                    TableId = gameStats.TableId,
-                    Generations = gameStats.Generations,
-                    DurationMinutes = gameStats.DurationMinutes,
-                    UpdatedAt = gameStats.UpdatedAt
+                    gameStats.TableId,
+                    gameStats.Generations,
+                    gameStats.DurationMinutes,
+                    gameStats.UpdatedAt
                 },
                 transaction);
         }
 
-        private int? ParseDurationToMinutes(string gameDuration)
+        private async Task UpsertGamePlayerStatsAsync(SqlConnection connection, SqlTransaction transaction, List<GamePlayerStats> playerStats)
         {
-            if (string.IsNullOrWhiteSpace(gameDuration))
-            {
-                _logger.LogWarning("GameDuration is null or empty, setting DurationMinutes to null");
-                return null;
-            }
+            var mergeQuery = @"
+                MERGE GamePlayerStats AS target
+                USING (SELECT @TableId AS TableId, @PlayerId AS PlayerId, @Corporation AS Corporation, @FinalScore AS FinalScore, @FinalTr AS FinalTr, @AwardPoints AS AwardPoints, @MilestonePoints AS MilestonePoints, @CityPoints AS CityPoints, @GreeneryPoints AS GreeneryPoints, @CardPoints AS CardPoints, @UpdatedAt AS UpdatedAt) AS source
+                ON target.TableId = source.TableId AND target.PlayerId = source.PlayerId
+                WHEN MATCHED THEN
+                    UPDATE SET
+                        Corporation = source.Corporation,
+                        FinalScore = source.FinalScore,
+                        FinalTr = source.FinalTr,
+                        AwardPoints = source.AwardPoints,
+                        MilestonePoints = source.MilestonePoints,
+                        CityPoints = source.CityPoints,
+                        GreeneryPoints = source.GreeneryPoints,
+                        CardPoints = source.CardPoints,
+                        UpdatedAt = source.UpdatedAt
+                WHEN NOT MATCHED THEN
+                    INSERT (TableId, PlayerId, Corporation, FinalScore, FinalTr, AwardPoints, MilestonePoints, CityPoints, GreeneryPoints, CardPoints, UpdatedAt)
+                    VALUES (source.TableId, source.PlayerId, source.Corporation, source.FinalScore, source.FinalTr, source.AwardPoints, source.MilestonePoints, source.CityPoints, source.GreeneryPoints, source.CardPoints, source.UpdatedAt);";
 
-            try
+            foreach (var stats in playerStats)
             {
-                // Expected format: "MM:SS" (e.g., "00:55")
-                var parts = gameDuration.Split(':');
-                if (parts.Length != 2)
-                {
-                    _logger.LogWarning($"GameDuration '{gameDuration}' is not in expected MM:SS format, setting DurationMinutes to null");
-                    return null;
-                }
-
-                if (!int.TryParse(parts[0], out int minutes) || !int.TryParse(parts[1], out int seconds))
-                {
-                    _logger.LogWarning($"GameDuration '{gameDuration}' contains non-numeric values, setting DurationMinutes to null");
-                    return null;
-                }
-
-                // Convert to total minutes (round to nearest minute)
-                var totalMinutes = minutes + Math.Round(seconds / 60.0, 0);
-                
-                _logger.LogDebug($"Parsed GameDuration '{gameDuration}' to {totalMinutes} minutes");
-                
-                return (int)totalMinutes;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, $"Error parsing GameDuration '{gameDuration}', setting DurationMinutes to null");
-                return null;
+                await connection.ExecuteAsync(mergeQuery, stats, transaction);
             }
         }
     }
