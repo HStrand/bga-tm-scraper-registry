@@ -36,6 +36,7 @@ namespace BgaTmScraperRegistry.Services
             var gamePlayerAwards = parser.ParseGamePlayerAwards(gameLogData);
             var parameterChanges = parser.ParseParameterChanges(gameLogData);
             var gameCards = parser.ParseGameCards(gameLogData);
+            var cityLocations = parser.ParseGameCityLocations(gameLogData);
 
             _logger.LogInformation($"Upserting GameStats for TableId {gameStats.TableId}: Generations={gameStats.Generations}, DurationMinutes={gameStats.DurationMinutes}");
 
@@ -54,6 +55,7 @@ namespace BgaTmScraperRegistry.Services
                 await UpsertGamePlayerAwardsAsync(connection, transaction, gamePlayerAwards);
                 await UpsertParameterChangesAsync(connection, transaction, parameterChanges);
                 await UpsertGameCardsAsync(connection, transaction, gameCards);
+                await UpsertGameCityLocationsAsync(connection, transaction, cityLocations);
                 transaction.Commit();
                 
                 _logger.LogInformation($"Successfully upserted GameStats for TableId {gameStats.TableId}");
@@ -310,6 +312,31 @@ namespace BgaTmScraperRegistry.Services
             foreach (var row in changes)
             {
                 await connection.ExecuteAsync(insertQuery, row, transaction);
+            }
+        }
+
+        private async Task UpsertGameCityLocationsAsync(SqlConnection connection, SqlTransaction transaction, List<GameCityLocation> cityLocations)
+        {
+            if (cityLocations == null || cityLocations.Count == 0)
+            {
+                return;
+            }
+
+            var tableId = cityLocations[0].TableId;
+
+            var deleteQuery = @"
+                DELETE FROM GameCityLocations
+                WHERE TableId = @TableId";
+
+            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction);
+
+            var insertQuery = @"
+                INSERT INTO GameCityLocations (TableId, PlayerId, CityLocation, Points, PlacedGen, UpdatedAt)
+                VALUES (@TableId, @PlayerId, @CityLocation, @Points, @PlacedGen, @UpdatedAt)";
+
+            foreach (var loc in cityLocations)
+            {
+                await connection.ExecuteAsync(insertQuery, loc, transaction);
             }
         }
     }

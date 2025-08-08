@@ -526,6 +526,212 @@ namespace BgaTmScraperRegistry.Services
             return changes;
         }
 
+        public List<GameCityLocation> ParseGameCityLocations(GameLogData gameLogData)
+        {
+            if (gameLogData == null)
+                throw new ArgumentNullException(nameof(gameLogData));
+
+            if (!int.TryParse(gameLogData.ReplayId, out int tableId))
+                throw new ArgumentException($"Cannot parse ReplayId '{gameLogData.ReplayId}' to integer", nameof(gameLogData));
+
+            var results = new List<GameCityLocation>();
+
+            // Final state
+            var finalMove = gameLogData.Moves != null && gameLogData.Moves.Count > 0
+                ? gameLogData.Moves[gameLogData.Moves.Count - 1]
+                : null;
+
+            var finalState = finalMove?.GameState;
+            var finalPlayerVp = finalState?.PlayerVp;
+
+            if (finalPlayerVp == null || finalPlayerVp.Count == 0)
+            {
+                return results;
+            }
+
+            // Helper to find placed generation
+            int? FindPlacedGenForCity(string playerIdStr, string cityLocation)
+            {
+                if (string.IsNullOrWhiteSpace(playerIdStr) || gameLogData.Moves == null)
+                    return null;
+
+                // Normalize helpers
+                static string ExtractCoords(string s)
+                {
+                    if (string.IsNullOrWhiteSpace(s)) return null;
+                    // Prefer coords inside parentheses if present
+                    int l = s.LastIndexOf('(');
+                    int r = s.LastIndexOf(')');
+                    if (l >= 0 && r > l)
+                    {
+                        var inside = s.Substring(l + 1, r - l - 1).Trim();
+                        if (inside.Contains(",")) return inside.Replace(" ", "");
+                    }
+                    // Fallback: try to find a "x,y" token anywhere
+                    var parts = s.Split(new[] { ' ', '|', ':' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var p in parts.Reverse())
+                    {
+                        var t = p.Trim().TrimEnd('.', ',');
+                        if (t.Contains(","))
+                        {
+                            var nums = t.Split(',');
+                            if (nums.Length == 2 && int.TryParse(nums[0], out _) && int.TryParse(nums[1], out _))
+                            {
+                                return (nums[0] + "," + nums[1]).Replace(" ", "");
+                            }
+                        }
+                    }
+                    return null;
+                }
+
+                static string ExtractMap(string s)
+                {
+                    if (string.IsNullOrWhiteSpace(s)) return null;
+                    // Look for "<Map> Hex"
+                    var idx = s.IndexOf("Hex", StringComparison.OrdinalIgnoreCase);
+                    if (idx > 0)
+                    {
+                        var left = s.Substring(0, idx).Trim();
+                        // Take last token before "Hex" as map name
+                        var tokens = left.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (tokens.Length > 0) return tokens[tokens.Length - 1].Trim().ToLowerInvariant();
+                    }
+                    return null;
+                }
+
+                static (bool isHex, string map, string coords) NormalizeLoc(string s)
+                {
+                    if (string.IsNullOrWhiteSpace(s)) return (false, null, null);
+                    var coords = ExtractCoords(s);
+                    var map = ExtractMap(s);
+                    var isHex = coords != null;
+                    return (isHex, map, coords);
+                }
+
+                static bool HexMatch((bool isHex, string map, string coords) a, (bool isHex, string map, string coords) b)
+                {
+                    if (!(a.isHex && b.isHex)) return false;
+                    if (!string.Equals(a.coords, b.coords, StringComparison.OrdinalIgnoreCase)) return false;
+                    // If both have map, require equal; if either missing map, accept coords match
+                    if (!string.IsNullOrEmpty(a.map) && !string.IsNullOrEmpty(b.map))
+                    {
+                        return string.Equals(a.map, b.map, StringComparison.OrdinalIgnoreCase);
+                    }
+                    return true;
+                }
+
+                var normFinal = NormalizeLoc(cityLocation);
+
+                // First pass: use structured fields from place_tile moves for the same player
+                foreach (var m in gameLogData.Moves)
+                {
+                    if (!string.Equals(m?.PlayerId, playerIdStr, StringComparison.Ordinal))
+                        continue;
+
+                    var gen = m?.GameState?.Generation;
+                    if (!gen.HasValue) continue;
+
+                    // Fast path: action_type and tile fields
+                    if (string.Equals(m?.ActionType, "place_tile", StringComparison.OrdinalIgnoreCase) &&
+                        !string.IsNullOrWhiteSpace(m?.TilePlaced) &&
+                        m.TilePlaced.Equals("City", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var loc = m.TileLocation ?? string.Empty;
+
+                        // Direct substring match either direction
+                        if (!string.IsNullOrWhiteSpace(loc) &&
+                            (loc.IndexOf(cityLocation, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             cityLocation.IndexOf(loc, StringComparison.OrdinalIgnoreCase) >= 0))
+                        {
+                            return gen.Value;
+                        }
+
+                        // Normalize and compare by map/coords
+                        var normMove = NormalizeLoc(loc);
+                        if (HexMatch(normFinal, normMove)) return gen.Value;
+                    }
+
+                    // Flexible description patterns for city placement
+                    var desc = m?.Description ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(desc)) continue;
+
+                    if (desc.IndexOf("places City", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        desc.IndexOf("places tile City", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        // Direct substring match
+                        if (desc.IndexOf(cityLocation, StringComparison.OrdinalIgnoreCase) >= 0)
+                            return gen.Value;
+
+                        // Try normalize description by extracting a location-ish tail (use whole desc)
+                        var normDesc = NormalizeLoc(desc);
+                        if (HexMatch(normFinal, normDesc)) return gen.Value;
+                    }
+                }
+
+                // Fallback for named cities: use card play event as proxy when no explicit placement found
+                // Only if final CityLocation doesn't look like a hex location
+                if (!normFinal.isHex)
+                {
+                    foreach (var m in gameLogData.Moves)
+                    {
+                        if (!string.Equals(m?.PlayerId, playerIdStr, StringComparison.Ordinal))
+                            continue;
+
+                        var gen = m?.GameState?.Generation;
+                        if (!gen.HasValue) continue;
+
+                        var desc = m?.Description ?? string.Empty;
+
+                        if (!string.IsNullOrWhiteSpace(m?.CardPlayed) &&
+                            string.Equals(m.CardPlayed, cityLocation, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return gen.Value;
+                        }
+
+                        if (desc.IndexOf("plays card ", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                            desc.IndexOf(cityLocation, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            return gen.Value;
+                        }
+                    }
+                }
+
+                // Not found
+                return null;
+            }
+
+            foreach (var pv in finalPlayerVp)
+            {
+                var playerIdStr = pv.Key;
+                if (!int.TryParse(playerIdStr, out int playerId))
+                    continue;
+
+                var cities = pv.Value?.Details?.Cities;
+                if (cities == null || cities.Count == 0)
+                    continue;
+
+                foreach (var kv in cities)
+                {
+                    var location = kv.Key;
+                    var vp = kv.Value?.Vp ?? 0;
+
+                    var placedGen = FindPlacedGenForCity(playerIdStr, location);
+
+                    results.Add(new GameCityLocation
+                    {
+                        TableId = tableId,
+                        PlayerId = playerId,
+                        CityLocation = location,
+                        Points = vp,
+                        PlacedGen = placedGen,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            return results;
+        }
+
         public List<GameCard> ParseGameCards(GameLogData gameLogData)
         {
             if (gameLogData == null)
