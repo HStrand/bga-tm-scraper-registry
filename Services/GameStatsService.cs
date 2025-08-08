@@ -37,6 +37,7 @@ namespace BgaTmScraperRegistry.Services
             var parameterChanges = parser.ParseParameterChanges(gameLogData);
             var gameCards = parser.ParseGameCards(gameLogData);
             var cityLocations = parser.ParseGameCityLocations(gameLogData);
+            var greeneryLocations = parser.ParseGameGreeneryLocations(gameLogData);
 
             _logger.LogInformation($"Upserting GameStats for TableId {gameStats.TableId}: Generations={gameStats.Generations}, DurationMinutes={gameStats.DurationMinutes}");
 
@@ -56,6 +57,7 @@ namespace BgaTmScraperRegistry.Services
                 await UpsertParameterChangesAsync(connection, transaction, parameterChanges);
                 await UpsertGameCardsAsync(connection, transaction, gameCards);
                 await UpsertGameCityLocationsAsync(connection, transaction, cityLocations);
+                await UpsertGameGreeneryLocationsAsync(connection, transaction, greeneryLocations);
                 transaction.Commit();
                 
                 _logger.LogInformation($"Successfully upserted GameStats for TableId {gameStats.TableId}");
@@ -335,6 +337,31 @@ namespace BgaTmScraperRegistry.Services
                 VALUES (@TableId, @PlayerId, @CityLocation, @Points, @PlacedGen, @UpdatedAt)";
 
             foreach (var loc in cityLocations)
+            {
+                await connection.ExecuteAsync(insertQuery, loc, transaction);
+            }
+        }
+
+        private async Task UpsertGameGreeneryLocationsAsync(SqlConnection connection, SqlTransaction transaction, List<GameGreeneryLocation> greeneryLocations)
+        {
+            if (greeneryLocations == null || greeneryLocations.Count == 0)
+            {
+                return;
+            }
+
+            var tableId = greeneryLocations[0].TableId;
+
+            var deleteQuery = @"
+                DELETE FROM GameGreeneryLocations
+                WHERE TableId = @TableId";
+
+            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction);
+
+            var insertQuery = @"
+                INSERT INTO GameGreeneryLocations (TableId, PlayerId, GreeneryLocation, PlacedGen, UpdatedAt)
+                VALUES (@TableId, @PlayerId, @GreeneryLocation, @PlacedGen, @UpdatedAt)";
+
+            foreach (var loc in greeneryLocations)
             {
                 await connection.ExecuteAsync(insertQuery, loc, transaction);
             }
