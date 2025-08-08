@@ -14,6 +14,8 @@ namespace BgaTmScraperRegistry.Models
         public int? BoughtGen { get; set; }
         public int? PlayedGen { get; set; }
         public int? VpScored { get; set; }
+        public string DrawType { get; set; }
+        public string DrawReason { get; set; }
         public DateTime UpdatedAt { get; set; }
     }
 }

@@ -565,6 +565,22 @@ namespace BgaTmScraperRegistry.Services
                            .Where(x => !string.IsNullOrWhiteSpace(x));
             }
 
+            // Ensure POV starting-hand project cards are marked as seen/drawn in generation 1
+            if (gameLogData.Players != null &&
+                gameLogData.Players.TryGetValue(gameLogData.PlayerPerspective, out var povPlayer) &&
+                povPlayer?.StartingHand?.ProjectCards != null)
+            {
+                foreach (var shCard in povPlayer.StartingHand.ProjectCards)
+                {
+                    if (string.IsNullOrWhiteSpace(shCard)) continue;
+                    var gc = GetOrCreate(shCard);
+                    if (!gc.SeenGen.HasValue) gc.SeenGen = 1;
+                    if (!gc.DrawnGen.HasValue) gc.DrawnGen = 1;
+                    if (gc.DrawType == null) gc.DrawType = "StartingHand";
+                    if (gc.DrawReason == null) gc.DrawReason = "Starting Hand";
+                }
+            }
+
             var draftEvents = new Dictionary<string, List<(int MoveNumber, int Generation, string PlayerId)>>(StringComparer.OrdinalIgnoreCase);
 
             if (gameLogData.Moves != null)
@@ -733,6 +749,8 @@ namespace BgaTmScraperRegistry.Services
                             var gc = GetOrCreate(draftedName);
                             if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
                             if (!gc.DraftedGen.HasValue) gc.DraftedGen = gen.Value;
+                            if (gc.DrawType == null) gc.DrawType = "Draft";
+                            if (gc.DrawReason == null) gc.DrawReason = "Draft";
                         }
                     }
 
@@ -832,6 +850,151 @@ namespace BgaTmScraperRegistry.Services
                             var gc = GetOrCreate(name);
                             if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
                             if (!gc.DrawnGen.HasValue) gc.DrawnGen = gen.Value;
+                        }
+
+                        // Draft detection precedence for draws (covers pass + draft listing cases)
+                        bool classifiedAsDraft = false;
+                        if (drawnNames.Count > 0)
+                        {
+                            bool hasResearchDraft = desc.IndexOf("Research draft", StringComparison.OrdinalIgnoreCase) >= 0;
+                            bool draws4 = desc.IndexOf("draws 4 card", StringComparison.OrdinalIgnoreCase) >= 0;
+                            bool actionPass = string.Equals(move?.ActionType, "pass", StringComparison.OrdinalIgnoreCase);
+
+                            bool prevGenLower = false;
+                            if (move?.MoveNumber.HasValue == true && gen.HasValue)
+                            {
+                                var prevMove = gameLogData.Moves?
+                                    .LastOrDefault(m => m != null && m.MoveNumber.HasValue && m.MoveNumber.Value < move.MoveNumber.Value);
+                                if (prevMove?.GameState?.Generation.HasValue == true)
+                                {
+                                    prevGenLower = prevMove.GameState.Generation.Value < gen.Value;
+                                }
+                            }
+
+                            bool mentionsNewGen = desc.IndexOf("New generation", StringComparison.OrdinalIgnoreCase) >= 0
+                                                || desc.IndexOf("starting player for this generation", StringComparison.OrdinalIgnoreCase) >= 0;
+                            bool namesCount4 = drawnNames.Count == 4;
+
+                            if (hasResearchDraft || (draws4 && (actionPass || prevGenLower || mentionsNewGen || namesCount4)))
+                            {
+                                foreach (var nm in drawnNames)
+                                {
+                                    var gc = GetOrCreate(nm);
+                                    if (gc.DrawType == null) gc.DrawType = "Draft";
+                                    if (gc.DrawReason == null) gc.DrawReason = "Draft";
+                                }
+                                classifiedAsDraft = true;
+                            }
+                        }
+
+                        // Infer DrawType/DrawReason by looking back up to 3 same-player moves when not draft
+                        if (!classifiedAsDraft && drawnNames.Count > 0 && move?.MoveNumber.HasValue == true)
+                        {
+                            string inferredType = null;
+                            string inferredReason = null;
+
+                            var lookback = gameLogData.Moves?
+                                .Where(m => m != null
+                                            && m.MoveNumber.HasValue
+                                            && m.MoveNumber.Value < move.MoveNumber.Value
+                                            && string.Equals(m.PlayerId, move.PlayerId, StringComparison.Ordinal))
+                                .OrderByDescending(m => m.MoveNumber.Value)
+                                .Take(3)
+                                .ToList() ?? new List<GameLogMove>();
+
+                            foreach (var lb in lookback)
+                            {
+                                var ldesc = lb?.Description ?? string.Empty;
+
+                                // Activation
+                                if (string.Equals(lb?.ActionType, "activate_card", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    var segs = ldesc.Split('|');
+                                    foreach (var seg2 in segs)
+                                    {
+                                        var s2 = seg2.Trim();
+                                        var idxAct = s2.IndexOf("activates ", StringComparison.OrdinalIgnoreCase);
+                                        if (idxAct >= 0)
+                                        {
+                                            var name = s2.Substring(idxAct + "activates ".Length).Trim();
+                                            if (!string.IsNullOrWhiteSpace(name))
+                                            {
+                                                inferredType = "Activation";
+                                                inferredReason = name;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // PlayCard
+                                if (inferredType == null && string.Equals(lb?.ActionType, "play_card", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    var name = lb?.CardPlayed;
+                                    if (string.IsNullOrWhiteSpace(name))
+                                    {
+                                        var segs = ldesc.Split('|');
+                                        foreach (var seg2 in segs)
+                                        {
+                                            var s2 = seg2.Trim();
+                                            const string playsCardPrefix = "plays card ";
+                                            var idxPc2 = s2.IndexOf(playsCardPrefix, StringComparison.OrdinalIgnoreCase);
+                                            if (idxPc2 >= 0)
+                                            {
+                                                name = s2.Substring(idxPc2 + playsCardPrefix.Length).Trim();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(name))
+                                    {
+                                        inferredType = "PlayCard";
+                                        inferredReason = name;
+                                    }
+                                }
+
+                                // Tile
+                                if (inferredType == null && ldesc.IndexOf("places tile", StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    var segs = ldesc.Split('|');
+                                    foreach (var seg2 in segs)
+                                    {
+                                        var s2 = seg2.Trim();
+                                        string loc = null;
+                                        var idxInto = s2.IndexOf(" into ", StringComparison.OrdinalIgnoreCase);
+                                        if (idxInto >= 0)
+                                        {
+                                            loc = s2.Substring(idxInto + " into ".Length).Trim();
+                                        }
+                                        else
+                                        {
+                                            var idxAt = s2.IndexOf(" at ", StringComparison.OrdinalIgnoreCase);
+                                            if (idxAt >= 0)
+                                            {
+                                                loc = s2.Substring(idxAt + " at ".Length).Trim();
+                                            }
+                                        }
+                                        if (!string.IsNullOrWhiteSpace(loc))
+                                        {
+                                            inferredType = "Tile";
+                                            inferredReason = loc;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (inferredType != null) break;
+                            }
+
+                            if (inferredType != null)
+                            {
+                                foreach (var nm in drawnNames)
+                                {
+                                    var gc = GetOrCreate(nm);
+                                    if (gc.DrawType == null) gc.DrawType = inferredType;
+                                    if (gc.DrawReason == null) gc.DrawReason = inferredReason;
+                                }
+                            }
                         }
 
                         // DrawSession resolution: examine next N moves by same player

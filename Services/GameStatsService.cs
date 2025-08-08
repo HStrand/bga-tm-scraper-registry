@@ -216,8 +216,8 @@ namespace BgaTmScraperRegistry.Services
             await connection.ExecuteAsync(deleteQuery, new { TableId = tableId, PlayerId = playerId }, transaction);
 
             var insertQuery = @"
-                INSERT INTO GameCards (TableId, PlayerId, SeenGen, DrawnGen, KeptGen, DraftedGen, BoughtGen, PlayedGen, VpScored, UpdatedAt)
-                VALUES (@TableId, @PlayerId, @SeenGen, @DrawnGen, @KeptGen, @DraftedGen, @BoughtGen, @PlayedGen, @VpScored, @UpdatedAt)";
+                INSERT INTO GameCards (TableId, PlayerId, SeenGen, DrawnGen, KeptGen, DraftedGen, BoughtGen, DrawType, DrawReason, PlayedGen, VpScored, UpdatedAt)
+                VALUES (@TableId, @PlayerId, @SeenGen, @DrawnGen, @KeptGen, @DraftedGen, @BoughtGen, @DrawType, @DrawReason, @PlayedGen, @VpScored, @UpdatedAt)";
 
             foreach (var row in cards)
             {
