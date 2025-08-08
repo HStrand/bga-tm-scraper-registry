@@ -35,6 +35,7 @@ namespace BgaTmScraperRegistry.Services
             var gameMilestones = parser.ParseGameMilestones(gameLogData);
             var gamePlayerAwards = parser.ParseGamePlayerAwards(gameLogData);
             var parameterChanges = parser.ParseParameterChanges(gameLogData);
+            var gameCards = parser.ParseGameCards(gameLogData);
 
             _logger.LogInformation($"Upserting GameStats for TableId {gameStats.TableId}: Generations={gameStats.Generations}, DurationMinutes={gameStats.DurationMinutes}");
 
@@ -52,6 +53,7 @@ namespace BgaTmScraperRegistry.Services
                 await UpsertGameMilestonesAsync(connection, transaction, gameMilestones);
                 await UpsertGamePlayerAwardsAsync(connection, transaction, gamePlayerAwards);
                 await UpsertParameterChangesAsync(connection, transaction, parameterChanges);
+                await UpsertGameCardsAsync(connection, transaction, gameCards);
                 transaction.Commit();
                 
                 _logger.LogInformation($"Successfully upserted GameStats for TableId {gameStats.TableId}");
@@ -195,7 +197,34 @@ namespace BgaTmScraperRegistry.Services
                 }
             }
         }
+ 
+        private async Task UpsertGameCardsAsync(SqlConnection connection, SqlTransaction transaction, List<GameCard> cards)
+        {
+            if (cards == null || cards.Count == 0)
+            {
+                return;
+            }
 
+            // Sync strategy for POV: replace all rows for (TableId, PlayerId)
+            var tableId = cards[0].TableId;
+            var playerId = cards[0].PlayerId;
+
+            var deleteQuery = @"
+                DELETE FROM GameCards
+                WHERE TableId = @TableId AND PlayerId = @PlayerId";
+
+            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId, PlayerId = playerId }, transaction);
+
+            var insertQuery = @"
+                INSERT INTO GameCards (TableId, PlayerId, SeenGen, DrawnGen, DraftedGen, BoughtGen, PlayedGen, VpScored, UpdatedAt)
+                VALUES (@TableId, @PlayerId, @SeenGen, @DrawnGen, @DraftedGen, @BoughtGen, @PlayedGen, @VpScored, @UpdatedAt)";
+
+            foreach (var row in cards)
+            {
+                await connection.ExecuteAsync(insertQuery, row, transaction);
+            }
+        }
+ 
         private async Task UpsertGameMilestonesAsync(SqlConnection connection, SqlTransaction transaction, List<GameMilestone> milestones)
         {
             if (milestones == null || milestones.Count == 0)

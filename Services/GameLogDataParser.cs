@@ -526,6 +526,236 @@ namespace BgaTmScraperRegistry.Services
             return changes;
         }
 
+        public List<GameCard> ParseGameCards(GameLogData gameLogData)
+        {
+            if (gameLogData == null)
+                throw new ArgumentNullException(nameof(gameLogData));
+
+            if (!int.TryParse(gameLogData.ReplayId, out int tableId))
+                throw new ArgumentException($"Cannot parse ReplayId '{gameLogData.ReplayId}' to integer", nameof(gameLogData));
+
+            if (!int.TryParse(gameLogData.PlayerPerspective, out int povId))
+                throw new ArgumentException($"Cannot parse PlayerPerspective '{gameLogData.PlayerPerspective}' to integer", nameof(gameLogData));
+
+            var results = new Dictionary<string, GameCard>(StringComparer.OrdinalIgnoreCase);
+
+            GameCard GetOrCreate(string cardName)
+            {
+                if (!results.TryGetValue(cardName, out var gc))
+                {
+                    gc = new GameCard
+                    {
+                        TableId = tableId,
+                        PlayerId = povId,
+                        Card = cardName,
+                        VpScored = 0,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    results[cardName] = gc;
+                }
+                gc.UpdatedAt = DateTime.UtcNow;
+                return gc;
+            }
+
+            IEnumerable<string> SplitCardList(string list)
+            {
+                if (string.IsNullOrWhiteSpace(list))
+                    return Enumerable.Empty<string>();
+                return list.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                           .Select(x => x.Trim())
+                           .Where(x => !string.IsNullOrWhiteSpace(x));
+            }
+
+            if (gameLogData.Moves != null)
+            {
+                foreach (var move in gameLogData.Moves)
+                {
+                    var desc = move?.Description ?? string.Empty;
+                    var gen = move?.GameState?.Generation;
+
+                    // SeenGen from any "draws <list>" that explicitly lists names (broad strategy)
+                    if (gen.HasValue && desc.IndexOf("draws", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        var segments = desc.Split('|');
+                        foreach (var seg in segments)
+                        {
+                            var s = seg.Trim();
+                            int idx = s.IndexOf("draws ", StringComparison.OrdinalIgnoreCase);
+                            if (idx >= 0)
+                            {
+                                var after = s.Substring(idx + "draws ".Length).Trim();
+                                if (!string.IsNullOrWhiteSpace(after) && !char.IsDigit(after[0]))
+                                {
+                                    foreach (var name in SplitCardList(after))
+                                    {
+                                        var gc = GetOrCreate(name);
+                                        if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // DraftedGen: only for POV draft_card moves
+                    if (gen.HasValue && string.Equals(move?.ActionType, "draft_card", StringComparison.OrdinalIgnoreCase) && move?.PlayerId == gameLogData.PlayerPerspective)
+                    {
+                        string draftedName = null;
+                        var segments = desc.Split('|');
+                        foreach (var seg in segments)
+                        {
+                            var s = seg.Trim();
+                            const string youPrefix = "You draft ";
+                            if (s.StartsWith(youPrefix, StringComparison.OrdinalIgnoreCase))
+                            {
+                                draftedName = s.Substring(youPrefix.Length).Trim();
+                                break;
+                            }
+                            if (!string.IsNullOrEmpty(move?.PlayerName))
+                            {
+                                var namePrefix = move.PlayerName + " drafts ";
+                                if (s.StartsWith(namePrefix, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    draftedName = s.Substring(namePrefix.Length).Trim();
+                                    break;
+                                }
+                            }
+                            const string draftWord = "draft ";
+                            var i2 = s.IndexOf(draftWord, StringComparison.OrdinalIgnoreCase);
+                            if (i2 >= 0)
+                            {
+                                draftedName = s.Substring(i2 + draftWord.Length).Trim();
+                                break;
+                            }
+                        }
+                        if (!string.IsNullOrWhiteSpace(draftedName))
+                        {
+                            var gc = GetOrCreate(draftedName);
+                            if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
+                            if (!gc.DraftedGen.HasValue) gc.DraftedGen = gen.Value;
+                        }
+                    }
+
+                    // BoughtGen: POV purchases ("You buy X" or "<POV name> buys X"), supports multi-buy in a single line
+                    if (gen.HasValue && !string.IsNullOrWhiteSpace(desc))
+                    {
+                        var segments = desc.Split('|');
+                        foreach (var seg in segments)
+                        {
+                            var s = seg.Trim();
+
+                            const string youBuy = "You buy ";
+                            if (s.StartsWith(youBuy, StringComparison.OrdinalIgnoreCase))
+                            {
+                                var name = s.Substring(youBuy.Length).Trim();
+                                if (!string.IsNullOrWhiteSpace(name))
+                                {
+                                    var gc = GetOrCreate(name);
+                                    if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
+                                    if (!gc.BoughtGen.HasValue) gc.BoughtGen = gen.Value;
+                                }
+                                continue;
+                            }
+
+                            if (!string.IsNullOrEmpty(move?.PlayerName) && move?.PlayerId == gameLogData.PlayerPerspective)
+                            {
+                                var namePrefix = move.PlayerName + " buys ";
+                                if (s.StartsWith(namePrefix, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    var name = s.Substring(namePrefix.Length).Trim();
+                                    if (!string.IsNullOrWhiteSpace(name))
+                                    {
+                                        var gc = GetOrCreate(name);
+                                        if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
+                                        if (!gc.BoughtGen.HasValue) gc.BoughtGen = gen.Value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // DrawnGen: POV explicit draws with names
+                    if (gen.HasValue && move?.PlayerId == gameLogData.PlayerPerspective && desc.IndexOf("draws", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        var segments = desc.Split('|');
+                        foreach (var seg in segments)
+                        {
+                            var s = seg.Trim();
+                            int idx = s.IndexOf("draws ", StringComparison.OrdinalIgnoreCase);
+                            if (idx >= 0)
+                            {
+                                var after = s.Substring(idx + "draws ".Length).Trim();
+                                if (!string.IsNullOrWhiteSpace(after) && !char.IsDigit(after[0]))
+                                {
+                                    foreach (var name in SplitCardList(after))
+                                    {
+                                        var gc = GetOrCreate(name);
+                                        if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
+                                        if (!gc.DrawnGen.HasValue) gc.DrawnGen = gen.Value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // PlayedGen: POV plays a card (via CardPlayed or description) - ignore standard projects
+                    if (gen.HasValue && move?.PlayerId == gameLogData.PlayerPerspective && !string.Equals(move?.ActionType, "standard_project", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string playedName = move?.CardPlayed;
+                        if (string.IsNullOrWhiteSpace(playedName))
+                        {
+                            var segments = desc.Split('|');
+                            foreach (var seg in segments)
+                            {
+                                var s = seg.Trim();
+                                const string youPlay = "You play ";
+                                if (s.StartsWith(youPlay, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    playedName = s.Substring(youPlay.Length).Trim();
+                                    break;
+                                }
+                                if (!string.IsNullOrEmpty(move?.PlayerName))
+                                {
+                                    var namePrefix = move.PlayerName + " plays ";
+                                    if (s.StartsWith(namePrefix, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        playedName = s.Substring(namePrefix.Length).Trim();
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (!string.IsNullOrWhiteSpace(playedName))
+                        {
+                            var gc = GetOrCreate(playedName);
+                            if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
+                            if (!gc.PlayedGen.HasValue) gc.PlayedGen = gen.Value;
+                        }
+                    }
+                }
+            }
+
+            // VP scored from final state for POV
+            var finalMove = gameLogData.Moves != null && gameLogData.Moves.Count > 0
+                ? gameLogData.Moves[gameLogData.Moves.Count - 1]
+                : null;
+
+            if (finalMove?.GameState?.PlayerVp != null &&
+                finalMove.GameState.PlayerVp.TryGetValue(gameLogData.PlayerPerspective, out var povVp) &&
+                povVp?.Details?.Cards != null)
+            {
+                foreach (var kv in povVp.Details.Cards)
+                {
+                    var name = kv.Key;
+                    var vp = kv.Value?.Vp;
+
+                    var gc = GetOrCreate(name);
+                    gc.VpScored = vp;
+                }
+            }
+
+            return results.Values.ToList();
+        }
+
         private int? GetVpBreakdownValue(Dictionary<string, object> vpBreakdown, string key)
         {
             if (vpBreakdown.TryGetValue(key, out object value) && value != null)
