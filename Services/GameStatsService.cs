@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
 using BgaTmScraperRegistry.Models;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Data;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace BgaTmScraperRegistry.Services
 {
@@ -211,24 +211,78 @@ namespace BgaTmScraperRegistry.Services
                 return;
             }
 
-            // Sync strategy for POV: replace all rows for (TableId, PlayerId)
             var tableId = cards[0].TableId;
             var playerId = cards[0].PlayerId;
 
-            var deleteQuery = @"
-                DELETE FROM GameCards
-                WHERE TableId = @TableId AND PlayerId = @PlayerId";
+            // Create staging table
+            var createStage = @"
+                CREATE TABLE #GameCardsStage
+                (
+                    TableId INT NOT NULL,
+                    PlayerId INT NOT NULL,
+                    SeenGen INT NULL,
+                    DrawnGen INT NULL,
+                    KeptGen INT NULL,
+                    DraftedGen INT NULL,
+                    BoughtGen INT NULL,
+                    DrawType NVARCHAR(255) NULL,
+                    DrawReason NVARCHAR(255) NULL,
+                    PlayedGen INT NULL,
+                    VpScored INT NULL,
+                    UpdatedAt DATETIME NOT NULL
+                );";
+            await connection.ExecuteAsync(createStage, transaction: transaction);
 
+            // Build DataTable
+            var dt = new DataTable();
+            dt.Columns.Add("TableId", typeof(int));
+            dt.Columns.Add("PlayerId", typeof(int));
+            dt.Columns.Add("SeenGen", typeof(int));
+            dt.Columns.Add("DrawnGen", typeof(int));
+            dt.Columns.Add("KeptGen", typeof(int));
+            dt.Columns.Add("DraftedGen", typeof(int));
+            dt.Columns.Add("BoughtGen", typeof(int));
+            dt.Columns.Add("DrawType", typeof(string));
+            dt.Columns.Add("DrawReason", typeof(string));
+            dt.Columns.Add("PlayedGen", typeof(int));
+            dt.Columns.Add("VpScored", typeof(int));
+            dt.Columns.Add("UpdatedAt", typeof(DateTime));
+
+            foreach (var c in cards)
+            {
+                dt.Rows.Add(
+                    c.TableId,
+                    c.PlayerId,
+                    (object?)c.SeenGen ?? DBNull.Value,
+                    (object?)c.DrawnGen ?? DBNull.Value,
+                    (object?)c.KeptGen ?? DBNull.Value,
+                    (object?)c.DraftedGen ?? DBNull.Value,
+                    (object?)c.BoughtGen ?? DBNull.Value,
+                    string.IsNullOrWhiteSpace(c.DrawType) ? (object)DBNull.Value : c.DrawType,
+                    string.IsNullOrWhiteSpace(c.DrawReason) ? (object)DBNull.Value : c.DrawReason,
+                    (object?)c.PlayedGen ?? DBNull.Value,
+                    (object?)c.VpScored ?? DBNull.Value,
+                    c.UpdatedAt);
+            }
+
+            // Bulk copy to staging
+            using (var bulk = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction))
+            {
+                bulk.DestinationTableName = "#GameCardsStage";
+                await bulk.WriteToServerAsync(dt);
+            }
+
+            // Replace scope and insert
+            var deleteQuery = @"DELETE FROM GameCards WHERE TableId = @TableId AND PlayerId = @PlayerId;";
             await connection.ExecuteAsync(deleteQuery, new { TableId = tableId, PlayerId = playerId }, transaction);
 
-            var insertQuery = @"
+            var insertFromStage = @"
                 INSERT INTO GameCards (TableId, PlayerId, SeenGen, DrawnGen, KeptGen, DraftedGen, BoughtGen, DrawType, DrawReason, PlayedGen, VpScored, UpdatedAt)
-                VALUES (@TableId, @PlayerId, @SeenGen, @DrawnGen, @KeptGen, @DraftedGen, @BoughtGen, @DrawType, @DrawReason, @PlayedGen, @VpScored, @UpdatedAt)";
+                SELECT TableId, PlayerId, SeenGen, DrawnGen, KeptGen, DraftedGen, BoughtGen, DrawType, DrawReason, PlayedGen, VpScored, UpdatedAt
+                FROM #GameCardsStage;";
+            await connection.ExecuteAsync(insertFromStage, transaction: transaction);
 
-            foreach (var row in cards)
-            {
-                await connection.ExecuteAsync(insertQuery, row, transaction);
-            }
+            await connection.ExecuteAsync("DROP TABLE #GameCardsStage;", transaction: transaction);
         }
  
         private async Task UpsertGameMilestonesAsync(SqlConnection connection, SqlTransaction transaction, List<GameMilestone> milestones)
@@ -353,20 +407,49 @@ namespace BgaTmScraperRegistry.Services
 
             var tableId = greeneryLocations[0].TableId;
 
-            var deleteQuery = @"
-                DELETE FROM GameGreeneryLocations
-                WHERE TableId = @TableId";
+            var createStage = @"
+                CREATE TABLE #GreenStage
+                (
+                    TableId INT NOT NULL,
+                    PlayerId INT NOT NULL,
+                    GreeneryLocation NVARCHAR(255) NOT NULL,
+                    PlacedGen INT NULL,
+                    UpdatedAt DATETIME NOT NULL
+                );";
+            await connection.ExecuteAsync(createStage, transaction: transaction);
 
-            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction);
+            var dt = new DataTable();
+            dt.Columns.Add("TableId", typeof(int));
+            dt.Columns.Add("PlayerId", typeof(int));
+            dt.Columns.Add("GreeneryLocation", typeof(string));
+            dt.Columns.Add("PlacedGen", typeof(int));
+            dt.Columns.Add("UpdatedAt", typeof(DateTime));
 
-            var insertQuery = @"
-                INSERT INTO GameGreeneryLocations (TableId, PlayerId, GreeneryLocation, PlacedGen, UpdatedAt)
-                VALUES (@TableId, @PlayerId, @GreeneryLocation, @PlacedGen, @UpdatedAt)";
-
-            foreach (var loc in greeneryLocations)
+            foreach (var r in greeneryLocations)
             {
-                await connection.ExecuteAsync(insertQuery, loc, transaction);
+                dt.Rows.Add(
+                    r.TableId,
+                    r.PlayerId,
+                    r.GreeneryLocation,
+                    (object?)r.PlacedGen ?? DBNull.Value,
+                    r.UpdatedAt);
             }
+
+            using (var bulk = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction))
+            {
+                bulk.DestinationTableName = "#GreenStage";
+                await bulk.WriteToServerAsync(dt);
+            }
+
+            await connection.ExecuteAsync("DELETE FROM GameGreeneryLocations WHERE TableId = @TableId;", new { TableId = tableId }, transaction);
+
+            var insertFromStage = @"
+                INSERT INTO GameGreeneryLocations (TableId, PlayerId, GreeneryLocation, PlacedGen, UpdatedAt)
+                SELECT TableId, PlayerId, GreeneryLocation, PlacedGen, UpdatedAt
+                FROM #GreenStage;";
+            await connection.ExecuteAsync(insertFromStage, transaction: transaction);
+
+            await connection.ExecuteAsync("DROP TABLE #GreenStage;", transaction: transaction);
         }
 
         private async Task UpsertGamePlayerTrackerChangesAsync(SqlConnection connection, SqlTransaction transaction, List<GamePlayerTrackerChange> changes)
@@ -378,20 +461,55 @@ namespace BgaTmScraperRegistry.Services
 
             var tableId = changes[0].TableId;
 
-            var deleteQuery = @"
-                DELETE FROM GamePlayerTrackerChanges
-                WHERE TableId = @TableId";
+            var createStage = @"
+                CREATE TABLE #TrackerStage
+                (
+                    TableId INT NOT NULL,
+                    PlayerId INT NOT NULL,
+                    Tracker NVARCHAR(255) NOT NULL,
+                    TrackerType NVARCHAR(255) NOT NULL,
+                    Generation INT NOT NULL,
+                    ChangedTo INT NOT NULL,
+                    UpdatedAt DATETIME NOT NULL
+                );";
+            await connection.ExecuteAsync(createStage, transaction: transaction);
 
-            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction);
+            var dt = new DataTable();
+            dt.Columns.Add("TableId", typeof(int));
+            dt.Columns.Add("PlayerId", typeof(int));
+            dt.Columns.Add("Tracker", typeof(string));
+            dt.Columns.Add("TrackerType", typeof(string));
+            dt.Columns.Add("Generation", typeof(int));
+            dt.Columns.Add("ChangedTo", typeof(int));
+            dt.Columns.Add("UpdatedAt", typeof(DateTime));
 
-            var insertQuery = @"
-                INSERT INTO GamePlayerTrackerChanges (TableId, PlayerId, Tracker, TrackerType, Generation, ChangedTo, UpdatedAt)
-                VALUES (@TableId, @PlayerId, @Tracker, @TrackerType, @Generation, @ChangedTo, @UpdatedAt)";
-
-            foreach (var row in changes)
+            foreach (var r in changes)
             {
-                await connection.ExecuteAsync(insertQuery, row, transaction);
+                dt.Rows.Add(
+                    r.TableId,
+                    r.PlayerId,
+                    r.Tracker,
+                    r.TrackerType,
+                    r.Generation,
+                    r.ChangedTo,
+                    r.UpdatedAt);
             }
+
+            using (var bulk = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction))
+            {
+                bulk.DestinationTableName = "#TrackerStage";
+                await bulk.WriteToServerAsync(dt);
+            }
+
+            await connection.ExecuteAsync("DELETE FROM GamePlayerTrackerChanges WHERE TableId = @TableId;", new { TableId = tableId }, transaction);
+
+            var insertFromStage = @"
+                INSERT INTO GamePlayerTrackerChanges (TableId, PlayerId, Tracker, TrackerType, Generation, ChangedTo, UpdatedAt)
+                SELECT TableId, PlayerId, Tracker, TrackerType, Generation, ChangedTo, UpdatedAt
+                FROM #TrackerStage;";
+            await connection.ExecuteAsync(insertFromStage, transaction: transaction);
+
+            await connection.ExecuteAsync("DROP TABLE #TrackerStage;", transaction: transaction);
         }
     }
 }
