@@ -30,6 +30,7 @@ namespace BgaTmScraperRegistry.Services
             var gameStats = parser.ParseGameStats(gameLogData);
             var playerStats = parser.ParseGamePlayerStats(gameLogData);
             var startingHandCorporations = parser.ParseStartingHandCorporations(gameLogData);
+            var startingHandPreludes = parser.ParseStartingHandPreludes(gameLogData);
             var gameMilestones = parser.ParseGameMilestones(gameLogData);
             var gamePlayerAwards = parser.ParseGamePlayerAwards(gameLogData);
             var parameterChanges = parser.ParseParameterChanges(gameLogData);
@@ -45,6 +46,7 @@ namespace BgaTmScraperRegistry.Services
                 await UpsertGameStatsAsync(connection, transaction, gameStats);
                 await UpsertGamePlayerStatsAsync(connection, transaction, playerStats);
                 await UpsertStartingHandCorporationsAsync(connection, transaction, startingHandCorporations);
+                await UpsertStartingHandPreludesAsync(connection, transaction, startingHandPreludes);
                 await UpsertGameMilestonesAsync(connection, transaction, gameMilestones);
                 await UpsertGamePlayerAwardsAsync(connection, transaction, gamePlayerAwards);
                 await UpsertParameterChangesAsync(connection, transaction, parameterChanges);
@@ -121,7 +123,7 @@ namespace BgaTmScraperRegistry.Services
 
             foreach (var playerGroup in playerGroups)
             {
-                // First, delete existing records for this GameId + PlayerId combination
+                // First, delete existing records for this TableId + PlayerId combination
                 var deleteQuery = @"
                     DELETE FROM StartingHandCorporations 
                     WHERE TableId = @TableId AND PlayerId = @PlayerId";
@@ -136,6 +138,32 @@ namespace BgaTmScraperRegistry.Services
                 foreach (var corp in playerGroup)
                 {
                     await connection.ExecuteAsync(insertQuery, corp, transaction);
+                }
+            }
+        }
+
+        private async Task UpsertStartingHandPreludesAsync(SqlConnection connection, SqlTransaction transaction, List<StartingHandPreludes> startingHandPreludes)
+        {
+            // Group by TableId + PlayerId to handle the sync approach
+            var playerGroups = startingHandPreludes.GroupBy(x => new { x.TableId, x.PlayerId });
+
+            foreach (var playerGroup in playerGroups)
+            {
+                // First, delete existing records for this TableId + PlayerId combination
+                var deleteQuery = @"
+                    DELETE FROM StartingHandPreludes 
+                    WHERE TableId = @TableId AND PlayerId = @PlayerId";
+
+                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.TableId, playerGroup.Key.PlayerId }, transaction);
+
+                // Then, insert all new records for this player
+                var insertQuery = @"
+                    INSERT INTO StartingHandPreludes (TableId, PlayerId, Prelude, Kept, UpdatedAt)
+                    VALUES (@TableId, @PlayerId, @Prelude, @Kept, @UpdatedAt)";
+
+                foreach (var prelude in playerGroup)
+                {
+                    await connection.ExecuteAsync(insertQuery, prelude, transaction);
                 }
             }
         }

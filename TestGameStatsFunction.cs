@@ -44,6 +44,7 @@ namespace BgaTmScraperRegistry
                 var gameStats = parser.ParseGameStats(gameLogData);
                 var playerStats = parser.ParseGamePlayerStats(gameLogData);
                 var startingHandCorporations = parser.ParseStartingHandCorporations(gameLogData);
+                var startingHandPreludes = parser.ParseStartingHandPreludes(gameLogData);
                 var milestones = parser.ParseGameMilestones(gameLogData);
                 var awards = parser.ParseGamePlayerAwards(gameLogData);
                 var parameterChanges = parser.ParseParameterChanges(gameLogData);
@@ -51,10 +52,11 @@ namespace BgaTmScraperRegistry
                 return new OkObjectResult(new
                 {
                     success = true,
-                    message = "GameStats, GamePlayerStats, StartingHandCorporations, GameMilestones, GamePlayerAwards, and ParameterChanges parsing test completed",
+                    message = "GameStats, GamePlayerStats, StartingHandCorporations, StartingHandPreludes, GameMilestones, GamePlayerAwards, and ParameterChanges parsing test completed",
                     gameStats,
                     playerStats,
                     startingHandCorporations,
+                    startingHandPreludes,
                     milestones,
                     awards,
                     parameterChanges

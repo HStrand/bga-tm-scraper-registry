@@ -127,6 +127,57 @@ namespace BgaTmScraperRegistry.Services
             return allStartingHandCorporations;
         }
 
+        public List<StartingHandPreludes> ParseStartingHandPreludes(GameLogData gameLogData)
+        {
+            if (gameLogData == null)
+                throw new ArgumentNullException(nameof(gameLogData));
+
+            if (!int.TryParse(gameLogData.ReplayId, out int tableId))
+                throw new ArgumentException($"Cannot parse ReplayId '{gameLogData.ReplayId}' to integer", nameof(gameLogData));
+
+            var allStartingHandPreludes = new List<StartingHandPreludes>();
+
+            foreach (var playerEntry in gameLogData.Players)
+            {
+                if (!int.TryParse(playerEntry.Key, out int playerId))
+                {
+                    Console.WriteLine($"Could not parse player ID '{playerEntry.Key}' for table '{tableId}'. Skipping player.");
+                    continue;
+                }
+
+                var playerLog = playerEntry.Value;
+
+                var preludes = playerLog.StartingHand?.Preludes;
+                if (preludes == null || preludes.Count == 0)
+                {
+                    continue;
+                }
+
+                // Build case-insensitive set of played cards to determine kept preludes
+                var played = playerLog.CardsPlayed != null
+                    ? new HashSet<string>(playerLog.CardsPlayed, StringComparer.OrdinalIgnoreCase)
+                    : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var prelude in preludes)
+                {
+                    if (string.IsNullOrWhiteSpace(prelude)) continue;
+
+                    var row = new StartingHandPreludes
+                    {
+                        TableId = tableId,
+                        PlayerId = playerId,
+                        Prelude = prelude,
+                        Kept = played.Contains(prelude),
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    allStartingHandPreludes.Add(row);
+                }
+            }
+
+            return allStartingHandPreludes;
+        }
+
         public List<GameMilestone> ParseGameMilestones(GameLogData gameLogData)
         {
             if (gameLogData == null)
