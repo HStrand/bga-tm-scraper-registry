@@ -9,6 +9,7 @@ namespace BgaTmScraperRegistry.Models
         public string Tracker { get; set; }           // raw tracker name from logs
         public string TrackerType { get; set; }       // "Tag", "Production", or "Resource"
         public int Generation { get; set; }           // generation when change observed
+        public int? MoveNumber { get; set; }          // move number when the change was observed (ordering within generation)
         public int ChangedTo { get; set; }            // new value after change
         public DateTime UpdatedAt { get; set; }
     }

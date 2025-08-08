@@ -727,5 +727,48 @@ namespace BgaTmScraperRegistry.Services
             
             return game;
         }
+
+        public async Task<List<MissingStatsItem>> GetGamesMissingStatsAsync(int? top = null)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            // Use a CTE to perform the EXCEPT and allow ordering / TOP
+            var cteQuery = @"
+                WITH Missing AS (
+                    SELECT DISTINCT TableId, PlayerPerspective AS PlayerId
+                    FROM Games
+                    WHERE ScrapedAt IS NOT NULL
+                    EXCEPT
+                    SELECT DISTINCT TableId, PlayerId
+                    FROM GameCards
+                )
+                SELECT TableId, PlayerId
+                FROM Missing
+                ORDER BY TableId, PlayerId;";
+
+            if (top.HasValue && top.Value > 0)
+            {
+                var topQuery = @"
+                    WITH Missing AS (
+                        SELECT DISTINCT TableId, PlayerPerspective AS PlayerId
+                        FROM Games
+                        WHERE ScrapedAt IS NOT NULL
+                        EXCEPT
+                        SELECT DISTINCT TableId, PlayerId
+                        FROM GameCards
+                    )
+                    SELECT TOP(@Top) TableId, PlayerId
+                    FROM Missing
+                    ORDER BY TableId, PlayerId;";
+                var topResults = await connection.QueryAsync<MissingStatsItem>(topQuery, new { Top = top.Value });
+                return topResults.ToList();
+            }
+            else
+            {
+                var results = await connection.QueryAsync<MissingStatsItem>(cteQuery);
+                return results.ToList();
+            }
+        }
     }
 }

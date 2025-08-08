@@ -26,11 +26,39 @@ namespace BgaTmScraperRegistry.Services
             // Generations can be null
             int? generations = gameLogData.Generations;
 
+            // Player count (length of players list)
+            int? playerCount = gameLogData.Players?.Count ?? 0;
+
+            // Winner resolution:
+            // 1) If winner is numeric, parse as player id
+            // 2) Otherwise try to match winner string to a player's PlayerName (case-insensitive) and use that player's PlayerId
+            int? winner = null;
+            if (!string.IsNullOrWhiteSpace(gameLogData.Winner))
+            {
+                var winnerRaw = gameLogData.Winner.Trim();
+                if (int.TryParse(winnerRaw, out int winnerId))
+                {
+                    winner = winnerId;
+                }
+                else if (gameLogData.Players != null)
+                {
+                    // Try to find by player name (case-insensitive)
+                    var match = gameLogData.Players
+                        .FirstOrDefault(kvp => string.Equals(kvp.Value?.PlayerName, winnerRaw, StringComparison.OrdinalIgnoreCase));
+                    if (!string.IsNullOrEmpty(match.Value?.PlayerId) && int.TryParse(match.Value.PlayerId, out int parsed))
+                    {
+                        winner = parsed;
+                    }
+                }
+            }
+
             var gameStats = new GameStats
             {
                 TableId = tableId,
                 Generations = generations,
                 DurationMinutes = durationMinutes,
+                PlayerCount = playerCount,
+                Winner = winner,
                 UpdatedAt = DateTime.UtcNow
             };
 
@@ -506,6 +534,7 @@ namespace BgaTmScraperRegistry.Services
                                         Tracker = rawName,
                                         TrackerType = Classify(rawName),
                                         Generation = gen.Value,
+                                        MoveNumber = move?.MoveNumber,
                                         ChangedTo = currVal,
                                         UpdatedAt = DateTime.UtcNow
                                     });

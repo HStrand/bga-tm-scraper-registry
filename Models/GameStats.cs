@@ -8,6 +8,8 @@ namespace BgaTmScraperRegistry.Models
         public int TableId { get; set; }
         public int? Generations { get; set; }
         public int? DurationMinutes { get; set; }
+        public int? PlayerCount { get; set; }
+        public int? Winner { get; set; }
         public DateTime UpdatedAt { get; set; }
     }
 }

@@ -76,16 +76,18 @@ namespace BgaTmScraperRegistry.Services
         {
             var mergeQuery = @"
                 MERGE GameStats AS target
-                USING (SELECT @TableId AS TableId, @Generations AS Generations, @DurationMinutes AS DurationMinutes, @UpdatedAt AS UpdatedAt) AS source
+                USING (SELECT @TableId AS TableId, @Generations AS Generations, @DurationMinutes AS DurationMinutes, @PlayerCount AS PlayerCount, @Winner AS Winner, @UpdatedAt AS UpdatedAt) AS source
                 ON target.TableId = source.TableId
                 WHEN MATCHED THEN
                     UPDATE SET 
                         Generations = source.Generations,
                         DurationMinutes = source.DurationMinutes,
+                        PlayerCount = source.PlayerCount,
+                        Winner = source.Winner,
                         UpdatedAt = source.UpdatedAt
                 WHEN NOT MATCHED THEN
-                    INSERT (TableId, Generations, DurationMinutes, UpdatedAt)
-                    VALUES (source.TableId, source.Generations, source.DurationMinutes, source.UpdatedAt);";
+                    INSERT (TableId, Generations, DurationMinutes, PlayerCount, Winner, UpdatedAt)
+                    VALUES (source.TableId, source.Generations, source.DurationMinutes, source.PlayerCount, source.Winner, source.UpdatedAt);";
 
             await connection.ExecuteAsync(
                 mergeQuery,
@@ -94,6 +96,8 @@ namespace BgaTmScraperRegistry.Services
                     gameStats.TableId,
                     gameStats.Generations,
                     gameStats.DurationMinutes,
+                    PlayerCount = gameStats.PlayerCount,
+                    Winner = gameStats.Winner,
                     gameStats.UpdatedAt
                 },
                 transaction);
@@ -469,6 +473,7 @@ namespace BgaTmScraperRegistry.Services
                     Tracker NVARCHAR(255) NOT NULL,
                     TrackerType NVARCHAR(255) NOT NULL,
                     Generation INT NOT NULL,
+                    MoveNumber INT NULL,
                     ChangedTo INT NOT NULL,
                     UpdatedAt DATETIME NOT NULL
                 );";
@@ -480,6 +485,7 @@ namespace BgaTmScraperRegistry.Services
             dt.Columns.Add("Tracker", typeof(string));
             dt.Columns.Add("TrackerType", typeof(string));
             dt.Columns.Add("Generation", typeof(int));
+            dt.Columns.Add("MoveNumber", typeof(int));
             dt.Columns.Add("ChangedTo", typeof(int));
             dt.Columns.Add("UpdatedAt", typeof(DateTime));
 
@@ -491,6 +497,7 @@ namespace BgaTmScraperRegistry.Services
                     r.Tracker,
                     r.TrackerType,
                     r.Generation,
+                    (object?)r.MoveNumber ?? DBNull.Value,
                     r.ChangedTo,
                     r.UpdatedAt);
             }
@@ -504,8 +511,8 @@ namespace BgaTmScraperRegistry.Services
             await connection.ExecuteAsync("DELETE FROM GamePlayerTrackerChanges WHERE TableId = @TableId;", new { TableId = tableId }, transaction);
 
             var insertFromStage = @"
-                INSERT INTO GamePlayerTrackerChanges (TableId, PlayerId, Tracker, TrackerType, Generation, ChangedTo, UpdatedAt)
-                SELECT TableId, PlayerId, Tracker, TrackerType, Generation, ChangedTo, UpdatedAt
+                INSERT INTO GamePlayerTrackerChanges (TableId, PlayerId, Tracker, TrackerType, Generation, MoveNumber, ChangedTo, UpdatedAt)
+                SELECT TableId, PlayerId, Tracker, TrackerType, Generation, MoveNumber, ChangedTo, UpdatedAt
                 FROM #TrackerStage;";
             await connection.ExecuteAsync(insertFromStage, transaction: transaction);
 
