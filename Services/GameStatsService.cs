@@ -224,6 +224,7 @@ namespace BgaTmScraperRegistry.Services
                 (
                     TableId INT NOT NULL,
                     PlayerId INT NOT NULL,
+                    Card NVARCHAR(255) NOT NULL,
                     SeenGen INT NULL,
                     DrawnGen INT NULL,
                     KeptGen INT NULL,
@@ -241,6 +242,7 @@ namespace BgaTmScraperRegistry.Services
             var dt = new DataTable();
             dt.Columns.Add("TableId", typeof(int));
             dt.Columns.Add("PlayerId", typeof(int));
+            dt.Columns.Add("Card", typeof(string));
             dt.Columns.Add("SeenGen", typeof(int));
             dt.Columns.Add("DrawnGen", typeof(int));
             dt.Columns.Add("KeptGen", typeof(int));
@@ -257,6 +259,7 @@ namespace BgaTmScraperRegistry.Services
                 dt.Rows.Add(
                     c.TableId,
                     c.PlayerId,
+                    c.Card,
                     (object?)c.SeenGen ?? DBNull.Value,
                     (object?)c.DrawnGen ?? DBNull.Value,
                     (object?)c.KeptGen ?? DBNull.Value,
@@ -281,8 +284,8 @@ namespace BgaTmScraperRegistry.Services
             await connection.ExecuteAsync(deleteQuery, new { TableId = tableId, PlayerId = playerId }, transaction);
 
             var insertFromStage = @"
-                INSERT INTO GameCards (TableId, PlayerId, SeenGen, DrawnGen, KeptGen, DraftedGen, BoughtGen, DrawType, DrawReason, PlayedGen, VpScored, UpdatedAt)
-                SELECT TableId, PlayerId, SeenGen, DrawnGen, KeptGen, DraftedGen, BoughtGen, DrawType, DrawReason, PlayedGen, VpScored, UpdatedAt
+                INSERT INTO GameCards (TableId, PlayerId, Card, SeenGen, DrawnGen, KeptGen, DraftedGen, BoughtGen, DrawType, DrawReason, PlayedGen, VpScored, UpdatedAt)
+                SELECT TableId, PlayerId, Card, SeenGen, DrawnGen, KeptGen, DraftedGen, BoughtGen, DrawType, DrawReason, PlayedGen, VpScored, UpdatedAt
                 FROM #GameCardsStage;";
             await connection.ExecuteAsync(insertFromStage, transaction: transaction);
 
@@ -343,38 +346,64 @@ namespace BgaTmScraperRegistry.Services
 
         private async Task UpsertParameterChangesAsync(SqlConnection connection, SqlTransaction transaction, List<ParameterChange> changes)
         {
-            // Even if there are no changes we still want to clear existing to maintain sync if reupload happens
-            int tableId = 0;
-            if (changes != null && changes.Count > 0)
-            {
-                tableId = changes[0].TableId;
-            }
-            else
-            {
-                // Derive TableId from transaction context is not available; if list is empty, we cannot know TableId.
-                // In our workflow, ParseParameterChanges is executed with the same GameLogData. We can safely skip if empty.
-                return;
-            }
-
-            var deleteQuery = @"
-                DELETE FROM ParameterChanges
-                WHERE TableId = @TableId";
-
-            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction);
-
-            if (changes.Count == 0)
+            // If no changes list or empty we can't determine TableId -> skip.
+            if (changes == null || changes.Count == 0)
             {
                 return;
             }
 
-            var insertQuery = @"
+            var tableId = changes[0].TableId;
+
+            // Create staging table
+            var createStage = @"
+                CREATE TABLE #ParamStage
+                (
+                    TableId INT NOT NULL,
+                    Parameter NVARCHAR(255) NOT NULL,
+                    Generation INT NOT NULL,
+                    IncreasedTo INT NOT NULL,
+                    IncreasedBy INT NULL,
+                    UpdatedAt DATETIME NOT NULL
+                );";
+            await connection.ExecuteAsync(createStage, transaction: transaction);
+
+            // Build DataTable
+            var dt = new DataTable();
+            dt.Columns.Add("TableId", typeof(int));
+            dt.Columns.Add("Parameter", typeof(string));
+            dt.Columns.Add("Generation", typeof(int));
+            dt.Columns.Add("IncreasedTo", typeof(int));
+            dt.Columns.Add("IncreasedBy", typeof(int));
+            dt.Columns.Add("UpdatedAt", typeof(DateTime));
+
+            foreach (var r in changes)
+            {
+                dt.Rows.Add(
+                    r.TableId,
+                    string.IsNullOrWhiteSpace(r.Parameter) ? (object)DBNull.Value : r.Parameter,
+                    r.Generation,
+                    r.IncreasedTo,
+                    (object?)r.IncreasedBy ?? DBNull.Value,
+                    r.UpdatedAt);
+            }
+
+            // Bulk copy to staging
+            using (var bulk = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction))
+            {
+                bulk.DestinationTableName = "#ParamStage";
+                await bulk.WriteToServerAsync(dt);
+            }
+
+            // Replace scope: delete existing then insert from stage
+            await connection.ExecuteAsync("DELETE FROM ParameterChanges WHERE TableId = @TableId;", new { TableId = tableId }, transaction);
+
+            var insertFromStage = @"
                 INSERT INTO ParameterChanges (TableId, Parameter, Generation, IncreasedTo, IncreasedBy, UpdatedAt)
-                VALUES (@TableId, @Parameter, @Generation, @IncreasedTo, @IncreasedBy, @UpdatedAt)";
+                SELECT TableId, Parameter, Generation, IncreasedTo, IncreasedBy, UpdatedAt
+                FROM #ParamStage;";
+            await connection.ExecuteAsync(insertFromStage, transaction: transaction);
 
-            foreach (var row in changes)
-            {
-                await connection.ExecuteAsync(insertQuery, row, transaction);
-            }
+            await connection.ExecuteAsync("DROP TABLE #ParamStage;", transaction: transaction);
         }
 
         private async Task UpsertGameCityLocationsAsync(SqlConnection connection, SqlTransaction transaction, List<GameCityLocation> cityLocations)
