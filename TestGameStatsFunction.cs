@@ -52,11 +52,12 @@ namespace BgaTmScraperRegistry
                 var gameCards = parser.ParseGameCards(gameLogData);
                 var cityLocations = parser.ParseGameCityLocations(gameLogData);
                 var greeneryLocations = parser.ParseGameGreeneryLocations(gameLogData);
+                var trackerChanges = parser.ParseGamePlayerTrackerChanges(gameLogData);
 
                 return new OkObjectResult(new
                 {
                     success = true,
-                    message = "GameStats, GamePlayerStats, StartingHandCorporations, StartingHandPreludes, GameMilestones, GamePlayerAwards, ParameterChanges, GameCards, GameCityLocations, and GameGreeneryLocations parsing test completed",
+                    message = "GameStats, GamePlayerStats, StartingHandCorporations, StartingHandPreludes, GameMilestones, GamePlayerAwards, ParameterChanges, GameCards, GameCityLocations, GameGreeneryLocations, and GamePlayerTrackerChanges parsing test completed",
                     gameStats,
                     playerStats,
                     startingHandCorporations,
@@ -67,7 +68,8 @@ namespace BgaTmScraperRegistry
                     parameterChanges,
                     gameCards,
                     cityLocations,
-                    greeneryLocations
+                    greeneryLocations,
+                    trackerChanges
                 });
             }
             catch (JsonException jsonEx)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using BgaTmScraperRegistry.Models;
 using Newtonsoft.Json.Linq;
 
@@ -424,6 +425,101 @@ namespace BgaTmScraperRegistry.Services
             }
 
             return awardsRows;
+        }
+
+        public List<GamePlayerTrackerChange> ParseGamePlayerTrackerChanges(GameLogData gameLogData)
+        {
+            if (gameLogData == null)
+                throw new ArgumentNullException(nameof(gameLogData));
+
+            if (!int.TryParse(gameLogData.ReplayId, out int tableId))
+                throw new ArgumentException($"Cannot parse ReplayId '{gameLogData.ReplayId}' to integer", nameof(gameLogData));
+
+            var results = new List<GamePlayerTrackerChange>();
+
+            if (gameLogData.Moves == null || gameLogData.Moves.Count == 0)
+                return results;
+
+            // Build reflection map: property -> raw JSON key from JsonProperty attribute
+            var trackerProps = typeof(PlayerTracker).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Select(p => new
+                {
+                    Prop = p,
+                    JsonName = p.GetCustomAttribute<Newtonsoft.Json.JsonPropertyAttribute>()?.PropertyName
+                })
+                .Where(x => !string.IsNullOrWhiteSpace(x.JsonName))
+                .ToList();
+
+            string Classify(string trackerName)
+            {
+                if (trackerName.IndexOf("Production", StringComparison.OrdinalIgnoreCase) >= 0) return "Production";
+                if (trackerName.StartsWith("Count of ", StringComparison.OrdinalIgnoreCase)
+                    && trackerName.IndexOf(" tags", StringComparison.OrdinalIgnoreCase) >= 0) return "Tag";
+                return "Resource";
+            }
+
+            // Keep last seen values per playerId -> trackerName
+            var prevByPlayer = new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
+
+            foreach (var move in gameLogData.Moves.OrderBy(m => m?.MoveNumber ?? int.MaxValue))
+            {
+                var gen = move?.GameState?.Generation;
+                if (!gen.HasValue) continue;
+
+                var trackers = move?.GameState?.PlayerTrackers;
+                if (trackers == null || trackers.Count == 0) continue;
+
+                foreach (var kv in trackers)
+                {
+                    var playerIdStr = kv.Key;
+                    var pt = kv.Value;
+                    if (pt == null) continue;
+
+                    if (!prevByPlayer.TryGetValue(playerIdStr, out var prevMap))
+                    {
+                        prevMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                        prevByPlayer[playerIdStr] = prevMap;
+                    }
+
+                    foreach (var def in trackerProps)
+                    {
+                        // Get raw tracker name and current value
+                        var rawName = def.JsonName;
+                        var obj = def.Prop.GetValue(pt);
+                        if (obj == null) continue;
+
+                        // Only consider numeric int? values
+                        if (obj is int currValNullable)
+                        {
+                            int currVal = currValNullable;
+
+                            // Compare with previous; record if changed or not seen before
+                            if (!prevMap.TryGetValue(rawName, out int prevVal) || prevVal != currVal)
+                            {
+                                // Emit row
+                                if (int.TryParse(playerIdStr, out int playerIdInt))
+                                {
+                                    results.Add(new GamePlayerTrackerChange
+                                    {
+                                        TableId = tableId,
+                                        PlayerId = playerIdInt,
+                                        Tracker = rawName,
+                                        TrackerType = Classify(rawName),
+                                        Generation = gen.Value,
+                                        ChangedTo = currVal,
+                                        UpdatedAt = DateTime.UtcNow
+                                    });
+                                }
+
+                                // Update previous
+                                prevMap[rawName] = currVal;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return results;
         }
 
         public List<ParameterChange> ParseParameterChanges(GameLogData gameLogData)

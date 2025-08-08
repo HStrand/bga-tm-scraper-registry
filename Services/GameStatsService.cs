@@ -38,6 +38,7 @@ namespace BgaTmScraperRegistry.Services
             var gameCards = parser.ParseGameCards(gameLogData);
             var cityLocations = parser.ParseGameCityLocations(gameLogData);
             var greeneryLocations = parser.ParseGameGreeneryLocations(gameLogData);
+            var trackerChanges = parser.ParseGamePlayerTrackerChanges(gameLogData);
 
             _logger.LogInformation($"Upserting GameStats for TableId {gameStats.TableId}: Generations={gameStats.Generations}, DurationMinutes={gameStats.DurationMinutes}");
 
@@ -58,6 +59,7 @@ namespace BgaTmScraperRegistry.Services
                 await UpsertGameCardsAsync(connection, transaction, gameCards);
                 await UpsertGameCityLocationsAsync(connection, transaction, cityLocations);
                 await UpsertGameGreeneryLocationsAsync(connection, transaction, greeneryLocations);
+                await UpsertGamePlayerTrackerChangesAsync(connection, transaction, trackerChanges);
                 transaction.Commit();
                 
                 _logger.LogInformation($"Successfully upserted GameStats for TableId {gameStats.TableId}");
@@ -364,6 +366,31 @@ namespace BgaTmScraperRegistry.Services
             foreach (var loc in greeneryLocations)
             {
                 await connection.ExecuteAsync(insertQuery, loc, transaction);
+            }
+        }
+
+        private async Task UpsertGamePlayerTrackerChangesAsync(SqlConnection connection, SqlTransaction transaction, List<GamePlayerTrackerChange> changes)
+        {
+            if (changes == null || changes.Count == 0)
+            {
+                return;
+            }
+
+            var tableId = changes[0].TableId;
+
+            var deleteQuery = @"
+                DELETE FROM GamePlayerTrackerChanges
+                WHERE TableId = @TableId";
+
+            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction);
+
+            var insertQuery = @"
+                INSERT INTO GamePlayerTrackerChanges (TableId, PlayerId, Tracker, TrackerType, Generation, ChangedTo, UpdatedAt)
+                VALUES (@TableId, @PlayerId, @Tracker, @TrackerType, @Generation, @ChangedTo, @UpdatedAt)";
+
+            foreach (var row in changes)
+            {
+                await connection.ExecuteAsync(insertQuery, row, transaction);
             }
         }
     }
