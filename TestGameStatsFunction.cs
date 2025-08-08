@@ -45,6 +45,7 @@ namespace BgaTmScraperRegistry
                 var playerStats = parser.ParseGamePlayerStats(gameLogData);
                 var startingHandCorporations = parser.ParseStartingHandCorporations(gameLogData);
                 var startingHandPreludes = parser.ParseStartingHandPreludes(gameLogData);
+                var startingHandCards = parser.ParseStartingHandCards(gameLogData);
                 var milestones = parser.ParseGameMilestones(gameLogData);
                 var awards = parser.ParseGamePlayerAwards(gameLogData);
                 var parameterChanges = parser.ParseParameterChanges(gameLogData);
@@ -57,6 +58,7 @@ namespace BgaTmScraperRegistry
                     playerStats,
                     startingHandCorporations,
                     startingHandPreludes,
+                    startingHandCards,
                     milestones,
                     awards,
                     parameterChanges

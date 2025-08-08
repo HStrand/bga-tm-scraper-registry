@@ -100,6 +100,11 @@ namespace BgaTmScraperRegistry.Services
                     continue;
                 }
 
+                if (playerId != int.Parse(gameLogData.PlayerPerspective))
+                {
+                    continue; // Starting hands should only be present for the PoV player
+                }
+
                 var playerLog = playerEntry.Value;
 
                 // Check if starting hand exists and has corporations
@@ -145,6 +150,11 @@ namespace BgaTmScraperRegistry.Services
                     continue;
                 }
 
+                if (playerId != int.Parse(gameLogData.PlayerPerspective))
+                {
+                    continue; // Starting hands should only be present for the PoV player
+                }
+
                 var playerLog = playerEntry.Value;
 
                 var preludes = playerLog.StartingHand?.Preludes;
@@ -176,6 +186,89 @@ namespace BgaTmScraperRegistry.Services
             }
 
             return allStartingHandPreludes;
+        }
+
+        public List<StartingHandCards> ParseStartingHandCards(GameLogData gameLogData)
+        {
+            if (gameLogData == null)
+                throw new ArgumentNullException(nameof(gameLogData));
+
+            if (!int.TryParse(gameLogData.ReplayId, out int tableId))
+                throw new ArgumentException($"Cannot parse ReplayId '{gameLogData.ReplayId}' to integer", nameof(gameLogData));
+
+            var results = new List<StartingHandCards>();
+
+            if (gameLogData.Players == null || gameLogData.Players.Count == 0)
+                return results;
+
+            foreach (var playerEntry in gameLogData.Players)
+            {                
+                // PlayerId for output
+                if (!int.TryParse(playerEntry.Key, out int playerId))
+                {
+                    Console.WriteLine($"Could not parse player ID '{playerEntry.Key}' for table '{tableId}'. Skipping player.");
+                    continue;
+                }
+
+                if(playerId != int.Parse(gameLogData.PlayerPerspective))
+                {
+                    continue; // Starting hands should only be present for the PoV player
+                }
+
+                var playerLog = playerEntry.Value;
+                var offered = playerLog?.StartingHand?.ProjectCards;
+                if (offered == null || offered.Count == 0)
+                {
+                    continue;
+                }
+
+                // Find earliest move for this player containing "You buy"
+                var earliestBuyMove = gameLogData.Moves?
+                    .FirstOrDefault(m =>
+                        m != null &&
+                        string.Equals(m.PlayerId, playerEntry.Key, StringComparison.Ordinal) &&
+                        !string.IsNullOrWhiteSpace(m.Description) &&
+                        m.Description.Contains("You buy", StringComparison.OrdinalIgnoreCase));
+
+                // Parse bought card names from the move description
+                var bought = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                if (earliestBuyMove != null)
+                {
+                    var desc = earliestBuyMove.Description;
+                    // Split on " | " which separates phrases in these logs
+                    var parts = desc.Split('|');
+                    foreach (var raw in parts)
+                    {
+                        var part = raw.Trim();
+                        const string prefix = "You buy ";
+                        if (part.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var name = part.Substring(prefix.Length).Trim();
+                            if (!string.IsNullOrWhiteSpace(name))
+                            {
+                                bought.Add(name);
+                            }
+                        }
+                    }
+                }
+
+                // Emit one row per offered starting-hand project card
+                foreach (var card in offered)
+                {
+                    if (string.IsNullOrWhiteSpace(card)) continue;
+
+                    results.Add(new StartingHandCards
+                    {
+                        TableId = tableId,
+                        PlayerId = playerId,
+                        Card = card,
+                        Kept = bought.Contains(card),
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            return results;
         }
 
         public List<GameMilestone> ParseGameMilestones(GameLogData gameLogData)
