@@ -548,7 +548,6 @@ namespace BgaTmScraperRegistry.Services
                         TableId = tableId,
                         PlayerId = povId,
                         Card = cardName,
-                        VpScored = 0,
                         UpdatedAt = DateTime.UtcNow
                     };
                     results[cardName] = gc;
@@ -566,12 +565,62 @@ namespace BgaTmScraperRegistry.Services
                            .Where(x => !string.IsNullOrWhiteSpace(x));
             }
 
+            var draftEvents = new Dictionary<string, List<(int MoveNumber, int Generation, string PlayerId)>>(StringComparer.OrdinalIgnoreCase);
+
             if (gameLogData.Moves != null)
             {
                 foreach (var move in gameLogData.Moves)
                 {
                     var desc = move?.Description ?? string.Empty;
                     var gen = move?.GameState?.Generation;
+
+                    // Record draft events from any player to handle mis-attributed logs
+                    if (string.Equals(move?.ActionType, "draft_card", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string draftedNameAny = null;
+                        var segmentsAny = desc.Split('|');
+                        foreach (var segAny in segmentsAny)
+                        {
+                            var sAny = segAny.Trim();
+                            const string youPrefixAny = "You draft ";
+                            if (sAny.StartsWith(youPrefixAny, StringComparison.OrdinalIgnoreCase))
+                            {
+                                draftedNameAny = sAny.Substring(youPrefixAny.Length).Trim();
+                                break;
+                            }
+
+                            // Generic pattern: "<Name> drafts <Card>"
+                            var idxDrafts = sAny.IndexOf(" drafts ", StringComparison.OrdinalIgnoreCase);
+                            if (idxDrafts > 0)
+                            {
+                                draftedNameAny = sAny.Substring(idxDrafts + " drafts ".Length).Trim();
+                                break;
+                            }
+
+                            // Fallback: find "draft " token
+                            const string draftWordAny = "draft ";
+                            var i2Any = sAny.IndexOf(draftWordAny, StringComparison.OrdinalIgnoreCase);
+                            if (i2Any >= 0)
+                            {
+                                draftedNameAny = sAny.Substring(i2Any + draftWordAny.Length).Trim();
+                                break;
+                            }
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(draftedNameAny) && gen.HasValue && move?.MoveNumber.HasValue == true)
+                        {
+                            if (!draftEvents.TryGetValue(draftedNameAny, out var lst))
+                            {
+                                lst = new List<(int MoveNumber, int Generation, string PlayerId)>();
+                                draftEvents[draftedNameAny] = lst;
+                            }
+                            lst.Add((move.MoveNumber.Value, gen.Value, move.PlayerId));
+
+                            // Treat drafted cards by any player as seen by POV
+                            var gcSeen = GetOrCreate(draftedNameAny);
+                            if (!gcSeen.SeenGen.HasValue) gcSeen.SeenGen = gen.Value;
+                        }
+                    }
 
                     // SeenGen from any "draws <list>" that explicitly lists names (broad strategy)
                     if (gen.HasValue && desc.IndexOf("draws", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -593,6 +642,58 @@ namespace BgaTmScraperRegistry.Services
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    // SeenGen from "reveals <Card>:" phrases (any player)
+                    if (gen.HasValue && desc.IndexOf("reveals ", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        var segmentsReveal = desc.Split('|');
+                        foreach (var segR in segmentsReveal)
+                        {
+                            var sR = segR.Trim();
+                            int searchStart = 0;
+                            while (true)
+                            {
+                                int idxRev = sR.IndexOf("reveals ", searchStart, StringComparison.OrdinalIgnoreCase);
+                                if (idxRev < 0) break;
+                                int nameStart = idxRev + "reveals ".Length;
+                                int colonIdx = sR.IndexOf(':', nameStart);
+                                if (colonIdx < 0) break;
+                                var name = sR.Substring(nameStart, colonIdx - nameStart).Trim();
+                                if (!string.IsNullOrWhiteSpace(name))
+                                {
+                                    var gc = GetOrCreate(name);
+                                    if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
+                                }
+                                searchStart = colonIdx + 1;
+                            }
+                        }
+                    }
+
+                    // SeenGen from any player's played card (including opponents)
+                    if (gen.HasValue && (string.Equals(move?.ActionType, "play_card", StringComparison.OrdinalIgnoreCase) || desc.IndexOf("plays card ", StringComparison.OrdinalIgnoreCase) >= 0))
+                    {
+                        string playedAny = move?.CardPlayed;
+                        if (string.IsNullOrWhiteSpace(playedAny))
+                        {
+                            var segmentsPlay = desc.Split('|');
+                            foreach (var segP in segmentsPlay)
+                            {
+                                var sP = segP.Trim();
+                                const string playsCardPrefix = "plays card ";
+                                int idxPc = sP.IndexOf(playsCardPrefix, StringComparison.OrdinalIgnoreCase);
+                                if (idxPc >= 0)
+                                {
+                                    playedAny = sP.Substring(idxPc + playsCardPrefix.Length).Trim();
+                                    break;
+                                }
+                            }
+                        }
+                        if (!string.IsNullOrWhiteSpace(playedAny))
+                        {
+                            var gc = GetOrCreate(playedAny);
+                            if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
                         }
                     }
 
@@ -652,6 +753,19 @@ namespace BgaTmScraperRegistry.Services
                                     var gc = GetOrCreate(name);
                                     if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
                                     if (!gc.BoughtGen.HasValue) gc.BoughtGen = gen.Value;
+                                    if (!gc.KeptGen.HasValue) gc.KeptGen = gen.Value;
+
+                                    // Heuristic: if prior draft event exists in same generation within small window, attribute DraftedGen to POV
+                                    const int draftWindow = 20;
+                                    if (!gc.DraftedGen.HasValue && gen.HasValue && move?.MoveNumber.HasValue == true && draftEvents.TryGetValue(name, out var evts))
+                                    {
+                                        var matching = evts.Where(e => e.Generation == gen.Value && e.MoveNumber <= move.MoveNumber.Value && (move.MoveNumber.Value - e.MoveNumber) <= draftWindow);
+                                        if (matching.Any())
+                                        {
+                                            var nearest = matching.OrderByDescending(e => e.MoveNumber).First();
+                                            gc.DraftedGen = nearest.Generation;
+                                        }
+                                    }
                                 }
                                 continue;
                             }
@@ -667,16 +781,32 @@ namespace BgaTmScraperRegistry.Services
                                         var gc = GetOrCreate(name);
                                         if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
                                         if (!gc.BoughtGen.HasValue) gc.BoughtGen = gen.Value;
+                                        if (!gc.KeptGen.HasValue) gc.KeptGen = gen.Value;
+
+                                        // Heuristic: attribute DraftedGen to POV if prior draft event exists in same generation within window
+                                        const int draftWindow = 20;
+                                        if (!gc.DraftedGen.HasValue && gen.HasValue && move?.MoveNumber.HasValue == true && draftEvents.TryGetValue(name, out var evts2))
+                                        {
+                                            var matching2 = evts2.Where(e => e.Generation == gen.Value && e.MoveNumber <= move.MoveNumber.Value && (move.MoveNumber.Value - e.MoveNumber) <= draftWindow);
+                                            if (matching2.Any())
+                                            {
+                                                var nearest2 = matching2.OrderByDescending(e => e.MoveNumber).First();
+                                                gc.DraftedGen = nearest2.Generation;
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
 
-                    // DrawnGen: POV explicit draws with names
+                    // DrawnGen: POV explicit draws with names + DrawSession resolution window
                     if (gen.HasValue && move?.PlayerId == gameLogData.PlayerPerspective && desc.IndexOf("draws", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         var segments = desc.Split('|');
+
+                        // Collect all named cards in this draw move
+                        var drawnNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                         foreach (var seg in segments)
                         {
                             var s = seg.Trim();
@@ -684,13 +814,217 @@ namespace BgaTmScraperRegistry.Services
                             if (idx >= 0)
                             {
                                 var after = s.Substring(idx + "draws ".Length).Trim();
+                                // If this starts with a digit it's likely "draws 1/2/3 cards" count segment; skip names parse
                                 if (!string.IsNullOrWhiteSpace(after) && !char.IsDigit(after[0]))
+                                {
+                                    foreach (var nm in SplitCardList(after))
+                                    {
+                                        if (!string.IsNullOrWhiteSpace(nm))
+                                            drawnNames.Add(nm);
+                                    }
+                                }
+                            }
+                        }
+
+                        // Set SeenGen and DrawnGen for all named cards in this draw
+                        foreach (var name in drawnNames)
+                        {
+                            var gc = GetOrCreate(name);
+                            if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
+                            if (!gc.DrawnGen.HasValue) gc.DrawnGen = gen.Value;
+                        }
+
+                        // DrawSession resolution: examine next N moves by same player
+                        const int sessionWindow = 10;
+                        if (drawnNames.Count > 0 && move?.MoveNumber.HasValue == true)
+                        {
+                            // Subsequent moves by same player with higher move_number
+                            var subsequent = gameLogData.Moves?
+                                .Where(m => m != null
+                                            && m.MoveNumber.HasValue
+                                            && m.MoveNumber.Value > move.MoveNumber.Value
+                                            && string.Equals(m.PlayerId, move.PlayerId, StringComparison.Ordinal))
+                                .OrderBy(m => m.MoveNumber.Value)
+                                .Take(sessionWindow)
+                                .ToList() ?? new List<GameLogMove>();
+
+                            bool immediateSkip = false;
+                            if (subsequent.Count > 0)
+                            {
+                                var firstSub = subsequent[0];
+                                var firstDesc = firstSub?.Description ?? string.Empty;
+                                if (firstDesc.IndexOf("skips rest of actions", StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    immediateSkip = true;
+                                }
+                            }
+
+                            if (!immediateSkip)
+                            {
+                                int resolvedCount = 0;
+
+                                foreach (var sub in subsequent)
+                                {
+                                    var sdesc = sub?.Description ?? string.Empty;
+                                    var sgen = sub?.GameState?.Generation;
+
+                                    if (!sgen.HasValue || string.IsNullOrWhiteSpace(sdesc))
+                                        continue;
+
+                                    var parts = sdesc.Split('|');
+
+                                    foreach (var part in parts)
+                                    {
+                                        var sp = part.Trim();
+
+                                        // Keeps: "You keep X" or "<POV name> keeps X"
+                                        const string youKeepPrefix = "You keep ";
+                                        if (sp.StartsWith(youKeepPrefix, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            var afterK = sp.Substring(youKeepPrefix.Length).Trim();
+                                            if (!string.IsNullOrWhiteSpace(afterK))
+                                            {
+                                                foreach (var nm in SplitCardList(afterK))
+                                                {
+                                                    if (drawnNames.Contains(nm))
+                                                    {
+                                                        var gc = GetOrCreate(nm);
+                                                        if (!gc.SeenGen.HasValue) gc.SeenGen = sgen.Value;
+                                                        if (!gc.KeptGen.HasValue) gc.KeptGen = sgen.Value;
+                                                        resolvedCount++;
+                                                    }
+                                                }
+                                            }
+                                            continue;
+                                        }
+
+                                        if (!string.IsNullOrEmpty(move?.PlayerName))
+                                        {
+                                            var nameKeepPrefix = move.PlayerName + " keeps ";
+                                            if (sp.StartsWith(nameKeepPrefix, StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                var afterK2 = sp.Substring(nameKeepPrefix.Length).Trim();
+                                                // Skip numeric-only "keeps 1 card/s"
+                                                var startsWithDigit = afterK2.Length > 0 && char.IsDigit(afterK2[0]);
+                                                if (!startsWithDigit && afterK2.IndexOf("card/s", StringComparison.OrdinalIgnoreCase) < 0)
+                                                {
+                                                    foreach (var nm in SplitCardList(afterK2))
+                                                    {
+                                                        if (drawnNames.Contains(nm))
+                                                        {
+                                                            var gc = GetOrCreate(nm);
+                                                            if (!gc.SeenGen.HasValue) gc.SeenGen = sgen.Value;
+                                                            if (!gc.KeptGen.HasValue) gc.KeptGen = sgen.Value;
+                                                            resolvedCount++;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Buys: "You buy X" or "<POV name> buys X"
+                                        const string youBuyPrefix = "You buy ";
+                                        if (sp.StartsWith(youBuyPrefix, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            var afterB = sp.Substring(youBuyPrefix.Length).Trim();
+                                            if (!string.IsNullOrWhiteSpace(afterB))
+                                            {
+                                                foreach (var nm in SplitCardList(afterB))
+                                                {
+                                                    if (drawnNames.Contains(nm))
+                                                    {
+                                                        var gc = GetOrCreate(nm);
+                                                        if (!gc.SeenGen.HasValue) gc.SeenGen = sgen.Value;
+                                                        if (!gc.KeptGen.HasValue) gc.KeptGen = sgen.Value;
+                                                        if (!gc.BoughtGen.HasValue) gc.BoughtGen = sgen.Value;
+                                                        resolvedCount++;
+                                                    }
+                                                }
+                                            }
+                                            continue;
+                                        }
+
+                                        if (!string.IsNullOrEmpty(move?.PlayerName))
+                                        {
+                                            var nameBuyPrefix = move.PlayerName + " buys ";
+                                            if (sp.StartsWith(nameBuyPrefix, StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                var afterB2 = sp.Substring(nameBuyPrefix.Length).Trim();
+                                                foreach (var nm in SplitCardList(afterB2))
+                                                {
+                                                    if (drawnNames.Contains(nm))
+                                                    {
+                                                        var gc = GetOrCreate(nm);
+                                                        if (!gc.SeenGen.HasValue) gc.SeenGen = sgen.Value;
+                                                        if (!gc.KeptGen.HasValue) gc.KeptGen = sgen.Value;
+                                                        if (!gc.BoughtGen.HasValue) gc.BoughtGen = sgen.Value;
+                                                        resolvedCount++;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Fallback: if no explicit keeps/buys found in window, consider all drawn cards kept (not bought)
+                                if (resolvedCount == 0)
+                                {
+                                    foreach (var nm in drawnNames)
+                                    {
+                                        var gc = GetOrCreate(nm);
+                                        if (!gc.KeptGen.HasValue)
+                                        {
+                                            gc.KeptGen = gen.Value; // draw generation
+                                        }
+                                    }
+                                }
+                            }
+                            // else immediate skip → leave KeptGen null for all drawn cards
+                        }
+                    }
+
+                    // KeptGen: POV keeps a subset of drawn cards (e.g., "You keep X" or "<POV name> keeps X")
+                    if (gen.HasValue && move?.PlayerId == gameLogData.PlayerPerspective && !string.IsNullOrWhiteSpace(desc))
+                    {
+                        var segmentsKeep = desc.Split('|');
+                        foreach (var segK in segmentsKeep)
+                        {
+                            var sK = segK.Trim();
+
+                            // Pattern 1: "You keep A, B, C"
+                            const string youKeepPrefix = "You keep ";
+                            if (sK.StartsWith(youKeepPrefix, StringComparison.OrdinalIgnoreCase))
+                            {
+                                var after = sK.Substring(youKeepPrefix.Length).Trim();
+                                if (!string.IsNullOrWhiteSpace(after))
                                 {
                                     foreach (var name in SplitCardList(after))
                                     {
                                         var gc = GetOrCreate(name);
                                         if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
-                                        if (!gc.DrawnGen.HasValue) gc.DrawnGen = gen.Value;
+                                        if (!gc.KeptGen.HasValue) gc.KeptGen = gen.Value;
+                                    }
+                                }
+                                continue;
+                            }
+
+                            // Pattern 2: "<POV name> keeps <names>" (avoid numeric-only "keeps 1 card/s")
+                            if (!string.IsNullOrEmpty(move?.PlayerName))
+                            {
+                                var nameKeepPrefix = move.PlayerName + " keeps ";
+                                if (sK.StartsWith(nameKeepPrefix, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    var after = sK.Substring(nameKeepPrefix.Length).Trim();
+                                    // Avoid count-only keeps like "1 card/s"
+                                    var startsWithDigit = after.Length > 0 && char.IsDigit(after[0]);
+                                    if (!startsWithDigit && after.IndexOf("card/s", StringComparison.OrdinalIgnoreCase) < 0)
+                                    {
+                                        foreach (var name in SplitCardList(after))
+                                        {
+                                            var gc = GetOrCreate(name);
+                                            if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
+                                            if (!gc.KeptGen.HasValue) gc.KeptGen = gen.Value;
+                                        }
                                     }
                                 }
                             }
@@ -750,6 +1084,15 @@ namespace BgaTmScraperRegistry.Services
 
                     var gc = GetOrCreate(name);
                     gc.VpScored = vp;
+                }
+            }
+
+            // For cards that were played but have no per-card VP entry, treat as 0 VP rather than null
+            foreach (var gc in results.Values)
+            {
+                if (gc.PlayedGen.HasValue && gc.VpScored == null)
+                {
+                    gc.VpScored = 0;
                 }
             }
 
