@@ -17,6 +17,7 @@ export function CorporationStatsPage() {
   // Initialize filters with all options selected
   const [filters, setFilters] = useState<CorporationFilters>({
     playerCounts: [],
+    maps: [],
     positions: [],
   });
 
@@ -33,11 +34,13 @@ export function CorporationStatsPage() {
 
         // Initialize filters with all available options
         const playerCounts = [...new Set(response.data.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
+        const maps = [...new Set(response.data.map(row => row.map).filter(Boolean))].sort() as string[];
         const maxPosition = Math.max(...response.data.map(row => row.position || 0));
         const positions = Array.from({ length: maxPosition }, (_, i) => i + 1);
 
         setFilters({
           playerCounts: playerCounts as number[],
+          maps,
           positions,
         });
       } catch (err) {
@@ -54,6 +57,10 @@ export function CorporationStatsPage() {
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => {
     return [...new Set(data.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!) as number[];
+  }, [data]);
+
+  const availableMaps = useMemo(() => {
+    return [...new Set(data.map(row => row.map).filter(Boolean))].sort() as string[];
   }, [data]);
 
   const maxPosition = useMemo(() => {
@@ -85,6 +92,9 @@ export function CorporationStatsPage() {
 
       // Player count filter
       if (row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
+
+      // Map filter
+      if (row.map && !filters.maps.includes(row.map)) return false;
 
       // Min final score filter
       if (filters.minFinalScore && row.finalScore && row.finalScore < filters.minFinalScore) return false;
@@ -235,6 +245,7 @@ export function CorporationStatsPage() {
                   filters={filters}
                   onFiltersChange={handleFiltersChange}
                   availablePlayerCounts={availablePlayerCounts}
+                  availableMaps={availableMaps}
                   eloRange={eloRange}
                   scoreRange={scoreRange}
                   maxPosition={maxPosition}

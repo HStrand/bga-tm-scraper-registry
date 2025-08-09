@@ -16,6 +16,7 @@ export function ScoreEloScatter({ data, title = "Final Score vs Elo" }: ScoreElo
       playerName: row.playerName,
       position: row.position,
       playerCount: row.playerCount,
+      map: row.map,
       generations: row.generations,
     }));
 
@@ -41,7 +42,7 @@ export function ScoreEloScatter({ data, title = "Final Score vs Elo" }: ScoreElo
         {title}
       </h3>
       
-      <div className="h-80">
+      <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -85,6 +86,7 @@ export function ScoreEloScatter({ data, title = "Final Score vs Elo" }: ScoreElo
                         <div>Final Score: {data.finalScore}</div>
                         <div>Position: {data.position ? `${data.position}${data.position === 1 ? 'st' : data.position === 2 ? 'nd' : data.position === 3 ? 'rd' : 'th'}` : 'N/A'}</div>
                         <div>Players: {data.playerCount || 'N/A'}</div>
+                        <div>Map: {data.map || 'N/A'}</div>
                         <div>Generations: {data.generations || 'N/A'}</div>
                       </div>
                     </div>

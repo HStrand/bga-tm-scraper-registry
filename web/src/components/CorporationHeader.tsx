@@ -14,8 +14,8 @@ export function CorporationHeader({ slug, stats, isLoading }: CorporationHeaderP
   if (isLoading) {
     return (
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700">
-        <div className="flex items-center justify-between p-8">
-          <div className="flex-1">
+      <div className="grid grid-cols-12 gap-6 p-6 items-center">
+        <div className="col-span-12 md:col-span-8">
             <div className="h-8 w-48 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-4"></div>
             <div className="h-4 w-32 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-2"></div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
@@ -43,51 +43,51 @@ export function CorporationHeader({ slug, stats, isLoading }: CorporationHeaderP
         CORPORATION
       </span>
       
-      <div className="flex items-center justify-between p-8">
-        <div className="flex-1">
+      <div className="grid grid-cols-12 gap-6 p-6 items-center">
+        <div className="col-span-12 md:col-span-8">
           {/* Corporation name */}
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 mb-1">
             {displayName}
           </h1>
           <div className="h-1 w-28 rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500"></div>
           
           {/* Subtitle */}
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
+          <p className="text-slate-600 dark:text-slate-400 mb-4">
             Corporation Statistics & Performance
           </p>
           
           {/* Key metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4">
             <div className="text-center">
-              <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+              <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
                 {stats.totalGames.toLocaleString()}
               </div>
               <div className="text-sm text-slate-500 dark:text-slate-400">Games</div>
             </div>
 
             <div className="text-center">
-              <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+              <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
                 {(stats.winRate * 100).toFixed(1)}%
               </div>
               <div className="text-sm text-slate-500 dark:text-slate-400">Win Rate</div>
             </div>
 
             <div className="text-center">
-              <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+              <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
                 {stats.avgElo.toFixed(0)}
               </div>
               <div className="text-sm text-slate-500 dark:text-slate-400">Avg Elo</div>
             </div>
 
             <div className="text-center">
-              <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+              <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
                 {stats.avgFinalScore.toFixed(0)}
               </div>
               <div className="text-sm text-slate-500 dark:text-slate-400">Avg Score</div>
             </div>
 
             <div className="text-center">
-              <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+              <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
                 {Math.round(stats.avgDuration)}m
               </div>
               <div className="text-sm text-slate-500 dark:text-slate-400">Avg Duration</div>
@@ -96,12 +96,12 @@ export function CorporationHeader({ slug, stats, isLoading }: CorporationHeaderP
         </div>
         
         {/* Corporation image */}
-        <div className="ml-8 flex-shrink-0">
-          <div className="relative p-3 rounded-2xl bg-white/90 dark:bg-slate-800/70 ring-2 ring-amber-300/70 dark:ring-amber-700/50 shadow-xl">
+        <div className="col-span-12 md:col-span-4">
+          <div className="relative p-3 rounded-2xl bg-white/90 dark:bg-slate-800/70 ring-1 ring-amber-300/70 dark:ring-amber-700/50 shadow-xl flex items-center justify-center h-full">
             <img
               src={imageSrc}
               alt={displayName}
-              className="w-64 md:w-96 lg:w-[28rem] h-auto max-h-[22rem] object-contain rounded-xl"
+              className="w-full h-auto max-h-64 md:max-h-72 object-contain rounded-xl"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = getPlaceholderImage();

@@ -18,6 +18,7 @@ namespace BgaTmScraperRegistry.Functions
         public class CorporationPlayerStatsRow
         {
             public int TableId { get; set; }
+            public string Map {  get; set; }
             public int? PlayerCount { get; set; }
             public int? DurationMinutes { get; set; }
             public int? Generations { get; set; }
@@ -62,9 +63,10 @@ namespace BgaTmScraperRegistry.Functions
                 var sql = @"
 SELECT
 	gs.TableId,
+    g.Map,
 	gs.PlayerCount,
 	gs.DurationMinutes,
-	gs.Generations,
+	gs.Generations,    
 	gps.FinalScore,
 	gps.FinalTr,
 	gps.GreeneryPoints,
@@ -78,6 +80,7 @@ SELECT
 	gp.EloChange,
 	gp.Position
 FROM GamePlayerStats gps
+INNER JOIN Games g ON gps.TableId = g.TableId
 INNER JOIN GameStats gs ON gs.TableId = gps.TableId
 INNER JOIN GamePlayers gp ON gp.TableId = gs.TableId AND gp.PlayerId = gps.PlayerId
 INNER JOIN Players p ON p.PlayerId = gps.PlayerId

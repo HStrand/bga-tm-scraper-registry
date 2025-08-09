@@ -6,6 +6,7 @@ interface FiltersPanelProps {
   filters: CorporationFilters;
   onFiltersChange: (filters: CorporationFilters) => void;
   availablePlayerCounts: number[];
+  availableMaps: string[];
   eloRange: { min: number; max: number };
   scoreRange: { min: number; max: number };
   maxPosition: number;
@@ -15,6 +16,7 @@ export function FiltersPanel({
   filters,
   onFiltersChange,
   availablePlayerCounts,
+  availableMaps,
   eloRange,
   scoreRange,
   maxPosition,
@@ -37,6 +39,7 @@ export function FiltersPanel({
   const resetFilters = () => {
     const defaultFilters: CorporationFilters = {
       playerCounts: availablePlayerCounts,
+      maps: availableMaps,
       positions: Array.from({ length: maxPosition }, (_, i) => i + 1),
     };
     setLocalFilters(defaultFilters);
@@ -54,6 +57,13 @@ export function FiltersPanel({
       ? localFilters.positions.filter(p => p !== position)
       : [...localFilters.positions, position].sort((a, b) => a - b);
     updateFilters({ positions: newPositions });
+  };
+
+  const toggleMap = (map: string) => {
+    const newMaps = localFilters.maps.includes(map)
+      ? localFilters.maps.filter(m => m !== map)
+      : [...localFilters.maps, map].sort();
+    updateFilters({ maps: newMaps });
   };
 
   return (
@@ -125,6 +135,28 @@ export function FiltersPanel({
         </div>
       </div>
 
+      {/* Maps */}
+      <div className="space-y-3">
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Maps
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {availableMaps.map(map => (
+            <button
+              key={map}
+              onClick={() => toggleMap(map)}
+              className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                localFilters.maps.includes(map)
+                  ? 'bg-amber-50 dark:bg-amber-900/40 border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-200'
+                  : 'bg-white/60 dark:bg-slate-700/60 backdrop-blur-sm border-zinc-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50/70 dark:hover:bg-slate-600/70'
+              }`}
+            >
+              {map}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Min Final Score */}
       <div className="space-y-3">
         <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -170,6 +202,7 @@ export function FiltersPanel({
         <div className="text-xs text-slate-500 dark:text-slate-400">
           {localFilters.eloMin || localFilters.eloMax || localFilters.minFinalScore || 
            localFilters.playerCounts.length !== availablePlayerCounts.length ||
+           localFilters.maps.length !== availableMaps.length ||
            localFilters.positions.length !== maxPosition
             ? 'Filters active'
             : 'No filters applied'

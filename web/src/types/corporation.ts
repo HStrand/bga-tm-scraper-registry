@@ -3,6 +3,7 @@
 export interface CorporationPlayerStatsRow {
   tableId: number;
   playerCount?: number;
+  map?: string;
   durationMinutes?: number;
   generations?: number;
   finalScore?: number;
@@ -34,6 +35,7 @@ export interface CorporationFilters {
   eloMin?: number;
   eloMax?: number;
   playerCounts: number[];
+  maps: string[];
   minFinalScore?: number;
   positions: number[];
 }
