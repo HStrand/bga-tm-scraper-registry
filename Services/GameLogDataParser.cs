@@ -1202,6 +1202,9 @@ namespace BgaTmScraperRegistry.Services
                             // Treat drafted cards by any player as seen by POV
                             var gcSeen = GetOrCreate(draftedNameAny);
                             if (!gcSeen.SeenGen.HasValue) gcSeen.SeenGen = gen.Value;
+                            if (!gcSeen.DrawnGen.HasValue) gcSeen.DrawnGen = gen.Value;
+                            if (gcSeen.DrawType == null) gcSeen.DrawType = "Draft";
+                            if (gcSeen.DrawReason == null) gcSeen.DrawReason = "Draft";
                         }
                     }
 
@@ -1316,6 +1319,7 @@ namespace BgaTmScraperRegistry.Services
                             var gc = GetOrCreate(draftedName);
                             if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
                             if (!gc.DraftedGen.HasValue) gc.DraftedGen = gen.Value;
+                            if (!gc.DrawnGen.HasValue) gc.DrawnGen = gen.Value;
                             if (gc.DrawType == null) gc.DrawType = "Draft";
                             if (gc.DrawReason == null) gc.DrawReason = "Draft";
                         }
@@ -1349,6 +1353,9 @@ namespace BgaTmScraperRegistry.Services
                                         {
                                             var nearest = matching.OrderByDescending(e => e.MoveNumber).First();
                                             gc.DraftedGen = nearest.Generation;
+                                            if (!gc.DrawnGen.HasValue) gc.DrawnGen = nearest.Generation;
+                                            if (gc.DrawType == null) gc.DrawType = "Draft";
+                                            if (gc.DrawReason == null) gc.DrawReason = "Draft";
                                         }
                                     }
                                 }
@@ -1369,16 +1376,19 @@ namespace BgaTmScraperRegistry.Services
                                         if (!gc.KeptGen.HasValue) gc.KeptGen = gen.Value;
 
                                         // Heuristic: attribute DraftedGen to POV if prior draft event exists in same generation within window
-                                        const int draftWindow = 20;
-                                        if (!gc.DraftedGen.HasValue && gen.HasValue && move?.MoveNumber.HasValue == true && draftEvents.TryGetValue(name, out var evts2))
+                                    const int draftWindow = 20;
+                                    if (!gc.DraftedGen.HasValue && gen.HasValue && move?.MoveNumber.HasValue == true && draftEvents.TryGetValue(name, out var evts2))
+                                    {
+                                        var matching2 = evts2.Where(e => e.Generation == gen.Value && e.MoveNumber <= move.MoveNumber.Value && (move.MoveNumber.Value - e.MoveNumber) <= draftWindow);
+                                        if (matching2.Any())
                                         {
-                                            var matching2 = evts2.Where(e => e.Generation == gen.Value && e.MoveNumber <= move.MoveNumber.Value && (move.MoveNumber.Value - e.MoveNumber) <= draftWindow);
-                                            if (matching2.Any())
-                                            {
-                                                var nearest2 = matching2.OrderByDescending(e => e.MoveNumber).First();
-                                                gc.DraftedGen = nearest2.Generation;
-                                            }
+                                            var nearest2 = matching2.OrderByDescending(e => e.MoveNumber).First();
+                                            gc.DraftedGen = nearest2.Generation;
+                                            if (!gc.DrawnGen.HasValue) gc.DrawnGen = nearest2.Generation;
+                                            if (gc.DrawType == null) gc.DrawType = "Draft";
+                                            if (gc.DrawReason == null) gc.DrawReason = "Draft";
                                         }
+                                    }
                                     }
                                 }
                             }
