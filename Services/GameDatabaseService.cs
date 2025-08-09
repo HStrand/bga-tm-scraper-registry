@@ -744,8 +744,7 @@ namespace BgaTmScraperRegistry.Services
                     FROM GameCards
                 )
                 SELECT TableId, PlayerId
-                FROM Missing
-                ORDER BY TableId, PlayerId;";
+                FROM Missing;";
 
             if (top.HasValue && top.Value > 0)
             {
@@ -759,8 +758,7 @@ namespace BgaTmScraperRegistry.Services
                         FROM GameCards
                     )
                     SELECT TOP(@Top) TableId, PlayerId
-                    FROM Missing
-                    ORDER BY TableId, PlayerId;";
+                    FROM Missing;";
                 var topResults = await connection.QueryAsync<MissingStatsItem>(topQuery, new { Top = top.Value });
                 return topResults.ToList();
             }

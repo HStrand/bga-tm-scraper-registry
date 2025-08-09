@@ -1259,8 +1259,10 @@ namespace BgaTmScraperRegistry.Services
                             }
                         }
 
-                        // Pattern: "discards 1 card/s" (Mars University style)
-                        if (desc.IndexOf("discards 1 card/s", StringComparison.OrdinalIgnoreCase) >= 0 && pendingEffectsByPlayer.TryGetValue(move.PlayerId, out var lst3))
+                        // Pattern: "discards 1 card/s" or "discards a card" (Mars University style)
+                        if ((desc.IndexOf("discards 1 card/s", StringComparison.OrdinalIgnoreCase) >= 0
+                             || desc.IndexOf("discards a card", StringComparison.OrdinalIgnoreCase) >= 0)
+                            && pendingEffectsByPlayer.TryGetValue(move.PlayerId, out var lst3))
                         {
                             foreach (var pe in lst3.Where(p => string.Equals(p.Reason, "Mars University", StringComparison.OrdinalIgnoreCase) && p.RequiresSignal && !p.IsReady))
                             {
