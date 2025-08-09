@@ -266,3 +266,6 @@ __pycache__/
 
 # VSCode
 .vscode/
+
+# Web assets
+web/assets/
