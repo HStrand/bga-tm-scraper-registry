@@ -9,6 +9,30 @@ namespace BgaTmScraperRegistry.Services
 {
     public class GameLogDataParser
     {
+        private class PendingEffect
+        {
+            public string Reason;
+            public string SignalPattern;
+            public bool RequiresSignal;
+            public bool IsReady;
+            public int Remaining;
+            public int CreatedMoveNumber;
+            public int? ReadyMoveNumber;
+            public int? TargetDrawEventNo;
+
+            public PendingEffect(string reason, string signalPattern, bool requiresSignal, bool isReady, int remaining, int createdMoveNumber, int? readyMoveNumber = null, int? targetDrawEventNo = null)
+            {
+                Reason = reason;
+                SignalPattern = signalPattern;
+                RequiresSignal = requiresSignal;
+                IsReady = isReady;
+                Remaining = remaining;
+                CreatedMoveNumber = createdMoveNumber;
+                ReadyMoveNumber = readyMoveNumber;
+                TargetDrawEventNo = targetDrawEventNo;
+            }
+        }
+
         public GameStats ParseGameStats(GameLogData gameLogData)
         {
             if (gameLogData == null)
@@ -1149,6 +1173,8 @@ namespace BgaTmScraperRegistry.Services
             }
 
             var draftEvents = new Dictionary<string, List<(int MoveNumber, int Generation, string PlayerId)>>(StringComparer.OrdinalIgnoreCase);
+            var pendingEffectsByPlayer = new Dictionary<string, List<PendingEffect>>(StringComparer.OrdinalIgnoreCase);
+            var drawEventNoByPlayer = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
             if (gameLogData.Moves != null)
             {
@@ -1156,6 +1182,77 @@ namespace BgaTmScraperRegistry.Services
                 {
                     var desc = move?.Description ?? string.Empty;
                     var gen = move?.GameState?.Generation;
+
+                    // Enqueue pending effect entries for play_card moves that mention triggered effects (allowlist)
+                    if (string.Equals(move?.ActionType, "play_card", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(desc))
+                    {
+                        var segmentsTrig = desc.Split('|');
+                        var allowlist = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Olympus Conference", "Mars University", "Point Luna" };
+                        foreach (var segTrig in segmentsTrig)
+                        {
+                            var sTrig = segTrig.Trim();
+                            int idxTrig = sTrig.IndexOf("triggered effect of ", StringComparison.OrdinalIgnoreCase);
+                            if (idxTrig >= 0)
+                            {
+                                int start = idxTrig + "triggered effect of ".Length;
+                                int end = sTrig.IndexOf(':', start);
+                                if (end < 0) end = sTrig.IndexOf('|', start);
+                                var name = end >= 0 ? sTrig.Substring(start, end - start).Trim() : sTrig.Substring(start).Trim();
+                                if (!string.IsNullOrWhiteSpace(name) && allowlist.Contains(name))
+                                {
+                                    bool requiresSignal = !string.Equals(name, "Point Luna", StringComparison.OrdinalIgnoreCase);
+                                    bool isReady = string.Equals(name, "Point Luna", StringComparison.OrdinalIgnoreCase);
+                                    if (!pendingEffectsByPlayer.TryGetValue(move.PlayerId, out var lst)) { lst = new List<PendingEffect>(); pendingEffectsByPlayer[move.PlayerId] = lst; }
+                                    // Determine next draw event number for this player (default 1 if not present)
+                                    int nextDrawNo = drawEventNoByPlayer.TryGetValue(move.PlayerId, out var curDrawNo) ? (curDrawNo + 1) : 1;
+                                    // If the effect is immediately ready (Point Luna), set ReadyMoveNumber and TargetDrawEventNo now; otherwise they'll be set when the signal appears
+                                    int? readyMn = isReady ? (move.MoveNumber ?? 0) : (int?)null;
+                                    int? targetDraw = isReady ? nextDrawNo : (int?)null;
+                                    lst.Add(new PendingEffect(name, null, requiresSignal, isReady, 1, move.MoveNumber ?? 0, readyMn, targetDraw));
+                                }
+                            }
+                        }
+                    }
+
+                    // Detect immediate signals in this move (e.g., "removes ... from <CardName>" or "discards 1 card/s")
+                    if (!string.IsNullOrWhiteSpace(desc))
+                    {
+                        // Pattern: "removes <Resource> from <CardName>"
+                        int idxRem = desc.IndexOf("removes ", StringComparison.OrdinalIgnoreCase);
+                        if (idxRem >= 0)
+                        {
+                            int idxFrom = desc.IndexOf(" from ", idxRem, StringComparison.OrdinalIgnoreCase);
+                            if (idxFrom > idxRem)
+                            {
+                                int start = idxFrom + " from ".Length;
+                                int end = desc.IndexOf('|', start);
+                                var name = end >= 0 ? desc.Substring(start, end - start).Trim() : desc.Substring(start).Trim();
+                                if (!string.IsNullOrWhiteSpace(name) && pendingEffectsByPlayer.TryGetValue(move.PlayerId, out var lst2))
+                                {
+                                    foreach (var pe in lst2.Where(p => string.Equals(p.Reason, name, StringComparison.OrdinalIgnoreCase) && p.RequiresSignal && !p.IsReady))
+                                    {
+                                        pe.IsReady = true;
+                                        pe.ReadyMoveNumber = move.MoveNumber ?? 0;
+                                        // Target the next draw event for this player
+                                        int tgt = drawEventNoByPlayer.TryGetValue(move.PlayerId, out var cur) ? (cur + 1) : 1;
+                                        pe.TargetDrawEventNo = tgt;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Pattern: "discards 1 card/s" (Mars University style)
+                        if (desc.IndexOf("discards 1 card/s", StringComparison.OrdinalIgnoreCase) >= 0 && pendingEffectsByPlayer.TryGetValue(move.PlayerId, out var lst3))
+                        {
+                            foreach (var pe in lst3.Where(p => string.Equals(p.Reason, "Mars University", StringComparison.OrdinalIgnoreCase) && p.RequiresSignal && !p.IsReady))
+                            {
+                                pe.IsReady = true;
+                                pe.ReadyMoveNumber = move.MoveNumber ?? 0;
+                                int tgt = drawEventNoByPlayer.TryGetValue(move.PlayerId, out var cur2) ? (cur2 + 1) : 1;
+                                pe.TargetDrawEventNo = tgt;
+                            }
+                        }
+                    }
 
                     // Record draft events from any player to handle mis-attributed logs
                     if (string.Equals(move?.ActionType, "draft_card", StringComparison.OrdinalIgnoreCase))
@@ -1464,8 +1561,50 @@ namespace BgaTmScraperRegistry.Services
                             }
                         }
 
-                        // Infer DrawType/DrawReason by looking back up to 3 same-player moves when not draft
+                        // Allocate ready pending effects for this player's draws first (strict adjacency to next draw event)
+                        bool classifiedAsEffect = false;
                         if (!classifiedAsDraft && drawnNames.Count > 0 && move?.MoveNumber.HasValue == true)
+                        {
+                            if (!drawEventNoByPlayer.TryGetValue(move.PlayerId, out var curDrawNo)) curDrawNo = 0;
+                            var nextDrawEventNo = curDrawNo + 1;
+
+                            if (pendingEffectsByPlayer.TryGetValue(move.PlayerId, out var plist) && plist.Count > 0)
+                            {
+                                // Select effects that target this upcoming draw event and are ready
+                                var readyEffects = plist
+                                    .Where(p => p.IsReady && p.Remaining > 0 && p.TargetDrawEventNo.HasValue && p.TargetDrawEventNo.Value == nextDrawEventNo)
+                                    .OrderBy(p => p.ReadyMoveNumber ?? 0)
+                                    .ToList();
+
+                                // Assign per-card (preserve drawnNames order)
+                                var unassigned = drawnNames.ToList();
+                                int effectIndex = 0;
+                                for (int i = 0; i < unassigned.Count; i++)
+                                {
+                                    var nm = unassigned[i];
+                                    if (effectIndex >= readyEffects.Count) break;
+                                    var eff = readyEffects[effectIndex];
+                                    if (eff.Remaining > 0)
+                                    {
+                                        var gc = GetOrCreate(nm);
+                                        if (gc.DrawType == null) gc.DrawType = "Effect";
+                                        if (gc.DrawReason == null) gc.DrawReason = eff.Reason;
+                                        eff.Remaining--;
+                                        if (eff.Remaining <= 0) effectIndex++;
+                                    }
+                                }
+
+                                // Remove consumed effects
+                                plist.RemoveAll(p => p.Remaining <= 0);
+                                classifiedAsEffect = readyEffects.Count > 0;
+                            }
+
+                            // Advance the player's draw-event counter (we handled this drawEvent)
+                            drawEventNoByPlayer[move.PlayerId] = nextDrawEventNo;
+                        }
+
+                        // Infer DrawType/DrawReason by looking back up to 3 same-player moves when not draft or effect
+                        if (!classifiedAsDraft && !classifiedAsEffect && drawnNames.Count > 0 && move?.MoveNumber.HasValue == true)
                         {
                             string inferredType = null;
                             string inferredReason = null;
