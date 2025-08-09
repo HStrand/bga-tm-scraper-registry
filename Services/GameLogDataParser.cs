@@ -33,6 +33,24 @@ namespace BgaTmScraperRegistry.Services
             }
         }
 
+        private class PendingPlayReveal
+        {
+            public string PlayedCard;
+            public string TagKeyword; // e.g., "Space" or "Plant"
+            public int Remaining;
+            public int CreatedMoveNumber;
+            public int LastSeenMoveNumber;
+
+            public PendingPlayReveal(string playedCard, string tagKeyword, int remaining, int createdMoveNumber)
+            {
+                PlayedCard = playedCard;
+                TagKeyword = tagKeyword;
+                Remaining = remaining;
+                CreatedMoveNumber = createdMoveNumber;
+                LastSeenMoveNumber = createdMoveNumber;
+            }
+        }
+
         public GameStats ParseGameStats(GameLogData gameLogData)
         {
             if (gameLogData == null)
@@ -1328,7 +1346,7 @@ namespace BgaTmScraperRegistry.Services
                         }
                     }
 
-                    // SeenGen from "reveals <Card>:" phrases (any player)
+                    // SeenGen and Reveal handling from "reveals <Card>:" phrases (any player)
                     if (gen.HasValue && desc.IndexOf("reveals ", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         var segmentsReveal = desc.Split('|');
@@ -1344,10 +1362,30 @@ namespace BgaTmScraperRegistry.Services
                                 int colonIdx = sR.IndexOf(':', nameStart);
                                 if (colonIdx < 0) break;
                                 var name = sR.Substring(nameStart, colonIdx - nameStart).Trim();
+                                var after = sR.Substring(colonIdx + 1).Trim();
                                 if (!string.IsNullOrWhiteSpace(name))
                                 {
                                     var gc = GetOrCreate(name);
                                     if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
+
+                                    // For POV reveals, if the revealed card has a target tag, treat as a Reveal draw and mark Kept
+                                    if (move?.PlayerId == gameLogData.PlayerPerspective)
+                                    {
+                                        if (after.IndexOf("has a Space tag", StringComparison.OrdinalIgnoreCase) >= 0)
+                                        {
+                                            if (!gc.DrawnGen.HasValue) gc.DrawnGen = gen.Value;
+                                            if (!gc.KeptGen.HasValue) gc.KeptGen = gen.Value;
+                                            if (gc.DrawType == null) gc.DrawType = "Reveal";
+                                            if (gc.DrawReason == null) gc.DrawReason = "Space tag";
+                                        }
+                                        else if (after.IndexOf("has a Plant tag", StringComparison.OrdinalIgnoreCase) >= 0)
+                                        {
+                                            if (!gc.DrawnGen.HasValue) gc.DrawnGen = gen.Value;
+                                            if (!gc.KeptGen.HasValue) gc.KeptGen = gen.Value;
+                                            if (gc.DrawType == null) gc.DrawType = "Reveal";
+                                            if (gc.DrawReason == null) gc.DrawReason = "Plant tag";
+                                        }
+                                    }
                                 }
                                 searchStart = colonIdx + 1;
                             }
@@ -1669,28 +1707,46 @@ namespace BgaTmScraperRegistry.Services
                                     }
                                 }
 
-                                // Tile
-                                if (inferredType == null && ldesc.IndexOf("places tile", StringComparison.OrdinalIgnoreCase) >= 0)
+                                // Tile - robust handling for various "places ..." segments including special tiles and oceans
+                                if (inferredType == null)
                                 {
                                     var segs = ldesc.Split('|');
                                     foreach (var seg2 in segs)
                                     {
                                         var s2 = seg2.Trim();
-                                        string loc = null;
-                                        var idxInto = s2.IndexOf(" into ", StringComparison.OrdinalIgnoreCase);
-                                        if (idxInto >= 0)
-                                        {
-                                            loc = s2.Substring(idxInto + " into ".Length).Trim();
-                                        }
-                                        else
-                                        {
-                                            var idxAt = s2.IndexOf(" at ", StringComparison.OrdinalIgnoreCase);
-                                            if (idxAt >= 0)
-                                            {
-                                                loc = s2.Substring(idxAt + " at ".Length).Trim();
-                                            }
-                                        }
-                                        if (!string.IsNullOrWhiteSpace(loc))
+
+                                        // Require this segment to be a placement phrase and to contain a Hex or coords
+                                        if (s2.IndexOf("places", StringComparison.OrdinalIgnoreCase) < 0)
+                                            continue;
+                                        bool hasHex = s2.IndexOf("Hex", StringComparison.OrdinalIgnoreCase) >= 0;
+                                        bool hasCoords = s2.IndexOf("(") >= 0 && s2.IndexOf(")") > s2.IndexOf("(");
+                                        if (!(hasHex || hasCoords))
+                                            continue;
+
+                                        // Prefer extracting the token that includes map/Hex info
+                                        int idxHex = s2.IndexOf("Hex", StringComparison.OrdinalIgnoreCase);
+                                        int idxOn = s2.LastIndexOf(" on ", StringComparison.OrdinalIgnoreCase);
+                                        int idxInto = s2.LastIndexOf(" into ", StringComparison.OrdinalIgnoreCase);
+                                        int idxAt = s2.LastIndexOf(" at ", StringComparison.OrdinalIgnoreCase);
+
+                                        int start = -1;
+                                        if (idxHex >= 0 && idxOn >= 0 && idxOn < idxHex)
+                                            start = idxOn + " on ".Length; // e.g., "places Ocean on Amazonis Hex 3,8 (3,8)"
+                                        else if (idxHex >= 0 && idxInto >= 0 && idxInto < idxHex)
+                                            start = idxInto + " into ".Length; // e.g., "places tile ... into Hex at (6,1)"
+                                        else if (idxHex >= 0)
+                                            start = idxHex; // fallback to start at "Hex ..."
+                                        else if (idxAt >= 0)
+                                            start = idxAt + " at ".Length; // final fallback to "at (x,y)"
+
+                                        if (start < 0 || start >= s2.Length) continue;
+
+                                        var loc = s2.Substring(start).Trim().TrimEnd('.', ',');
+                                        if (string.IsNullOrWhiteSpace(loc)) continue;
+
+                                        // Validate extracted location contains a Hex token or coords
+                                        if (loc.IndexOf("Hex", StringComparison.OrdinalIgnoreCase) >= 0
+                                            || (loc.IndexOf("(") >= 0 && loc.IndexOf(")") > loc.IndexOf("(")))
                                         {
                                             inferredType = "Tile";
                                             inferredReason = loc;
@@ -1937,8 +1993,57 @@ namespace BgaTmScraperRegistry.Services
                                 }
                             }
                         }
-                        if (!string.IsNullOrWhiteSpace(playedName))
+
+                        // If the play reveals cards (e.g., Acquired Space Agency), treat revealed space-tag cards as drawn by this play
+                        if (!string.IsNullOrWhiteSpace(playedName) && !string.IsNullOrWhiteSpace(desc))
                         {
+                            var segsCheck = desc.Split('|');
+                            foreach (var segCheck in segsCheck)
+                            {
+                                var sCheck = segCheck.Trim();
+                                int idxRev = sCheck.IndexOf("reveals ", StringComparison.OrdinalIgnoreCase);
+                                if (idxRev < 0) continue;
+
+                                // There may be multiple "reveals" tokens in the same segment; scan them
+                                int searchPos = 0;
+                                while (true)
+                                {
+                                    int found = sCheck.IndexOf("reveals ", searchPos, StringComparison.OrdinalIgnoreCase);
+                                    if (found < 0) break;
+                                    int nameStart = found + "reveals ".Length;
+                                    int colonIdx = sCheck.IndexOf(':', nameStart);
+                                    if (colonIdx < 0)
+                                    {
+                                        // No colon -> can't reliably parse reason/metadata; stop scanning this segment
+                                        break;
+                                    }
+                                    var revealedName = sCheck.Substring(nameStart, colonIdx - nameStart).Trim();
+                                    var after = sCheck.Substring(colonIdx + 1).Trim();
+
+                                    if (!string.IsNullOrWhiteSpace(revealedName))
+                                    {
+                                        // If the reveal indicates the card has a Space tag, treat it as drawn by the played card
+                                        if (after.IndexOf("has a Space tag", StringComparison.OrdinalIgnoreCase) >= 0)
+                                        {
+                                            var gcRevealed = GetOrCreate(revealedName);
+                                            if (!gcRevealed.SeenGen.HasValue) gcRevealed.SeenGen = gen.Value;
+                                            if (!gcRevealed.DrawnGen.HasValue) gcRevealed.DrawnGen = gen.Value;
+                                            if (gcRevealed.DrawType == null) gcRevealed.DrawType = "PlayCard";
+                                            if (gcRevealed.DrawReason == null) gcRevealed.DrawReason = playedName;
+                                        }
+                                        else
+                                        {
+                                            // Generic reveal without the desired tag: mark as seen only (existing behavior)
+                                            var gcSeen = GetOrCreate(revealedName);
+                                            if (!gcSeen.SeenGen.HasValue) gcSeen.SeenGen = gen.Value;
+                                        }
+                                    }
+
+                                    searchPos = colonIdx + 1;
+                                }
+                            }
+
+                            // Also mark the played card as seen/played (existing behavior)
                             var gc = GetOrCreate(playedName);
                             if (!gc.SeenGen.HasValue) gc.SeenGen = gen.Value;
                             if (!gc.PlayedGen.HasValue) gc.PlayedGen = gen.Value;
