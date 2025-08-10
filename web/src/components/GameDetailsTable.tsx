@@ -195,6 +195,18 @@ export function GameDetailsTable({ data }: GameDetailsTableProps) {
               </th>
               <th 
                 className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
+                onClick={() => handleSort('gameMode')}
+              >
+                Game Mode {getSortIcon('gameMode')}
+              </th>
+              <th 
+                className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
+                onClick={() => handleSort('gameSpeed')}
+              >
+                Speed {getSortIcon('gameSpeed')}
+              </th>
+              <th 
+                className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
                 onClick={() => handleSort('generations')}
               >
                 Generations {getSortIcon('generations')}
@@ -233,6 +245,12 @@ export function GameDetailsTable({ data }: GameDetailsTableProps) {
                 </td>
                 <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                   {row.map || 'N/A'}
+                </td>
+                <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                  {row.gameMode || 'N/A'}
+                </td>
+                <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                  {row.gameSpeed || 'N/A'}
                 </td>
                 <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                   {row.generations || 'N/A'}

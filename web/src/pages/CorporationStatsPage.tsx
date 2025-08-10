@@ -21,6 +21,11 @@ export function CorporationStatsPage() {
   const [filters, setFilters] = useState<CorporationFilters>({
     playerCounts: [],
     maps: [],
+    gameModes: [],
+    gameSpeed: undefined,
+    preludeOn: undefined,
+    coloniesOn: undefined,
+    draftOn: undefined,
   });
 
   // Fetch data
@@ -37,10 +42,16 @@ export function CorporationStatsPage() {
         // Initialize filters with all available options
         const playerCounts = [...new Set(response.data.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
         const maps = [...new Set(response.data.map(row => row.map).filter(Boolean))].sort() as string[];
+        const gameModes = [...new Set(response.data.map(row => row.gameMode).filter(Boolean))].sort() as string[];
 
         setFilters({
           playerCounts: playerCounts as number[],
           maps,
+          gameModes,
+          gameSpeed: undefined,
+          preludeOn: undefined,
+          coloniesOn: undefined,
+          draftOn: undefined,
         });
       } catch (err) {
         console.error('Error fetching corporation stats:', err);
@@ -60,6 +71,14 @@ export function CorporationStatsPage() {
 
   const availableMaps = useMemo(() => {
     return [...new Set(data.map(row => row.map).filter(Boolean))].sort() as string[];
+  }, [data]);
+
+  const availableGameModes = useMemo(() => {
+    return [...new Set(data.map(row => row.gameMode).filter(Boolean))].sort() as string[];
+  }, [data]);
+
+  const availableGameSpeeds = useMemo(() => {
+    return [...new Set(data.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
   }, [data]);
 
 
@@ -84,6 +103,17 @@ export function CorporationStatsPage() {
 
       // Map filter
       if (row.map && !filters.maps.includes(row.map)) return false;
+
+      // Game mode filter
+      if (row.gameMode && !filters.gameModes.includes(row.gameMode)) return false;
+
+      // Game speed filter
+      if (filters.gameSpeed && row.gameSpeed !== filters.gameSpeed) return false;
+
+      // Expansion filters
+      if (filters.preludeOn !== undefined && row.preludeOn !== filters.preludeOn) return false;
+      if (filters.coloniesOn !== undefined && row.coloniesOn !== filters.coloniesOn) return false;
+      if (filters.draftOn !== undefined && row.draftOn !== filters.draftOn) return false;
 
       return true;
     });
@@ -261,6 +291,8 @@ export function CorporationStatsPage() {
                   onFiltersChange={handleFiltersChange}
                   availablePlayerCounts={availablePlayerCounts}
                   availableMaps={availableMaps}
+                  availableGameModes={availableGameModes}
+                  availableGameSpeeds={availableGameSpeeds}
                   eloRange={eloRange}
                 />
               )}

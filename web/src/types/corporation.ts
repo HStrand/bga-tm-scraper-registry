@@ -2,8 +2,13 @@
 
 export interface CorporationPlayerStatsRow {
   tableId: number;
-  playerCount?: number;
   map?: string;
+  preludeOn?: boolean;
+  coloniesOn?: boolean;
+  draftOn?: boolean;
+  gameMode?: string;
+  gameSpeed?: string;
+  playerCount?: number;
   durationMinutes?: number;
   generations?: number;
   finalScore?: number;
@@ -37,6 +42,11 @@ export interface CorporationFilters {
   eloMax?: number;
   playerCounts: number[];
   maps: string[];
+  gameModes: string[];
+  gameSpeed?: string;
+  preludeOn?: boolean;
+  coloniesOn?: boolean;
+  draftOn?: boolean;
 }
 
 export interface HistogramBin {
