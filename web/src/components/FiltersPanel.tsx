@@ -28,6 +28,7 @@ export function FiltersPanel({
   const gameSpeedDropdownRef = useRef<HTMLDivElement>(null);
   const [playerSearchOpen, setPlayerSearchOpen] = useState(false);
   const [playerSearchQuery, setPlayerSearchQuery] = useState('');
+  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState(-1);
   const playerSearchRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
@@ -101,6 +102,48 @@ export function FiltersPanel({
     updateFilters({ gameSpeeds: newGameSpeeds });
   };
 
+  // Get filtered player names for keyboard navigation
+  const filteredPlayerNames = availablePlayerNames
+    .filter(name => name.toLowerCase().includes(playerSearchQuery.toLowerCase()))
+    .slice(0, 10);
+
+  const selectPlayer = (playerName: string) => {
+    updateFilters({ playerName });
+    setPlayerSearchQuery(playerName);
+    setPlayerSearchOpen(false);
+    setSelectedPlayerIndex(-1);
+  };
+
+  const handlePlayerSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (!playerSearchOpen || filteredPlayerNames.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedPlayerIndex(prev => 
+          prev < filteredPlayerNames.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedPlayerIndex(prev => 
+          prev > 0 ? prev - 1 : filteredPlayerNames.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedPlayerIndex >= 0 && selectedPlayerIndex < filteredPlayerNames.length) {
+          selectPlayer(filteredPlayerNames[selectedPlayerIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setPlayerSearchOpen(false);
+        setSelectedPlayerIndex(-1);
+        break;
+    }
+  };
+
   return (
     <div className="bg-white/90 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl border border-zinc-200 dark:border-slate-700 p-6 space-y-6 shadow-sm">
       <div className="flex items-center justify-between">
@@ -161,8 +204,10 @@ export function FiltersPanel({
             onChange={(e) => {
               setPlayerSearchQuery(e.target.value);
               setPlayerSearchOpen(e.target.value.length > 0);
+              setSelectedPlayerIndex(-1); // Reset selection when typing
             }}
             onFocus={() => setPlayerSearchOpen(playerSearchQuery.length > 0)}
+            onKeyDown={handlePlayerSearchKeyDown}
             className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
           />
           {localFilters.playerName && (
@@ -183,23 +228,20 @@ export function FiltersPanel({
           {playerSearchOpen && playerSearchQuery.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-zinc-300 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-auto">
               <div className="p-2">
-                {availablePlayerNames
-                  .filter(name => name.toLowerCase().includes(playerSearchQuery.toLowerCase()))
-                  .slice(0, 10) // Limit to 10 results
-                  .map(playerName => (
-                    <div
-                      key={playerName}
-                      onClick={() => {
-                        updateFilters({ playerName });
-                        setPlayerSearchQuery(playerName);
-                        setPlayerSearchOpen(false);
-                      }}
-                      className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded cursor-pointer text-sm text-slate-900 dark:text-slate-100"
-                    >
-                      {playerName}
-                    </div>
-                  ))}
-                {availablePlayerNames.filter(name => name.toLowerCase().includes(playerSearchQuery.toLowerCase())).length === 0 && (
+                {filteredPlayerNames.map((playerName, index) => (
+                  <div
+                    key={playerName}
+                    onClick={() => selectPlayer(playerName)}
+                    className={`p-2 rounded cursor-pointer text-sm transition-colors ${
+                      index === selectedPlayerIndex
+                        ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100'
+                        : 'text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {playerName}
+                  </div>
+                ))}
+                {filteredPlayerNames.length === 0 && (
                   <div className="p-2 text-sm text-slate-500 dark:text-slate-400">
                     No players found
                   </div>
