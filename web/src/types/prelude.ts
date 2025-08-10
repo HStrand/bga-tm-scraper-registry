@@ -30,6 +30,7 @@ export interface PreludeDetailFilters {
   maps: string[];
   gameModes: string[];
   gameSpeeds: string[];
+  playerCounts: number[];
   corporations: string[];
   preludeOn?: boolean;
   coloniesOn?: boolean;
@@ -43,6 +44,7 @@ export interface PreludePlayerStatsRow {
   map: string;
   gameMode: string;
   gameSpeed: string;
+  playerCount?: number;
   preludeOn: boolean;
   coloniesOn: boolean;
   draftOn: boolean;

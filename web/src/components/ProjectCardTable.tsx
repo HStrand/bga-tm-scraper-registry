@@ -177,6 +177,12 @@ export function ProjectCardTable({ data }: ProjectCardTableProps) {
               </th>
               <th 
                 className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
+                onClick={() => handleSort('playerCount')}
+              >
+                Players {getSortIcon('playerCount')}
+              </th>
+              <th 
+                className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
                 onClick={() => handleSort('map')}
               >
                 Map {getSortIcon('map')}
@@ -225,6 +231,9 @@ export function ProjectCardTable({ data }: ProjectCardTableProps) {
                 </td>
                 <td className="px-4 py-3 text-sm">
                   {getPositionDisplay(row.position)}
+                </td>
+                <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                  {row.playerCount ? `${row.playerCount}P` : 'N/A'}
                 </td>
                 <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                   {row.map || 'N/A'}

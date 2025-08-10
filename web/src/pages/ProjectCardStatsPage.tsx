@@ -46,9 +46,10 @@ export function ProjectCardStatsPage() {
         const maps = [...new Set(response.data.map(row => row.map).filter(Boolean))].sort() as string[];
         const gameModes = [...new Set(response.data.map(row => row.gameMode).filter(Boolean))].sort() as string[];
         const gameSpeeds = [...new Set(response.data.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
+        const playerCounts = [...new Set(response.data.map(row => row.playerCount).filter((c): c is number => !!c))].sort((a, b) => a - b) as number[];
 
         setFilters({
-          playerCounts: [], // Not available in project card data
+          playerCounts,
           maps,
           gameModes,
           gameSpeeds,
@@ -69,7 +70,7 @@ export function ProjectCardStatsPage() {
 
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => {
-    return [] as number[]; // Not available in project card data
+    return [...new Set(data.map(row => row.playerCount).filter((c): c is number => !!c))].sort((a, b) => a - b);
   }, [data]);
 
   const availableMaps = useMemo(() => {
@@ -116,8 +117,8 @@ export function ProjectCardStatsPage() {
       // Player name filter
       if (filters.playerName && row.playerName !== filters.playerName) return false;
 
-      // Player count filter (derived from game data, not directly available)
-      // We'll skip this for now since it's not in the project card data structure
+      // Player count filter
+      if (row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
 
       // Map filter
       if (row.map && !filters.maps.includes(row.map)) return false;

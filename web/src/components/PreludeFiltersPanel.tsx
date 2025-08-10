@@ -73,12 +73,20 @@ export function PreludeFiltersPanel({
       maps: availableMaps,
       gameModes: availableGameModes,
       gameSpeeds: availableGameSpeeds,
+      playerCounts: availablePlayerCounts,
       corporations: availableCorporations,
       preludeOn: undefined,
       coloniesOn: undefined,
       draftOn: undefined,
     };
     setLocalFilters(defaultFilters);
+  };
+
+  const togglePlayerCount = (count: number) => {
+    const newCounts = localFilters.playerCounts.includes(count)
+      ? localFilters.playerCounts.filter(c => c !== count)
+      : [...localFilters.playerCounts, count].sort((a, b) => a - b);
+    updateFilters({ playerCounts: newCounts });
   };
 
   const toggleMap = (map: string) => {
@@ -262,6 +270,28 @@ export function PreludeFiltersPanel({
             Filtering by: <span className="font-medium text-amber-600 dark:text-amber-400">{localFilters.playerName}</span>
           </div>
         )}
+      </div>
+
+      {/* Player Count */}
+      <div className="space-y-3">
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Player Count
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {availablePlayerCounts.map(count => (
+            <button
+              key={count}
+              onClick={() => togglePlayerCount(count)}
+              className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                localFilters.playerCounts.includes(count)
+                  ? 'bg-amber-50 dark:bg-amber-900/40 border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-200'
+                  : 'bg-white/60 dark:bg-slate-700/60 backdrop-blur-sm border-zinc-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50/70 dark:hover:bg-slate-600/70'
+              }`}
+            >
+              {count}P
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Maps */}
@@ -530,6 +560,7 @@ export function PreludeFiltersPanel({
            localFilters.maps.length !== availableMaps.length ||
            localFilters.gameModes.length !== availableGameModes.length ||
            localFilters.gameSpeeds.length !== availableGameSpeeds.length ||
+           localFilters.playerCounts.length !== availablePlayerCounts.length ||
            localFilters.corporations.length !== availableCorporations.length ||
            localFilters.playerName
             ? 'Filters active'

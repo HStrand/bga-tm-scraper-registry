@@ -6,6 +6,7 @@ export interface ProjectCardPlayerStatsRow {
   map?: string;
   gameMode?: string;
   gameSpeed?: string;
+  playerCount?: number;
   preludeOn?: boolean;
   coloniesOn?: boolean;
   draftOn?: boolean;

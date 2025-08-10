@@ -22,6 +22,7 @@ export function PreludeStatsPage() {
     maps: [],
     gameModes: [],
     gameSpeeds: [],
+    playerCounts: [],
     corporations: [],
     preludeOn: undefined,
     coloniesOn: undefined,
@@ -45,11 +46,13 @@ export function PreludeStatsPage() {
         const gameModes = [...new Set(response.map(row => row.gameMode).filter(Boolean))].sort() as string[];
         const gameSpeeds = [...new Set(response.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
         const corporations = [...new Set(response.map(row => row.corporation).filter(Boolean))].sort() as string[];
+        const playerCounts = [...new Set(response.map(row => row.playerCount).filter((c): c is number => !!c))].sort((a, b) => a - b) as number[];
 
         setFilters({
           maps,
           gameModes,
           gameSpeeds,
+          playerCounts,
           corporations,
           preludeOn: undefined,
           coloniesOn: undefined,
@@ -68,7 +71,7 @@ export function PreludeStatsPage() {
 
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => {
-    return [] as number[]; // Not available in prelude data
+    return [...new Set(data.map(row => row.playerCount).filter((c): c is number => !!c))].sort((a, b) => a - b);
   }, [data]);
 
   const availableMaps = useMemo(() => {
@@ -117,6 +120,9 @@ export function PreludeStatsPage() {
 
       // Game speed filter
       if (row.gameSpeed && !filters.gameSpeeds.includes(row.gameSpeed)) return false;
+
+      // Player count filter
+      if (row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
 
       // Corporation filter
       if (row.corporation && !filters.corporations.includes(row.corporation)) return false;

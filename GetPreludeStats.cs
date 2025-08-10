@@ -39,6 +39,7 @@ namespace BgaTmScraperRegistry.Functions
             public int? EloChange { get; set; }
             public int? Position { get; set; }
             public string Corporation { get; set; }
+            public int? PlayerCount { get; set; }
         }
 
         [FunctionName(nameof(GetPreludeStats))]
@@ -88,13 +89,15 @@ SELECT
 	gp.Elo,
 	gp.EloChange,
 	gp.Position,
-	gps.Corporation
+	gps.Corporation,
+	pc.PlayerCount
 FROM GameCards gc
 INNER JOIN GamePlayers gp ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
 INNER JOIN GamePlayerStats gps ON gps.TableId = gp.TableId AND gps.PlayerId = gp.PlayerId 
     AND gps.Corporation <> 'Unknown'
 INNER JOIN Games g ON g.TableId = gp.TableId
     AND gc.PlayedGen IS NOT NULL
+INNER JOIN ( SELECT TableId, PlayerCount FROM GameStats ) pc ON pc.TableId = gc.TableId
 WHERE LOWER(gc.Card) = LOWER(@CardName)";
 
                 using var conn = new SqlConnection(connectionString);
