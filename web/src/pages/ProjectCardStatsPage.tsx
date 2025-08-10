@@ -10,6 +10,7 @@ import { EloGainByGeneration } from '@/components/charts/EloGainByGeneration';
 import { GenerationDistribution } from '@/components/charts/GenerationDistribution';
 import { ProjectCardTable } from '@/components/ProjectCardTable';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/BackButton';
 import { slugToCardName } from '@/lib/card';
 
 export function ProjectCardStatsPage() {
@@ -330,7 +331,10 @@ export function ProjectCardStatsPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
+        {/* Back + Header */}
+        <div className="flex items-center justify-between mb-3">
+          <BackButton fallbackPath="/cards" />
+        </div>
         <div className="mb-8">
           <ProjectCardHeader slug={slug} stats={stats} isLoading={loading} />
         </div>

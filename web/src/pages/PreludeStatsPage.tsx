@@ -9,6 +9,7 @@ import { GameDetailsTable } from '@/components/GameDetailsTable';
 import { Button } from '@/components/ui/button';
 import { slugToPreludeName } from '@/lib/prelude';
 import { getPreludePlayerStats } from '@/lib/preludeCache';
+import { BackButton } from '@/components/BackButton';
 
 export function PreludeStatsPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -320,7 +321,10 @@ export function PreludeStatsPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
+        {/* Back + Header */}
+        <div className="flex items-center justify-between mb-3">
+          <BackButton fallbackPath="/preludes" />
+        </div>
         <div className="mb-8">
           <PreludeHeader slug={slug} stats={stats} isLoading={loading} />
         </div>

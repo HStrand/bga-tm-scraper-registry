@@ -18,7 +18,7 @@ function getEloChangeDisplay(eloChange: number | null | undefined): string {
 export function PreludeHeader({ slug, stats, isLoading }: PreludeHeaderProps) {
   const preludeName = slugToPreludeName(slug);
   const imageSrc = getPreludeImage(preludeName) || getPreludePlaceholderImage();
-  
+
   // Hover tooltip state
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });

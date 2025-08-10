@@ -7,6 +7,7 @@ import { EloHistogram } from '@/components/charts/EloHistogram';
 import { PositionsBar } from '@/components/charts/PositionsBar';
 import { GameDetailsTable } from '@/components/GameDetailsTable';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/BackButton';
 
 export function CorporationStatsPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -306,7 +307,10 @@ export function CorporationStatsPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
+        {/* Back + Header */}
+        <div className="flex items-center justify-between mb-3">
+          <BackButton fallbackPath="/corporations" />
+        </div>
         <div className="mb-8">
           <CorporationHeader slug={slug} stats={stats} isLoading={loading} />
         </div>
