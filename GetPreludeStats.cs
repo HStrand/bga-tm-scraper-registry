@@ -91,7 +91,8 @@ SELECT
 	gps.Corporation
 FROM GameCards gc
 INNER JOIN GamePlayers gp ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
-INNER JOIN GamePlayerStats gps ON gps.TableId = gp.TableId AND gps.PlayerId = gp.PlayerId
+INNER JOIN GamePlayerStats gps ON gps.TableId = gp.TableId AND gps.PlayerId = gp.PlayerId 
+    AND gps.Corporation <> 'Unknown'
 INNER JOIN Games g ON g.TableId = gp.TableId
     AND gc.PlayedGen IS NOT NULL
 WHERE LOWER(gc.Card) = LOWER(@CardName)";

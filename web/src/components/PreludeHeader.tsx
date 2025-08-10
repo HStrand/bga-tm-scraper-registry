@@ -1,3 +1,5 @@
+import { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { getPreludeImage, getPreludePlaceholderImage, slugToPreludeName } from '@/lib/prelude';
 import { PreludeStats } from '@/types/prelude';
 
@@ -16,6 +18,38 @@ function getEloChangeDisplay(eloChange: number | null | undefined): string {
 export function PreludeHeader({ slug, stats, isLoading }: PreludeHeaderProps) {
   const preludeName = slugToPreludeName(slug);
   const imageSrc = getPreludeImage(preludeName) || getPreludePlaceholderImage();
+  
+  // Hover tooltip state
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
+  const handleMouseEnter = useCallback((e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const tooltipWidth = 320; // Approximate width of tooltip
+    const tooltipHeight = 400; // Approximate height of tooltip
+    const margin = 16;
+    
+    // Determine horizontal position (prefer right, flip to left if no space)
+    let x = rect.right + margin;
+    if (x + tooltipWidth > window.innerWidth - margin) {
+      x = rect.left - tooltipWidth - margin;
+    }
+    
+    // Determine vertical position (center on image, adjust if off-screen)
+    let y = rect.top + rect.height / 2 - tooltipHeight / 2;
+    if (y < margin) {
+      y = margin;
+    } else if (y + tooltipHeight > window.innerHeight - margin) {
+      y = window.innerHeight - tooltipHeight - margin;
+    }
+    
+    setTooltipPos({ x, y });
+    setShowTooltip(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setShowTooltip(false);
+  }, []);
 
   if (isLoading) {
     return (
@@ -105,12 +139,16 @@ export function PreludeHeader({ slug, stats, isLoading }: PreludeHeaderProps) {
         </div>
         
         {/* Prelude image */}
-        <div className="col-span-12 md:col-span-4">
-          <div className="relative p-3 rounded-2xl bg-white/90 dark:bg-slate-800/70 ring-1 ring-pink-300/70 dark:ring-pink-700/50 shadow-xl flex items-center justify-center h-full">
+        <div className="col-span-12 md:col-span-4 flex justify-center">
+          <div 
+            className="relative rounded-2xl ring-1 ring-pink-300/70 dark:ring-pink-700/50 shadow-xl overflow-hidden cursor-pointer hover:ring-pink-400/80 dark:hover:ring-pink-600/60 transition-all duration-200"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
             <img
               src={imageSrc}
               alt={preludeName}
-              className="w-full h-auto max-h-64 md:max-h-72 object-contain rounded-xl"
+              className="h-48 md:h-56 w-auto object-contain"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = getPreludePlaceholderImage();
@@ -119,6 +157,34 @@ export function PreludeHeader({ slug, stats, isLoading }: PreludeHeaderProps) {
           </div>
         </div>
       </div>
+
+      {/* Hover tooltip */}
+      {showTooltip && createPortal(
+        <div
+          className="fixed z-50 pointer-events-none"
+          style={{
+            left: tooltipPos.x,
+            top: tooltipPos.y,
+            maxWidth: 'calc(100vw - 32px)',
+          }}
+        >
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl p-2">
+            <img
+              src={imageSrc}
+              alt={preludeName}
+              className="rounded max-w-none h-80 w-auto object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = getPreludePlaceholderImage();
+              }}
+            />
+            <div className="text-center mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">
+              {preludeName}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
