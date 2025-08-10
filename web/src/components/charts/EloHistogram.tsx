@@ -5,9 +5,11 @@ interface EloHistogramProps {
   data: HistogramBin[];
   title?: string;
   useRedGreenColors?: boolean;
+  // Optional Tailwind height class for the inner chart container
+  heightClass?: string;
 }
 
-export function EloHistogram({ data, title = "Elo Distribution", useRedGreenColors = false }: EloHistogramProps) {
+export function EloHistogram({ data, title = "Elo Distribution", useRedGreenColors = false, heightClass = "h-56" }: EloHistogramProps) {
   // Function to get color based on bin value (for red/green coloring)
   const getBarColor = (bin: HistogramBin) => {
     if (!useRedGreenColors) return "url(#eloGrad)";
@@ -23,7 +25,7 @@ export function EloHistogram({ data, title = "Elo Distribution", useRedGreenColo
         {title}
       </h3>
       
-      <div className="h-56">
+      <div className={heightClass}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <defs>

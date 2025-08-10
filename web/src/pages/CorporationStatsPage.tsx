@@ -1,22 +1,20 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { AllCorporationPlayerStatsRow, CorporationStats, CorporationFilters, HistogramBin } from '@/types/corporation';
-import { getAllCorporationStatsCached } from '@/lib/corpCache';
-import { nameToSlug } from '@/lib/corp';
+import { CorporationPlayerStatsRow, CorporationStats, CorporationFilters, HistogramBin, CorporationStatsResponse } from '@/types/corporation';
 import { CorporationHeader } from '@/components/CorporationHeader';
 import { FiltersPanel } from '@/components/FiltersPanel';
 import { EloHistogram } from '@/components/charts/EloHistogram';
 import { PositionsBar } from '@/components/charts/PositionsBar';
-import { ScoreEloScatter } from '@/components/charts/ScoreEloScatter';
 import { GameDetailsTable } from '@/components/GameDetailsTable';
 import { Button } from '@/components/ui/button';
 
 export function CorporationStatsPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [data, setData] = useState<AllCorporationPlayerStatsRow[]>([]);
+  const [data, setData] = useState<CorporationPlayerStatsRow[]>([]);
+  const [rawResponse, setRawResponse] = useState<CorporationStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'chart' | 'table'>('table');
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
 
   // Initialize filters with all options selected
   const [filters, setFilters] = useState<CorporationFilters>({
@@ -38,16 +36,23 @@ export function CorporationStatsPage() {
         setLoading(true);
         setError(null);
         
-        // Get all corporation data from cache and filter by this corporation
-        const allData = await getAllCorporationStatsCached();
-        const corporationData = allData.filter(row => nameToSlug(row.corporation) === slug);
-        setData(corporationData);
+        // Fetch corporation stats from the new API
+        const corporationName = slug.replace(/_/g, ' ');
+        const response = await fetch(`/api/corporations/${encodeURIComponent(corporationName)}/playerstats`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const responseData: CorporationStatsResponse = await response.json();
+        setRawResponse(responseData);
+        setData(responseData.playerStats);
 
         // Initialize filters with all available options
-        const playerCounts = [...new Set(corporationData.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
-        const maps = [...new Set(corporationData.map(row => row.map).filter(Boolean))].sort() as string[];
-        const gameModes = [...new Set(corporationData.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-        const gameSpeeds = [...new Set(corporationData.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
+        const playerCounts = [...new Set(responseData.playerStats.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
+        const maps = [...new Set(responseData.playerStats.map(row => row.map).filter(Boolean))].sort() as string[];
+        const gameModes = [...new Set(responseData.playerStats.map(row => row.gameMode).filter(Boolean))].sort() as string[];
+        const gameSpeeds = [...new Set(responseData.playerStats.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
 
         setFilters({
           playerCounts: playerCounts as number[],
@@ -90,7 +95,6 @@ export function CorporationStatsPage() {
     return [...new Set(data.map(row => row.playerName).filter(Boolean))].sort() as string[];
   }, [data]);
 
-
   const eloRange = useMemo(() => {
     const elos = data.map(row => row.elo).filter(Boolean) as number[];
     return {
@@ -98,7 +102,6 @@ export function CorporationStatsPage() {
       max: Math.max(...elos) || 2000,
     };
   }, [data]);
-
 
   // Filter data based on current filters
   const filteredData = useMemo(() => {
@@ -153,6 +156,8 @@ export function CorporationStatsPage() {
         avgGenerations: 0,
         positionsCount: {},
         playerCountDistribution: {},
+        milestoneStats: [],
+        awardStats: [],
       };
     }
 
@@ -203,8 +208,10 @@ export function CorporationStatsPage() {
       avgGenerations,
       positionsCount,
       playerCountDistribution,
+      milestoneStats: rawResponse?.milestoneStats || [],
+      awardStats: rawResponse?.awardStats || [],
     };
-  }, [filteredData]);
+  }, [filteredData, rawResponse]);
 
   // Compute histogram data for Elo
   const eloHistogramData = useMemo((): HistogramBin[] => {
@@ -334,7 +341,7 @@ export function CorporationStatsPage() {
           <div className="lg:col-span-3">
             {loading ? (
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {Array.from({ length: 3 }).map((_, i) => (
+                {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
                     <div className="h-6 w-32 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-4"></div>
                     <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
@@ -344,15 +351,7 @@ export function CorporationStatsPage() {
             ) : (
               <div className="space-y-6">
                 {/* View toggle */}
-                <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg w-fit mx-auto">
-                  <Button
-                    variant={viewMode === 'table' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('table')}
-                    className="px-4 py-2"
-                  >
-                    Table View
-                  </Button>
+                <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg w-fit mx-auto">                  
                   <Button
                     variant={viewMode === 'chart' ? 'default' : 'ghost'}
                     size="sm"
@@ -360,6 +359,14 @@ export function CorporationStatsPage() {
                     className="px-4 py-2"
                   >
                     Chart View
+                  </Button>
+                  <Button
+                    variant={viewMode === 'table' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('table')}
+                    className="px-4 py-2"
+                  >
+                    Table View
                   </Button>
                 </div>
 
@@ -369,11 +376,16 @@ export function CorporationStatsPage() {
                     {/* Charts grid */}
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                       <EloHistogram data={eloHistogramData} />
-                      <EloHistogram data={eloChangeHistogramData} title="Elo Change Distribution" useRedGreenColors={true} />
+                      <PositionsBar data={stats.positionsCount} />
                     </div>
-                    {/* Scatter chart full width */}
+                    {/* Elo change distribution - featured full width */}
                     <div className="w-full">
-                      <ScoreEloScatter data={filteredData} />
+                      <EloHistogram
+                        data={eloChangeHistogramData}
+                        title="Elo Change Distribution"
+                        useRedGreenColors={true}
+                        heightClass="h-72 md:h-80"
+                      />
                     </div>
                   </>
                 ) : (
