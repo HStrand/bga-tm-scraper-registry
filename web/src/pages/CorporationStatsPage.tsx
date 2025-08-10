@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
-import { CorporationPlayerStatsRow, CorporationStats, CorporationFilters, HistogramBin } from '@/types/corporation';
+import { AllCorporationPlayerStatsRow, CorporationStats, CorporationFilters, HistogramBin } from '@/types/corporation';
+import { getAllCorporationStatsCached } from '@/lib/corpCache';
+import { nameToSlug } from '@/lib/corp';
 import { CorporationHeader } from '@/components/CorporationHeader';
 import { FiltersPanel } from '@/components/FiltersPanel';
 import { EloHistogram } from '@/components/charts/EloHistogram';
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button';
 
 export function CorporationStatsPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [data, setData] = useState<CorporationPlayerStatsRow[]>([]);
+  const [data, setData] = useState<AllCorporationPlayerStatsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('table');
@@ -36,14 +37,17 @@ export function CorporationStatsPage() {
       try {
         setLoading(true);
         setError(null);
-        const response = await axios.get<CorporationPlayerStatsRow[]>(`/api/corporations/${slug}/playerstats`);
-        setData(response.data);
+        
+        // Get all corporation data from cache and filter by this corporation
+        const allData = await getAllCorporationStatsCached();
+        const corporationData = allData.filter(row => nameToSlug(row.corporation) === slug);
+        setData(corporationData);
 
         // Initialize filters with all available options
-        const playerCounts = [...new Set(response.data.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
-        const maps = [...new Set(response.data.map(row => row.map).filter(Boolean))].sort() as string[];
-        const gameModes = [...new Set(response.data.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-        const gameSpeeds = [...new Set(response.data.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
+        const playerCounts = [...new Set(corporationData.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
+        const maps = [...new Set(corporationData.map(row => row.map).filter(Boolean))].sort() as string[];
+        const gameModes = [...new Set(corporationData.map(row => row.gameMode).filter(Boolean))].sort() as string[];
+        const gameSpeeds = [...new Set(corporationData.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
 
         setFilters({
           playerCounts: playerCounts as number[],

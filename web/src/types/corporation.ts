@@ -62,3 +62,15 @@ export interface HistogramBin {
   count: number;
   label: string;
 }
+
+export interface AllCorporationPlayerStatsRow extends CorporationPlayerStatsRow {
+  corporation: string;
+}
+
+export interface CorporationOverviewRow {
+  corporation: string;
+  totalGames: number;
+  winRate: number;
+  avgElo: number;
+  avgEloChange: number;
+}

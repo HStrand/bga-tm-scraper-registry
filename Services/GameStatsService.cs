@@ -208,7 +208,7 @@ namespace BgaTmScraperRegistry.Services
             }
         }
  
-        private async Task UpsertGameCardsAsync(SqlConnection connection, SqlTransaction transaction, List<GameCard> cards)
+        public async Task UpsertGameCardsAsync(SqlConnection connection, SqlTransaction transaction, List<GameCard> cards)
         {
             if (cards == null || cards.Count == 0)
             {
@@ -216,7 +216,6 @@ namespace BgaTmScraperRegistry.Services
             }
 
             var tableId = cards[0].TableId;
-            var playerId = cards[0].PlayerId;
 
             // Create staging table
             var createStage = @"
@@ -279,9 +278,13 @@ namespace BgaTmScraperRegistry.Services
                 await bulk.WriteToServerAsync(dt);
             }
 
-            // Replace scope and insert
-            var deleteQuery = @"DELETE FROM GameCards WHERE TableId = @TableId AND PlayerId = @PlayerId;";
-            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId, PlayerId = playerId }, transaction);
+            // Delete existing records for all (TableId, PlayerId) pairs present in the staging table
+            var deleteQuery = @"
+                DELETE gc 
+                FROM GameCards gc
+                INNER JOIN (SELECT DISTINCT TableId, PlayerId FROM #GameCardsStage) s
+                  ON gc.TableId = s.TableId AND gc.PlayerId = s.PlayerId;";
+            await connection.ExecuteAsync(deleteQuery, transaction: transaction);
 
             var insertFromStage = @"
                 INSERT INTO GameCards (TableId, PlayerId, Card, SeenGen, DrawnGen, KeptGen, DraftedGen, BoughtGen, DrawType, DrawReason, PlayedGen, VpScored, UpdatedAt)

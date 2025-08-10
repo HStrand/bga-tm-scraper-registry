@@ -1076,22 +1076,27 @@ namespace BgaTmScraperRegistry.Services
 
             var results = new Dictionary<string, GameCard>(StringComparer.OrdinalIgnoreCase);
 
-            GameCard GetOrCreate(string cardName)
+            string Key(int playerId, string cardName) => $"{playerId}|{cardName}";
+
+            GameCard GetOrCreateForPlayer(int playerId, string cardName)
             {
-                if (!results.TryGetValue(cardName, out var gc))
+                var key = Key(playerId, cardName);
+                if (!results.TryGetValue(key, out var gc))
                 {
                     gc = new GameCard
                     {
                         TableId = tableId,
-                        PlayerId = povId,
+                        PlayerId = playerId,
                         Card = cardName,
                         UpdatedAt = DateTime.UtcNow
                     };
-                    results[cardName] = gc;
+                    results[key] = gc;
                 }
                 gc.UpdatedAt = DateTime.UtcNow;
                 return gc;
             }
+
+            GameCard GetOrCreate(string cardName) => GetOrCreateForPlayer(povId, cardName);
 
             IEnumerable<string> SplitCardList(string list)
             {
@@ -2051,25 +2056,70 @@ namespace BgaTmScraperRegistry.Services
                             if (!gc.PlayedGen.HasValue) gc.PlayedGen = gen.Value;
                         }
                     }
+
+                    // PlayedGen: Opponent plays a card (only PlayedGen, no SeenGen/DrawType/etc.)
+                    if (gen.HasValue && move?.PlayerId != gameLogData.PlayerPerspective && !string.Equals(move?.ActionType, "standard_project", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string playedName = move?.CardPlayed;
+                        if (string.IsNullOrWhiteSpace(playedName))
+                        {
+                            var segments = desc.Split('|');
+                            foreach (var seg in segments)
+                            {
+                                var s = seg.Trim();
+                                const string playsCardPrefix = "plays card ";
+                                int idxPc = s.IndexOf(playsCardPrefix, StringComparison.OrdinalIgnoreCase);
+                                if (idxPc >= 0)
+                                {
+                                    playedName = s.Substring(idxPc + playsCardPrefix.Length).Trim();
+                                    break;
+                                }
+
+                                // Fallback: "<Name> plays <Card>"
+                                if (!string.IsNullOrEmpty(move?.PlayerName))
+                                {
+                                    var namePrefix = move.PlayerName + " plays ";
+                                    if (s.StartsWith(namePrefix, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        playedName = s.Substring(namePrefix.Length).Trim();
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(playedName) && int.TryParse(move.PlayerId, out int opponentId))
+                        {
+                            var gc = GetOrCreateForPlayer(opponentId, playedName);
+                            if (!gc.PlayedGen.HasValue) gc.PlayedGen = gen.Value;
+                        }
+                    }
                 }
             }
 
-            // VP scored from final state for POV
+            // VP scored from final state for all players
             var finalMove = gameLogData.Moves != null && gameLogData.Moves.Count > 0
                 ? gameLogData.Moves[gameLogData.Moves.Count - 1]
                 : null;
 
-            if (finalMove?.GameState?.PlayerVp != null &&
-                finalMove.GameState.PlayerVp.TryGetValue(gameLogData.PlayerPerspective, out var povVp) &&
-                povVp?.Details?.Cards != null)
+            if (finalMove?.GameState?.PlayerVp != null)
             {
-                foreach (var kv in povVp.Details.Cards)
+                foreach (var playerVpEntry in finalMove.GameState.PlayerVp)
                 {
-                    var name = kv.Key;
-                    var vp = kv.Value?.Vp;
+                    var playerIdStr = playerVpEntry.Key;
+                    var playerVp = playerVpEntry.Value;
+                    
+                    if (int.TryParse(playerIdStr, out int playerId) && playerVp?.Details?.Cards != null)
+                    {
+                        foreach (var kv in playerVp.Details.Cards)
+                        {
+                            var name = kv.Key;
+                            var vp = kv.Value?.Vp;
 
-                    var gc = GetOrCreate(name);
-                    gc.VpScored = vp;
+                            var gc = GetOrCreateForPlayer(playerId, name);
+                            gc.VpScored = vp;
+                        }
+                    }
                 }
             }
 

@@ -768,5 +768,45 @@ namespace BgaTmScraperRegistry.Services
                 return results.ToList();
             }
         }
+
+        public async Task<List<MissingOpponentCardsItem>> GetGamesMissingOpponentCardsAsync(int? top = null)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var baseQuery = @"
+                SELECT
+                    DISTINCT
+                    g.TableId,
+                    g.PlayerPerspective
+                FROM Games g
+                INNER JOIN
+                (
+                    SELECT
+                        DISTINCT 
+                        g.TableId,
+                        gp.PlayerId
+                    FROM GamePlayers gp
+                    INNER JOIN Games g ON g.TableId = gp.TableId
+                    WHERE g.PlayerPerspective <> gp.PlayerId
+
+                    EXCEPT
+
+                    SELECT DISTINCT TableId, PlayerId
+                    FROM GameCards
+                ) missing ON missing.TableId = g.TableId";
+
+            if (top.HasValue && top.Value > 0)
+            {
+                var topQuery = $"SELECT TOP(@Top) * FROM ({baseQuery}) AS subquery";
+                var topResults = await connection.QueryAsync<MissingOpponentCardsItem>(topQuery, new { Top = top.Value });
+                return topResults.ToList();
+            }
+            else
+            {
+                var results = await connection.QueryAsync<MissingOpponentCardsItem>(baseQuery);
+                return results.ToList();
+            }
+        }
     }
 }

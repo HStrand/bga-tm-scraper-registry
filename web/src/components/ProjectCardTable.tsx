@@ -205,12 +205,6 @@ export function ProjectCardTable({ data }: ProjectCardTableProps) {
               >
                 Draw Type {getSortIcon('drawType')}
               </th>
-              <th 
-                className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
-                onClick={() => handleSort('drawReason')}
-              >
-                Draw Reason {getSortIcon('drawReason')}
-              </th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
@@ -246,9 +240,6 @@ export function ProjectCardTable({ data }: ProjectCardTableProps) {
                 </td>
                 <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                   {row.drawType || 'N/A'}
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                  {row.drawReason || 'N/A'}
                 </td>
               </tr>
             ))}

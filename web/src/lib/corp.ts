@@ -12,6 +12,18 @@ export function slugToTitle(slug: string): string {
 }
 
 /**
+ * Convert a display name to a slug
+ * Example: "Mining Guild" -> "mining_guild"
+ */
+export function nameToSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove non-alphanumeric except spaces and hyphens
+    .replace(/[\s-]+/g, '_')      // Replace spaces and hyphens with underscores
+    .replace(/^_+|_+$/g, '');     // Trim leading/trailing underscores
+}
+
+/**
  * Get corporation image from assets folder
  * Looks for pattern: corp{number}-{slug}.png
  */

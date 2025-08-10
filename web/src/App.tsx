@@ -2,6 +2,8 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CorporationStatsPage } from "@/pages/CorporationStatsPage";
+import { CorporationsOverviewPage } from "@/pages/CorporationsOverviewPage";
+import { ProjectCardStatsPage } from "@/pages/ProjectCardStatsPage";
 
 function HomePage() {
   return (
@@ -20,13 +22,30 @@ function HomePage() {
           <Button variant="ghost">Ghost</Button>
           <Button variant="link">Link</Button>
         </div>
-        <div className="mt-8">
-          <p className="text-sm text-muted-foreground">
-            To view corporation stats, navigate to: <code>/corporations/[slug]</code>
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Example: <code>/corporations/mining_guild</code>
-          </p>
+        <div className="mt-8 space-y-4">
+          <div className="space-y-2">
+            <Button asChild>
+              <a href="/corporations">View Corporations Overview</a>
+            </Button>
+          </div>
+          
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              To view individual corporation stats, navigate to: <code>/corporations/[slug]</code>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Example: <code>/corporations/mining_guild</code>
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              To view project card stats, navigate to: <code>/cards/[slug]</code>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Example: <code>/cards/martian_rails</code>
+            </p>
+          </div>
         </div>
       </main>
     </div>
@@ -38,7 +57,9 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/corporations" element={<CorporationsOverviewPage />} />
         <Route path="/corporations/:slug" element={<CorporationStatsPage />} />
+        <Route path="/cards/:slug" element={<ProjectCardStatsPage />} />
       </Routes>
     </Router>
   );
