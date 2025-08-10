@@ -12,6 +12,7 @@ interface FiltersPanelProps {
   availablePlayerNames: string[];
   eloRange: { min: number; max: number };
   timesPlayedRange?: { min: number; max: number };
+  playedGenRange?: { min: number; max: number };
 }
 
 export function FiltersPanel({
@@ -24,6 +25,7 @@ export function FiltersPanel({
   availablePlayerNames,
   eloRange,
   timesPlayedRange,
+  playedGenRange,
 }: FiltersPanelProps) {
   const [localFilters, setLocalFilters] = useState(filters);
   const [gameSpeedDropdownOpen, setGameSpeedDropdownOpen] = useState(false);
@@ -218,6 +220,39 @@ export function FiltersPanel({
                 value={localFilters.timesPlayedMax || ''}
                 onChange={(e) => updateFilters({ 
                   timesPlayedMax: e.target.value ? Number(e.target.value) : undefined 
+                })}
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Played Generation Range (optional for Project Card details) */}
+      {playedGenRange && (
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Played Generation
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <input
+                type="number"
+                placeholder={`Min (${playedGenRange.min})`}
+                value={localFilters.playedGenMin ?? ''}
+                onChange={(e) => updateFilters({
+                  playedGenMin: e.target.value !== '' ? Number(e.target.value) : undefined
+                })}
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <input
+                type="number"
+                placeholder={`Max (${playedGenRange.max})`}
+                value={localFilters.playedGenMax ?? ''}
+                onChange={(e) => updateFilters({
+                  playedGenMax: e.target.value !== '' ? Number(e.target.value) : undefined
                 })}
                 className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
               />
@@ -516,7 +551,9 @@ export function FiltersPanel({
            localFilters.playerCounts.length !== availablePlayerCounts.length ||
            localFilters.maps.length !== availableMaps.length ||
            localFilters.gameModes.length !== availableGameModes.length ||
-           localFilters.gameSpeeds.length !== availableGameSpeeds.length
+           localFilters.gameSpeeds.length !== availableGameSpeeds.length ||
+           localFilters.playedGenMin !== undefined || localFilters.playedGenMax !== undefined ||
+           localFilters.timesPlayedMin !== undefined || localFilters.timesPlayedMax !== undefined
             ? 'Filters active'
             : 'No filters applied'
           }

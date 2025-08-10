@@ -96,6 +96,16 @@ export function ProjectCardStatsPage() {
     };
   }, [data]);
 
+  // Range of played generations present in the dataset (optional)
+  const playedGenRange = useMemo(() => {
+    const gens = data.map(row => row.playedGen).filter((g): g is number => g != null) as number[];
+    if (gens.length === 0) return undefined;
+    return {
+      min: Math.min(...gens),
+      max: Math.max(...gens),
+    };
+  }, [data]);
+
   // Filter data based on current filters
   const filteredData = useMemo(() => {
     return data.filter(row => {
@@ -122,6 +132,13 @@ export function ProjectCardStatsPage() {
       if (filters.preludeOn !== undefined && row.preludeOn !== filters.preludeOn) return false;
       if (filters.coloniesOn !== undefined && row.coloniesOn !== filters.coloniesOn) return false;
       if (filters.draftOn !== undefined && row.draftOn !== filters.draftOn) return false;
+
+      // Played generation filter (apply only when at least one bound is set)
+      if (filters.playedGenMin !== undefined || filters.playedGenMax !== undefined) {
+        if (row.playedGen == null) return false;
+        if (filters.playedGenMin !== undefined && row.playedGen < filters.playedGenMin) return false;
+        if (filters.playedGenMax !== undefined && row.playedGen > filters.playedGenMax) return false;
+      }
 
       return true;
     });
@@ -332,6 +349,7 @@ export function ProjectCardStatsPage() {
                   availableGameSpeeds={availableGameSpeeds}
                   availablePlayerNames={availablePlayerNames}
                   eloRange={eloRange}
+                  playedGenRange={playedGenRange}
                 />
               )}
             </div>

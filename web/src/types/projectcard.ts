@@ -43,6 +43,8 @@ export interface ProjectCardFilters {
   preludeOn?: boolean;
   coloniesOn?: boolean;
   draftOn?: boolean;
+  playedGenMin?: number;
+  playedGenMax?: number;
 }
 
 export interface GenerationData {
