@@ -11,6 +11,7 @@ interface FiltersPanelProps {
   availableGameSpeeds: string[];
   availablePlayerNames: string[];
   eloRange: { min: number; max: number };
+  timesPlayedRange?: { min: number; max: number };
 }
 
 export function FiltersPanel({
@@ -22,6 +23,7 @@ export function FiltersPanel({
   availableGameSpeeds,
   availablePlayerNames,
   eloRange,
+  timesPlayedRange,
 }: FiltersPanelProps) {
   const [localFilters, setLocalFilters] = useState(filters);
   const [gameSpeedDropdownOpen, setGameSpeedDropdownOpen] = useState(false);
@@ -190,6 +192,39 @@ export function FiltersPanel({
           </div>
         </div>
       </div>
+
+      {/* Times Played Range */}
+      {timesPlayedRange && (
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Times Played
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <input
+                type="number"
+                placeholder={`Min (${timesPlayedRange.min})`}
+                value={localFilters.timesPlayedMin || ''}
+                onChange={(e) => updateFilters({ 
+                  timesPlayedMin: e.target.value ? Number(e.target.value) : undefined 
+                })}
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <input
+                type="number"
+                placeholder={`Max (${timesPlayedRange.max})`}
+                value={localFilters.timesPlayedMax || ''}
+                onChange={(e) => updateFilters({ 
+                  timesPlayedMax: e.target.value ? Number(e.target.value) : undefined 
+                })}
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Player Name Search */}
       <div className="space-y-3" ref={playerSearchRef}>

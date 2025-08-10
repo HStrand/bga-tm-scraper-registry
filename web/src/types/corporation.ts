@@ -46,6 +46,8 @@ export interface CorporationStats {
 export interface CorporationFilters {
   eloMin?: number;
   eloMax?: number;
+  timesPlayedMin?: number;
+  timesPlayedMax?: number;
   playerCounts: number[];
   maps: string[];
   gameModes: string[];
