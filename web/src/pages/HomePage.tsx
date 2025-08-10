@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 import { getStatistics, Statistics } from "@/lib/stats";
 import { Users, Database, Download, Gauge, LineChart, BarChart3 } from "lucide-react";
 
@@ -57,56 +58,14 @@ function BigStat({
   );
 }
 
-function CoverageDonut({ percent }: { percent: number }) {
-  const p = Math.max(0, Math.min(100, percent));
-  const radius = 48;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - p / 100);
-
-  return (
-    <div className="relative flex items-center justify-center">
-      <svg width="140" height="140" viewBox="0 0 140 140" className="-rotate-90">
-        <circle
-          cx="70"
-          cy="70"
-          r={radius}
-          stroke="currentColor"
-          strokeWidth="12"
-          className="text-slate-200 dark:text-slate-700"
-          fill="none"
-        />
-        <circle
-          cx="70"
-          cy="70"
-          r={radius}
-          stroke="url(#grad)"
-          strokeWidth="12"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          fill="none"
-        />
-        <defs>
-          <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#f59e0b" />
-            <stop offset="100%" stopColor="#ef4444" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <div className="absolute rotate-90 text-center">
-        <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-          {p.toFixed(0)}%
-        </div>
-        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Coverage</div>
-      </div>
-    </div>
-  );
-}
+// Optional Functions key support via env (if your functions require a key)
+const FUNCTIONS_KEY = import.meta.env.VITE_FUNCTIONS_KEY as string | undefined;
 
 export default function HomePage() {
   const [stats, setStats] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,14 +89,42 @@ export default function HomePage() {
 
   const totalGames = stats?.totalIndexedGames ?? 0;
   const scrapedGames = stats?.scrapedGamesTotal ?? 0;
-  const coverage = useMemo(() => {
-    if (!totalGames) return 0;
-    return Math.max(0, Math.min(100, (scrapedGames / totalGames) * 100));
-  }, [totalGames, scrapedGames]);
 
   const playersAnim = useCountUp(stats?.totalPlayers ?? 0);
   const totalGamesAnim = useCountUp(totalGames);
   const scrapedAnim = useCountUp(scrapedGames);
+
+  const handleDownload = async () => {
+    try {
+      setDownloading(true);
+      const headers: Record<string, string> = {};
+      if (FUNCTIONS_KEY) headers["x-functions-key"] = FUNCTIONS_KEY;
+      const res = await axios.get("/api/DownloadLatestZip", {
+        responseType: "blob",
+        headers,
+      });
+      // Try to extract filename from Content-Disposition
+      let filename = "bga-tm-dataset.zip";
+      const cd = res.headers["content-disposition"];
+      if (cd) {
+        const match = /filename="?([^"]+)"?/i.exec(cd);
+        if (match?.[1]) filename = match[1];
+      }
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Download failed", e);
+      alert("Failed to start download. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="space-y-10">
@@ -154,55 +141,52 @@ export default function HomePage() {
             color: "#0f172a",
           }}
         />
-        <div className="relative">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
-            Terraforming Mars Statistics
-          </h1>
-          <p className="mt-3 text-slate-600 dark:text-slate-400 text-lg">
-            Explore performance insights across corporations, project cards, and preludes.
-          </p>
-        </div>
 
-        {/* Coverage callout */}
-        <div className="relative mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-          <div className="md:col-span-2">
-            <div className="rounded-2xl border border-amber-200/60 dark:border-amber-800/50 bg-white/70 dark:bg-slate-900/50 backdrop-blur p-5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <div className="text-sm uppercase tracking-wide text-amber-700 dark:text-amber-300">
-                    Dataset Coverage
-                  </div>
-                  <div className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                    {scrapedAnim.toLocaleString()} / {totalGamesAnim.toLocaleString()} games scraped
-                  </div>
-                  <div className="mt-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-500 to-rose-500"
-                      style={{ width: `${coverage}%` }}
-                    />
-                  </div>
-                  <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    {coverage.toFixed(1)}% coverage
-                  </div>
-                </div>
-                <div className="hidden sm:block">
-                  <CoverageDonut percent={coverage} />
-                </div>
+        <div className="relative flex flex-col gap-6">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+              Terraforming Mars Statistics
+            </h1>
+            <p className="mt-3 text-slate-600 dark:text-slate-400 text-lg">
+              Explore performance insights across corporations, project cards, and preludes.
+            </p>
+          </div>
+
+          {/* Quick stats row (indexed / scraped) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/50 backdrop-blur p-5">
+              <div className="flex items-center gap-3 text-slate-700 dark:text-slate-200">
+                <Database className="w-5 h-5 text-amber-600 dark:text-amber-300" />
+                <div className="text-sm font-semibold">Indexed Games</div>
+              </div>
+              <div className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
+                {totalGamesAnim.toLocaleString()}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/50 backdrop-blur p-5">
+              <div className="flex items-center gap-3 text-slate-700 dark:text-slate-200">
+                <Download className="w-5 h-5 text-amber-600 dark:text-amber-300" />
+                <div className="text-sm font-semibold">Scraped Games</div>
+              </div>
+              <div className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
+                {scrapedAnim.toLocaleString()}
               </div>
             </div>
           </div>
 
-          {/* Quick highlights */}
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/70 backdrop-blur p-5">
-            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
-              <LineChart className="w-5 h-5 text-amber-600 dark:text-amber-300" />
-              <div className="text-sm font-semibold">Highlights</div>
-            </div>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-400">
-              <li>Players indexed: <span className="font-medium text-slate-900 dark:text-slate-100">{playersAnim.toLocaleString()}</span></li>
-              <li>Avg Elo (scraped): <span className="font-medium text-slate-900 dark:text-slate-100">{stats?.averageEloInScrapedGames != null ? Math.round(stats.averageEloInScrapedGames) : "N/A"}</span></li>
-              <li>Median Elo (scraped): <span className="font-medium text-slate-900 dark:text-slate-100">{stats?.medianEloInScrapedGames != null ? Math.round(stats.medianEloInScrapedGames) : "N/A"}</span></li>
-            </ul>
+          {/* Download CTA */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-70 text-white px-4 py-2.5 shadow-sm"
+            >
+              <Download className="w-4 h-4" />
+              {downloading ? "Preparing download..." : "Download Full Dataset (.zip)"}
+            </button>
+            <span className="text-xs text-slate-600 dark:text-slate-400">
+              Latest zipped archive of all scraped data
+            </span>
           </div>
         </div>
       </section>
@@ -213,7 +197,7 @@ export default function HomePage() {
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-            {Array.from({ length: 6 }).map((_, i) => (
+            {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
                 className="h-28 bg-white/70 dark:bg-slate-800/70 rounded-2xl border border-slate-200 dark:border-slate-700 animate-pulse"
@@ -240,7 +224,6 @@ export default function HomePage() {
               title="Scraped Games"
               icon={<Download className="w-5 h-5" />}
               value={scrapedAnim.toLocaleString()}
-              hint={`${coverage.toFixed(1)}% coverage`}
             />
             <BigStat
               title="Avg Elo (scraped)"
@@ -260,16 +243,6 @@ export default function HomePage() {
                   : "N/A"
               }
             />
-            {/* Empty card for balance / future content */}
-            <div className="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm p-5">
-              <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-rose-500/10 blur-2xl" />
-              <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Tips
-              </div>
-              <div className="mt-2 text-slate-700 dark:text-slate-200 text-sm">
-                Use the left menu to dive into Corporations, Project Cards, or Preludes. Apply filters on those pages to explore subsets of the dataset.
-              </div>
-            </div>
           </div>
         ) : null}
       </section>
