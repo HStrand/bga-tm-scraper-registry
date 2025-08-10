@@ -201,21 +201,9 @@ export function GameDetailsTable({ data }: GameDetailsTableProps) {
               </th>
               <th 
                 className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
-                onClick={() => handleSort('gameSpeed')}
-              >
-                Speed {getSortIcon('gameSpeed')}
-              </th>
-              <th 
-                className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
                 onClick={() => handleSort('generations')}
               >
                 Generations {getSortIcon('generations')}
-              </th>
-              <th 
-                className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
-                onClick={() => handleSort('tableId')}
-              >
-                Table ID {getSortIcon('tableId')}
               </th>
             </tr>
           </thead>
@@ -223,7 +211,8 @@ export function GameDetailsTable({ data }: GameDetailsTableProps) {
             {paginatedData.map((row, index) => (
               <tr 
                 key={`${row.tableId}-${row.playerId}-${index}`}
-                className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                onClick={() => window.open(`https://boardgamearena.com/table?table=${row.tableId}`, '_blank')}
+                className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
               >
                 <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">
                   {row.playerName}
@@ -250,13 +239,7 @@ export function GameDetailsTable({ data }: GameDetailsTableProps) {
                   {row.gameMode || 'N/A'}
                 </td>
                 <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                  {row.gameSpeed || 'N/A'}
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                   {row.generations || 'N/A'}
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                  {row.tableId}
                 </td>
               </tr>
             ))}
