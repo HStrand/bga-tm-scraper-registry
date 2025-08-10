@@ -98,6 +98,7 @@ FROM GamePlayerStats gps
 INNER JOIN Games g ON gps.TableId = g.TableId
 INNER JOIN GameStats gs ON gs.TableId = gps.TableId
 INNER JOIN GamePlayers gp ON gp.TableId = gs.TableId AND gp.PlayerId = gps.PlayerId
+WHERE gps.Corporation <> 'Unknown'
 ORDER BY gs.TableId DESC";
 
                 using var conn = new SqlConnection(connectionString);
