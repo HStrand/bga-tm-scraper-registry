@@ -1,70 +1,402 @@
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { getPreludeImage, getPreludePlaceholderImage, slugToPreludeName } from '@/lib/prelude';
+import { PreludePlayerStatsRow, PreludeStats, PreludeDetailFilters, CorporationPerformance, HistogramBin } from '@/types/prelude';
+import { PreludeHeader } from '@/components/PreludeHeader';
+import { PreludeFiltersPanel } from '@/components/PreludeFiltersPanel';
+import { EloHistogram } from '@/components/charts/EloHistogram';
+import { DivergingBarChart } from '@/components/charts/DivergingBarChart';
+import { GameDetailsTable } from '@/components/GameDetailsTable';
+import { Button } from '@/components/ui/button';
+import { slugToPreludeName } from '@/lib/prelude';
+import { getPreludePlayerStats } from '@/lib/preludeCache';
 
 export function PreludeStatsPage() {
   const { slug } = useParams<{ slug: string }>();
-  
+  const [data, setData] = useState<PreludePlayerStatsRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+
+  // Initialize filters with all options selected
+  const [filters, setFilters] = useState<PreludeDetailFilters>({
+    maps: [],
+    gameModes: [],
+    gameSpeeds: [],
+    corporations: [],
+    preludeOn: undefined,
+    coloniesOn: undefined,
+    draftOn: undefined,
+  });
+
+  // Fetch data
+  useEffect(() => {
+    if (!slug) return;
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const preludeName = slugToPreludeName(slug);
+        const response = await getPreludePlayerStats(preludeName);
+        setData(response);
+
+        // Initialize filters with all available options
+        const maps = [...new Set(response.map(row => row.map).filter(Boolean))].sort() as string[];
+        const gameModes = [...new Set(response.map(row => row.gameMode).filter(Boolean))].sort() as string[];
+        const gameSpeeds = [...new Set(response.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
+        const corporations = [...new Set(response.map(row => row.corporation).filter(Boolean))].sort() as string[];
+
+        setFilters({
+          maps,
+          gameModes,
+          gameSpeeds,
+          corporations,
+          preludeOn: undefined,
+          coloniesOn: undefined,
+          draftOn: undefined,
+        });
+      } catch (err) {
+        console.error('Error fetching prelude stats:', err);
+        setError('Failed to load prelude statistics. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [slug]);
+
+  // Get available options for filters
+  const availablePlayerCounts = useMemo(() => {
+    return [] as number[]; // Not available in prelude data
+  }, [data]);
+
+  const availableMaps = useMemo(() => {
+    return [...new Set(data.map(row => row.map).filter(Boolean))].sort() as string[];
+  }, [data]);
+
+  const availableGameModes = useMemo(() => {
+    return [...new Set(data.map(row => row.gameMode).filter(Boolean))].sort() as string[];
+  }, [data]);
+
+  const availableGameSpeeds = useMemo(() => {
+    return [...new Set(data.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
+  }, [data]);
+
+  const availableCorporations = useMemo(() => {
+    return [...new Set(data.map(row => row.corporation).filter(Boolean))].sort() as string[];
+  }, [data]);
+
+  const availablePlayerNames = useMemo(() => {
+    return [...new Set(data.map(row => row.playerName).filter(Boolean))].sort() as string[];
+  }, [data]);
+
+  const eloRange = useMemo(() => {
+    const elos = data.map(row => row.elo).filter(Boolean) as number[];
+    return {
+      min: Math.min(...elos) || 0,
+      max: Math.max(...elos) || 2000,
+    };
+  }, [data]);
+
+  // Filter data based on current filters
+  const filteredData = useMemo(() => {
+    return data.filter(row => {
+      // Elo range filter
+      if (filters.eloMin && (!row.elo || row.elo < filters.eloMin)) return false;
+      if (filters.eloMax && (!row.elo || row.elo > filters.eloMax)) return false;
+
+      // Player name filter
+      if (filters.playerName && row.playerName !== filters.playerName) return false;
+
+      // Map filter
+      if (row.map && !filters.maps.includes(row.map)) return false;
+
+      // Game mode filter
+      if (row.gameMode && !filters.gameModes.includes(row.gameMode)) return false;
+
+      // Game speed filter
+      if (row.gameSpeed && !filters.gameSpeeds.includes(row.gameSpeed)) return false;
+
+      // Corporation filter
+      if (row.corporation && !filters.corporations.includes(row.corporation)) return false;
+
+      // Expansion filters
+      if (filters.preludeOn !== undefined && row.preludeOn !== filters.preludeOn) return false;
+      if (filters.coloniesOn !== undefined && row.coloniesOn !== filters.coloniesOn) return false;
+      if (filters.draftOn !== undefined && row.draftOn !== filters.draftOn) return false;
+
+      return true;
+    });
+  }, [data, filters]);
+
+  // Compute statistics
+  const stats = useMemo((): PreludeStats => {
+    const validData = filteredData.filter(row => row.position != null);
+    const totalGames = validData.length;
+
+    if (totalGames === 0) {
+      return {
+        totalGames: 0,
+        winRate: 0,
+        avgElo: 0,
+        avgEloChange: 0,
+      };
+    }
+
+    const wins = validData.filter(row => row.position === 1).length;
+    const winRate = wins / totalGames;
+
+    const avgElo = validData.reduce((sum, row) => sum + (row.elo || 0), 0) / totalGames;
+    const avgEloChange = validData.reduce((sum, row) => sum + (row.eloChange || 0), 0) / totalGames;
+
+    return {
+      totalGames,
+      winRate,
+      avgElo,
+      avgEloChange,
+    };
+  }, [filteredData]);
+
+  // Compute histogram data for Elo
+  const eloHistogramData = useMemo((): HistogramBin[] => {
+    const elos = filteredData.map(row => row.elo).filter(Boolean) as number[];
+    if (elos.length === 0) return [];
+
+    const min = Math.min(...elos);
+    const max = Math.max(...elos);
+    const binCount = Math.min(12, Math.max(5, Math.ceil(elos.length / 20)));
+    const binSize = (max - min) / binCount;
+
+    const bins: HistogramBin[] = [];
+    for (let i = 0; i < binCount; i++) {
+      const binMin = min + i * binSize;
+      const binMax = i === binCount - 1 ? max : min + (i + 1) * binSize;
+      const count = elos.filter(elo => elo >= binMin && elo < binMax).length;
+      
+      bins.push({
+        min: binMin,
+        max: binMax,
+        count,
+        label: `${Math.round(binMin)}-${Math.round(binMax)}`,
+      });
+    }
+
+    return bins;
+  }, [filteredData]);
+
+  // Compute histogram data for Elo Change
+  const eloChangeHistogramData = useMemo((): HistogramBin[] => {
+    const eloChanges = filteredData.map(row => row.eloChange).filter(Boolean) as number[];
+    if (eloChanges.length === 0) return [];
+
+    const min = -20;
+    const max = 20;
+    const binCount = 20;
+    const binSize = (max - min) / binCount;
+
+    const bins: HistogramBin[] = [];
+    for (let i = 0; i < binCount; i++) {
+      const binMin = min + i * binSize;
+      const binMax = min + (i + 1) * binSize;
+      const count = eloChanges.filter(change => change >= min && change <= max && change >= binMin && change < binMax).length;
+      
+      bins.push({
+        min: binMin,
+        max: binMax,
+        count,
+        label: `${Math.round(binMin)}-${Math.round(binMax)}`,
+      });
+    }
+
+    return bins;
+  }, [filteredData]);
+
+  // Compute corporation performance data
+  const corporationPerformanceData = useMemo((): CorporationPerformance[] => {
+    const corporationMap = new Map<string, { wins: number; totalGames: number; eloChangeSum: number }>();
+
+    filteredData.forEach(row => {
+      if (!row.corporation || row.position == null) return;
+      
+      const existing = corporationMap.get(row.corporation) || { wins: 0, totalGames: 0, eloChangeSum: 0 };
+      existing.totalGames++;
+      if (row.position === 1) existing.wins++;
+      existing.eloChangeSum += row.eloChange || 0;
+      
+      corporationMap.set(row.corporation, existing);
+    });
+
+    const result: CorporationPerformance[] = [];
+    corporationMap.forEach((value, corporation) => {
+      // Only include corporations with at least 3 games for statistical relevance
+      if (value.totalGames >= 3) {
+        result.push({
+          corporation,
+          gamesPlayed: value.totalGames,
+          wins: value.wins,
+          winRate: value.wins / value.totalGames,
+          avgEloChange: value.eloChangeSum / value.totalGames,
+        });
+      }
+    });
+
+    return result.sort((a, b) => b.gamesPlayed - a.gamesPlayed);
+  }, [filteredData]);
+
+  // Prepare data for diverging bar charts
+  const winRateChartData = useMemo(() => {
+    const globalWinRate = stats.winRate;
+    return corporationPerformanceData.map(corp => ({
+      label: corp.corporation,
+      value: corp.winRate - globalWinRate,
+      count: corp.gamesPlayed,
+      baseline: globalWinRate,
+    }));
+  }, [corporationPerformanceData, stats.winRate]);
+
+  const eloGainChartData = useMemo(() => {
+    return corporationPerformanceData.map(corp => ({
+      label: corp.corporation,
+      value: corp.avgEloChange,
+      count: corp.gamesPlayed,
+    }));
+  }, [corporationPerformanceData]);
+
+  const handleFiltersChange = useCallback((newFilters: PreludeDetailFilters) => {
+    setFilters(newFilters);
+  }, []);
+
   if (!slug) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">
-            Invalid Prelude
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+            Prelude Not Found
           </h1>
           <p className="text-slate-600 dark:text-slate-400">
-            No prelude specified in the URL.
+            Please provide a valid prelude slug in the URL.
           </p>
         </div>
       </div>
     );
   }
 
-  const preludeName = slugToPreludeName(slug);
-  const imageSrc = getPreludeImage(preludeName) || getPreludePlaceholderImage();
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">
+            Error Loading Data
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mb-4">
+            {error}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-6">
-            <img
-              src={imageSrc}
-              alt={preludeName}
-              className="w-24 h-24 rounded-lg object-cover shadow-lg"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = getPreludePlaceholderImage();
-              }}
-            />
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-                {preludeName}
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400">
-                Prelude statistics and analysis
-              </p>
-            </div>
-          </div>
+          <PreludeHeader slug={slug} stats={stats} isLoading={loading} />
         </div>
 
-        {/* Placeholder content */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
+        {/* Main content */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Filters sidebar */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-8">
+              {!loading && (
+                <PreludeFiltersPanel
+                  filters={filters}
+                  onFiltersChange={handleFiltersChange}
+                  availablePlayerCounts={availablePlayerCounts}
+                  availableMaps={availableMaps}
+                  availableGameModes={availableGameModes}
+                  availableGameSpeeds={availableGameSpeeds}
+                  availablePlayerNames={availablePlayerNames}
+                  availableCorporations={availableCorporations}
+                  eloRange={eloRange}
+                />
+              )}
             </div>
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
-              Coming Soon
-            </h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-4">
-              Detailed prelude statistics and analysis will be available here soon. This will include performance metrics, win rates, and other insights.
-            </p>
-            <p className="text-sm text-slate-500 dark:text-slate-500">
-              For now, you can view prelude overview data on the <a href="/preludes" className="text-blue-600 dark:text-blue-400 hover:underline">Preludes Overview</a> page.
-            </p>
+          </div>
+
+          {/* Charts area */}
+          <div className="lg:col-span-3">
+            {loading ? (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+                    <div className="h-6 w-32 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-4"></div>
+                    <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* View toggle */}
+                <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg w-fit mx-auto">
+                  <Button
+                    variant={viewMode === 'chart' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('chart')}
+                    className="px-4 py-2"
+                  >
+                    Chart View
+                  </Button>
+                  <Button
+                    variant={viewMode === 'table' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('table')}
+                    className="px-4 py-2"
+                  >
+                    Table View
+                  </Button>
+                </div>
+                
+                {/* Conditional content based on view mode */}
+                <div className="w-full">
+                  {viewMode === 'chart' ? (
+                    <div className="space-y-6">
+                      {/* Top row - 2x2 grid */}
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <EloHistogram data={eloHistogramData} />
+                        <EloHistogram data={eloChangeHistogramData} title="Elo Change Distribution" useRedGreenColors={true} />
+                        <DivergingBarChart
+                          data={winRateChartData}
+                          title="Win Rate by Corporation"
+                          valueLabel="Win Rate Difference from Global"
+                          formatValue={(value) => `${value >= 0 ? '+' : ''}${(value * 100).toFixed(1)}%`}
+                          sortBy="count"
+                          useRedGreenColors={true}
+                        />
+                        <DivergingBarChart
+                          data={eloGainChartData}
+                          title="Avg Elo Gain by Corporation"
+                          valueLabel="Average Elo Change"
+                          formatValue={(value) => `${value >= 0 ? '+' : ''}${value.toFixed(1)}`}
+                          sortBy="count"
+                          useRedGreenColors={true}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <GameDetailsTable data={filteredData} />
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -50,7 +50,7 @@ function HomePage() {
               Project card stats: <code>/cards/[slug]</code> (e.g., <code>/cards/martian_rails</code>)
             </p>
             <p className="text-sm text-muted-foreground">
-              Prelude stats: <code>/prelude/[slug]</code> (e.g., <code>/prelude/supply_drop</code>) - Coming soon
+              Prelude stats: <code>/prelude/[slug]</code> (e.g., <code>/prelude/supply_drop</code>)
             </p>
           </div>
         </div>

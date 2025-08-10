@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { PreludeStatsRow } from '@/types/prelude';
+import { PreludeStatsRow, PreludePlayerStatsRow } from '@/types/prelude';
 
 // Cache configuration
 const TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -132,4 +132,17 @@ export function getCacheStatus(): {
     lastFetched: inMemoryCache?.fetchedAt ? new Date(inMemoryCache.fetchedAt) : 
                  localEntry?.fetchedAt ? new Date(localEntry.fetchedAt) : undefined,
   };
+}
+
+/**
+ * Fetch prelude player stats from API (no caching for individual prelude stats)
+ */
+export async function getPreludePlayerStats(preludeName: string): Promise<PreludePlayerStatsRow[]> {
+  try {
+    const response = await axios.get<PreludePlayerStatsRow[]>(`/api/preludes/${encodeURIComponent(preludeName)}/playerstats`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching prelude player stats:', error);
+    throw error;
+  }
 }
