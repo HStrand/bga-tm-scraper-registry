@@ -3,6 +3,9 @@ import axios from "axios";
 import { getStatistics, Statistics } from "@/lib/stats";
 import { Users, Database, Download, Gauge, LineChart, BarChart3 } from "lucide-react";
 
+// Optional Functions key support via env (if your functions require a key)
+const FUNCTIONS_KEY = import.meta.env.VITE_FUNCTIONS_KEY as string | undefined;
+
 function useCountUp(target: number, durationMs = 900) {
   const [value, setValue] = useState(0);
   const rafRef = useRef<number | null>(null);
@@ -12,12 +15,9 @@ function useCountUp(target: number, durationMs = 900) {
     const animate = (now: number) => {
       const elapsed = now - start;
       const t = Math.min(1, elapsed / durationMs);
-      // easeOutCubic
-      const eased = 1 - Math.pow(1 - t, 3);
+      const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
       setValue(Math.round(target * eased));
-      if (t < 1) {
-        rafRef.current = requestAnimationFrame(animate);
-      }
+      if (t < 1) rafRef.current = requestAnimationFrame(animate);
     };
     rafRef.current = requestAnimationFrame(animate);
     return () => {
@@ -58,15 +58,39 @@ function BigStat({
   );
 }
 
-// Optional Functions key support via env (if your functions require a key)
-const FUNCTIONS_KEY = import.meta.env.VITE_FUNCTIONS_KEY as string | undefined;
+type ZipInfo = {
+  fileName: string;
+  sizeInBytes: number;
+  sizeFormatted: string;
+} | null;
+
+function humanBytes(n: number | undefined) {
+  if (!n || n <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  let num = n;
+  while (num >= 1024 && i < units.length - 1) {
+    num /= 1024;
+    i++;
+  }
+  return `${num.toFixed(1)} ${units[i]}`;
+}
 
 export default function HomePage() {
   const [stats, setStats] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [downloading, setDownloading] = useState(false);
 
+  const [zipInfo, setZipInfo] = useState<ZipInfo>(null);
+  const [zipInfoLoading, setZipInfoLoading] = useState(false);
+
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null); // 0..1 or null
+  const [downloadText, setDownloadText] = useState<string>("");
+
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Fetch statistics
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -87,6 +111,40 @@ export default function HomePage() {
     };
   }, []);
 
+  // Fetch latest zip size & name
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setZipInfoLoading(true);
+        const headers: Record<string, string> = {};
+        if (FUNCTIONS_KEY) headers["x-functions-key"] = FUNCTIONS_KEY;
+        const res = await axios.get("/api/GetLatestZipSize", { headers });
+        const raw = res.data || {};
+        if (!cancelled && raw.success) {
+          setZipInfo({
+            fileName: raw.fileName,
+            sizeInBytes: raw.sizeInBytes ?? 0,
+            sizeFormatted: raw.sizeFormatted ?? humanBytes(raw.sizeInBytes),
+          });
+        }
+      } catch (e) {
+        console.warn("Could not fetch latest zip size", e);
+      } finally {
+        if (!cancelled) setZipInfoLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Toast helper
+  const showToast = (msg: string, ttl = 3500) => {
+    setToast(msg);
+    window.setTimeout(() => setToast(null), ttl);
+  };
+
   const totalGames = stats?.totalIndexedGames ?? 0;
   const scrapedGames = stats?.scrapedGamesTotal ?? 0;
 
@@ -97,19 +155,41 @@ export default function HomePage() {
   const handleDownload = async () => {
     try {
       setDownloading(true);
+      setDownloadProgress(null);
+      setDownloadText("Contacting server…");
+
       const headers: Record<string, string> = {};
       if (FUNCTIONS_KEY) headers["x-functions-key"] = FUNCTIONS_KEY;
+
+      const totalBytes = zipInfo?.sizeInBytes ?? 0;
+
       const res = await axios.get("/api/DownloadLatestZip", {
         responseType: "blob",
         headers,
+        onDownloadProgress: (evt) => {
+          // evt.total may be 0 depending on server/browser; fallback to known size
+          const loaded = evt.loaded ?? 0;
+          const total = evt.total && evt.total > 0 ? evt.total : totalBytes;
+          if (total > 0) {
+            const pct = Math.min(1, loaded / total);
+            setDownloadProgress(pct);
+            setDownloadText(`${humanBytes(loaded)} / ${humanBytes(total)}`);
+          } else {
+            // Indeterminate
+            setDownloadProgress(null);
+            setDownloadText("Downloading…");
+          }
+        },
       });
+
       // Try to extract filename from Content-Disposition
-      let filename = "bga-tm-dataset.zip";
+      let filename = zipInfo?.fileName || "bga-tm-dataset.zip";
       const cd = res.headers["content-disposition"];
       if (cd) {
         const match = /filename="?([^"]+)"?/i.exec(cd);
         if (match?.[1]) filename = match[1];
       }
+
       const url = URL.createObjectURL(res.data);
       const a = document.createElement("a");
       a.href = url;
@@ -118,9 +198,15 @@ export default function HomePage() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+
+      showToast(`Download started: ${filename}`);
+      setDownloadText("");
+      setDownloadProgress(null);
     } catch (e) {
       console.error("Download failed", e);
-      alert("Failed to start download. Please try again.");
+      setDownloadText("");
+      setDownloadProgress(null);
+      showToast("Failed to download dataset. Please try again.", 5000);
     } finally {
       setDownloading(false);
     }
@@ -128,6 +214,15 @@ export default function HomePage() {
 
   return (
     <div className="space-y-10">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-[70]">
+          <div className="rounded-lg bg-slate-900 text-white px-4 py-2 shadow-lg text-sm">
+            {toast}
+          </div>
+        </div>
+      )}
+
       {/* Hero with gradient, glow and pattern */}
       <section className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-gradient-to-r from-amber-50 via-orange-50 to-rose-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-900 p-8 shadow-sm">
         <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-amber-400/20 blur-3xl" />
@@ -175,18 +270,58 @@ export default function HomePage() {
           </div>
 
           {/* Download CTA */}
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={handleDownload}
-              disabled={downloading}
-              className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-70 text-white px-4 py-2.5 shadow-sm"
-            >
-              <Download className="w-4 h-4" />
-              {downloading ? "Preparing download..." : "Download Full Dataset (.zip)"}
-            </button>
-            <span className="text-xs text-slate-600 dark:text-slate-400">
-              Latest zipped archive of all scraped data
-            </span>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleDownload}
+                disabled={downloading}
+                className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-70 text-white px-4 py-2.5 shadow-sm"
+              >
+                {downloading ? (
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v4l3.5-3.5L12 0v4a8 8 0 100 16v4l3.5-3.5L12 20v4a8 8 0 01-8-8z"></path>
+                  </svg>
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                {downloading ? "Downloading archive…" : "Download Full Dataset (.zip)"}
+              </button>
+              <div className="text-xs text-slate-600 dark:text-slate-400">
+                {zipInfoLoading
+                  ? "Fetching latest archive info…"
+                  : zipInfo
+                  ? `Latest: ${zipInfo.fileName} • ${zipInfo.sizeFormatted}`
+                  : "Latest archive info unavailable"}
+              </div>
+            </div>
+
+            {/* Progress display */}
+            {downloading && (
+              <div className="w-full sm:w-auto sm:min-w-[320px]">
+                <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1">
+                  <span>Download progress</span>
+                  <span>
+                    {downloadProgress != null
+                      ? `${Math.round(downloadProgress * 100)}%`
+                      : downloadText || "Starting…"}
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                  {downloadProgress != null ? (
+                    <div
+                      className="h-full bg-gradient-to-r from-amber-500 to-rose-500 transition-[width] duration-150"
+                      style={{ width: `${Math.round(downloadProgress * 100)}%` }}
+                    />
+                  ) : (
+                    <div className="h-full w-1/3 bg-gradient-to-r from-amber-500 to-rose-500 animate-[pulse_1.2s_ease-in-out_infinite]" />
+                  )}
+                </div>
+                {downloadText && (
+                  <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{downloadText}</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>
