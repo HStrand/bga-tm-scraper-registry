@@ -22,7 +22,7 @@ export function CorporationStatsPage() {
     playerCounts: [],
     maps: [],
     gameModes: [],
-    gameSpeed: undefined,
+    gameSpeeds: [],
     preludeOn: undefined,
     coloniesOn: undefined,
     draftOn: undefined,
@@ -43,12 +43,13 @@ export function CorporationStatsPage() {
         const playerCounts = [...new Set(response.data.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
         const maps = [...new Set(response.data.map(row => row.map).filter(Boolean))].sort() as string[];
         const gameModes = [...new Set(response.data.map(row => row.gameMode).filter(Boolean))].sort() as string[];
+        const gameSpeeds = [...new Set(response.data.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
 
         setFilters({
           playerCounts: playerCounts as number[],
           maps,
           gameModes,
-          gameSpeed: undefined,
+          gameSpeeds,
           preludeOn: undefined,
           coloniesOn: undefined,
           draftOn: undefined,
@@ -81,6 +82,10 @@ export function CorporationStatsPage() {
     return [...new Set(data.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
   }, [data]);
 
+  const availablePlayerNames = useMemo(() => {
+    return [...new Set(data.map(row => row.playerName).filter(Boolean))].sort() as string[];
+  }, [data]);
+
 
   const eloRange = useMemo(() => {
     const elos = data.map(row => row.elo).filter(Boolean) as number[];
@@ -98,6 +103,9 @@ export function CorporationStatsPage() {
       if (filters.eloMin && (!row.elo || row.elo < filters.eloMin)) return false;
       if (filters.eloMax && (!row.elo || row.elo > filters.eloMax)) return false;
 
+      // Player name filter
+      if (filters.playerName && row.playerName !== filters.playerName) return false;
+
       // Player count filter
       if (row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
 
@@ -108,7 +116,7 @@ export function CorporationStatsPage() {
       if (row.gameMode && !filters.gameModes.includes(row.gameMode)) return false;
 
       // Game speed filter
-      if (filters.gameSpeed && row.gameSpeed !== filters.gameSpeed) return false;
+      if (row.gameSpeed && !filters.gameSpeeds.includes(row.gameSpeed)) return false;
 
       // Expansion filters
       if (filters.preludeOn !== undefined && row.preludeOn !== filters.preludeOn) return false;
@@ -293,6 +301,7 @@ export function CorporationStatsPage() {
                   availableMaps={availableMaps}
                   availableGameModes={availableGameModes}
                   availableGameSpeeds={availableGameSpeeds}
+                  availablePlayerNames={availablePlayerNames}
                   eloRange={eloRange}
                 />
               )}

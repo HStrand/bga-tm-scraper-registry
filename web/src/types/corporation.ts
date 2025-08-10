@@ -43,7 +43,8 @@ export interface CorporationFilters {
   playerCounts: number[];
   maps: string[];
   gameModes: string[];
-  gameSpeed?: string;
+  gameSpeeds: string[];
+  playerName?: string;
   preludeOn?: boolean;
   coloniesOn?: boolean;
   draftOn?: boolean;

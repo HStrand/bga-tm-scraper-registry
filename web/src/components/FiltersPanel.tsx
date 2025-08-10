@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CorporationFilters } from '@/types/corporation';
 import { Button } from '@/components/ui/button';
 
@@ -9,6 +9,7 @@ interface FiltersPanelProps {
   availableMaps: string[];
   availableGameModes: string[];
   availableGameSpeeds: string[];
+  availablePlayerNames: string[];
   eloRange: { min: number; max: number };
 }
 
@@ -19,9 +20,32 @@ export function FiltersPanel({
   availableMaps,
   availableGameModes,
   availableGameSpeeds,
+  availablePlayerNames,
   eloRange,
 }: FiltersPanelProps) {
   const [localFilters, setLocalFilters] = useState(filters);
+  const [gameSpeedDropdownOpen, setGameSpeedDropdownOpen] = useState(false);
+  const gameSpeedDropdownRef = useRef<HTMLDivElement>(null);
+  const [playerSearchOpen, setPlayerSearchOpen] = useState(false);
+  const [playerSearchQuery, setPlayerSearchQuery] = useState('');
+  const playerSearchRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (gameSpeedDropdownRef.current && !gameSpeedDropdownRef.current.contains(event.target as Node)) {
+        setGameSpeedDropdownOpen(false);
+      }
+      if (playerSearchRef.current && !playerSearchRef.current.contains(event.target as Node)) {
+        setPlayerSearchOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Debounce filter changes
   useEffect(() => {
@@ -41,7 +65,7 @@ export function FiltersPanel({
       playerCounts: availablePlayerCounts,
       maps: availableMaps,
       gameModes: availableGameModes,
-      gameSpeed: undefined,
+      gameSpeeds: availableGameSpeeds,
       preludeOn: undefined,
       coloniesOn: undefined,
       draftOn: undefined,
@@ -68,6 +92,13 @@ export function FiltersPanel({
       ? localFilters.gameModes.filter(gm => gm !== gameMode)
       : [...localFilters.gameModes, gameMode].sort();
     updateFilters({ gameModes: newGameModes });
+  };
+
+  const toggleGameSpeed = (gameSpeed: string) => {
+    const newGameSpeeds = localFilters.gameSpeeds.includes(gameSpeed)
+      ? localFilters.gameSpeeds.filter(gs => gs !== gameSpeed)
+      : [...localFilters.gameSpeeds, gameSpeed].sort();
+    updateFilters({ gameSpeeds: newGameSpeeds });
   };
 
   return (
@@ -115,6 +146,73 @@ export function FiltersPanel({
             />
           </div>
         </div>
+      </div>
+
+      {/* Player Name Search */}
+      <div className="space-y-3" ref={playerSearchRef}>
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Player Name
+        </label>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search for a player..."
+            value={playerSearchQuery}
+            onChange={(e) => {
+              setPlayerSearchQuery(e.target.value);
+              setPlayerSearchOpen(e.target.value.length > 0);
+            }}
+            onFocus={() => setPlayerSearchOpen(playerSearchQuery.length > 0)}
+            className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+          />
+          {localFilters.playerName && (
+            <button
+              onClick={() => {
+                updateFilters({ playerName: undefined });
+                setPlayerSearchQuery('');
+                setPlayerSearchOpen(false);
+              }}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+          
+          {playerSearchOpen && playerSearchQuery.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-zinc-300 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-auto">
+              <div className="p-2">
+                {availablePlayerNames
+                  .filter(name => name.toLowerCase().includes(playerSearchQuery.toLowerCase()))
+                  .slice(0, 10) // Limit to 10 results
+                  .map(playerName => (
+                    <div
+                      key={playerName}
+                      onClick={() => {
+                        updateFilters({ playerName });
+                        setPlayerSearchQuery(playerName);
+                        setPlayerSearchOpen(false);
+                      }}
+                      className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded cursor-pointer text-sm text-slate-900 dark:text-slate-100"
+                    >
+                      {playerName}
+                    </div>
+                  ))}
+                {availablePlayerNames.filter(name => name.toLowerCase().includes(playerSearchQuery.toLowerCase())).length === 0 && (
+                  <div className="p-2 text-sm text-slate-500 dark:text-slate-400">
+                    No players found
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        {localFilters.playerName && (
+          <div className="text-xs text-slate-600 dark:text-slate-400">
+            Filtering by: <span className="font-medium text-amber-600 dark:text-amber-400">{localFilters.playerName}</span>
+          </div>
+        )}
       </div>
 
       {/* Player Count */}
@@ -184,20 +282,67 @@ export function FiltersPanel({
       </div>
 
       {/* Game Speed */}
-      <div className="space-y-3">
+      <div className="space-y-3" ref={gameSpeedDropdownRef}>
         <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
           Game Speed
         </label>
-        <select
-          value={localFilters.gameSpeed || ''}
-          onChange={(e) => updateFilters({ gameSpeed: e.target.value || undefined })}
-          className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-        >
-          <option value="">All Speeds</option>
-          {availableGameSpeeds.map(speed => (
-            <option key={speed} value={speed}>{speed}</option>
-          ))}
-        </select>
+        <div className="relative">
+          <button
+            onClick={() => setGameSpeedDropdownOpen(!gameSpeedDropdownOpen)}
+            className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent text-left flex items-center justify-between"
+          >
+            <span>
+              {localFilters.gameSpeeds.length === availableGameSpeeds.length 
+                ? 'All Speeds' 
+                : localFilters.gameSpeeds.length === 0 
+                  ? 'No speeds selected'
+                  : `${localFilters.gameSpeeds.length} selected`
+              }
+            </span>
+            <svg className={`w-4 h-4 transition-transform ${gameSpeedDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          {gameSpeedDropdownOpen && (
+            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-zinc-300 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-auto">
+              <div className="p-2">
+                <div className="flex items-center space-x-2 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="select-all-speeds"
+                    checked={localFilters.gameSpeeds.length === availableGameSpeeds.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        updateFilters({ gameSpeeds: [...availableGameSpeeds] });
+                      } else {
+                        updateFilters({ gameSpeeds: [] });
+                      }
+                    }}
+                    className="w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  />
+                  <label htmlFor="select-all-speeds" className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
+                    (Select All)
+                  </label>
+                </div>
+                {availableGameSpeeds.map(speed => (
+                  <div key={speed} className="flex items-center space-x-2 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id={`speed-${speed}`}
+                      checked={localFilters.gameSpeeds.includes(speed)}
+                      onChange={() => toggleGameSpeed(speed)}
+                      className="w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <label htmlFor={`speed-${speed}`} className="text-sm text-slate-900 dark:text-slate-100 cursor-pointer">
+                      {speed}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Expansion Toggles */}
@@ -289,11 +434,12 @@ export function FiltersPanel({
       {/* Active filters summary */}
       <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
         <div className="text-xs text-slate-500 dark:text-slate-400">
-          {localFilters.eloMin || localFilters.eloMax || localFilters.gameSpeed ||
+          {localFilters.eloMin || localFilters.eloMax ||
            localFilters.preludeOn !== undefined || localFilters.coloniesOn !== undefined || localFilters.draftOn !== undefined ||
            localFilters.playerCounts.length !== availablePlayerCounts.length ||
            localFilters.maps.length !== availableMaps.length ||
-           localFilters.gameModes.length !== availableGameModes.length
+           localFilters.gameModes.length !== availableGameModes.length ||
+           localFilters.gameSpeeds.length !== availableGameSpeeds.length
             ? 'Filters active'
             : 'No filters applied'
           }
