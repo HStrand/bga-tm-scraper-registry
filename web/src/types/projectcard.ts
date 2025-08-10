@@ -75,6 +75,7 @@ export interface ProjectCardStatsRow {
 
 export interface ProjectCardOverviewRow {
   card: string;
+  name: string;
   totalGames: number;
   winRate: number;
   avgElo: number;

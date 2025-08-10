@@ -99,6 +99,7 @@ export function PreludesOverviewPage() {
   const preludeOverview = useMemo((): PreludeOverviewRow[] => {
     return data.map(row => ({
       prelude: preludeNameToSlug(row.card),
+      name: row.card,
       totalGames: row.timesPlayed,
       winRate: row.winRate,
       avgElo: row.avgElo,
@@ -145,7 +146,7 @@ export function PreludesOverviewPage() {
     if (filters.searchTerm) {
       const searchLower = filters.searchTerm.toLowerCase();
       filteredOverview = filteredOverview.filter(prelude => 
-        slugToPreludeName(prelude.prelude).toLowerCase().includes(searchLower)
+        prelude.name.toLowerCase().includes(searchLower)
       );
     }
 
@@ -244,6 +245,14 @@ export function PreludesOverviewPage() {
   };
 
   const getEloChangeDisplay = (eloChange: number) => {
+    if (eloChange == null) {
+      return (
+        <span className="text-slate-600 dark:text-slate-400">
+          N/A
+        </span>
+      );
+    }
+    
     const prefix = eloChange > 0 ? '+' : '';
     const colorClass = eloChange > 0 
       ? 'text-green-600 dark:text-green-400' 
@@ -392,9 +401,9 @@ export function PreludesOverviewPage() {
                       <tr>
                         <th 
                           className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
-                          onClick={() => handleSort('prelude')}
+                          onClick={() => handleSort('name')}
                         >
-                          Prelude {getSortIcon('prelude')}
+                          Prelude {getSortIcon('name')}
                         </th>
                         <th 
                           className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
@@ -424,8 +433,7 @@ export function PreludesOverviewPage() {
                     </thead>
                     <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                       {paginatedData.map((row) => {
-                        const displayName = slugToPreludeName(row.prelude);
-                        const imageSrc = getPreludeImage(displayName) || getPreludePlaceholderImage();
+                        const imageSrc = getPreludeImage(row.name) || getPreludePlaceholderImage();
                         
                         return (
                           <tr 
@@ -440,14 +448,14 @@ export function PreludesOverviewPage() {
                                   const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
                                   desiredMidYRef.current = rect.top + rect.height / 2;
                                   triggerRectRef.current = rect;
-                                  setHoveredPrelude({ slug: row.prelude, imageSrc, name: displayName });
+                                  setHoveredPrelude({ slug: row.prelude, imageSrc, name: row.name });
                                   setTooltipPos({ left: rect.right + 16, top: desiredMidYRef.current });
                                 }}
                                 onMouseLeave={() => setHoveredPrelude(null)}
                               >
                                 <img
                                   src={imageSrc}
-                                  alt={displayName}
+                                  alt={row.name}
                                   className="w-8 h-8 rounded object-cover"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
@@ -455,7 +463,7 @@ export function PreludesOverviewPage() {
                                   }}
                                 />
                                 <span className="font-medium text-slate-900 dark:text-slate-100">
-                                  {displayName}
+                                  {row.name}
                                 </span>
                               </div>
                             </td>
@@ -469,7 +477,7 @@ export function PreludesOverviewPage() {
                               {row.totalGames.toLocaleString()}
                             </td>
                             <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                              {row.avgElo.toFixed(0)}
+                              {row.avgElo != null ? row.avgElo.toFixed(0) : 'N/A'}
                             </td>
                           </tr>
                         );

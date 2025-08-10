@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { CorporationStatsPage } from "@/pages/CorporationStatsPage";
 import { CorporationsOverviewPage } from "@/pages/CorporationsOverviewPage";
 import { ProjectCardStatsPage } from "@/pages/ProjectCardStatsPage";
+import { ProjectCardsOverviewPage } from "@/pages/ProjectCardsOverviewPage";
+import { PreludesOverviewPage } from "@/pages/PreludesOverviewPage";
+import { PreludeStatsPage } from "@/pages/PreludeStatsPage";
 
 function HomePage() {
   return (
@@ -24,26 +27,30 @@ function HomePage() {
         </div>
         <div className="mt-8 space-y-4">
           <div className="space-y-2">
-            <Button asChild>
-              <a href="/corporations">View Corporations Overview</a>
-            </Button>
+            <h2 className="text-lg font-semibold">Overview Pages</h2>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild>
+                <a href="/corporations">Corporations Overview</a>
+              </Button>
+              <Button asChild>
+                <a href="/cards">Project Cards Overview</a>
+              </Button>
+              <Button asChild>
+                <a href="/preludes">Preludes Overview</a>
+              </Button>
+            </div>
           </div>
           
           <div className="space-y-2">
+            <h3 className="text-md font-medium">Individual Stats Pages</h3>
             <p className="text-sm text-muted-foreground">
-              To view individual corporation stats, navigate to: <code>/corporations/[slug]</code>
+              Corporation stats: <code>/corporations/[slug]</code> (e.g., <code>/corporations/mining_guild</code>)
             </p>
             <p className="text-sm text-muted-foreground">
-              Example: <code>/corporations/mining_guild</code>
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              To view project card stats, navigate to: <code>/cards/[slug]</code>
+              Project card stats: <code>/cards/[slug]</code> (e.g., <code>/cards/martian_rails</code>)
             </p>
             <p className="text-sm text-muted-foreground">
-              Example: <code>/cards/martian_rails</code>
+              Prelude stats: <code>/prelude/[slug]</code> (e.g., <code>/prelude/supply_drop</code>) - Coming soon
             </p>
           </div>
         </div>
@@ -59,7 +66,10 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/corporations" element={<CorporationsOverviewPage />} />
         <Route path="/corporations/:slug" element={<CorporationStatsPage />} />
+        <Route path="/cards" element={<ProjectCardsOverviewPage />} />
         <Route path="/cards/:slug" element={<ProjectCardStatsPage />} />
+        <Route path="/preludes" element={<PreludesOverviewPage />} />
+        <Route path="/prelude/:slug" element={<PreludeStatsPage />} />
       </Routes>
     </Router>
   );

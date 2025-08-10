@@ -99,6 +99,7 @@ export function ProjectCardsOverviewPage() {
   const cardOverview = useMemo((): ProjectCardOverviewRow[] => {
     return data.map(row => ({
       card: cardNameToSlug(row.card),
+      name: row.card,
       totalGames: row.timesPlayed,
       winRate: row.winRate,
       avgElo: row.avgElo,
@@ -145,7 +146,7 @@ export function ProjectCardsOverviewPage() {
     if (filters.searchTerm) {
       const searchLower = filters.searchTerm.toLowerCase();
       filteredOverview = filteredOverview.filter(card => 
-        slugToCardName(card.card).toLowerCase().includes(searchLower)
+        card.name.toLowerCase().includes(searchLower)
       );
     }
 
@@ -244,6 +245,14 @@ export function ProjectCardsOverviewPage() {
   };
 
   const getEloChangeDisplay = (eloChange: number) => {
+    if (eloChange == null) {
+      return (
+        <span className="text-slate-600 dark:text-slate-400">
+          N/A
+        </span>
+      );
+    }
+    
     const prefix = eloChange > 0 ? '+' : '';
     const colorClass = eloChange > 0 
       ? 'text-green-600 dark:text-green-400' 
@@ -392,9 +401,9 @@ export function ProjectCardsOverviewPage() {
                       <tr>
                         <th 
                           className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
-                          onClick={() => handleSort('card')}
+                          onClick={() => handleSort('name')}
                         >
-                          Card {getSortIcon('card')}
+                          Card {getSortIcon('name')}
                         </th>
                         <th 
                           className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
@@ -424,8 +433,7 @@ export function ProjectCardsOverviewPage() {
                     </thead>
                     <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                       {paginatedData.map((row) => {
-                        const displayName = slugToCardName(row.card);
-                        const imageSrc = getCardImage(displayName) || getCardPlaceholderImage();
+                        const imageSrc = getCardImage(row.name) || getCardPlaceholderImage();
                         
                         return (
                           <tr 
@@ -440,14 +448,14 @@ export function ProjectCardsOverviewPage() {
                                   const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
                                   desiredMidYRef.current = rect.top + rect.height / 2;
                                   triggerRectRef.current = rect;
-                                  setHoveredCard({ slug: row.card, imageSrc, name: displayName });
+                                  setHoveredCard({ slug: row.card, imageSrc, name: row.name });
                                   setTooltipPos({ left: rect.right + 16, top: desiredMidYRef.current });
                                 }}
                                 onMouseLeave={() => setHoveredCard(null)}
                               >
                                 <img
                                   src={imageSrc}
-                                  alt={displayName}
+                                  alt={row.name}
                                   className="w-8 h-8 rounded object-cover"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
@@ -455,7 +463,7 @@ export function ProjectCardsOverviewPage() {
                                   }}
                                 />
                                 <span className="font-medium text-slate-900 dark:text-slate-100">
-                                  {displayName}
+                                  {row.name}
                                 </span>
                               </div>
                             </td>
@@ -469,7 +477,7 @@ export function ProjectCardsOverviewPage() {
                               {row.totalGames.toLocaleString()}
                             </td>
                             <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                              {row.avgElo.toFixed(0)}
+                              {row.avgElo != null ? row.avgElo.toFixed(0) : 'N/A'}
                             </td>
                           </tr>
                         );

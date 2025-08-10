@@ -10,6 +10,7 @@ export interface PreludeStatsRow {
 
 export interface PreludeOverviewRow {
   prelude: string;
+  name: string;
   totalGames: number;
   winRate: number;
   avgElo: number;
