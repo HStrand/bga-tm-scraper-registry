@@ -31,6 +31,12 @@ export interface CorporationStats {
   avgElo: number;
   avgEloChange: number;
   avgFinalScore: number;
+  avgTr: number;
+  avgCardPoints: number;
+  avgGreeneryPoints: number;
+  avgCityPoints: number;
+  avgMilestonePoints: number;
+  avgAwardPoints: number;
   avgDuration: number;
   avgGenerations: number;
   positionsCount: Record<number, number>;

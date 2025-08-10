@@ -18,13 +18,26 @@ export function CorporationHeader({ slug, stats, isLoading }: CorporationHeaderP
         <div className="col-span-12 md:col-span-8">
             <div className="h-8 w-48 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-4"></div>
             <div className="h-4 w-32 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-2"></div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="text-center">
-                  <div className="h-6 w-16 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-1 mx-auto"></div>
-                  <div className="h-4 w-12 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mx-auto"></div>
-                </div>
-              ))}
+            <div className="space-y-4 mt-6">
+              {/* Row 1 skeleton - Main metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="text-center">
+                    <div className="h-6 w-16 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-1 mx-auto"></div>
+                    <div className="h-4 w-12 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mx-auto"></div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Row 2 skeleton - Detailed breakdown */}
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="text-center">
+                    <div className="h-4 w-10 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-1 mx-auto"></div>
+                    <div className="h-3 w-8 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mx-auto"></div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <div className="ml-8">
@@ -57,46 +70,94 @@ export function CorporationHeader({ slug, stats, isLoading }: CorporationHeaderP
           </p>
           
           {/* Key metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4">
-            <div className="text-center">
-              <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                {stats.totalGames.toLocaleString()}
+          <div className="space-y-4 mt-4">
+            {/* Row 1: Main metrics (original size) */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="text-center">
+                <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                  {stats.totalGames.toLocaleString()}
+                </div>
+                <div className="text-sm text-slate-500 dark:text-slate-400">Games</div>
               </div>
-              <div className="text-sm text-slate-500 dark:text-slate-400">Games</div>
+
+              <div className="text-center">
+                <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                  {(stats.winRate * 100).toFixed(1)}%
+                </div>
+                <div className="text-sm text-slate-500 dark:text-slate-400">Win Rate</div>
+              </div>
+
+              <div className="text-center">
+                <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                  {stats.avgElo.toFixed(0)}
+                </div>
+                <div className="text-sm text-slate-500 dark:text-slate-400">Avg Elo</div>
+              </div>
+
+              <div className="text-center">
+                <div className={`text-xl md:text-2xl font-semibold ${
+                  stats.avgEloChange > 0 
+                    ? 'text-green-600 dark:text-green-400' 
+                    : stats.avgEloChange < 0 
+                      ? 'text-red-600 dark:text-red-400' 
+                      : 'text-slate-900 dark:text-slate-100'
+                }`}>
+                  {stats.avgEloChange > 0 ? '+' : ''}{stats.avgEloChange.toFixed(2)}
+                </div>
+                <div className="text-sm text-slate-500 dark:text-slate-400">Avg Elo Change</div>
+              </div>
+
+              <div className="text-center">
+                <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                  {stats.avgFinalScore.toFixed(0)}
+                </div>
+                <div className="text-sm text-slate-500 dark:text-slate-400">Avg Score</div>
+              </div>
             </div>
 
-            <div className="text-center">
-              <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                {(stats.winRate * 100).toFixed(1)}%
+            {/* Row 2: Detailed breakdown (smaller) */}
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+              <div className="text-center">
+                <div className="text-sm md:text-base font-medium text-slate-900 dark:text-slate-100">
+                  {stats.avgTr.toFixed(0)}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Avg TR</div>
               </div>
-              <div className="text-sm text-slate-500 dark:text-slate-400">Win Rate</div>
-            </div>
 
-            <div className="text-center">
-              <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                {stats.avgElo.toFixed(0)}
+              <div className="text-center">
+                <div className="text-sm md:text-base font-medium text-slate-900 dark:text-slate-100">
+                  {stats.avgCardPoints.toFixed(1)}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Avg VP (Cards)</div>
               </div>
-              <div className="text-sm text-slate-500 dark:text-slate-400">Avg Elo</div>
-            </div>
 
-            <div className="text-center">
-              <div className={`text-xl md:text-2xl font-semibold ${
-                stats.avgEloChange > 0 
-                  ? 'text-green-600 dark:text-green-400' 
-                  : stats.avgEloChange < 0 
-                    ? 'text-red-600 dark:text-red-400' 
-                    : 'text-slate-900 dark:text-slate-100'
-              }`}>
-                {stats.avgEloChange > 0 ? '+' : ''}{stats.avgEloChange.toFixed(2)}
+              <div className="text-center">
+                <div className="text-sm md:text-base font-medium text-slate-900 dark:text-slate-100">
+                  {stats.avgGreeneryPoints.toFixed(1)}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Avg Greeneries</div>
               </div>
-              <div className="text-sm text-slate-500 dark:text-slate-400">Avg Elo Change</div>
-            </div>
 
-            <div className="text-center">
-              <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                {stats.avgFinalScore.toFixed(0)}
+              <div className="text-center">
+                <div className="text-sm md:text-base font-medium text-slate-900 dark:text-slate-100">
+                  {stats.avgCityPoints.toFixed(1)}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Avg City Points</div>
               </div>
-              <div className="text-sm text-slate-500 dark:text-slate-400">Avg Score</div>
+
+              <div className="text-center">
+                <div className="text-sm md:text-base font-medium text-slate-900 dark:text-slate-100">
+                  {stats.avgMilestonePoints.toFixed(1)}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Avg Milestone Pts</div>
+              </div>
+
+              <div className="text-center">
+                <div className="text-sm md:text-base font-medium text-slate-900 dark:text-slate-100">
+                  {stats.avgAwardPoints.toFixed(1)}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Avg Award Pts</div>
+              </div>
             </div>
           </div>
         </div>

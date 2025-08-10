@@ -348,7 +348,7 @@ export function FiltersPanel({
       {/* Expansion Toggles */}
       <div className="space-y-3">
         <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-          Game configuration
+          Game Configuration
         </label>
         <div className="space-y-2">
           <div className="flex items-center justify-between">

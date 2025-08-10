@@ -85,7 +85,7 @@ SELECT
 	gps.AwardPoints,
 	gps.CardPoints,
 	gps.PlayerId,
-	p.Name AS PlayerName,
+	gp.PlayerName AS PlayerName,
 	gp.Elo,
 	gp.EloChange,
 	gp.Position
@@ -93,7 +93,6 @@ FROM GamePlayerStats gps
 INNER JOIN Games g ON gps.TableId = g.TableId
 INNER JOIN GameStats gs ON gs.TableId = gps.TableId
 INNER JOIN GamePlayers gp ON gp.TableId = gs.TableId AND gp.PlayerId = gps.PlayerId
-INNER JOIN Players p ON p.PlayerId = gps.PlayerId
 WHERE LOWER(gps.Corporation) = LOWER(@Corporation)
 ORDER BY gs.TableId DESC";
 

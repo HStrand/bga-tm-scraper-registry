@@ -139,6 +139,12 @@ export function CorporationStatsPage() {
         avgElo: 0,
         avgEloChange: 0,
         avgFinalScore: 0,
+        avgTr: 0,
+        avgCardPoints: 0,
+        avgGreeneryPoints: 0,
+        avgCityPoints: 0,
+        avgMilestonePoints: 0,
+        avgAwardPoints: 0,
         avgDuration: 0,
         avgGenerations: 0,
         positionsCount: {},
@@ -152,6 +158,12 @@ export function CorporationStatsPage() {
     const avgElo = validData.reduce((sum, row) => sum + (row.elo || 0), 0) / totalGames;
     const avgEloChange = validData.reduce((sum, row) => sum + (row.eloChange || 0), 0) / totalGames;
     const avgFinalScore = validData.reduce((sum, row) => sum + (row.finalScore || 0), 0) / totalGames;
+    const avgTr = validData.reduce((sum, row) => sum + (row.finalTr || 0), 0) / totalGames;
+    const avgCardPoints = validData.reduce((sum, row) => sum + (row.cardPoints || 0), 0) / totalGames;
+    const avgGreeneryPoints = validData.reduce((sum, row) => sum + (row.greeneryPoints || 0), 0) / totalGames;
+    const avgCityPoints = validData.reduce((sum, row) => sum + (row.cityPoints || 0), 0) / totalGames;
+    const avgMilestonePoints = validData.reduce((sum, row) => sum + (row.milestonePoints || 0), 0) / totalGames;
+    const avgAwardPoints = validData.reduce((sum, row) => sum + (row.awardPoints || 0), 0) / totalGames;
     const avgDuration = validData.reduce((sum, row) => sum + (row.durationMinutes || 0), 0) / totalGames;
     const avgGenerations = validData.reduce((sum, row) => sum + (row.generations || 0), 0) / totalGames;
 
@@ -177,6 +189,12 @@ export function CorporationStatsPage() {
       avgElo,
       avgEloChange,
       avgFinalScore,
+      avgTr,
+      avgCardPoints,
+      avgGreeneryPoints,
+      avgCityPoints,
+      avgMilestonePoints,
+      avgAwardPoints,
       avgDuration,
       avgGenerations,
       positionsCount,
