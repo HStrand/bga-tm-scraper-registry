@@ -30,7 +30,7 @@ export function DivergingBarChart({
   useRedGreenColors = false,
   height = 400,
   minCount = 30,
-  weightByCount = true,
+  weightByCount = false,
 }: DivergingBarChartProps) {
   const filtered = useMemo(() => {
     return (data || []).filter(d => (d?.count ?? 0) >= minCount);
@@ -121,16 +121,38 @@ export function DivergingBarChart({
                   rx="2"
                 />
                 
-                {/* Label */}
-                <text
-                  x={isPositive ? `${50 + barWidth + 2}%` : `${50 - barWidth - 2}%`}
-                  y={y + barHeight / 2}
-                  dy="0.35em"
-                  textAnchor={isPositive ? 'start' : 'end'}
-                  className="text-sm font-medium fill-slate-900 dark:fill-slate-100"
-                >
-                  {item.label}
-                </text>
+                {/* Label and count with clamping + truncation to prevent overflow */}
+                {(() => {
+                  const proposed = isPositive ? (50 + barWidth + 2) : (50 - barWidth - 2);
+                  let labelXNum = proposed;
+                  let labelAnchor: 'start' | 'end' = isPositive ? 'start' : 'end';
+                  // Clamp near edges and flip anchor when close to the boundary
+                  if (isPositive && proposed > 92) { labelXNum = 98; labelAnchor = 'end'; }
+                  if (!isPositive && proposed < 8) { labelXNum = 2; labelAnchor = 'start'; }
+                  const displayLabel = item.label.length > 22 ? item.label.slice(0, 22) + '…' : item.label;
+                  return (
+                    <>
+                      <text
+                        x={`${labelXNum}%`}
+                        y={y + barHeight / 2}
+                        dy="0.35em"
+                        textAnchor={labelAnchor}
+                        className="text-sm font-medium fill-slate-900 dark:fill-slate-100"
+                      >
+                        {displayLabel}
+                      </text>
+                      <text
+                        x={`${labelXNum}%`}
+                        y={y + barHeight / 2 + 12}
+                        dy="0.35em"
+                        textAnchor={labelAnchor}
+                        className="text-xs fill-slate-500 dark:fill-slate-400"
+                      >
+                        n={item.count}
+                      </text>
+                    </>
+                  );
+                })()}
                 
                 {/* Value */}
                 <text
@@ -143,16 +165,6 @@ export function DivergingBarChart({
                   {formatValue(item.value)}
                 </text>
                 
-                {/* Count chip */}
-                <text
-                  x={isPositive ? `${50 + barWidth + 2}%` : `${50 - barWidth - 2}%`}
-                  y={y + barHeight / 2 + 12}
-                  dy="0.35em"
-                  textAnchor={isPositive ? 'start' : 'end'}
-                  className="text-xs fill-slate-500 dark:fill-slate-400"
-                >
-                  n={item.count}
-                </text>
               </g>
             );
           })}

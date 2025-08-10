@@ -245,10 +245,18 @@ export function PreludeStatsPage() {
   }, [filteredData]);
 
   // Prepare data for diverging bar charts
+  const shortCorpName = (name: string): string => {
+    if (!name) return name;
+    const n = name.trim();
+    if (n === 'United Nations Mars Initiative') return 'UNMI';
+    if (n === 'Interplanetary Cinematics') return 'Int. Cinem.';
+    return n;
+  };
+
   const winRateChartData = useMemo(() => {
     const globalWinRate = stats.winRate;
     return corporationPerformanceData.map(corp => ({
-      label: corp.corporation,
+      label: shortCorpName(corp.corporation),
       value: corp.winRate - globalWinRate,
       count: corp.gamesPlayed,
       baseline: globalWinRate,
@@ -257,7 +265,7 @@ export function PreludeStatsPage() {
 
   const eloGainChartData = useMemo(() => {
     return corporationPerformanceData.map(corp => ({
-      label: corp.corporation,
+      label: shortCorpName(corp.corporation),
       value: corp.avgEloChange,
       count: corp.gamesPlayed,
     }));
@@ -384,7 +392,7 @@ export function PreludeStatsPage() {
                           sortBy="value"
                           useRedGreenColors={true}
                           minCount={30}
-                          weightByCount={true}
+                          weightByCount={false}
                           height={500}
                         />
                       </div>
