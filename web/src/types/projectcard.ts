@@ -64,3 +64,24 @@ export interface GenerationDistributionData {
   count: number;
   percentage: number;
 }
+
+export interface ProjectCardStatsRow {
+  card: string;
+  timesPlayed: number;
+  winRate: number;
+  avgElo: number;
+  avgEloChange: number;
+}
+
+export interface ProjectCardOverviewRow {
+  card: string;
+  totalGames: number;
+  winRate: number;
+  avgElo: number;
+  avgEloChange: number;
+}
+
+export interface ProjectCardOverviewFilters {
+  timesPlayedMin?: number;
+  searchTerm?: string;
+}
