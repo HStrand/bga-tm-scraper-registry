@@ -343,12 +343,6 @@ export function CorporationStatsPage() {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Charts grid */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                  <EloHistogram data={eloHistogramData} />
-                  <EloHistogram data={eloChangeHistogramData} title="Elo Change Distribution" useRedGreenColors={true} />
-                </div>
-                
                 {/* View toggle */}
                 <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg w-fit mx-auto">
                   <Button
@@ -368,15 +362,25 @@ export function CorporationStatsPage() {
                     Chart View
                   </Button>
                 </div>
-                
-                {/* Conditional content based on view mode */}
-                <div className="w-full">
-                  {viewMode === 'chart' ? (
-                    <ScoreEloScatter data={filteredData} />
-                  ) : (
+
+                {/* Content based on view mode */}
+                {viewMode === 'chart' ? (
+                  <>
+                    {/* Charts grid */}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                      <EloHistogram data={eloHistogramData} />
+                      <EloHistogram data={eloChangeHistogramData} title="Elo Change Distribution" useRedGreenColors={true} />
+                    </div>
+                    {/* Scatter chart full width */}
+                    <div className="w-full">
+                      <ScoreEloScatter data={filteredData} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full">
                     <GameDetailsTable data={filteredData} />
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
