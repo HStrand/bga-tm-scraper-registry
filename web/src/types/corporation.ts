@@ -25,25 +25,8 @@ export interface CorporationPlayerStatsRow {
   position?: number;
 }
 
-export interface CorporationMilestoneStats {
-  milestone: string;
-  claimedCount: number;
-  totalGames: number;
-  claimRate: number;
-}
 
-export interface CorporationAwardStats {
-  award: string;
-  wonCount: number;
-  totalGames: number;
-  winRate: number;
-}
 
-export interface CorporationStatsResponse {
-  playerStats: CorporationPlayerStatsRow[];
-  milestoneStats: CorporationMilestoneStats[];
-  awardStats: CorporationAwardStats[];
-}
 
 export interface CorporationStats {
   totalGames: number;
@@ -61,8 +44,6 @@ export interface CorporationStats {
   avgGenerations: number;
   positionsCount: Record<number, number>;
   playerCountDistribution: Record<number, number>;
-  milestoneStats: CorporationMilestoneStats[];
-  awardStats: CorporationAwardStats[];
 }
 
 export interface CorporationFilters {

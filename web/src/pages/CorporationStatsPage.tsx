@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { CorporationPlayerStatsRow, CorporationStats, CorporationFilters, HistogramBin, CorporationStatsResponse } from '@/types/corporation';
+import { CorporationPlayerStatsRow, CorporationStats, CorporationFilters, HistogramBin } from '@/types/corporation';
 import { CorporationHeader } from '@/components/CorporationHeader';
 import { FiltersPanel } from '@/components/FiltersPanel';
 import { EloHistogram } from '@/components/charts/EloHistogram';
@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 export function CorporationStatsPage() {
   const { slug } = useParams<{ slug: string }>();
   const [data, setData] = useState<CorporationPlayerStatsRow[]>([]);
-  const [rawResponse, setRawResponse] = useState<CorporationStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
@@ -44,15 +43,14 @@ export function CorporationStatsPage() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const responseData: CorporationStatsResponse = await response.json();
-        setRawResponse(responseData);
-        setData(responseData.playerStats);
+        const responseData: CorporationPlayerStatsRow[] = await response.json();
+        setData(responseData);
 
         // Initialize filters with all available options
-        const playerCounts = [...new Set(responseData.playerStats.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
-        const maps = [...new Set(responseData.playerStats.map(row => row.map).filter(Boolean))].sort() as string[];
-        const gameModes = [...new Set(responseData.playerStats.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-        const gameSpeeds = [...new Set(responseData.playerStats.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
+        const playerCounts = [...new Set(responseData.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
+        const maps = [...new Set(responseData.map(row => row.map).filter(Boolean))].sort() as string[];
+        const gameModes = [...new Set(responseData.map(row => row.gameMode).filter(Boolean))].sort() as string[];
+        const gameSpeeds = [...new Set(responseData.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
 
         setFilters({
           playerCounts: playerCounts as number[],
@@ -156,8 +154,6 @@ export function CorporationStatsPage() {
         avgGenerations: 0,
         positionsCount: {},
         playerCountDistribution: {},
-        milestoneStats: [],
-        awardStats: [],
       };
     }
 
@@ -208,10 +204,8 @@ export function CorporationStatsPage() {
       avgGenerations,
       positionsCount,
       playerCountDistribution,
-      milestoneStats: rawResponse?.milestoneStats || [],
-      awardStats: rawResponse?.awardStats || [],
     };
-  }, [filteredData, rawResponse]);
+  }, [filteredData]);
 
   // Compute histogram data for Elo
   const eloHistogramData = useMemo((): HistogramBin[] => {
