@@ -392,7 +392,7 @@ export function CorporationsOverviewPage() {
                 Corporations Overview
               </h1>
               <p className="text-slate-600 dark:text-slate-400">
-                Compare corporation performance across all games
+                Compare corporation performance and click on a corporation to view detailed statistics
               </p>
             </div>
             <Button onClick={handleRefresh} variant="outline" disabled={loading}>

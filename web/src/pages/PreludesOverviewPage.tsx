@@ -296,7 +296,7 @@ export function PreludesOverviewPage() {
                 Preludes Overview
               </h1>
               <p className="text-slate-600 dark:text-slate-400">
-                Compare prelude performance across all games
+                Compare prelude performance and click on a prelude to view detailed information
               </p>
             </div>
             <Button onClick={handleRefresh} variant="outline" disabled={loading}>

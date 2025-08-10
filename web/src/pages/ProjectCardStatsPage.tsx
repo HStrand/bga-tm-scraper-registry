@@ -340,7 +340,64 @@ export function ProjectCardStatsPage() {
           {/* Filters sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              {!loading && (
+              {loading ? (
+                <div className="bg-white/90 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl border border-zinc-200 dark:border-slate-700 p-6 shadow-sm">
+                  <div className="animate-pulse space-y-5">
+                    <div className="flex items-center justify-between">
+                      <div className="h-5 w-28 bg-slate-300 dark:bg-slate-600 rounded" />
+                      <div className="h-6 w-16 bg-slate-300 dark:bg-slate-600 rounded" />
+                    </div>
+
+                    {/* Elo Range */}
+                    <div className="space-y-3">
+                      <div className="h-4 w-24 bg-slate-300 dark:bg-slate-600 rounded" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="h-9 bg-slate-200 dark:bg-slate-700 rounded" />
+                        <div className="h-9 bg-slate-200 dark:bg-slate-700 rounded" />
+                      </div>
+                    </div>
+
+                    {/* Player Count */}
+                    <div className="space-y-3">
+                      <div className="h-4 w-28 bg-slate-300 dark:bg-slate-600 rounded" />
+                      <div className="flex flex-wrap gap-2">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                          <div key={i} className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded" />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Maps */}
+                    <div className="space-y-3">
+                      <div className="h-4 w-20 bg-slate-300 dark:bg-slate-600 rounded" />
+                      <div className="flex flex-wrap gap-2">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                          <div key={i} className="h-8 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Game Modes */}
+                    <div className="space-y-3">
+                      <div className="h-4 w-28 bg-slate-300 dark:bg-slate-600 rounded" />
+                      <div className="flex flex-wrap gap-2">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <div key={i} className="h-8 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Played Gen */}
+                    <div className="space-y-3">
+                      <div className="h-4 w-32 bg-slate-300 dark:bg-slate-600 rounded" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="h-9 bg-slate-200 dark:bg-slate-700 rounded" />
+                        <div className="h-9 bg-slate-200 dark:bg-slate-700 rounded" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
                 <FiltersPanel
                   filters={filters}
                   onFiltersChange={handleFiltersChange}

@@ -296,7 +296,7 @@ export function ProjectCardsOverviewPage() {
                 Project Cards Overview
               </h1>
               <p className="text-slate-600 dark:text-slate-400">
-                Compare project card performance across all games
+                Compare project card performance and click on a card to view detailed information
               </p>
             </div>
             <Button onClick={handleRefresh} variant="outline" disabled={loading}>

@@ -243,7 +243,7 @@ export default function HomePage() {
               Terraforming Mars Statistics
             </h1>
             <p className="mt-3 text-slate-600 dark:text-slate-400 text-lg">
-              Explore performance insights across corporations, project cards, and preludes.
+              Full gamelogs collected from games played on Board Game Arena
             </p>
           </div>
 
@@ -261,7 +261,7 @@ export default function HomePage() {
             <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/50 backdrop-blur p-5">
               <div className="flex items-center gap-3 text-slate-700 dark:text-slate-200">
                 <Download className="w-5 h-5 text-amber-600 dark:text-amber-300" />
-                <div className="text-sm font-semibold">Scraped Games</div>
+                <div className="text-sm font-semibold">Collected Gamelogs</div>
               </div>
               <div className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
                 {scrapedAnim.toLocaleString()}
@@ -351,12 +351,12 @@ export default function HomePage() {
               value={playersAnim.toLocaleString()}
             />
             <BigStat
-              title="Total Games"
+              title="Indexed Games"
               icon={<Database className="w-5 h-5" />}
               value={totalGamesAnim.toLocaleString()}
             />
             <BigStat
-              title="Scraped Games"
+              title="Collected game logs"
               icon={<Download className="w-5 h-5" />}
               value={scrapedAnim.toLocaleString()}
             />
