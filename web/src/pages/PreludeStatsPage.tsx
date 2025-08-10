@@ -373,21 +373,19 @@ export function PreludeStatsPage() {
                       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                         <EloHistogram data={eloHistogramData} />
                         <EloHistogram data={eloChangeHistogramData} title="Elo Change Distribution" useRedGreenColors={true} />
+                      </div>
+                      {/* Full-width diverging chart */}
+                      <div className="w-full">
                         <DivergingBarChart
                           data={winRateChartData}
                           title="Win Rate by Corporation"
                           valueLabel="Win Rate Difference from Global"
                           formatValue={(value) => `${value >= 0 ? '+' : ''}${(value * 100).toFixed(1)}%`}
-                          sortBy="count"
+                          sortBy="value"
                           useRedGreenColors={true}
-                        />
-                        <DivergingBarChart
-                          data={eloGainChartData}
-                          title="Avg Elo Gain by Corporation"
-                          valueLabel="Average Elo Change"
-                          formatValue={(value) => `${value >= 0 ? '+' : ''}${value.toFixed(1)}`}
-                          sortBy="count"
-                          useRedGreenColors={true}
+                          minCount={30}
+                          weightByCount={true}
+                          height={500}
                         />
                       </div>
                     </div>

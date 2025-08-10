@@ -15,6 +15,10 @@ interface DivergingBarChartProps {
   sortBy?: 'value' | 'count' | 'label';
   useRedGreenColors?: boolean;
   height?: number;
+  // New: filter out low-sample items to improve representativeness
+  minCount?: number;
+  // New: optionally weight bar width by sample size to de-emphasize tiny samples
+  weightByCount?: boolean;
 }
 
 export function DivergingBarChart({
@@ -25,9 +29,15 @@ export function DivergingBarChart({
   sortBy = 'value',
   useRedGreenColors = false,
   height = 400,
+  minCount = 30,
+  weightByCount = true,
 }: DivergingBarChartProps) {
+  const filtered = useMemo(() => {
+    return (data || []).filter(d => (d?.count ?? 0) >= minCount);
+  }, [data, minCount]);
+
   const sortedData = useMemo(() => {
-    const sorted = [...data];
+    const sorted = [...filtered];
     switch (sortBy) {
       case 'value':
         return sorted.sort((a, b) => b.value - a.value);
@@ -38,10 +48,14 @@ export function DivergingBarChart({
       default:
         return sorted;
     }
-  }, [data, sortBy]);
+  }, [filtered, sortBy]);
 
   const maxAbsValue = useMemo(() => {
-    return Math.max(...sortedData.map(d => Math.abs(d.value)));
+    return Math.max(0, ...sortedData.map(d => Math.abs(d.value)));
+  }, [sortedData]);
+
+  const maxCount = useMemo(() => {
+    return Math.max(1, ...sortedData.map(d => d.count));
   }, [sortedData]);
 
   if (sortedData.length === 0) {
@@ -82,7 +96,9 @@ export function DivergingBarChart({
           
           {sortedData.map((item, index) => {
             const y = 20 + index * (barHeight + 8);
-            const barWidth = Math.abs(item.value) / maxAbsValue * 40; // 40% max width on each side
+            const valueScale = maxAbsValue > 0 ? Math.abs(item.value) / maxAbsValue : 0;
+            const countScale = weightByCount ? Math.sqrt(item.count / maxCount) : 1;
+            const barWidth = valueScale * 40 * countScale; // weighted max width on each side
             const isPositive = item.value >= 0;
             
             let barColor: string;
@@ -143,8 +159,9 @@ export function DivergingBarChart({
         </svg>
         
         {/* Legend */}
-        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-xs text-slate-500 dark:text-slate-400">
-          {valueLabel}
+        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-xs text-slate-500 dark:text-slate-400 text-center">
+          <div>{valueLabel}</div>
+          <div className="mt-1">n≥{minCount}{weightByCount ? ' • width weighted by √n' : ''}</div>
         </div>
       </div>
     </div>
