@@ -15,7 +15,7 @@ export function CorporationStatsPage() {
   const [data, setData] = useState<CorporationPlayerStatsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('table');
 
   // Initialize filters with all options selected
   const [filters, setFilters] = useState<CorporationFilters>({
@@ -94,9 +94,9 @@ export function CorporationStatsPage() {
   // Filter data based on current filters
   const filteredData = useMemo(() => {
     return data.filter(row => {
-      // Elo range filter
-      if (filters.eloMin && row.elo && row.elo < filters.eloMin) return false;
-      if (filters.eloMax && row.elo && row.elo > filters.eloMax) return false;
+      // Elo range filter - exclude N/A elo when min/max elo filters are applied
+      if (filters.eloMin && (!row.elo || row.elo < filters.eloMin)) return false;
+      if (filters.eloMax && (!row.elo || row.elo > filters.eloMax)) return false;
 
       // Player count filter
       if (row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
@@ -321,20 +321,20 @@ export function CorporationStatsPage() {
                 {/* View toggle */}
                 <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg w-fit mx-auto">
                   <Button
-                    variant={viewMode === 'chart' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('chart')}
-                    className="px-4 py-2"
-                  >
-                    Chart View
-                  </Button>
-                  <Button
                     variant={viewMode === 'table' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setViewMode('table')}
                     className="px-4 py-2"
                   >
                     Table View
+                  </Button>
+                  <Button
+                    variant={viewMode === 'chart' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('chart')}
+                    className="px-4 py-2"
+                  >
+                    Chart View
                   </Button>
                 </div>
                 
