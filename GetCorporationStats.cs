@@ -19,6 +19,11 @@ namespace BgaTmScraperRegistry.Functions
         {
             public int TableId { get; set; }
             public string Map {  get; set; }
+            public bool PreludeOn { get; set; }
+            public bool ColoniesOn { get; set; }
+            public bool DraftOn { get; set; }
+            public string GameMode { get; set; }
+            public string GameSpeed { get; set; }
             public int? PlayerCount { get; set; }
             public int? DurationMinutes { get; set; }
             public int? Generations { get; set; }
@@ -64,6 +69,11 @@ namespace BgaTmScraperRegistry.Functions
 SELECT
 	gs.TableId,
     g.Map,
+	g.PreludeOn,
+	g.ColoniesOn,
+	g.DraftOn,
+	g.GameMode,
+	g.GameSpeed,
 	gs.PlayerCount,
 	gs.DurationMinutes,
 	gs.Generations,    

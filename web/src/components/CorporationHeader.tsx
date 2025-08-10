@@ -80,17 +80,23 @@ export function CorporationHeader({ slug, stats, isLoading }: CorporationHeaderP
             </div>
 
             <div className="text-center">
-              <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                {stats.avgFinalScore.toFixed(0)}
+              <div className={`text-xl md:text-2xl font-semibold ${
+                stats.avgEloChange > 0 
+                  ? 'text-green-600 dark:text-green-400' 
+                  : stats.avgEloChange < 0 
+                    ? 'text-red-600 dark:text-red-400' 
+                    : 'text-slate-900 dark:text-slate-100'
+              }`}>
+                {stats.avgEloChange > 0 ? '+' : ''}{stats.avgEloChange.toFixed(2)}
               </div>
-              <div className="text-sm text-slate-500 dark:text-slate-400">Avg Score</div>
+              <div className="text-sm text-slate-500 dark:text-slate-400">Avg Elo Change</div>
             </div>
 
             <div className="text-center">
               <div className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                {Math.round(stats.avgDuration)}m
+                {stats.avgFinalScore.toFixed(0)}
               </div>
-              <div className="text-sm text-slate-500 dark:text-slate-400">Avg Duration</div>
+              <div className="text-sm text-slate-500 dark:text-slate-400">Avg Score</div>
             </div>
           </div>
         </div>

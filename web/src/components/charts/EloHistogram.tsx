@@ -1,12 +1,22 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { HistogramBin } from '@/types/corporation';
 
 interface EloHistogramProps {
   data: HistogramBin[];
   title?: string;
+  useRedGreenColors?: boolean;
 }
 
-export function EloHistogram({ data, title = "Elo Distribution" }: EloHistogramProps) {
+export function EloHistogram({ data, title = "Elo Distribution", useRedGreenColors = false }: EloHistogramProps) {
+  // Function to get color based on bin value (for red/green coloring)
+  const getBarColor = (bin: HistogramBin) => {
+    if (!useRedGreenColors) return "url(#eloGrad)";
+    
+    const midpoint = (bin.min + bin.max) / 2;
+    if (midpoint < -1) return "#ef4444"; // red-500 for losses
+    if (midpoint > 1) return "#22c55e"; // green-500 for gains
+    return "#6b7280"; // gray-500 for near-zero
+  };
   return (
     <div className="bg-white/90 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl border border-zinc-200 dark:border-slate-700 p-6 shadow-sm">
       <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
@@ -20,6 +30,18 @@ export function EloHistogram({ data, title = "Elo Distribution" }: EloHistogramP
               <linearGradient id="eloGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.9" />
                 <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.4" />
+              </linearGradient>
+              <linearGradient id="redGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#ef4444" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#ef4444" stopOpacity="0.4" />
+              </linearGradient>
+              <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#22c55e" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#22c55e" stopOpacity="0.4" />
+              </linearGradient>
+              <linearGradient id="grayGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#6b7280" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#6b7280" stopOpacity="0.4" />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -44,10 +66,20 @@ export function EloHistogram({ data, title = "Elo Distribution" }: EloHistogramP
             />
             <Bar 
               dataKey="count" 
-              fill="url(#eloGrad)"
+              fill={useRedGreenColors ? undefined : "url(#eloGrad)"}
               radius={[4, 4, 0, 0]}
               className="hover:opacity-80 transition-opacity"
-            />
+            >
+              {useRedGreenColors && data.map((entry, index) => {
+                const midpoint = (entry.min + entry.max) / 2;
+                let fill;
+                if (midpoint < -1) fill = "url(#redGrad)";
+                else if (midpoint > 1) fill = "url(#greenGrad)";
+                else fill = "url(#grayGrad)";
+                
+                return <Cell key={`cell-${index}`} fill={fill} />;
+              })}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>

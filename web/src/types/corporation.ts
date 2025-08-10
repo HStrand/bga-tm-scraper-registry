@@ -24,6 +24,7 @@ export interface CorporationStats {
   totalGames: number;
   winRate: number;
   avgElo: number;
+  avgEloChange: number;
   avgFinalScore: number;
   avgDuration: number;
   avgGenerations: number;
@@ -36,8 +37,6 @@ export interface CorporationFilters {
   eloMax?: number;
   playerCounts: number[];
   maps: string[];
-  minFinalScore?: number;
-  positions: number[];
 }
 
 export interface HistogramBin {

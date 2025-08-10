@@ -7,18 +7,20 @@ import { FiltersPanel } from '@/components/FiltersPanel';
 import { EloHistogram } from '@/components/charts/EloHistogram';
 import { PositionsBar } from '@/components/charts/PositionsBar';
 import { ScoreEloScatter } from '@/components/charts/ScoreEloScatter';
+import { GameDetailsTable } from '@/components/GameDetailsTable';
+import { Button } from '@/components/ui/button';
 
 export function CorporationStatsPage() {
   const { slug } = useParams<{ slug: string }>();
   const [data, setData] = useState<CorporationPlayerStatsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
 
   // Initialize filters with all options selected
   const [filters, setFilters] = useState<CorporationFilters>({
     playerCounts: [],
     maps: [],
-    positions: [],
   });
 
   // Fetch data
@@ -35,13 +37,10 @@ export function CorporationStatsPage() {
         // Initialize filters with all available options
         const playerCounts = [...new Set(response.data.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
         const maps = [...new Set(response.data.map(row => row.map).filter(Boolean))].sort() as string[];
-        const maxPosition = Math.max(...response.data.map(row => row.position || 0));
-        const positions = Array.from({ length: maxPosition }, (_, i) => i + 1);
 
         setFilters({
           playerCounts: playerCounts as number[],
           maps,
-          positions,
         });
       } catch (err) {
         console.error('Error fetching corporation stats:', err);
@@ -63,9 +62,6 @@ export function CorporationStatsPage() {
     return [...new Set(data.map(row => row.map).filter(Boolean))].sort() as string[];
   }, [data]);
 
-  const maxPosition = useMemo(() => {
-    return Math.max(...data.map(row => row.position || 0));
-  }, [data]);
 
   const eloRange = useMemo(() => {
     const elos = data.map(row => row.elo).filter(Boolean) as number[];
@@ -75,13 +71,6 @@ export function CorporationStatsPage() {
     };
   }, [data]);
 
-  const scoreRange = useMemo(() => {
-    const scores = data.map(row => row.finalScore).filter(Boolean) as number[];
-    return {
-      min: Math.min(...scores) || 0,
-      max: Math.max(...scores) || 200,
-    };
-  }, [data]);
 
   // Filter data based on current filters
   const filteredData = useMemo(() => {
@@ -95,12 +84,6 @@ export function CorporationStatsPage() {
 
       // Map filter
       if (row.map && !filters.maps.includes(row.map)) return false;
-
-      // Min final score filter
-      if (filters.minFinalScore && row.finalScore && row.finalScore < filters.minFinalScore) return false;
-
-      // Position filter
-      if (row.position && !filters.positions.includes(row.position)) return false;
 
       return true;
     });
@@ -116,6 +99,7 @@ export function CorporationStatsPage() {
         totalGames: 0,
         winRate: 0,
         avgElo: 0,
+        avgEloChange: 0,
         avgFinalScore: 0,
         avgDuration: 0,
         avgGenerations: 0,
@@ -128,6 +112,7 @@ export function CorporationStatsPage() {
     const winRate = wins / totalGames;
 
     const avgElo = validData.reduce((sum, row) => sum + (row.elo || 0), 0) / totalGames;
+    const avgEloChange = validData.reduce((sum, row) => sum + (row.eloChange || 0), 0) / totalGames;
     const avgFinalScore = validData.reduce((sum, row) => sum + (row.finalScore || 0), 0) / totalGames;
     const avgDuration = validData.reduce((sum, row) => sum + (row.durationMinutes || 0), 0) / totalGames;
     const avgGenerations = validData.reduce((sum, row) => sum + (row.generations || 0), 0) / totalGames;
@@ -152,6 +137,7 @@ export function CorporationStatsPage() {
       totalGames,
       winRate,
       avgElo,
+      avgEloChange,
       avgFinalScore,
       avgDuration,
       avgGenerations,
@@ -175,6 +161,35 @@ export function CorporationStatsPage() {
       const binMin = min + i * binSize;
       const binMax = i === binCount - 1 ? max : min + (i + 1) * binSize;
       const count = elos.filter(elo => elo >= binMin && elo < binMax).length;
+      
+      bins.push({
+        min: binMin,
+        max: binMax,
+        count,
+        label: `${Math.round(binMin)}-${Math.round(binMax)}`,
+      });
+    }
+
+    return bins;
+  }, [filteredData]);
+
+  // Compute histogram data for Elo Change
+  const eloChangeHistogramData = useMemo((): HistogramBin[] => {
+    const eloChanges = filteredData.map(row => row.eloChange).filter(Boolean) as number[];
+    if (eloChanges.length === 0) return [];
+
+    // Fixed range from -20 to 20 with 20 bins
+    const min = -20;
+    const max = 20;
+    const binCount = 20;
+    const binSize = (max - min) / binCount;
+
+    const bins: HistogramBin[] = [];
+    for (let i = 0; i < binCount; i++) {
+      const binMin = min + i * binSize;
+      const binMax = min + (i + 1) * binSize;
+      // Filter elo changes to only include those within our range, then count those in this bin
+      const count = eloChanges.filter(change => change >= min && change <= max && change >= binMin && change < binMax).length;
       
       bins.push({
         min: binMin,
@@ -247,8 +262,6 @@ export function CorporationStatsPage() {
                   availablePlayerCounts={availablePlayerCounts}
                   availableMaps={availableMaps}
                   eloRange={eloRange}
-                  scoreRange={scoreRange}
-                  maxPosition={maxPosition}
                 />
               )}
             </div>
@@ -270,12 +283,36 @@ export function CorporationStatsPage() {
                 {/* Charts grid */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                   <EloHistogram data={eloHistogramData} />
-                  <PositionsBar data={stats.positionsCount} />
+                  <EloHistogram data={eloChangeHistogramData} title="Elo Change Distribution" useRedGreenColors={true} />
                 </div>
                 
-                {/* Full-width scatter plot */}
+                {/* View toggle */}
+                <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg w-fit mx-auto">
+                  <Button
+                    variant={viewMode === 'chart' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('chart')}
+                    className="px-4 py-2"
+                  >
+                    Chart View
+                  </Button>
+                  <Button
+                    variant={viewMode === 'table' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('table')}
+                    className="px-4 py-2"
+                  >
+                    Table View
+                  </Button>
+                </div>
+                
+                {/* Conditional content based on view mode */}
                 <div className="w-full">
-                  <ScoreEloScatter data={filteredData} />
+                  {viewMode === 'chart' ? (
+                    <ScoreEloScatter data={filteredData} />
+                  ) : (
+                    <GameDetailsTable data={filteredData} />
+                  )}
                 </div>
               </div>
             )}
