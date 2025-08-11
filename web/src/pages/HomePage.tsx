@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { getStatistics, Statistics } from "@/lib/stats";
 import { Users, Database, Download, Gauge, LineChart, BarChart3 } from "lucide-react";
 
-// Optional Functions key support via env (if your functions require a key)
-const FUNCTIONS_KEY = import.meta.env.VITE_FUNCTIONS_KEY as string | undefined;
 
 function useCountUp(target: number, durationMs = 900) {
   const [value, setValue] = useState(0);
@@ -117,9 +115,7 @@ export default function HomePage() {
     (async () => {
       try {
         setZipInfoLoading(true);
-        const headers: Record<string, string> = {};
-        if (FUNCTIONS_KEY) headers["x-functions-key"] = FUNCTIONS_KEY;
-        const res = await axios.get("/api/GetLatestZipSize", { headers });
+        const res = await api.get("/api/GetLatestZipSize");
         const raw = res.data || {};
         if (!cancelled && raw.success) {
           setZipInfo({
@@ -158,14 +154,10 @@ export default function HomePage() {
       setDownloadProgress(null);
       setDownloadText("Contacting server…");
 
-      const headers: Record<string, string> = {};
-      if (FUNCTIONS_KEY) headers["x-functions-key"] = FUNCTIONS_KEY;
-
       const totalBytes = zipInfo?.sizeInBytes ?? 0;
 
-      const res = await axios.get("/api/DownloadLatestZip", {
+      const res = await api.get("/api/DownloadLatestZip", {
         responseType: "blob",
-        headers,
         onDownloadProgress: (evt) => {
           // evt.total may be 0 depending on server/browser; fallback to known size
           const loaded = evt.loaded ?? 0;

@@ -18,7 +18,7 @@ export default function App() {
           <Route path="/corporations" element={<CorporationsOverviewPage />} />
           <Route path="/corporations/:slug" element={<CorporationStatsPage />} />
           <Route path="/cards" element={<ProjectCardsOverviewPage />} />
-          <Route path="/cards/:slug" element={<ProjectCardStatsPage />} />
+          <Route path="/cards/:name" element={<ProjectCardStatsPage />} />
           <Route path="/preludes" element={<PreludesOverviewPage />} />
           <Route path="/prelude/:slug" element={<PreludeStatsPage />} />
         </Routes>

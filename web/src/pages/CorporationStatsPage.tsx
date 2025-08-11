@@ -8,6 +8,7 @@ import { PositionsBar } from '@/components/charts/PositionsBar';
 import { GameDetailsTable } from '@/components/GameDetailsTable';
 import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/BackButton';
+import { api } from '@/lib/api';
 
 export function CorporationStatsPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -38,13 +39,8 @@ export function CorporationStatsPage() {
         
         // Fetch corporation stats from the new API
         const corporationName = slug.replace(/_/g, ' ');
-        const response = await fetch(`/api/corporations/${encodeURIComponent(corporationName)}/playerstats`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const responseData: CorporationPlayerStatsRow[] = await response.json();
+        const response = await api.get<CorporationPlayerStatsRow[]>(`/api/corporations/${encodeURIComponent(corporationName)}/playerstats`);
+        const responseData: CorporationPlayerStatsRow[] = response.data;
         setData(responseData);
 
         // Initialize filters with all available options

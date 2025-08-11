@@ -233,8 +233,8 @@ export function ProjectCardsOverviewPage() {
     setCurrentPage(1); // Reset to first page when filters change
   }, []);
 
-  const handleRowClick = (cardSlug: string) => {
-    navigate(`/cards/${cardSlug}`);
+  const handleRowClick = (cardName: string) => {
+    navigate(`/cards/${encodeURIComponent(cardName)}`);
   };
 
   const getSortIcon = (field: SortField) => {
@@ -438,7 +438,7 @@ export function ProjectCardsOverviewPage() {
                         return (
                           <tr 
                             key={row.card}
-                            onClick={() => handleRowClick(row.card)}
+                            onClick={() => handleRowClick(row.name)}
                             className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
                           >
                             <td className="px-4 py-3 text-sm">

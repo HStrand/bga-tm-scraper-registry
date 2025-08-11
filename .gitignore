@@ -266,3 +266,7 @@ __pycache__/
 
 # VSCode
 .vscode/
+
+# Web build
+web/dist/
+web/.env.local

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { api } from '@/lib/api';
 import { ProjectCardStatsRow } from '@/types/projectcard';
 
 // Cache configuration
@@ -64,7 +64,7 @@ function saveToLocalStorage(data: ProjectCardStatsRow[]): void {
  * Fetch fresh data from API
  */
 async function fetchFromAPI(): Promise<ProjectCardStatsRow[]> {
-  const response = await axios.get<ProjectCardStatsRow[]>('/api/cards/stats');
+  const response = await api.get<ProjectCardStatsRow[]>('/api/cards/stats');
   return response.data;
 }
 

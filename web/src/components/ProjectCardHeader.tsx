@@ -1,16 +1,16 @@
 import { useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { getCardImage, getCardPlaceholderImage, slugToCardName } from '@/lib/card';
+import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import { ProjectCardStats } from '@/types/projectcard';
 
 interface ProjectCardHeaderProps {
-  slug: string;
+  cardName: string;
   stats: ProjectCardStats;
   isLoading?: boolean;
 }
 
-export function ProjectCardHeader({ slug, stats, isLoading }: ProjectCardHeaderProps) {
-  const displayName = slugToCardName(slug);
+export function ProjectCardHeader({ cardName, stats, isLoading }: ProjectCardHeaderProps) {
+  const displayName = cardName;
   const imageSrc = getCardImage(displayName) || getCardPlaceholderImage();
   
   // Hover tooltip state

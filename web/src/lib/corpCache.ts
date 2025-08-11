@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { api } from '@/lib/api';
 import { AllCorporationPlayerStatsRow } from '@/types/corporation';
 
 // Cache configuration
@@ -64,7 +64,7 @@ function saveToLocalStorage(data: AllCorporationPlayerStatsRow[]): void {
  * Fetch fresh data from API
  */
 async function fetchFromAPI(): Promise<AllCorporationPlayerStatsRow[]> {
-  const response = await axios.get<AllCorporationPlayerStatsRow[]>('/api/corporations/playerstats');
+  const response = await api.get<AllCorporationPlayerStatsRow[]>('/api/corporations/playerstats');
   return response.data;
 }
 

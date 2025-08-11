@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '@/lib/api';
 import { ProjectCardPlayerStatsRow, ProjectCardStats, ProjectCardFilters, GenerationData, HistogramBin, GenerationDistributionData } from '@/types/projectcard';
 import { ProjectCardHeader } from '@/components/ProjectCardHeader';
 import { FiltersPanel } from '@/components/FiltersPanel';
@@ -11,10 +11,9 @@ import { GenerationDistribution } from '@/components/charts/GenerationDistributi
 import { ProjectCardTable } from '@/components/ProjectCardTable';
 import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/BackButton';
-import { slugToCardName } from '@/lib/card';
 
 export function ProjectCardStatsPage() {
-  const { slug } = useParams<{ slug: string }>();
+  const { name } = useParams<{ name: string }>();
   const [data, setData] = useState<ProjectCardPlayerStatsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,16 +30,18 @@ export function ProjectCardStatsPage() {
     draftOn: undefined,
   });
 
+  // Decode the card name from the URL parameter
+  const cardName = useMemo(() => (name ? decodeURIComponent(name) : ''), [name]);
+
   // Fetch data
   useEffect(() => {
-    if (!slug) return;
+    if (!name) return;
 
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const cardName = slugToCardName(slug);
-        const response = await axios.get<ProjectCardPlayerStatsRow[]>(`/api/cards/${encodeURIComponent(cardName)}/playerstats`);
+        const response = await api.get<ProjectCardPlayerStatsRow[]>(`/api/cards/${encodeURIComponent(cardName)}/playerstats`);
         setData(response.data);
 
         // Initialize filters with all available options
@@ -67,7 +68,7 @@ export function ProjectCardStatsPage() {
     };
 
     fetchData();
-  }, [slug]);
+  }, [cardName]);
 
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => {
@@ -292,7 +293,7 @@ export function ProjectCardStatsPage() {
     setFilters(newFilters);
   }, []);
 
-  if (!slug) {
+  if (!name) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
@@ -300,7 +301,7 @@ export function ProjectCardStatsPage() {
             Project Card Not Found
           </h1>
           <p className="text-slate-600 dark:text-slate-400">
-            Please provide a valid project card slug in the URL.
+            Please provide a valid project card name in the URL.
           </p>
         </div>
       </div>
@@ -336,7 +337,7 @@ export function ProjectCardStatsPage() {
           <BackButton fallbackPath="/cards" />
         </div>
         <div className="mb-8">
-          <ProjectCardHeader slug={slug} stats={stats} isLoading={loading} />
+          <ProjectCardHeader cardName={cardName} stats={stats} isLoading={loading} />
         </div>
 
         {/* Main content */}

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { api } from '@/lib/api';
 import { PreludeStatsRow, PreludePlayerStatsRow } from '@/types/prelude';
 
 // Cache configuration
@@ -64,7 +64,7 @@ function saveToLocalStorage(data: PreludeStatsRow[]): void {
  * Fetch fresh data from API
  */
 async function fetchFromAPI(): Promise<PreludeStatsRow[]> {
-  const response = await axios.get<PreludeStatsRow[]>('/api/preludes/stats');
+  const response = await api.get<PreludeStatsRow[]>('/api/preludes/stats');
   return response.data;
 }
 
@@ -139,7 +139,7 @@ export function getCacheStatus(): {
  */
 export async function getPreludePlayerStats(preludeName: string): Promise<PreludePlayerStatsRow[]> {
   try {
-    const response = await axios.get<PreludePlayerStatsRow[]>(`/api/preludes/${encodeURIComponent(preludeName)}/playerstats`);
+    const response = await api.get<PreludePlayerStatsRow[]>(`/api/preludes/${encodeURIComponent(preludeName)}/playerstats`);
     return response.data;
   } catch (error) {
     console.error('Error fetching prelude player stats:', error);

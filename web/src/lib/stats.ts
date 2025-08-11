@@ -1,4 +1,4 @@
-import axios from "axios";
+import { api } from "@/lib/api";
 
 export interface Statistics {
   totalIndexedGames: number;
@@ -14,15 +14,10 @@ const DEFAULT_EMAIL = "stats@bga.tm"; // change if you need a different default
 
 // Optional Functions key support via env (if needed by your deployment)
 // Define VITE_FUNCTIONS_KEY in your env to automatically add it as a header.
-const FUNCTIONS_KEY = import.meta.env.VITE_FUNCTIONS_KEY as string | undefined;
 
 export async function getStatistics(email: string = DEFAULT_EMAIL): Promise<Statistics> {
   const url = `/api/GetStatistics?email=${encodeURIComponent(email)}`;
-  const headers: Record<string, string> = {};
-  if (FUNCTIONS_KEY) {
-    headers["x-functions-key"] = FUNCTIONS_KEY;
-  }
-  const res = await axios.get(url, { headers });
+  const res = await api.get(url);
   // Normalize casing from the backend model to TS interface keys
   const raw = res.data || {};
   return {
