@@ -68,37 +68,37 @@ namespace BgaTmScraperRegistry.Functions
 
                 var sql = @"
 SELECT
-	gc.TableId,
-	gc.PlayerId,
-	g.Map,
-	g.GameMode,
-	g.GameSpeed,
-	g.PreludeOn,
-	g.ColoniesOn,
-	g.DraftOn,
-	gc.SeenGen,
-	gc.DrawnGen,
-	gc.KeptGen,
-	gc.DraftedGen,
-	gc.BoughtGen,
-	gc.PlayedGen,
-	gc.DrawType,
-	gc.DrawReason,
-	gc.VpScored,
-	gp.PlayerName,
-	gp.Elo,
-	gp.EloChange,
-	gp.Position,
-	gps.Corporation,
-	pc.PlayerCount
-FROM GameCards gc
-INNER JOIN GamePlayers gp ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
-INNER JOIN GamePlayerStats gps ON gps.TableId = gp.TableId AND gps.PlayerId = gp.PlayerId 
-    AND gps.Corporation <> 'Unknown'
-INNER JOIN Games g ON g.TableId = gp.TableId
+    gc.TableId,
+    gc.PlayerId,
+    g.Map,
+    g.GameMode,
+    g.GameSpeed,
+    g.PreludeOn,
+    g.ColoniesOn,
+    g.DraftOn,
+    gc.SeenGen,
+    gc.DrawnGen,
+    gc.KeptGen,
+    gc.DraftedGen,
+    gc.BoughtGen,
+    gc.PlayedGen,
+    gc.DrawType,
+    gc.DrawReason,
+    gc.VpScored,
+    gp.PlayerName,
+    gp.Elo,
+    gp.EloChange,
+    gp.Position,
+    gps.Corporation,
+    gs.PlayerCount
+FROM GameCards gc WITH (NOLOCK)
+INNER JOIN GamePlayers gp WITH (NOLOCK) ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
+INNER JOIN GamePlayerStats gps WITH (NOLOCK) ON gps.TableId = gc.TableId AND gps.PlayerId = gc.PlayerId 
+INNER JOIN Games g WITH (NOLOCK) ON g.TableId = gc.TableId
+INNER JOIN GameStats gs WITH (NOLOCK) ON gs.TableId = gc.TableId
+WHERE gc.Card = @CardName
     AND gc.PlayedGen IS NOT NULL
-INNER JOIN ( SELECT TableId, PlayerCount FROM GameStats ) pc ON pc.TableId = gc.TableId
-WHERE LOWER(gc.Card) = LOWER(@CardName)";
+    AND gps.Corporation <> 'Unknown'";
 
                 using var conn = new SqlConnection(connectionString);
                 await conn.OpenAsync();

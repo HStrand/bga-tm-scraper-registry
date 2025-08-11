@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Dapper;
 using Microsoft.Data.SqlClient;
+using System.Web;
 
 namespace BgaTmScraperRegistry.Functions
 {
@@ -47,7 +48,6 @@ namespace BgaTmScraperRegistry.Functions
             string cardName,
             ILogger log)
         {
-            cardName = cardName.Replace("_", " ");
             log.LogInformation($"GetProjectCardStats function processed a request for card: {cardName}");
 
             try
@@ -68,34 +68,34 @@ namespace BgaTmScraperRegistry.Functions
                 var sql = @"
 
 SELECT
-	gc.TableId,
-	gc.PlayerId,
-	g.Map,
-	g.GameMode,
-	g.GameSpeed,
-	g.PreludeOn,
-	g.ColoniesOn,
-	g.DraftOn,
-	gc.SeenGen,
-	gc.DrawnGen,
-	gc.KeptGen,
-	gc.DraftedGen,
-	gc.BoughtGen,
-	gc.PlayedGen,
-	gc.DrawType,
-	gc.DrawReason,
-	gc.VpScored,
-	gp.PlayerName,
-	gp.Elo,
-	gp.EloChange,
-	gp.Position,
-	pc.PlayerCount
-FROM GameCards gc
-INNER JOIN GamePlayers gp ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
-INNER JOIN Games g ON g.TableId = gp.TableId
-    AND gc.PlayedGen IS NOT NULL
-INNER JOIN ( SELECT TableId, PlayerCount FROM GameStats ) pc ON pc.TableId = gc.TableId
-WHERE LOWER(gc.Card) = LOWER(@CardName)";
+    gc.TableId,
+    gc.PlayerId,
+    g.Map,
+    g.GameMode,
+    g.GameSpeed,
+    g.PreludeOn,
+    g.ColoniesOn,
+    g.DraftOn,
+    gc.SeenGen,
+    gc.DrawnGen,
+    gc.KeptGen,
+    gc.DraftedGen,
+    gc.BoughtGen,
+    gc.PlayedGen,
+    gc.DrawType,
+    gc.DrawReason,
+    gc.VpScored,
+    gp.PlayerName,
+    gp.Elo,
+    gp.EloChange,
+    gp.Position,
+    gs.PlayerCount
+FROM GameCards gc WITH (NOLOCK)
+INNER JOIN GamePlayers gp WITH (NOLOCK) ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
+INNER JOIN Games g WITH (NOLOCK) ON g.TableId = gc.TableId
+INNER JOIN GameStats gs WITH (NOLOCK) ON gs.TableId = gc.TableId
+WHERE gc.Card = @CardName
+    AND gc.PlayedGen IS NOT NULL";
 
                 using var conn = new SqlConnection(connectionString);
                 await conn.OpenAsync();
