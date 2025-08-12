@@ -233,8 +233,8 @@ export function PreludesOverviewPage() {
     setCurrentPage(1); // Reset to first page when filters change
   }, []);
 
-  const handleRowClick = (preludeSlug: string) => {
-    navigate(`/prelude/${preludeSlug}`);
+  const handleRowClick = (preludeName: string) => {
+    navigate(`/prelude/${encodeURIComponent(preludeName)}`);
   };
 
   const getSortIcon = (field: SortField) => {
@@ -438,7 +438,7 @@ export function PreludesOverviewPage() {
                         return (
                           <tr 
                             key={row.prelude}
-                            onClick={() => handleRowClick(row.prelude)}
+                            onClick={() => handleRowClick(row.name)}
                             className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
                           >
                             <td className="px-4 py-3 text-sm">

@@ -1,17 +1,18 @@
 import { useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { getCorpImage, getPlaceholderImage, slugToTitle } from '@/lib/corp';
+import { getCorpImage, getPlaceholderImage, slugToTitle, nameToSlug } from '@/lib/corp';
 import { CorporationStats } from '@/types/corporation';
 
 interface CorporationHeaderProps {
-  slug: string;
+  corporationName: string;
   stats: CorporationStats;
   isLoading?: boolean;
 }
 
-export function CorporationHeader({ slug, stats, isLoading }: CorporationHeaderProps) {
-  const displayName = slugToTitle(slug);
-  const imageSrc = getCorpImage(slug) || getPlaceholderImage();
+export function CorporationHeader({ corporationName, stats, isLoading }: CorporationHeaderProps) {
+  const displayName = corporationName;
+  const corporationSlug = nameToSlug(corporationName);
+  const imageSrc = getCorpImage(corporationSlug) || getPlaceholderImage();
   
   // Hover tooltip state
   const [showTooltip, setShowTooltip] = useState(false);

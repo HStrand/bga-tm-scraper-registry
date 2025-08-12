@@ -337,8 +337,8 @@ export function CorporationsOverviewPage() {
     setCurrentPage(1); // Reset to first page when filters change
   }, []);
 
-  const handleRowClick = (corporation: string) => {
-    navigate(`/corporations/${corporation}`);
+  const handleRowClick = (corporationName: string) => {
+    navigate(`/corporations/${encodeURIComponent(corporationName)}`);
   };
 
   const getSortIcon = (field: SortField) => {
@@ -505,7 +505,7 @@ export function CorporationsOverviewPage() {
                         return (
                           <tr 
                             key={row.corporation}
-                            onClick={() => handleRowClick(row.corporation)}
+                            onClick={() => handleRowClick(displayName)}
                             className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
                           >
                             <td className="px-4 py-3 text-sm">

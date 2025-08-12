@@ -11,7 +11,7 @@ import { BackButton } from '@/components/BackButton';
 import { api } from '@/lib/api';
 
 export function CorporationStatsPage() {
-  const { slug } = useParams<{ slug: string }>();
+  const { name } = useParams<{ name: string }>();
   const [data, setData] = useState<CorporationPlayerStatsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,9 +28,12 @@ export function CorporationStatsPage() {
     draftOn: undefined,
   });
 
+  // Decode the corporation name from the URL parameter
+  const corporationName = useMemo(() => (name ? decodeURIComponent(name) : ''), [name]);
+
   // Fetch data
   useEffect(() => {
-    if (!slug) return;
+    if (!name) return;
 
     const fetchData = async () => {
       try {
@@ -38,7 +41,6 @@ export function CorporationStatsPage() {
         setError(null);
         
         // Fetch corporation stats from the new API
-        const corporationName = slug.replace(/_/g, ' ');
         const response = await api.get<CorporationPlayerStatsRow[]>(`/api/corporations/${encodeURIComponent(corporationName)}/playerstats`);
         const responseData: CorporationPlayerStatsRow[] = response.data;
         setData(responseData);
@@ -67,7 +69,7 @@ export function CorporationStatsPage() {
     };
 
     fetchData();
-  }, [slug]);
+  }, [name, corporationName]);
 
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => {
@@ -264,7 +266,7 @@ export function CorporationStatsPage() {
     setFilters(newFilters);
   }, []);
 
-  if (!slug) {
+  if (!name) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
@@ -272,7 +274,7 @@ export function CorporationStatsPage() {
             Corporation Not Found
           </h1>
           <p className="text-slate-600 dark:text-slate-400">
-            Please provide a valid corporation slug in the URL.
+            Please provide a valid corporation name in the URL.
           </p>
         </div>
       </div>
@@ -308,7 +310,7 @@ export function CorporationStatsPage() {
           <BackButton fallbackPath="/corporations" />
         </div>
         <div className="mb-8">
-          <CorporationHeader slug={slug} stats={stats} isLoading={loading} />
+          <CorporationHeader corporationName={corporationName} stats={stats} isLoading={loading} />
         </div>
 
         {/* Main content */}

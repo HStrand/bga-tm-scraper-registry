@@ -12,7 +12,7 @@ import { getPreludePlayerStats } from '@/lib/preludeCache';
 import { BackButton } from '@/components/BackButton';
 
 export function PreludeStatsPage() {
-  const { slug } = useParams<{ slug: string }>();
+  const { name } = useParams<{ name: string }>();
   const [data, setData] = useState<PreludePlayerStatsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,15 +30,17 @@ export function PreludeStatsPage() {
     draftOn: undefined,
   });
 
+  // Decode the prelude name from the URL parameter
+  const preludeName = useMemo(() => (name ? decodeURIComponent(name) : ''), [name]);
+
   // Fetch data
   useEffect(() => {
-    if (!slug) return;
+    if (!name) return;
 
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const preludeName = slugToPreludeName(slug);
         const response = await getPreludePlayerStats(preludeName);
         setData(response);
 
@@ -68,7 +70,7 @@ export function PreludeStatsPage() {
     };
 
     fetchData();
-  }, [slug]);
+  }, [name, preludeName]);
 
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => {
@@ -282,7 +284,7 @@ export function PreludeStatsPage() {
     setFilters(newFilters);
   }, []);
 
-  if (!slug) {
+  if (!name) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
@@ -290,7 +292,7 @@ export function PreludeStatsPage() {
             Prelude Not Found
           </h1>
           <p className="text-slate-600 dark:text-slate-400">
-            Please provide a valid prelude slug in the URL.
+            Please provide a valid prelude name in the URL.
           </p>
         </div>
       </div>
@@ -326,7 +328,7 @@ export function PreludeStatsPage() {
           <BackButton fallbackPath="/preludes" />
         </div>
         <div className="mb-8">
-          <PreludeHeader slug={slug} stats={stats} isLoading={loading} />
+          <PreludeHeader preludeName={preludeName} stats={stats} isLoading={loading} />
         </div>
 
         {/* Main content */}

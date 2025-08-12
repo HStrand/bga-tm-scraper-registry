@@ -4,7 +4,7 @@ import { getPreludeImage, getPreludePlaceholderImage, slugToPreludeName } from '
 import { PreludeStats } from '@/types/prelude';
 
 interface PreludeHeaderProps {
-  slug: string;
+  preludeName: string;
   stats: PreludeStats;
   isLoading: boolean;
 }
@@ -15,8 +15,7 @@ function getEloChangeDisplay(eloChange: number | null | undefined): string {
   return `${sign}${eloChange.toFixed(2)}`;
 }
 
-export function PreludeHeader({ slug, stats, isLoading }: PreludeHeaderProps) {
-  const preludeName = slugToPreludeName(slug);
+export function PreludeHeader({ preludeName, stats, isLoading }: PreludeHeaderProps) {
   const imageSrc = getPreludeImage(preludeName) || getPreludePlaceholderImage();
 
   // Hover tooltip state
