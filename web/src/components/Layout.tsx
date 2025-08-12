@@ -241,7 +241,7 @@ export function Layout({ children }: LayoutProps) {
 
         {/* Subtle footer */}
         <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-slate-200 dark:border-slate-700">
-          <div className="text-xs text-slate-500 dark:text-slate-400">v0.1 • BGA TM</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">Made by StrandedKnight</div>
         </div>
       </aside>
 
