@@ -42,17 +42,34 @@ namespace BgaTmScraperRegistry.Services
             }
 
             var sql = @"
+WITH gp_dedup AS (
+  SELECT
+    gp.TableId, gp.PlayerId,
+    gp.Position, gp.Elo, gp.EloChange,
+    rn = ROW_NUMBER() OVER (
+      PARTITION BY gp.TableId, gp.PlayerId
+      ORDER BY CASE WHEN gp.PlayerPerspective = gp.PlayerId THEN 0 ELSE 1 END,
+               gp.GameId DESC
+    )
+  FROM GamePlayers gp
+),
+gp1 AS (
+  SELECT TableId, PlayerId, Position, Elo, EloChange
+  FROM gp_dedup
+  WHERE rn = 1
+)
 SELECT 
-	Card,
-	COUNT(gc.Card) AS TimesPlayed,
-	ROUND(AVG(CAST(CASE WHEN gp.Position = 1 THEN 1 ELSE 0 END AS FLOAT)), 2) AS WinRate,
-	ROUND(AVG(CAST(gp.Elo AS FLOAT)), 2) AS AvgElo,
-	ROUND(AVG(CAST(gp.EloChange AS FLOAT)), 2) AS AvgEloChange
+    gc.Card,
+    COUNT(*) AS TimesPlayed,
+    ROUND(AVG(CASE WHEN gp1.Position = 1 THEN 1.0 ELSE 0.0 END), 2) AS WinRate,
+    ROUND(AVG(CAST(gp1.Elo AS float)), 2) AS AvgElo,
+    ROUND(AVG(CAST(gp1.EloChange AS float)), 2) AS AvgEloChange
 FROM GameCards gc
-INNER JOIN GamePlayers gp ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
+JOIN gp1
+  ON gp1.TableId = gc.TableId AND gp1.PlayerId = gc.PlayerId
 WHERE gc.PlayedGen IS NOT NULL
 GROUP BY gc.Card
-ORDER BY WinRate DESC";
+ORDER BY WinRate DESC;";
 
             using var conn = new SqlConnection(_connectionString);
             await conn.OpenAsync();
