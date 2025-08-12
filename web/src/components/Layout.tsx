@@ -193,7 +193,7 @@ export function Layout({ children }: LayoutProps) {
                 isExpanded ? "text-left" : "text-center"
               )}
             >
-              v0.1 • BGA TM
+              Made by StrandedKnight
             </div>
           </div>
         </div>

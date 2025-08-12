@@ -67,35 +67,54 @@ namespace BgaTmScraperRegistry.Functions
 
                 var sql = @"
 
+-- 1) Keys you need (only once per player/table)
+WITH keys AS (
+  SELECT DISTINCT gc.TableId, gc.PlayerId
+  FROM GameCards gc WITH (NOLOCK)
+  WHERE gc.Card = 'Birds' AND gc.PlayedGen IS NOT NULL
+)
+
+-- 2) Pick one row from GamePlayers and Games for each key
+, best_gp AS (
+  SELECT k.TableId, k.PlayerId,
+         gp.PlayerName, gp.Elo, gp.EloChange, gp.Position,
+         ROW_NUMBER() OVER (
+            PARTITION BY gp.TableId, gp.PlayerId
+            ORDER BY CASE WHEN gp.PlayerPerspective = gp.PlayerId THEN 0 ELSE 1 END,
+                     gp.GameId DESC
+         ) AS rn
+  FROM keys k
+  JOIN GamePlayers gp WITH (NOLOCK)
+    ON gp.TableId = k.TableId AND gp.PlayerId = k.PlayerId
+)
+, best_g AS (
+  -- choose a canonical row per TableId (fast & player-agnostic)
+  SELECT g.TableId, g.Map, g.GameMode, g.GameSpeed, g.PreludeOn, g.ColoniesOn, g.DraftOn,
+         ROW_NUMBER() OVER (
+           PARTITION BY g.TableId
+           ORDER BY g.IndexedAt DESC, g.Id DESC
+         ) AS rn
+  FROM (SELECT DISTINCT TableId FROM keys) t
+  JOIN Games g WITH (NOLOCK) ON g.TableId = t.TableId
+)
+
 SELECT
     gc.TableId,
     gc.PlayerId,
-    g.Map,
-    g.GameMode,
-    g.GameSpeed,
-    g.PreludeOn,
-    g.ColoniesOn,
-    g.DraftOn,
-    gc.SeenGen,
-    gc.DrawnGen,
-    gc.KeptGen,
-    gc.DraftedGen,
-    gc.BoughtGen,
-    gc.PlayedGen,
-    gc.DrawType,
-    gc.DrawReason,
-    gc.VpScored,
-    gp.PlayerName,
-    gp.Elo,
-    gp.EloChange,
-    gp.Position,
+    g.Map, g.GameMode, g.GameSpeed, g.PreludeOn, g.ColoniesOn, g.DraftOn,
+    gc.SeenGen, gc.DrawnGen, gc.KeptGen, gc.DraftedGen, gc.BoughtGen,
+    gc.PlayedGen, gc.DrawType, gc.DrawReason, gc.VpScored,
+    gp.PlayerName, gp.Elo, gp.EloChange, gp.Position,
     gs.PlayerCount
 FROM GameCards gc WITH (NOLOCK)
-INNER JOIN GamePlayers gp WITH (NOLOCK) ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
-INNER JOIN Games g WITH (NOLOCK) ON g.TableId = gc.TableId
-INNER JOIN GameStats gs WITH (NOLOCK) ON gs.TableId = gc.TableId
-WHERE gc.Card = @CardName
-    AND gc.PlayedGen IS NOT NULL";
+JOIN (SELECT * FROM best_gp WHERE rn = 1) gp
+  ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
+JOIN (SELECT * FROM best_g  WHERE rn = 1) g
+  ON g.TableId = gc.TableId
+JOIN GameStats gs WITH (NOLOCK)
+  ON gs.TableId = gc.TableId
+WHERE gc.Card = (@CardName)
+  AND gc.PlayedGen IS NOT NULL;";
 
                 using var conn = new SqlConnection(connectionString);
                 await conn.OpenAsync();
