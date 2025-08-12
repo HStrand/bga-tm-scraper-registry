@@ -84,8 +84,7 @@ namespace BgaTmScraperRegistry.Models
         public string PlayerId { get; set; }
 
         [JsonProperty("position")]
-        [Required]
-        public int Position { get; set; }
+        public int? Position { get; set; }
 
         [JsonProperty("arena_points")]
         public int? ArenaPoints { get; set; }

@@ -163,6 +163,12 @@ namespace BgaTmScraperRegistry
                         continue;
                     }
 
+                    if (playerData.Position == null)
+                    {
+                        log.LogInformation($"Skipping player {playerData.PlayerId} in game {tableId} due to null position");
+                        continue;
+                    }
+
                     var gamePlayer = new GamePlayer
                     {
                         GameId = 0, // Will be set by the database service
@@ -174,7 +180,7 @@ namespace BgaTmScraperRegistry
                         EloChange = playerData.GameRankChange,
                         ArenaPoints = playerData.ArenaPoints,
                         ArenaPointsChange = playerData.ArenaPointsChange,
-                        Position = playerData.Position
+                        Position = playerData.Position.Value
                     };
 
                     // Validate GamePlayer object
@@ -194,8 +200,14 @@ namespace BgaTmScraperRegistry
 
                 if (!gamePlayers.Any())
                 {
-                    log.LogWarning($"No valid players found for game {tableId}");
-                    return new BadRequestObjectResult(new { message = "No valid players found in game", success = false });
+                    log.LogInformation($"No valid players (null positions) for game {tableId}; skipping");
+                    return new OkObjectResult(new 
+                    { 
+                        message = "Solo game or invalid players (null position) skipped", 
+                        tableId = tableId,
+                        skipped = true,
+                        success = true 
+                    });
                 }
 
                 log.LogInformation($"Processing game {tableId} with {gamePlayers.Count} valid players");
