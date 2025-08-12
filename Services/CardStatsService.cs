@@ -69,7 +69,7 @@ JOIN gp1
   ON gp1.TableId = gc.TableId AND gp1.PlayerId = gc.PlayerId
 WHERE gc.PlayedGen IS NOT NULL
 GROUP BY gc.Card
-ORDER BY WinRate DESC;";
+ORDER BY AvgEloChange DESC;";
 
             using var conn = new SqlConnection(_connectionString);
             await conn.OpenAsync();
@@ -120,7 +120,7 @@ ORDER BY WinRate DESC;";
 
             var projectCardStats = allStats
                 .Where(card => !preludeNames.Contains(card.Card))
-                .OrderByDescending(card => card.WinRate)
+                .OrderByDescending(card => card.AvgEloChange)
                 .ToList();
 
             _logger.LogInformation($"Filtered to {projectCardStats.Count} project card stats (excluding {preludeNames.Count} preludes)");
@@ -134,7 +134,7 @@ ORDER BY WinRate DESC;";
 
             var preludeStats = allStats
                 .Where(card => preludeNames.Contains(card.Card))
-                .OrderByDescending(card => card.WinRate)
+                .OrderByDescending(card => card.AvgEloChange)
                 .ToList();
 
             _logger.LogInformation($"Filtered to {preludeStats.Count} prelude stats");
