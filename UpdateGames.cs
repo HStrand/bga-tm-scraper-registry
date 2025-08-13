@@ -170,7 +170,7 @@ namespace BgaTmScraperRegistry
                                 EloChange = playerData.GameRankChange,
                                 ArenaPoints = playerData.ArenaPoints,
                                 ArenaPointsChange = playerData.ArenaPointsChange,
-                                Position = playerData.Position
+                                Position = playerData.Position.Value
                             };
 
                             // Validate GamePlayer object
