@@ -98,7 +98,7 @@ namespace BgaTmScraperRegistry
                 // Initialize blob service
                 var blobService = new BlobStorageService(blobConnectionString, log);
 
-                // Get all JSON blobs
+                // Get all JSON blobs (list only)
                 log.LogInformation("Starting to list all JSON blobs");
                 var jsonBlobs = await blobService.GetAllJsonBlobsAsync();
 
@@ -112,9 +112,113 @@ namespace BgaTmScraperRegistry
                     };
                 }
 
-                log.LogInformation($"Found {jsonBlobs.Count} JSON blobs to archive");
+                log.LogInformation($"Found {jsonBlobs.Count} JSON blobs in container");
 
-                // Create ZIP archive in memory
+                // Try incremental update: open latest existing archive and add only new files
+                var latestZip = await blobService.GetLatestZipArchiveAsync();
+                if (!string.IsNullOrEmpty(latestZip))
+                {
+                    try
+                    {
+                        using (var existingZipRemoteStream = await blobService.DownloadZipArchiveAsStreamAsync(latestZip))
+                        {
+                            // Work on a seekable in-memory copy so we can open in Update mode and then upload
+                            using var workingStream = new MemoryStream();
+                            await existingZipRemoteStream.CopyToAsync(workingStream);
+                            workingStream.Position = 0;
+
+                            int addedFiles = 0;
+                            int failedFiles = 0;
+                            int existingCount = 0;
+
+                            using (var archive = new ZipArchive(workingStream, ZipArchiveMode.Update, true))
+                            {
+                                // Build set of existing entries
+                                var existingFiles = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                foreach (var entry in archive.Entries)
+                                {
+                                    existingFiles.Add(entry.FullName);
+                                }
+                                existingCount = existingFiles.Count;
+
+                                // Determine which blobs are new
+                                var newFiles = jsonBlobs.FindAll(p => !existingFiles.Contains(p));
+
+                                log.LogInformation($"Latest archive {latestZip} contains {existingCount} files. {newFiles.Count} new files to add.");
+
+                                foreach (var blobPath in newFiles)
+                                {
+                                    try
+                                    {
+                                        log.LogDebug($"Adding new blob to archive: {blobPath}");
+                                        using var blobStream = await blobService.DownloadBlobAsStreamAsync(blobPath);
+                                        var zipEntry = archive.CreateEntry(blobPath, CompressionLevel.Optimal);
+                                        using var entryStream = zipEntry.Open();
+                                        await blobStream.CopyToAsync(entryStream);
+                                        addedFiles++;
+
+                                        if(addedFiles % 100 == 0)
+                                        {
+                                            log.LogInformation($"Added {addedFiles} new JSON files to Zip archive so far");
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        log.LogWarning(ex, $"Failed to add new blob to archive: {blobPath}");
+                                        failedFiles++;
+                                    }
+                                }
+
+                                log.LogInformation($"Incremental update completed. Added: {addedFiles}, Failed: {failedFiles}. New total expected: {existingCount + addedFiles}");
+                            }
+
+                            // If no new files, skip upload and return metadata of existing archive
+                            if (addedFiles == 0)
+                            {
+                                var existingArchiveSize = FormatBytes(workingStream.Length);
+                                log.LogInformation($"No new files to add. Skipping upload. Returning latest archive {latestZip} unchanged.");
+                                return new ZipCreationResult
+                                {
+                                    Success = true,
+                                    ArchiveFileName = latestZip,
+                                    FilesIncluded = existingCount,
+                                    ArchiveSize = existingArchiveSize,
+                                    CreatedAt = DateTime.UtcNow
+                                };
+                            }
+
+                            // Generate archive filename with timestamp
+                            var timestampInc = DateTime.UtcNow.ToString("yyyy-MM-dd-HHmmss");
+                            var archiveFileNameInc = $"game-logs-archive-{timestampInc}.zip";
+
+                            // Upload updated ZIP to blob storage
+                            workingStream.Position = 0;
+                            log.LogInformation($"Uploading incrementally updated ZIP archive: {archiveFileNameInc}");
+                            var archivePathInc = await blobService.UploadZipArchiveAsync(workingStream, archiveFileNameInc);
+
+                            // Calculate archive size
+                            var archiveSizeInc = FormatBytes(workingStream.Length);
+
+                            log.LogInformation($"Incrementally updated ZIP uploaded successfully: {archivePathInc}, Size: {archiveSizeInc}");
+
+                            return new ZipCreationResult
+                            {
+                                Success = true,
+                                ArchiveFileName = archiveFileNameInc,
+                                FilesIncluded = existingCount + addedFiles,
+                                ArchiveSize = archiveSizeInc,
+                                CreatedAt = DateTime.UtcNow
+                            };
+                        }
+                    }
+                    catch (Exception incEx)
+                    {
+                        // Log and fall back to full rebuild
+                        log.LogWarning(incEx, "Incremental ZIP update failed, falling back to full rebuild.");
+                    }
+                }
+
+                // Full rebuild: Create ZIP archive in memory with all blobs
                 using var zipStream = new MemoryStream();
                 using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, true))
                 {
@@ -146,7 +250,7 @@ namespace BgaTmScraperRegistry
                         }
                     }
 
-                    log.LogInformation($"ZIP archive creation completed. Processed: {processedFiles}, Failed: {failedFiles}");
+                    log.LogInformation($"ZIP archive full rebuild completed. Processed: {processedFiles}, Failed: {failedFiles}");
                 }
 
                 // Generate archive filename with timestamp
