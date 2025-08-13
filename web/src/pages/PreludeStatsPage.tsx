@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useCookieState } from '@/hooks/useCookieState';
 import { useParams } from 'react-router-dom';
 import { PreludePlayerStatsRow, PreludeStats, PreludeDetailFilters, CorporationPerformance, HistogramBin } from '@/types/prelude';
 import { PreludeHeader } from '@/components/PreludeHeader';
@@ -18,17 +19,20 @@ export function PreludeStatsPage() {
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
 
-  // Initialize filters with all options selected
-  const [filters, setFilters] = useState<PreludeDetailFilters>({
-    maps: [],
-    gameModes: [],
-    gameSpeeds: [],
-    playerCounts: [],
-    corporations: [],
-    preludeOn: undefined,
-    coloniesOn: undefined,
-    draftOn: undefined,
-  });
+  // Initialize filters with all options selected (persisted per page via cookie)
+  const [filters, setFilters, , meta] = useCookieState<PreludeDetailFilters>(
+    'tm_filters_prelude_details_v1',
+    {
+      maps: [],
+      gameModes: [],
+      gameSpeeds: [],
+      playerCounts: [],
+      corporations: [],
+      preludeOn: undefined,
+      coloniesOn: undefined,
+      draftOn: undefined,
+    }
+  );
 
   // Decode the prelude name from the URL parameter
   const preludeName = useMemo(() => (name ? decodeURIComponent(name) : ''), [name]);
@@ -51,15 +55,36 @@ export function PreludeStatsPage() {
         const corporations = [...new Set(response.map(row => row.corporation).filter(Boolean))].sort() as string[];
         const playerCounts = [...new Set(response.map(row => row.playerCount).filter((c): c is number => !!c))].sort((a, b) => a - b) as number[];
 
-        setFilters({
-          maps,
-          gameModes,
-          gameSpeeds,
-          playerCounts,
-          corporations,
-          preludeOn: undefined,
-          coloniesOn: undefined,
-          draftOn: undefined,
+        setFilters(prev => {
+          // If we already loaded a stored value, don't override with defaults
+          if (meta.hasStoredValue) return prev;
+
+          // Apply defaults only if previous filters were effectively empty (fresh load)
+          if (
+            prev.maps.length === 0 &&
+            prev.gameModes.length === 0 &&
+            prev.gameSpeeds.length === 0 &&
+            prev.playerCounts.length === 0 &&
+            prev.corporations.length === 0 &&
+            prev.preludeOn === undefined &&
+            prev.coloniesOn === undefined &&
+            prev.draftOn === undefined &&
+            !prev.playerName &&
+            prev.eloMin === undefined &&
+            prev.eloMax === undefined
+          ) {
+            return {
+              maps,
+              gameModes,
+              gameSpeeds,
+              playerCounts,
+              corporations,
+              preludeOn: undefined,
+              coloniesOn: undefined,
+              draftOn: undefined,
+            };
+          }
+          return prev;
         });
       } catch (err) {
         console.error('Error fetching prelude stats:', err);

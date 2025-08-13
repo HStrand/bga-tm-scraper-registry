@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useCookieState } from '@/hooks/useCookieState';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { PreludeStatsRow, PreludeOverviewRow, PreludeFilters } from '@/types/prelude';
@@ -26,11 +27,14 @@ export function PreludesOverviewPage() {
   const desiredMidYRef = useRef(0);
   const triggerRectRef = useRef<DOMRect | null>(null);
 
-  // Filters
-  const [filters, setFilters] = useState<PreludeFilters>({
-    timesPlayedMin: undefined,
-    searchTerm: '',
-  });
+  // Filters (persisted per page via cookie)
+  const [filters, setFilters] = useCookieState<PreludeFilters>(
+    'tm_filters_preludes_overview_v1',
+    {
+      timesPlayedMin: undefined,
+      searchTerm: '',
+    }
+  );
 
   // Recalculate tooltip position with clamping and flipping
   const updateTooltipPosition = useCallback(() => {

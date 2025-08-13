@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useCookieState } from '@/hooks/useCookieState';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { ProjectCardStatsRow, ProjectCardOverviewRow, ProjectCardOverviewFilters } from '@/types/projectcard';
@@ -26,11 +27,14 @@ export function ProjectCardsOverviewPage() {
   const desiredMidYRef = useRef(0);
   const triggerRectRef = useRef<DOMRect | null>(null);
 
-  // Filters
-  const [filters, setFilters] = useState<ProjectCardOverviewFilters>({
-    timesPlayedMin: undefined,
-    searchTerm: '',
-  });
+  // Filters (persisted per page via cookie)
+  const [filters, setFilters] = useCookieState<ProjectCardOverviewFilters>(
+    'tm_filters_cards_overview_v1',
+    {
+      timesPlayedMin: undefined,
+      searchTerm: '',
+    }
+  );
 
   // Recalculate tooltip position with clamping and flipping
   const updateTooltipPosition = useCallback(() => {

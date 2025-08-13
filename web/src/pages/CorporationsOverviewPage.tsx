@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useCookieState } from '@/hooks/useCookieState';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { AllCorporationPlayerStatsRow, CorporationOverviewRow, CorporationFilters } from '@/types/corporation';
@@ -71,16 +72,19 @@ export function CorporationsOverviewPage() {
     setTooltipPos({ top: clampedTop, left });
   }, [tooltipPos.left]);
 
-  // Initialize filters with all options selected
-  const [filters, setFilters] = useState<CorporationFilters>({
-    playerCounts: [],
-    maps: [],
-    gameModes: [],
-    gameSpeeds: [],
-    preludeOn: undefined,
-    coloniesOn: undefined,
-    draftOn: undefined,
-  });
+  // Initialize filters with all options selected (persisted per page via cookie)
+  const [filters, setFilters, , meta] = useCookieState<CorporationFilters>(
+    'tm_filters_corporations_overview_v1',
+    {
+      playerCounts: [],
+      maps: [],
+      gameModes: [],
+      gameSpeeds: [],
+      preludeOn: undefined,
+      coloniesOn: undefined,
+      draftOn: undefined,
+    }
+  );
 
   // Fetch data
   useEffect(() => {
@@ -97,14 +101,36 @@ export function CorporationsOverviewPage() {
         const gameModes = [...new Set(response.map(row => row.gameMode).filter(Boolean))].sort() as string[];
         const gameSpeeds = [...new Set(response.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
 
-        setFilters({
-          playerCounts: playerCounts as number[],
-          maps,
-          gameModes,
-          gameSpeeds,
-          preludeOn: undefined,
-          coloniesOn: undefined,
-          draftOn: undefined,
+        setFilters(prev => {
+          // If we already loaded a stored value, don't override with defaults
+          if (meta.hasStoredValue) return prev;
+
+          // Apply defaults only if previous filters were effectively empty (fresh load)
+          if (
+            prev.playerCounts.length === 0 &&
+            prev.maps.length === 0 &&
+            prev.gameModes.length === 0 &&
+            prev.gameSpeeds.length === 0 &&
+            prev.preludeOn === undefined &&
+            prev.coloniesOn === undefined &&
+            prev.draftOn === undefined &&
+            !prev.playerName &&
+            prev.eloMin === undefined &&
+            prev.eloMax === undefined &&
+            prev.timesPlayedMin === undefined &&
+            prev.timesPlayedMax === undefined
+          ) {
+            return {
+              playerCounts: playerCounts as number[],
+              maps,
+              gameModes,
+              gameSpeeds,
+              preludeOn: undefined,
+              coloniesOn: undefined,
+              draftOn: undefined,
+            };
+          }
+          return prev;
         });
       } catch (err) {
         console.error('Error fetching corporation stats:', err);
