@@ -462,14 +462,12 @@ export function ProjectCardsOverviewPage() {
                         >
                           Avg Elo Gain {getSortIcon('avgEloChange')}
                         </th>
-                        {statsMode === 'played' && (
-                          <th 
-                            className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
-                            onClick={() => handleSort('totalGames')}
-                          >
-                            Times Played {getSortIcon('totalGames')}
-                          </th>
-                        )}
+                        <th 
+                          className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
+                          onClick={() => handleSort('totalGames')}
+                        >
+                          {statsMode === 'played' ? 'Times Played' : 'Times Option'} {getSortIcon('totalGames')}
+                        </th>
                         <th 
                           className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
                           onClick={() => handleSort('avgElo')}
@@ -520,11 +518,9 @@ export function ProjectCardsOverviewPage() {
                             <td className="px-4 py-3 text-sm">
                               {getEloChangeDisplay(row.avgEloChange)}
                             </td>
-                            {statsMode === 'played' && (
-                              <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                                {row.totalGames.toLocaleString()}
-                              </td>
-                            )}
+                            <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                              {row.totalGames.toLocaleString()}
+                            </td>
                             <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                               {row.avgElo != null ? row.avgElo.toFixed(0) : 'N/A'}
                             </td>

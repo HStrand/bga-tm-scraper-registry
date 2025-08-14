@@ -95,35 +95,17 @@ namespace BgaTmScraperRegistry.Services
                 return blobList;
             }
 
-            var cards = await ComputeAllCardOptionStatsFromDbAsync();
-
-            foreach(var card in cards)
-            {
-                card.Card.Replace("a card ", "");
-            }
-
-            cards = cards.Where(c => ! 
-            new List<string>
-            {
-                    "City",
-                    "Greenery",
-                    "Aquifer",
-                    "Sell patents",
-                    "Undo (no undo beyond this point)",
-                    "(no undo beyond this point)",
-            }
-            .Contains(c.Card))
-            .ToList();
+            var list = await ComputeAllCardOptionStatsFromDbAsync();
 
             Cache.Set(
                 AllCardOptionStatsCacheKey,
-                cards,
+                list,
                 new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
 
-            await TryWriteOptionToBlobAsync(cards);
+            await TryWriteOptionToBlobAsync(list);
 
-            _logger.LogInformation($"Retrieved and cached {cards.Count} card option stats");
-            return cards;
+            _logger.LogInformation($"Retrieved and cached {list.Count} card option stats");
+            return list;
         }
 
         public async Task RefreshAllCardStatsCacheAsync()
@@ -201,8 +183,22 @@ ORDER BY AvgEloChange DESC;";
 
             using var conn = new SqlConnection(_connectionString);
             await conn.OpenAsync();
-
             var rows = await conn.QueryAsync<CardBasicStatsRow>(sql, commandTimeout: 300); // 5 minutes
+
+            rows = rows.Where(c => !
+            new List<string>
+            {
+                    "City",
+                    "Greenery",
+                    "Aquifer",
+                    "Sell patents",
+                    "Undo (no undo beyond this point)",
+                    "(no undo beyond this point)",
+            }
+            .Contains(c.Card) &&
+            !c.Card.Contains("a card "))
+            .ToList();
+
             return rows.ToList();
         }
 
@@ -317,6 +313,21 @@ ORDER BY AvgEloChange DESC;";
             await conn.OpenAsync();
 
             var rows = await conn.QueryAsync<CardBasicStatsRow>(sql, commandTimeout: 300); // 5 minutes
+
+            rows = rows.Where(c => !
+            new List<string>
+            {
+                    "City",
+                    "Greenery",
+                    "Aquifer",
+                    "Sell patents",
+                    "Undo (no undo beyond this point)",
+                    "(no undo beyond this point)",
+            }
+            .Contains(c.Card) &&
+            !c.Card.Contains("a card "))
+            .ToList();
+
             return rows.ToList();
         }
 
