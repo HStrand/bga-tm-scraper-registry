@@ -12,7 +12,7 @@ namespace BgaTmScraperRegistry.Services
     public class CardStatsService
     {
         private static readonly MemoryCache Cache = new MemoryCache(new MemoryCacheOptions());
-        private const string AllCardStatsCacheKey = "AllCardStats:v1";
+        private const string AllCardStatsCacheKey = "AllCardStats:v2";
         private const string PreludeNamesCacheKey = "PreludeNames:v1";
 
         private readonly string _connectionString;
@@ -42,21 +42,30 @@ namespace BgaTmScraperRegistry.Services
             }
 
             var sql = @"
-WITH gp_dedup AS (
+;WITH gp_dedup AS (
   SELECT
     gp.TableId, gp.PlayerId,
     gp.Position, gp.Elo, gp.EloChange,
-    rn = ROW_NUMBER() OVER (
+    ROW_NUMBER() OVER (
       PARTITION BY gp.TableId, gp.PlayerId
       ORDER BY CASE WHEN gp.PlayerPerspective = gp.PlayerId THEN 0 ELSE 1 END,
                gp.GameId DESC
-    )
-  FROM GamePlayers gp
+    ) AS rn
+  FROM GamePlayers gp WITH (NOLOCK)
 ),
 gp1 AS (
   SELECT TableId, PlayerId, Position, Elo, EloChange
   FROM gp_dedup
   WHERE rn = 1
+),
+g_dedup AS (
+  SELECT
+    g.TableId,
+    ROW_NUMBER() OVER (
+      PARTITION BY g.TableId
+      ORDER BY g.IndexedAt DESC, g.Id DESC
+    ) AS rn
+  FROM Games g WITH (NOLOCK)
 )
 SELECT 
     gc.Card,
@@ -64,9 +73,13 @@ SELECT
     ROUND(AVG(CASE WHEN gp1.Position = 1 THEN 1.0 ELSE 0.0 END), 2) AS WinRate,
     ROUND(AVG(CAST(gp1.Elo AS float)), 2) AS AvgElo,
     ROUND(AVG(CAST(gp1.EloChange AS float)), 2) AS AvgEloChange
-FROM GameCards gc
+FROM GameCards gc WITH (NOLOCK)
 JOIN gp1
   ON gp1.TableId = gc.TableId AND gp1.PlayerId = gc.PlayerId
+JOIN (SELECT TableId FROM g_dedup WHERE rn = 1) g
+  ON g.TableId = gc.TableId
+JOIN GameStats gs WITH (NOLOCK)
+  ON gs.TableId = gc.TableId
 WHERE gc.PlayedGen IS NOT NULL
 GROUP BY gc.Card
 ORDER BY AvgEloChange DESC;";
