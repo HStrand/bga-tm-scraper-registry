@@ -71,7 +71,7 @@ namespace BgaTmScraperRegistry.Functions
 WITH keys AS (
   SELECT DISTINCT gc.TableId, gc.PlayerId
   FROM GameCards gc WITH (NOLOCK)
-  WHERE gc.Card = 'Birds' AND gc.PlayedGen IS NOT NULL
+  WHERE gc.Card = @CardName AND gc.PlayedGen IS NOT NULL
 )
 
 -- 2) Pick one row from GamePlayers and Games for each key
