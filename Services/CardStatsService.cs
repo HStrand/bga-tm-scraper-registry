@@ -6,6 +6,9 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Data.SqlClient;
 using Dapper;
+using System.Text.Json;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 
 namespace BgaTmScraperRegistry.Services
 {
@@ -14,6 +17,8 @@ namespace BgaTmScraperRegistry.Services
         private static readonly MemoryCache Cache = new MemoryCache(new MemoryCacheOptions());
         private const string AllCardStatsCacheKey = "AllCardStats:v2";
         private const string PreludeNamesCacheKey = "PreludeNames:v1";
+        private const string CacheContainerName = "cache";
+        private const string CardStatsBlobName = "card-stats.json";
 
         private readonly string _connectionString;
         private readonly ILogger _logger;
@@ -41,6 +46,49 @@ namespace BgaTmScraperRegistry.Services
                 return cached;
             }
 
+            // Try read from blob cross-instance cache
+            var blobList = await TryReadFromBlobAsync();
+            if (blobList != null && blobList.Count > 0)
+            {
+                Cache.Set(
+                    AllCardStatsCacheKey,
+                    blobList,
+                    new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+                _logger.LogInformation($"Loaded {blobList.Count} card stats from blob cache");
+                return blobList;
+            }
+
+            var list = await ComputeAllCardStatsFromDbAsync();
+
+            // Cache for 24 hours
+            Cache.Set(
+                AllCardStatsCacheKey,
+                list,
+                new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+
+            // Write to blob for cross-instance warm cache
+            await TryWriteToBlobAsync(list);
+
+            _logger.LogInformation($"Retrieved and cached {list.Count} card stats");
+            return list;
+        }
+
+        public async Task RefreshAllCardStatsCacheAsync()
+        {
+            var list = await ComputeAllCardStatsFromDbAsync();
+
+            Cache.Set(
+                AllCardStatsCacheKey,
+                list,
+                new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+
+            await TryWriteToBlobAsync(list);
+
+            _logger.LogInformation($"Refreshed card stats cache with {list.Count} rows");
+        }
+
+        private async Task<List<CardBasicStatsRow>> ComputeAllCardStatsFromDbAsync()
+        {
             var sql = @"
 ;WITH gp_dedup AS (
   SELECT
@@ -88,16 +136,69 @@ ORDER BY AvgEloChange DESC;";
             await conn.OpenAsync();
 
             var rows = await conn.QueryAsync<CardBasicStatsRow>(sql);
-            var list = rows.ToList();
+            return rows.ToList();
+        }
 
-            // Cache for 24 hours
-            Cache.Set(
-                AllCardStatsCacheKey,
-                list,
-                new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+        private async Task<List<CardBasicStatsRow>> TryReadFromBlobAsync()
+        {
+            try
+            {
+                var blobConn = Environment.GetEnvironmentVariable("BlobConnectionString");
+                if (string.IsNullOrWhiteSpace(blobConn))
+                {
+                    return null;
+                }
 
-            _logger.LogInformation($"Retrieved and cached {list.Count} card stats");
-            return list;
+                var service = new BlobServiceClient(blobConn);
+                var container = service.GetBlobContainerClient(CacheContainerName);
+                var blob = container.GetBlobClient(CardStatsBlobName);
+
+                var exists = await blob.ExistsAsync();
+                if (!exists.Value)
+                {
+                    return null;
+                }
+
+                var download = await blob.DownloadContentAsync();
+                var json = download.Value.Content.ToString();
+                var list = JsonSerializer.Deserialize<List<CardBasicStatsRow>>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                return list;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to read card stats from blob cache");
+                return null;
+            }
+        }
+
+        private async Task TryWriteToBlobAsync(List<CardBasicStatsRow> list)
+        {
+            try
+            {
+                var blobConn = Environment.GetEnvironmentVariable("BlobConnectionString");
+                if (string.IsNullOrWhiteSpace(blobConn))
+                {
+                    return;
+                }
+
+                var service = new BlobServiceClient(blobConn);
+                var container = service.GetBlobContainerClient(CacheContainerName);
+                await container.CreateIfNotExistsAsync();
+                var blob = container.GetBlobClient(CardStatsBlobName);
+
+                var json = JsonSerializer.Serialize(list);
+                using var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+
+                await blob.UploadAsync(stream, overwrite: true);
+                await blob.SetHttpHeadersAsync(new BlobHttpHeaders { ContentType = "application/json" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to write card stats to blob cache");
+            }
         }
 
         public async Task<HashSet<string>> GetPreludeNamesAsync()
