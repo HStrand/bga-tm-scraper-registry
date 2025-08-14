@@ -141,7 +141,7 @@ ORDER BY gs.TableId DESC";
             using var conn = new SqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            var rows = await conn.QueryAsync<CorporationPlayerStatsRow>(sql);
+            var rows = await conn.QueryAsync<CorporationPlayerStatsRow>(sql, commandTimeout: 300); // 5 minutes
             return rows.ToList();
         }
 
@@ -149,7 +149,7 @@ ORDER BY gs.TableId DESC";
         {
             try
             {
-                var blobConn = Environment.GetEnvironmentVariable("BlobConnectionString");
+                var blobConn = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
                 if (string.IsNullOrWhiteSpace(blobConn))
                 {
                     return null;
@@ -184,7 +184,7 @@ ORDER BY gs.TableId DESC";
         {
             try
             {
-                var blobConn = Environment.GetEnvironmentVariable("BlobConnectionString");
+                var blobConn = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
                 if (string.IsNullOrWhiteSpace(blobConn))
                 {
                     return;

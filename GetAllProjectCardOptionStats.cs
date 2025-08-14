@@ -9,14 +9,14 @@ using BgaTmScraperRegistry.Services;
 
 namespace BgaTmScraperRegistry.Functions
 {
-    public static class GetAllCorporationStats
+    public static class GetAllProjectCardOptionStats
     {
-        [FunctionName(nameof(GetAllCorporationStats))]
+        [FunctionName(nameof(GetAllProjectCardOptionStats))]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "corporations/playerstats")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "cards/option-stats")] HttpRequest req,
             ILogger log)
         {
-            log.LogInformation("GetAllCorporationStats function processed a request");
+            log.LogInformation("GetAllProjectCardOptionStats function processed a request");
 
             try
             {
@@ -27,15 +27,15 @@ namespace BgaTmScraperRegistry.Functions
                     return new StatusCodeResult(500);
                 }
 
-                var service = new CorporationStatsService(connectionString, log);
-                var rows = await service.GetAllCorporationPlayerStatsAsync();
+                var cardStatsService = new CardStatsService(connectionString, log);
+                var projectCardOptionStats = await cardStatsService.GetProjectCardOptionStatsAsync();
 
-                log.LogInformation($"Returning {rows.Count} corporation player stats rows");
-                return new OkObjectResult(rows);
+                log.LogInformation($"Returning {projectCardOptionStats.Count} project card option stats (excluding preludes)");
+                return new OkObjectResult(projectCardOptionStats);
             }
             catch (Exception ex)
             {
-                log.LogError(ex, "Error occurred while getting all corporation player stats");
+                log.LogError(ex, "Error occurred while getting project card option stats");
                 return new StatusCodeResult(500);
             }
         }

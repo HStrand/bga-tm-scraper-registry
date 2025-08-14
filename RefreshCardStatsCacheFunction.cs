@@ -28,6 +28,7 @@ namespace BgaTmScraperRegistry.Functions
 
                 var service = new CardStatsService(connectionString, log);
                 await service.RefreshAllCardStatsCacheAsync();
+                await service.RefreshAllCardOptionStatsCacheAsync();
 
                 log.LogInformation("RefreshCardStatsCache completed successfully at: {time}", DateTime.UtcNow);
             }

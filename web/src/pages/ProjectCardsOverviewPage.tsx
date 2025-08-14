@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useCookieState } from '@/hooks/useCookieState';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { ProjectCardStatsRow, ProjectCardOverviewRow, ProjectCardOverviewFilters } from '@/types/projectcard';
+import { ProjectCardStatsRow, ProjectCardOverviewRow, ProjectCardOverviewFilters, CardStatsMode } from '@/types/projectcard';
 import { Button } from '@/components/ui/button';
 import { getAllProjectCardStatsCached, clearAllProjectCardStatsCache } from '@/lib/cardCache';
 import { getCardImage, getCardPlaceholderImage, slugToCardName, cardNameToSlug } from '@/lib/card';
@@ -19,6 +19,7 @@ export function ProjectCardsOverviewPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [statsMode, setStatsMode] = useState<CardStatsMode>('played');
 
   // Hover preview tooltip state
   const [hoveredCard, setHoveredCard] = useState<{ slug: string; imageSrc: string; name: string } | null>(null);
@@ -86,7 +87,7 @@ export function ProjectCardsOverviewPage() {
       try {
         setLoading(true);
         setError(null);
-        const response = await getAllProjectCardStatsCached();
+        const response = await getAllProjectCardStatsCached(false, statsMode);
         setData(response);
       } catch (err) {
         console.error('Error fetching project card stats:', err);
@@ -97,7 +98,7 @@ export function ProjectCardsOverviewPage() {
     };
 
     fetchData();
-  }, []);
+  }, [statsMode]);
 
   // Convert API data to overview rows
   const cardOverview = useMemo((): ProjectCardOverviewRow[] => {
@@ -222,7 +223,7 @@ export function ProjectCardsOverviewPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await getAllProjectCardStatsCached(true); // Force refresh
+      const response = await getAllProjectCardStatsCached(true, statsMode); // Force refresh
       setData(response);
     } catch (err) {
       console.error('Error refreshing project card stats:', err);
@@ -230,6 +231,11 @@ export function ProjectCardsOverviewPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleStatsModeChange = (newMode: CardStatsMode) => {
+    setStatsMode(newMode);
+    setCurrentPage(1); // Reset to first page when mode changes
   };
 
   const handleFiltersChange = useCallback((newFilters: ProjectCardOverviewFilters) => {
@@ -320,6 +326,41 @@ export function ProjectCardsOverviewPage() {
                     Filters
                   </h3>
                   
+                  {/* Stats Mode Toggle */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Stats Mode
+                    </label>
+                    <div className="flex rounded-lg border border-slate-300 dark:border-slate-600 overflow-hidden">
+                      <button
+                        onClick={() => handleStatsModeChange('played')}
+                        className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
+                          statsMode === 'played'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
+                        }`}
+                      >
+                        When Played
+                      </button>
+                      <button
+                        onClick={() => handleStatsModeChange('option')}
+                        className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
+                          statsMode === 'option'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
+                        }`}
+                      >
+                        When Option
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      {statsMode === 'played' 
+                        ? 'Stats for when the card was actually played'
+                        : 'Stats for when the player had the option to keep the card'
+                      }
+                    </p>
+                  </div>
+
                   {/* Min times played filter */}
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -421,12 +462,14 @@ export function ProjectCardsOverviewPage() {
                         >
                           Avg Elo Gain {getSortIcon('avgEloChange')}
                         </th>
-                        <th 
-                          className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
-                          onClick={() => handleSort('totalGames')}
-                        >
-                          Times Played {getSortIcon('totalGames')}
-                        </th>
+                        {statsMode === 'played' && (
+                          <th 
+                            className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
+                            onClick={() => handleSort('totalGames')}
+                          >
+                            Times Played {getSortIcon('totalGames')}
+                          </th>
+                        )}
                         <th 
                           className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
                           onClick={() => handleSort('avgElo')}
@@ -477,9 +520,11 @@ export function ProjectCardsOverviewPage() {
                             <td className="px-4 py-3 text-sm">
                               {getEloChangeDisplay(row.avgEloChange)}
                             </td>
-                            <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                              {row.totalGames.toLocaleString()}
-                            </td>
+                            {statsMode === 'played' && (
+                              <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                                {row.totalGames.toLocaleString()}
+                              </td>
+                            )}
                             <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                               {row.avgElo != null ? row.avgElo.toFixed(0) : 'N/A'}
                             </td>

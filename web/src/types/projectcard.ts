@@ -89,3 +89,5 @@ export interface ProjectCardOverviewFilters {
   timesPlayedMin?: number;
   searchTerm?: string;
 }
+
+export type CardStatsMode = 'played' | 'option';
