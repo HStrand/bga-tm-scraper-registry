@@ -1,10 +1,31 @@
+import { useState, useRef } from 'react';
 import { GenerationData } from '@/types/projectcard';
+import { ChartTooltip, TooltipContent } from './ChartTooltip';
 
 interface EloGainByGenerationProps {
   data: GenerationData[];
 }
 
+interface TooltipData {
+  generation: number;
+  avgEloChange: number;
+  gameCount: number;
+}
+
 export function EloGainByGeneration({ data }: EloGainByGenerationProps) {
+  const [hoveredPoint, setHoveredPoint] = useState<TooltipData | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const handlePointHover = (pointData: TooltipData, event: React.MouseEvent) => {
+    setHoveredPoint(pointData);
+    setMousePos({ x: event.clientX, y: event.clientY });
+  };
+
+  const handlePointLeave = () => {
+    setHoveredPoint(null);
+  };
+
   if (data.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
@@ -54,7 +75,7 @@ export function EloGainByGeneration({ data }: EloGainByGenerationProps) {
         Avg Elo Gain by Generation
       </h3>
       
-      <div className="relative">
+      <div ref={chartRef} className="relative">
         <svg width={chartWidth} height={chartHeight} className="w-full h-auto">
           {/* Grid lines */}
           <defs>
@@ -112,6 +133,12 @@ export function EloGainByGeneration({ data }: EloGainByGenerationProps) {
             const eloChange = data[index].avgEloChange;
             const isPositive = eloChange >= 0;
             
+            const pointData: TooltipData = {
+              generation: data[index].generation,
+              avgEloChange: eloChange,
+              gameCount: data[index].gameCount,
+            };
+            
             return (
               <g key={index}>
                 <circle
@@ -121,18 +148,16 @@ export function EloGainByGeneration({ data }: EloGainByGenerationProps) {
                   fill="currentColor"
                   className={isPositive ? "text-green-500" : "text-red-500"}
                 />
-                {/* Tooltip on hover */}
+                {/* Larger invisible circle for easier hovering */}
                 <circle
                   cx={point.x}
                   cy={point.y}
-                  r="8"
+                  r="12"
                   fill="transparent"
-                  className="hover:fill-blue-100 dark:hover:fill-blue-900 cursor-pointer"
-                >
-                  <title>
-                    Generation {data[index].generation}: {eloChange > 0 ? '+' : ''}{eloChange.toFixed(2)} avg elo change ({data[index].gameCount} games)
-                  </title>
-                </circle>
+                  className="cursor-pointer"
+                  onMouseEnter={(e) => handlePointHover(pointData, e)}
+                  onMouseLeave={handlePointLeave}
+                />
               </g>
             );
           })}
@@ -170,6 +195,29 @@ export function EloGainByGeneration({ data }: EloGainByGenerationProps) {
       <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
         Shows average elo change when card is played in each generation
       </div>
+
+      <ChartTooltip
+        visible={!!hoveredPoint}
+        x={mousePos.x}
+        y={mousePos.y}
+      >
+        {hoveredPoint && (
+          <TooltipContent
+            title={`Generation ${hoveredPoint.generation}`}
+            stats={[
+              {
+                label: 'Avg Elo Change',
+                value: `${hoveredPoint.avgEloChange > 0 ? '+' : ''}${hoveredPoint.avgEloChange.toFixed(2)}`,
+                color: hoveredPoint.avgEloChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              },
+              {
+                label: 'Games',
+                value: hoveredPoint.gameCount.toLocaleString(),
+              }
+            ]}
+          />
+        )}
+      </ChartTooltip>
     </div>
   );
 }
