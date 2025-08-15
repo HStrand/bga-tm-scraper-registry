@@ -1,10 +1,31 @@
+import { useState, useRef } from 'react';
 import { GenerationData } from '@/types/projectcard';
+import { ChartTooltip, TooltipContent } from './ChartTooltip';
 
 interface WinRateByGenerationProps {
   data: GenerationData[];
 }
 
+interface TooltipData {
+  generation: number;
+  winRate: number;
+  gameCount: number;
+}
+
 export function WinRateByGeneration({ data }: WinRateByGenerationProps) {
+  const [hoveredPoint, setHoveredPoint] = useState<TooltipData | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const handlePointHover = (pointData: TooltipData, event: React.MouseEvent) => {
+    setHoveredPoint(pointData);
+    setMousePos({ x: event.clientX, y: event.clientY });
+  };
+
+  const handlePointLeave = () => {
+    setHoveredPoint(null);
+  };
+
   if (data.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
@@ -53,7 +74,7 @@ export function WinRateByGeneration({ data }: WinRateByGenerationProps) {
         Win Rate by Generation
       </h3>
       
-      <div className="relative">
+      <div ref={chartRef} className="relative">
         <svg width={chartWidth} height={chartHeight} className="w-full h-auto">
           {/* Grid lines */}
           <defs>
@@ -95,29 +116,35 @@ export function WinRateByGeneration({ data }: WinRateByGenerationProps) {
           />
           
           {/* Data points */}
-          {points.map((point, index) => (
-            <g key={index}>
-              <circle
-                cx={point.x}
-                cy={point.y}
-                r="4"
-                fill="currentColor"
-                className="text-blue-500"
-              />
-              {/* Tooltip on hover */}
-              <circle
-                cx={point.x}
-                cy={point.y}
-                r="8"
-                fill="transparent"
-                className="hover:fill-blue-100 dark:hover:fill-blue-900 cursor-pointer"
-              >
-                <title>
-                  Generation {data[index].generation}: {(data[index].winRate * 100).toFixed(1)}% win rate ({data[index].gameCount} games)
-                </title>
-              </circle>
-            </g>
-          ))}
+          {points.map((point, index) => {
+            const pointData: TooltipData = {
+              generation: data[index].generation,
+              winRate: data[index].winRate,
+              gameCount: data[index].gameCount,
+            };
+
+            return (
+              <g key={index}>
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r="4"
+                  fill="currentColor"
+                  className="text-blue-500"
+                />
+                {/* Larger invisible circle for easier hovering */}
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r="12"
+                  fill="transparent"
+                  className="cursor-pointer"
+                  onMouseEnter={(e) => handlePointHover(pointData, e)}
+                  onMouseLeave={handlePointLeave}
+                />
+              </g>
+            );
+          })}
           
           {/* Y-axis labels */}
           {[0, 0.25, 0.5, 0.75, 1].map(value => (
@@ -152,6 +179,29 @@ export function WinRateByGeneration({ data }: WinRateByGenerationProps) {
       <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
         Shows win rate when card is played in each generation
       </div>
+
+      <ChartTooltip
+        visible={!!hoveredPoint}
+        x={mousePos.x}
+        y={mousePos.y}
+      >
+        {hoveredPoint && (
+          <TooltipContent
+            title={`Generation ${hoveredPoint.generation}`}
+            stats={[
+              {
+                label: 'Win Rate',
+                value: `${(hoveredPoint.winRate * 100).toFixed(1)}%`,
+                color: 'text-blue-600 dark:text-blue-400'
+              },
+              {
+                label: 'Games',
+                value: hoveredPoint.gameCount.toLocaleString(),
+              }
+            ]}
+          />
+        )}
+      </ChartTooltip>
     </div>
   );
 }
