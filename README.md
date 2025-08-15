@@ -355,16 +355,24 @@ GET /api/download-latest-zip
 
 ## Development
 
-### Prerequisites
+### Development Setup Options
+
+For **frontend development** with cloud backend integration, see: 📋 **[Cloud Development Setup Guide](CLOUD_DEVELOPMENT_SETUP.md)**
+
+This approach allows you to develop the web interface locally while using the live Azure Functions backend, perfect for UI development without complex local backend setup.
+
+### Backend Development
+
+#### Prerequisites
 - .NET 8.0
 - Azure Functions Core Tools
 
-### Dependencies
+#### Dependencies
 - Microsoft.NET.Sdk.Functions
 - Dapper (ORM)
 - Microsoft.Data.SqlClient (SQL Server connectivity)
 
-### Local Development
+#### Local Azure Functions Development
 1. Configure `local.settings.json` with your SQL connection string
 2. Run `dotnet restore` to install dependencies
 3. Run `dotnet build` to build the project
