@@ -171,11 +171,6 @@ namespace BgaTmScraperRegistry.Services
                     continue;
                 }
 
-                if (playerId != int.Parse(gameLogData.PlayerPerspective))
-                {
-                    continue; // Starting hands should only be present for the PoV player
-                }
-
                 var playerLog = playerEntry.Value;
 
                 // Check if starting hand exists and has corporations
@@ -219,11 +214,6 @@ namespace BgaTmScraperRegistry.Services
                 {
                     Console.WriteLine($"Could not parse player ID '{playerEntry.Key}' for table '{tableId}'. Skipping player.");
                     continue;
-                }
-
-                if (playerId != int.Parse(gameLogData.PlayerPerspective))
-                {
-                    continue; // Starting hands should only be present for the PoV player
                 }
 
                 var playerLog = playerEntry.Value;
@@ -280,12 +270,6 @@ namespace BgaTmScraperRegistry.Services
                     Console.WriteLine($"Could not parse player ID '{playerEntry.Key}' for table '{tableId}'. Skipping player.");
                     continue;
                 }
-
-                if(playerId != int.Parse(gameLogData.PlayerPerspective))
-                {
-                    continue; // Starting hands should only be present for the PoV player
-                }
-
                 var playerLog = playerEntry.Value;
                 var offered = playerLog?.StartingHand?.ProjectCards;
                 if (offered == null || offered.Count == 0)
@@ -1123,75 +1107,6 @@ namespace BgaTmScraperRegistry.Services
                     if (!gc.DrawnGen.HasValue) gc.DrawnGen = 1;
                     if (gc.DrawType == null) gc.DrawType = "StartingHand";
                     if (gc.DrawReason == null) gc.DrawReason = "Starting Hand";
-                }
-            }
-
-            // Fallback for missing starting_hand: recover POV starting-hand buys from early setup window
-            if ((povPlayer?.StartingHand?.ProjectCards == null || povPlayer.StartingHand.ProjectCards.Count == 0) && gameLogData.Moves != null)
-            {
-                var draftBoundary = gameLogData.Moves.FirstOrDefault(m => (m.Description ?? string.Empty).IndexOf("Research draft", StringComparison.OrdinalIgnoreCase) >= 0);
-                int? draftBoundaryMove = draftBoundary?.MoveNumber;
-
-                var firstPovPlay = gameLogData.Moves.FirstOrDefault(m =>
-                    m != null &&
-                    m.MoveNumber.HasValue &&
-                    string.Equals(m.PlayerId, gameLogData.PlayerPerspective, StringComparison.Ordinal) &&
-                    string.Equals(m.ActionType, "play_card", StringComparison.OrdinalIgnoreCase));
-                int? firstPovPlayMove = firstPovPlay?.MoveNumber;
-
-                foreach (var m in gameLogData.Moves.Where(m =>
-                    m != null &&
-                    string.Equals(m.PlayerId, gameLogData.PlayerPerspective, StringComparison.Ordinal) &&
-                    m.GameState?.Generation == 1 &&
-                    m.MoveNumber.HasValue &&
-                    (draftBoundaryMove == null || m.MoveNumber.Value < draftBoundaryMove.Value) &&
-                    (firstPovPlayMove == null || m.MoveNumber.Value <= firstPovPlayMove.Value)))
-                {
-                    var d = m.Description ?? string.Empty;
-                    if (string.IsNullOrWhiteSpace(d)) continue;
-                    var parts = d.Split('|');
-                    foreach (var part in parts)
-                    {
-                        var s = part.Trim();
-
-                        // "You buy <Card>"
-                        const string youBuy = "You buy ";
-                        if (s.StartsWith(youBuy, StringComparison.OrdinalIgnoreCase))
-                        {
-                            var name = s.Substring(youBuy.Length).Trim();
-                            if (!string.IsNullOrWhiteSpace(name))
-                            {
-                                var gc = GetOrCreate(name);
-                                if (!gc.SeenGen.HasValue) gc.SeenGen = 1;
-                                if (!gc.DrawnGen.HasValue) gc.DrawnGen = 1;
-                                if (!gc.KeptGen.HasValue) gc.KeptGen = 1;
-                                if (!gc.BoughtGen.HasValue) gc.BoughtGen = 1;
-                                if (gc.DrawType == null) gc.DrawType = "StartingHand";
-                                if (gc.DrawReason == null) gc.DrawReason = "Starting Hand";
-                            }
-                            continue;
-                        }
-
-                        // "<POV name> buys <Card>"
-                        if (!string.IsNullOrEmpty(m.PlayerName))
-                        {
-                            var nameBuyPrefix = m.PlayerName + " buys ";
-                            if (s.StartsWith(nameBuyPrefix, StringComparison.OrdinalIgnoreCase))
-                            {
-                                var name = s.Substring(nameBuyPrefix.Length).Trim();
-                                if (!string.IsNullOrWhiteSpace(name))
-                                {
-                                    var gc = GetOrCreate(name);
-                                    if (!gc.SeenGen.HasValue) gc.SeenGen = 1;
-                                    if (!gc.DrawnGen.HasValue) gc.DrawnGen = 1;
-                                    if (!gc.KeptGen.HasValue) gc.KeptGen = 1;
-                                    if (!gc.BoughtGen.HasValue) gc.BoughtGen = 1;
-                                    if (gc.DrawType == null) gc.DrawType = "StartingHand";
-                                    if (gc.DrawReason == null) gc.DrawReason = "Starting Hand";
-                                }
-                            }
-                        }
-                    }
                 }
             }
 
