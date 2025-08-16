@@ -270,4 +270,5 @@ __pycache__/
 # Web build
 web/dist/
 web/.env.local
+web/.env.production
 web/package-lock.json
