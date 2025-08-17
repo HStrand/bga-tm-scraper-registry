@@ -76,7 +76,7 @@ namespace BgaTmScraperRegistry.Services
         {
             var mergeQuery = @"
                 MERGE GameStats AS target
-                USING (SELECT @TableId AS TableId, @Generations AS Generations, @DurationMinutes AS DurationMinutes, @PlayerCount AS PlayerCount, @Winner AS Winner, @UpdatedAt AS UpdatedAt) AS source
+                USING (SELECT @TableId AS TableId, @Generations AS Generations, @DurationMinutes AS DurationMinutes, @PlayerCount AS PlayerCount, @Winner AS Winner, @UpdatedAt AS UpdatedAt, @Conceded as Conceded) AS source
                 ON target.TableId = source.TableId
                 WHEN MATCHED THEN
                     UPDATE SET 
@@ -84,10 +84,11 @@ namespace BgaTmScraperRegistry.Services
                         DurationMinutes = source.DurationMinutes,
                         PlayerCount = source.PlayerCount,
                         Winner = source.Winner,
+                        Conceded = source.Conceded,
                         UpdatedAt = source.UpdatedAt
                 WHEN NOT MATCHED THEN
-                    INSERT (TableId, Generations, DurationMinutes, PlayerCount, Winner, UpdatedAt)
-                    VALUES (source.TableId, source.Generations, source.DurationMinutes, source.PlayerCount, source.Winner, source.UpdatedAt);";
+                    INSERT (TableId, Generations, DurationMinutes, PlayerCount, Winner, UpdatedAt, Conceded)
+                    VALUES (source.TableId, source.Generations, source.DurationMinutes, source.PlayerCount, source.Winner, source.UpdatedAt, source.Conceded);";
 
             await connection.ExecuteAsync(
                 mergeQuery,
@@ -96,8 +97,9 @@ namespace BgaTmScraperRegistry.Services
                     gameStats.TableId,
                     gameStats.Generations,
                     gameStats.DurationMinutes,
-                    PlayerCount = gameStats.PlayerCount,
-                    Winner = gameStats.Winner,
+                    gameStats.PlayerCount,
+                    gameStats.Winner,
+                    gameStats.Conceded,
                     gameStats.UpdatedAt
                 },
                 transaction);

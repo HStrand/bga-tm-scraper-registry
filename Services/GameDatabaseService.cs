@@ -392,7 +392,7 @@ namespace BgaTmScraperRegistry.Services
             return count > 0;
         }
 
-        public async Task<bool> UpdateGameScrapedInfoAsync(int tableId, int playerPerspective, DateTime scrapedAt, string scrapedBy)
+        public async Task<bool> UpdateGameScrapedInfoAsync(int tableId, int playerPerspective, DateTime scrapedAt, string scrapedBy, string version)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -401,7 +401,7 @@ namespace BgaTmScraperRegistry.Services
 
             var query = @"
                 UPDATE Games 
-                SET ScrapedAt = @scrapedAt, ScrapedBy = @scrapedBy 
+                SET ScrapedAt = @scrapedAt, ScrapedBy = @scrapedBy, ScraperVersion = @version
                 WHERE TableId = @tableId AND PlayerPerspective = @playerPerspective";
             
             var rowsAffected = await connection.ExecuteAsync(query, new 
@@ -409,7 +409,8 @@ namespace BgaTmScraperRegistry.Services
                 tableId, 
                 playerPerspective, 
                 scrapedAt, 
-                scrapedBy = scrapedByTruncated 
+                scrapedBy = scrapedByTruncated,
+                version,
             });
             
             _logger.LogInformation($"Updated {rowsAffected} game record(s) for TableId {tableId}, PlayerPerspective {playerPerspective}");

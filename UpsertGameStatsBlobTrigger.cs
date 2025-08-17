@@ -15,6 +15,7 @@ namespace BgaTmScraperRegistry
         // Triggers on any blob created/updated in the "games" container (including subfolders).
         // Uses the same logic as UpsertGameStatsFunction: parse GameLogData JSON and upsert stats.
         // Connection points at the same storage account used elsewhere in this project.
+        [Disable("disableTriggers")]
         [FunctionName("UpsertGameStatsOnBlobUpload")]
         public static async Task Run(
             [BlobTrigger("games/{name}", Connection = "BlobStorageConnectionString")] Stream blobStream,

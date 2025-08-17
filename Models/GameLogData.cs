@@ -45,6 +45,9 @@ namespace BgaTmScraperRegistry.Models
         [JsonProperty("beginners_corporations_on")]
         public bool? BeginnersCorporationsOn { get; set; }
 
+        [JsonProperty("conceded")]
+        public bool? Conceded { get; set; }
+
         [JsonProperty("game_speed")]
         public string GameSpeed { get; set; }
 
@@ -145,7 +148,7 @@ namespace BgaTmScraperRegistry.Models
 
         [JsonProperty("card_played")]
         public string CardPlayed { get; set; }
-
+        
         [JsonProperty("card_cost")]
         public int? CardCost { get; set; }
 
@@ -154,6 +157,13 @@ namespace BgaTmScraperRegistry.Models
 
         [JsonProperty("tile_location")]
         public string TileLocation { get; set; }
+
+        [JsonProperty("card_options")]
+        public Dictionary<string, List<string>> CardOptions { get; set; }
+
+        [JsonProperty("cards_kept")]
+        public Dictionary<string, List<string>> CardsKept { get; set; }
+
 
         [JsonProperty("game_state")]
         public GameState GameState { get; set; }

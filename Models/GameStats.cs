@@ -10,6 +10,7 @@ namespace BgaTmScraperRegistry.Models
         public int? DurationMinutes { get; set; }
         public int? PlayerCount { get; set; }
         public int? Winner { get; set; }
+        public bool? Conceded { get; set; }
         public DateTime UpdatedAt { get; set; }
     }
 }

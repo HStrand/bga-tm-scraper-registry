@@ -149,7 +149,8 @@ namespace BgaTmScraperRegistry
                     tableId, 
                     playerPerspective, 
                     currentTime, 
-                    scrapedBy);
+                    scrapedBy,
+                    version);
 
                 if (!updateSuccess)
                 {

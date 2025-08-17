@@ -71,6 +71,8 @@ namespace BgaTmScraperRegistry.Services
             // Player count (length of players list)
             int? playerCount = gameLogData.Players?.Count ?? 0;
 
+            bool? conceded = gameLogData.Conceded;
+
             // Winner resolution:
             // 1) If winner is numeric, parse as player id
             // 2) Otherwise try to match winner string to a player's PlayerName (case-insensitive) and use that player's PlayerId
@@ -101,6 +103,7 @@ namespace BgaTmScraperRegistry.Services
                 DurationMinutes = durationMinutes,
                 PlayerCount = playerCount,
                 Winner = winner,
+                Conceded = conceded,
                 UpdatedAt = DateTime.UtcNow
             };
 
@@ -271,11 +274,18 @@ namespace BgaTmScraperRegistry.Services
                     continue;
                 }
                 var playerLog = playerEntry.Value;
-                var offered = playerLog?.StartingHand?.ProjectCards;
-                if (offered == null || offered.Count == 0)
+                var projectCardsInStartingHand = playerLog?.StartingHand?.ProjectCards;
+                if (projectCardsInStartingHand == null || projectCardsInStartingHand.Count == 0)
                 {
                     continue;
                 }
+
+                // Get opening keeps from cards_kept dictionary
+                var playerOpeningKeeps = gameLogData.Moves
+                    .FirstOrDefault(move => move.CardsKept != null && 
+                    move.CardsKept.ContainsKey(playerEntry.Key) &&
+                    move.CardsKept[playerEntry.Key].Any(cardKept => projectCardsInStartingHand.Contains(cardKept)))
+                    .CardsKept[playerEntry.Key];
 
                 // Find earliest move for this player containing "You buy"
                 var earliestBuyMove = gameLogData.Moves?
@@ -308,7 +318,7 @@ namespace BgaTmScraperRegistry.Services
                 }
 
                 // Emit one row per offered starting-hand project card
-                foreach (var card in offered)
+                foreach (var card in projectCardsInStartingHand)
                 {
                     if (string.IsNullOrWhiteSpace(card)) continue;
 
@@ -317,7 +327,7 @@ namespace BgaTmScraperRegistry.Services
                         TableId = tableId,
                         PlayerId = playerId,
                         Card = card,
-                        Kept = bought.Contains(card),
+                        Kept = playerOpeningKeeps.Contains(card) || bought.Contains(card),
                         UpdatedAt = DateTime.UtcNow
                     });
                 }
