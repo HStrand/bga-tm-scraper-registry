@@ -10,6 +10,7 @@ namespace BgaTmScraperRegistry.Functions
     {
         // Runs every 10 minutes. Adjust the CRON as needed.
         // Format: {second} {minute} {hour} {day} {month} {day-of-week}
+        [Disable("disableTriggers")]
         [FunctionName(nameof(RefreshCardStatsCache))]
         public static async Task Run(
             [TimerTrigger("0 */10 * * * *")] TimerInfo timer,
