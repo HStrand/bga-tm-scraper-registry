@@ -59,6 +59,8 @@ export interface CorporationFilters {
   preludeOn?: boolean;
   coloniesOn?: boolean;
   draftOn?: boolean;
+  generationsMin?: number;
+  generationsMax?: number;
   // Optional: used on Project Card details page to filter by the generation the card was played
   playedGenMin?: number;
   playedGenMax?: number;

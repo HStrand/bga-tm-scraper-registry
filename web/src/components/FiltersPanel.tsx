@@ -11,6 +11,7 @@ interface FiltersPanelProps {
   availableGameSpeeds: string[];
   availablePlayerNames: string[];
   eloRange: { min: number; max: number };
+  generationsRange?: { min: number; max: number };
   timesPlayedRange?: { min: number; max: number };
   playedGenRange?: { min: number; max: number };
 }
@@ -24,6 +25,7 @@ export function FiltersPanel({
   availableGameSpeeds,
   availablePlayerNames,
   eloRange,
+  generationsRange,
   timesPlayedRange,
   playedGenRange,
 }: FiltersPanelProps) {
@@ -194,6 +196,39 @@ export function FiltersPanel({
           </div>
         </div>
       </div>
+
+      {/* Generations */}
+      {generationsRange && (
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Generations
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <input
+                type="number"
+                placeholder={`Min (${generationsRange.min})`}
+                value={localFilters.generationsMin ?? ''}
+                onChange={(e) => updateFilters({
+                  generationsMin: e.target.value !== '' ? Number(e.target.value) : undefined
+                })}
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <input
+                type="number"
+                placeholder={`Max (${generationsRange.max})`}
+                value={localFilters.generationsMax ?? ''}
+                onChange={(e) => updateFilters({
+                  generationsMax: e.target.value !== '' ? Number(e.target.value) : undefined
+                })}
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Times Played Range */}
       {timesPlayedRange && (
@@ -553,7 +588,8 @@ export function FiltersPanel({
            localFilters.gameModes.length !== availableGameModes.length ||
            localFilters.gameSpeeds.length !== availableGameSpeeds.length ||
            localFilters.playedGenMin !== undefined || localFilters.playedGenMax !== undefined ||
-           localFilters.timesPlayedMin !== undefined || localFilters.timesPlayedMax !== undefined
+           localFilters.timesPlayedMin !== undefined || localFilters.timesPlayedMax !== undefined ||
+           localFilters.generationsMin !== undefined || localFilters.generationsMax !== undefined
             ? 'Filters active'
             : 'No filters applied'
           }
