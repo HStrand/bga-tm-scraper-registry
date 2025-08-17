@@ -172,6 +172,14 @@ export function CorporationsOverviewPage() {
     };
   }, [data]);
 
+  const generationsRange = useMemo(() => {
+    const gens = data.map(row => row.generations).filter(Boolean) as number[];
+    return {
+      min: Math.min(...gens) || 0,
+      max: Math.max(...gens) || 20,
+    };
+  }, [data]);
+
 
   // Filter data based on current filters
   const filteredData = useMemo(() => {
@@ -199,6 +207,10 @@ export function CorporationsOverviewPage() {
       if (filters.preludeOn !== undefined && row.preludeOn !== filters.preludeOn) return false;
       if (filters.coloniesOn !== undefined && row.coloniesOn !== filters.coloniesOn) return false;
       if (filters.draftOn !== undefined && row.draftOn !== filters.draftOn) return false;
+
+      // Generations filter
+      if (filters.generationsMin !== undefined && (row.generations === undefined || row.generations < filters.generationsMin)) return false;
+      if (filters.generationsMax !== undefined && (row.generations === undefined || row.generations > filters.generationsMax)) return false;
 
       return true;
     });
@@ -442,6 +454,7 @@ export function CorporationsOverviewPage() {
                   availableGameSpeeds={availableGameSpeeds}
                   availablePlayerNames={availablePlayerNames}
                   eloRange={eloRange}
+                  generationsRange={generationsRange}
                   timesPlayedRange={timesPlayedRange}
                 />
               )}
