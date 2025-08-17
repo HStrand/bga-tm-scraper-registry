@@ -66,6 +66,24 @@ namespace BgaTmScraperRegistry.Functions
                 }
 
                 var sql = @"
+WITH best_g AS (
+    SELECT g.TableId, g.Map, g.PreludeOn, g.ColoniesOn, g.DraftOn,
+           g.GameMode, g.GameSpeed,
+           rn = ROW_NUMBER() OVER (
+               PARTITION BY g.TableId
+               ORDER BY g.IndexedAt DESC, g.Id DESC   -- pick the most recent row per game
+           )
+    FROM Games g
+),
+best_gp AS (
+    SELECT gp.TableId, gp.PlayerId,
+           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position,
+           rn = ROW_NUMBER() OVER (
+               PARTITION BY gp.TableId, gp.PlayerId
+               ORDER BY gp.GameId DESC                -- pick latest row per player in game
+           )
+    FROM GamePlayers gp
+)
 SELECT
     gs.TableId,
     g.Map,
@@ -85,16 +103,21 @@ SELECT
     gps.AwardPoints,
     gps.CardPoints,
     gps.PlayerId,
-    gp.PlayerName AS PlayerName,
+    gp.PlayerName,
     gp.Elo,
     gp.EloChange,
     gp.Position
 FROM GamePlayerStats gps
-INNER JOIN Games g ON gps.TableId = g.TableId
-INNER JOIN GameStats gs ON gs.TableId = gps.TableId
-INNER JOIN GamePlayers gp ON gp.TableId = gs.TableId AND gp.PlayerId = gps.PlayerId
-WHERE LOWER(gps.Corporation) = LOWER(@Corporation)
-ORDER BY gs.TableId DESC";
+JOIN GameStats gs
+  ON gs.TableId = gps.TableId
+JOIN best_g g
+  ON g.TableId = gps.TableId AND g.rn = 1
+JOIN best_gp gp
+  ON gp.TableId = gps.TableId
+ AND gp.PlayerId = gps.PlayerId
+ AND gp.rn = 1
+WHERE gps.Corporation = @Corporation
+ORDER BY gs.TableId DESC;";
 
                 using var conn = new SqlConnection(connectionString);
                 await conn.OpenAsync();
