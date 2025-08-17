@@ -167,6 +167,9 @@ namespace BgaTmScraperRegistry.Models
         [JsonProperty("cards_kept")]
         public Dictionary<string, List<string>> CardsKept { get; set; }
 
+        [JsonProperty("reason")]
+        public string Reason { get; set; }
+
 
         [JsonProperty("game_state")]
         public GameState GameState { get; set; }

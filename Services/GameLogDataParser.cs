@@ -1151,7 +1151,7 @@ namespace BgaTmScraperRegistry.Services
                     // KeptGen from cards_kept: when players keep specific cards
                     if (move.CardsKept != null && gen.HasValue)
                     {
-                        ProcessCardsKept(move, gen.Value, (pid, name) => GetOrCreateForPlayer(pid, name));
+                        ProcessCardsKept(gameLogData, move, gen.Value, (pid, name) => GetOrCreateForPlayer(pid, name));
                     }
 
                     EnqueueTriggeredCardDrawEffects(move, desc, pendingEffectsByPlayer, drawEventNoByPlayer);
@@ -1893,6 +1893,8 @@ namespace BgaTmScraperRegistry.Services
             if (move?.CardOptions == null || move.CardOptions.Count == 0) return;
             var desc = move.Description ?? string.Empty;
 
+            bool isStartOfDraft = desc.IndexOf("drafts 4 cards", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool hasActionTypeDraft = move.ActionType == "draft";
             bool hasResearchDraft = desc.IndexOf("Research draft", StringComparison.OrdinalIgnoreCase) >= 0;
             bool draws4Any = desc.IndexOf("draws 4 card", StringComparison.OrdinalIgnoreCase) >= 0;
             bool actionPass = string.Equals(move.ActionType, "pass", StringComparison.OrdinalIgnoreCase);
@@ -1917,7 +1919,7 @@ namespace BgaTmScraperRegistry.Services
 
                 var drawnNames = new List<string>();
                 foreach (var cardName in cardList)
-                {
+                {                    
                     if (string.IsNullOrWhiteSpace(cardName)) continue;
                     drawnNames.Add(cardName);
                     var gc = getOrCreateForPlayer(playerId, cardName);
@@ -1926,7 +1928,7 @@ namespace BgaTmScraperRegistry.Services
                 }
 
                 bool optionCount4 = cardList.Count == 4;
-                bool isDraft = hasResearchDraft || (draws4Any && (actionPass || prevGenLower || mentionsNewGen || optionCount4));
+                bool isDraft = isStartOfDraft || hasActionTypeDraft || hasResearchDraft || (draws4Any && (actionPass || prevGenLower || mentionsNewGen || optionCount4));
                 bool classifiedAsDraft = false;
                 if (isDraft && drawnNames.Count > 0)
                 {
@@ -2107,6 +2109,11 @@ namespace BgaTmScraperRegistry.Services
             if (string.IsNullOrWhiteSpace(move?.CardDrafted)) return;
             if (!int.TryParse(move.PlayerId, out int draftingPlayerId)) return;
 
+            if (data.Players[draftingPlayerId.ToString()].StartingHand.Corporations.Contains(move.CardDrafted))
+            {
+                return; // Skip corporations
+            }
+
             var gc = getOrCreateForPlayer(draftingPlayerId, move.CardDrafted);
             if (!gc.SeenGen.HasValue) gc.SeenGen = gen;
             if (!gc.DrawnGen.HasValue) gc.DrawnGen = gen;
@@ -2127,6 +2134,7 @@ namespace BgaTmScraperRegistry.Services
 
         // Helper: process the new JSON cards_kept for all players
         private static void ProcessCardsKept(
+            GameLogData data,
             GameLogMove move,
             int gen,
             Func<int, string, GameCard> getOrCreateForPlayer)
@@ -2141,11 +2149,25 @@ namespace BgaTmScraperRegistry.Services
 
                 foreach (var cardName in keptCardList)
                 {
+                    if (data.Players[keepingPlayerId.ToString()].StartingHand.Corporations.Contains(cardName))
+                    {
+                        continue; // Skip corporations
+                    }
+
                     if (string.IsNullOrWhiteSpace(cardName)) continue;
                     var gc = getOrCreateForPlayer(keepingPlayerId, cardName);
                     if (!gc.SeenGen.HasValue) gc.SeenGen = gen;
                     if (!gc.KeptGen.HasValue) gc.KeptGen = gen;
                     if (!gc.DrawnGen.HasValue) gc.DrawnGen = gen; // kept implies drawn
+
+                    if (data.Players[keepingPlayerId.ToString()].StartingHand != null)
+                    {
+                        if (data.Players[keepingPlayerId.ToString()].StartingHand.Preludes.Contains(cardName))
+                        {
+                            gc.DrawType = "StartingHand";
+                            gc.DrawReason = "Starting Hand";
+                        }
+                    }
                 }
             }
         }
@@ -2316,15 +2338,15 @@ namespace BgaTmScraperRegistry.Services
                     {
                         bool requiresSignal = !string.Equals(name, "Point Luna", StringComparison.OrdinalIgnoreCase);
                         bool isReady = string.Equals(name, "Point Luna", StringComparison.OrdinalIgnoreCase);
-                        if (!pendingEffectsByPlayer.TryGetValue(move.PlayerId, out var lst))
+                        if (!pendingEffectsByPlayer.TryGetValue(move.PlayerId, out var pendingEffects))
                         {
-                            lst = new List<PendingEffect>();
-                            pendingEffectsByPlayer[move.PlayerId] = lst;
+                            pendingEffects = new List<PendingEffect>();
+                            pendingEffectsByPlayer[move.PlayerId] = pendingEffects;
                         }
                         int nextDrawNo = drawEventNoByPlayer.TryGetValue(move.PlayerId, out var curDrawNo) ? (curDrawNo + 1) : 1;
                         int? readyMn = isReady ? (move.MoveNumber ?? 0) : (int?)null;
                         int? targetDraw = isReady ? nextDrawNo : (int?)null;
-                        lst.Add(new PendingEffect(name, null, requiresSignal, isReady, 1, move.MoveNumber ?? 0, readyMn, targetDraw));
+                        pendingEffects.Add(new PendingEffect(name, null, requiresSignal, isReady, 1, move.MoveNumber ?? 0, readyMn, targetDraw));
                     }
                 }
             }
@@ -2415,6 +2437,11 @@ namespace BgaTmScraperRegistry.Services
                     draftedNameAny = sAny.Substring(i2Any + draftWordAny.Length).Trim();
                     break;
                 }
+            }
+
+            if(draftedNameAny != null && draftedNameAny.Contains("2 cards"))
+            {
+                return;
             }
 
             if (!string.IsNullOrWhiteSpace(draftedNameAny) && move?.MoveNumber.HasValue == true)
