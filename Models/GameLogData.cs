@@ -148,6 +148,9 @@ namespace BgaTmScraperRegistry.Models
 
         [JsonProperty("card_played")]
         public string CardPlayed { get; set; }
+
+        [JsonProperty("card_drafted")]
+        public string CardDrafted { get; set; }
         
         [JsonProperty("card_cost")]
         public int? CardCost { get; set; }
