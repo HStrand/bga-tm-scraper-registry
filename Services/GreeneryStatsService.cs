@@ -36,6 +36,7 @@ namespace BgaTmScraperRegistry.Services
                 )
                 SELECT
                     p.Name,
+                    p.PlayerId,
                     a.Greeneries,
                     a.GameCount,
                     GreeneriesPerGame = CAST(a.Greeneries AS decimal(18,4)) / NULLIF(a.GameCount, 0)

@@ -6,6 +6,7 @@ import {
   Building2,
   Layers,
   Target,
+  Trophy,
   X,
   Menu,
   ChevronLeft,
@@ -29,6 +30,7 @@ const navItems: NavLinkItem[] = [
   { to: "/corporations", label: "Corporations", icon: Building2 },
   { to: "/cards", label: "Project Cards", icon: Layers },
   { to: "/preludes", label: "Preludes", icon: Target },
+  { to: "/leaderboards", label: "Leaderboards", icon: Trophy },
 ];
 
 function usePersistentExpanded(key = "sidebarExpanded", defaultValue = true) {

@@ -94,6 +94,7 @@ namespace BgaTmScraperRegistry.Services
                       FinalScore   = MAX(gps.FinalScore),
                       Corporation  = MAX(gps.Corporation)   -- deterministic pick if multiples exist
                   FROM dbo.GamePlayerStats AS gps
+                  WHERE Corporation <> 'Unknown'
                   GROUP BY gps.TableId, gps.PlayerId
                 ),
                 BestPlayers AS (
@@ -101,7 +102,8 @@ namespace BgaTmScraperRegistry.Services
                   SELECT
                       gp.TableId,
                       gp.PlayerId,
-                      PlayerName = MAX(gp.PlayerName)       -- or MIN; just be consistent
+                      PlayerName = MAX(gp.PlayerName),       -- or MIN; just be consistent
+                      Elo = MAX(Elo)
                   FROM dbo.GamePlayers AS gp
                   GROUP BY gp.TableId, gp.PlayerId
                 )
@@ -109,6 +111,7 @@ namespace BgaTmScraperRegistry.Services
                     bs.TableId,
                     bs.PlayerId,
                     COALESCE(p.Name, bp.PlayerName) AS PlayerName,
+                    bp.Elo,
                     bs.Corporation,                 -- from GamePlayerStats
                     g.Map,
                     g.ColoniesOn,

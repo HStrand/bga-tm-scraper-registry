@@ -94,6 +94,7 @@ namespace BgaTmScraperRegistry.Services
                 )
                 SELECT
                     p.Name,
+                    p.PlayerId,
                     a.ParameterIncreases,
                     a.GameCount,
                     ParameterIncreasesPerGame =

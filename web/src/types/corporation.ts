@@ -52,6 +52,7 @@ export interface CorporationFilters {
   timesPlayedMin?: number;
   timesPlayedMax?: number;
   playerCounts: number[];
+  corporation?: string;
   maps: string[];
   gameModes: string[];
   gameSpeeds: string[];

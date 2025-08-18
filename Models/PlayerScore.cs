@@ -11,6 +11,8 @@ namespace BgaTmScraperRegistry.Models
         public int PlayerId { get; set; }
         
         public string PlayerName { get; set; }
+
+        public int Elo { get; set; }
         
         public string Corporation { get; set; }
         
