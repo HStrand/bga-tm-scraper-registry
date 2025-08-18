@@ -13,7 +13,7 @@ namespace BgaTmScraperRegistry
 {
     public static class ZipGameLogsFunction
     {
-        [Disable("disableCronJobs")]
+        [Disable("disableTriggers")]
         [FunctionName("ZipGameLogsScheduled")]
         public static async Task RunScheduled(
             [TimerTrigger("0 0 2 * * *")] TimerInfo timer,
