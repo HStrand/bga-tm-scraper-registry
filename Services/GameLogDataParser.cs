@@ -2439,7 +2439,11 @@ namespace BgaTmScraperRegistry.Services
                 }
             }
 
-            if(draftedNameAny != null && draftedNameAny.Contains("2 cards"))
+            if(draftedNameAny != null && 
+                (draftedNameAny.Contains("2 cards") ||
+                draftedNameAny.Contains("3 cards") ||
+                draftedNameAny.Contains("4 cards") ||
+                draftedNameAny.Contains("8 cards")))
             {
                 return;
             }
