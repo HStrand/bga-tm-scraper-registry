@@ -645,6 +645,80 @@ namespace BgaTmScraperRegistry.Services
             };
         }
 
+        public async Task<GlobalStatistics> GetGlobalStatisticsAsync()
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            // Get total indexed games
+            var totalGamesQuery = "SELECT COUNT(*) FROM Games";
+            var totalGames = await connection.QuerySingleAsync<int>(totalGamesQuery);
+
+            // Get scraped games total
+            var scrapedGamesTotalQuery = "SELECT COUNT(*) FROM Games WHERE ScrapedAt IS NOT NULL";
+            var scrapedGamesTotal = await connection.QuerySingleAsync<int>(scrapedGamesTotalQuery);
+
+            // Get average Elo in scraped games
+            var averageEloQuery = @"
+                SELECT AVG(CAST(gp.Elo AS FLOAT)) 
+                FROM GamePlayers gp
+                INNER JOIN Games g ON gp.GameId = g.Id
+                WHERE g.ScrapedAt IS NOT NULL";
+            var averageEloDouble = await connection.QuerySingleOrDefaultAsync<double?>(averageEloQuery);
+            var averageElo = averageEloDouble.HasValue ? (int?)Math.Round(averageEloDouble.Value) : null;
+
+            // Get table row counts using sys.partitions
+            var tableRowCountsQuery = @"
+                SELECT 
+                    t.name AS TableName,
+                    SUM(p.rows) AS TableRowCount
+                FROM sys.partitions p
+                JOIN sys.tables t 
+                    ON t.object_id = p.object_id
+                WHERE p.index_id IN (0,1)   -- heap or clustered index
+                    AND t.name IN ('Players', 'GameCards', 'GamePlayerTrackerChanges', 'GameGreeneryLocations', 
+                                   'GameCityLocations', 'GameMilestones', 'ParameterChanges')
+                GROUP BY t.name";
+
+            var tableRowCounts = await connection.QueryAsync<RowCount>(tableRowCountsQuery);
+            var rowCountDict = tableRowCounts.ToDictionary(x => x.TableName, x => x.TableRowCount);
+
+            // Get unique awards count with specific query
+            var totalNumberOfAwardsQuery = @"
+                SELECT COUNT(*) AS UniquePairs
+                FROM (
+                    SELECT DISTINCT TableId, Award
+                    FROM GamePlayerAwards
+                ) x";
+            var totalNumberOfAwards = await connection.QuerySingleAsync<int>(totalNumberOfAwardsQuery);
+
+            // Extract individual counts with defaults
+            var totalPlayers = rowCountDict.GetValueOrDefault("Players", 0);
+            var totalCardDraws = rowCountDict.GetValueOrDefault("GameCards", 0);
+            var totalPlayerTrackerChanges = rowCountDict.GetValueOrDefault("GamePlayerTrackerChanges", 0);
+            var totalNumberOfGreeneries = rowCountDict.GetValueOrDefault("GameGreeneryLocations", 0);
+            var totalNumberOfCities = rowCountDict.GetValueOrDefault("GameCityLocations", 0);
+            var totalNumberOfMilestones = rowCountDict.GetValueOrDefault("GameMilestones", 0);
+            var totalNumberOfGlobalParameterIncreases = rowCountDict.GetValueOrDefault("ParameterChanges", 0);
+
+            _logger.LogInformation($"Retrieved global statistics: {totalGames} total indexed games, {scrapedGamesTotal} scraped games, {totalPlayers} total players");
+            
+            return new GlobalStatistics
+            {
+                TotalIndexedGames = totalGames,
+                ScrapedGamesTotal = scrapedGamesTotal,
+                TotalPlayers = totalPlayers,
+                AverageEloInScrapedGames = averageElo,
+                TotalCardDraws = totalCardDraws,
+                TotalPlayerTrackerChanges = totalPlayerTrackerChanges,
+                TotalNumberOfGreeneries = totalNumberOfGreeneries,
+                TotalNumberOfCities = totalNumberOfCities,
+                TotalNumberOfAwards = totalNumberOfAwards,
+                TotalNumberOfMilestones = totalNumberOfMilestones,
+                TotalNumberOfGlobalParameterIncreases = totalNumberOfGlobalParameterIncreases
+            };
+        }
+
         public async Task<List<GameMetadata>> GetAllGamesMetadataAsync()
         {
             using var connection = new SqlConnection(_connectionString);
@@ -691,6 +765,12 @@ namespace BgaTmScraperRegistry.Services
             public int? ArenaPoints { get; set; }
             public int? ArenaPointsChange { get; set; }
             public int Position { get; set; }
+        }
+
+        private class RowCount
+        {
+            public string TableName { get; set; }
+            public int TableRowCount { get; set; }
         }
 
         public async Task<IEnumerable<ScraperLeaderboardEntry>> GetScraperLeaderboardAsync()

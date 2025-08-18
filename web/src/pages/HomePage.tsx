@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import { getStatistics, Statistics } from "@/lib/stats";
-import { Users, Database, Download, Gauge, LineChart, BarChart3 } from "lucide-react";
+import { getGlobalStatistics, GlobalStatistics } from "@/lib/stats";
+import { Users, Database, Download, Gauge, LineChart, BarChart3, TreePine, Building, Trophy, Target, Activity, Zap } from "lucide-react";
 
 
 function useCountUp(target: number, durationMs = 900) {
@@ -75,7 +75,7 @@ function humanBytes(n: number | undefined) {
 }
 
 export default function HomePage() {
-  const [stats, setStats] = useState<Statistics | null>(null);
+  const [stats, setStats] = useState<GlobalStatistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,14 +88,14 @@ export default function HomePage() {
 
   const [toast, setToast] = useState<string | null>(null);
 
-  // Fetch statistics
+  // Fetch global statistics
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getStatistics();
+        const data = await getGlobalStatistics();
         if (!cancelled) setStats(data);
       } catch (e) {
         console.error(e);
@@ -147,6 +147,13 @@ export default function HomePage() {
   const playersAnim = useCountUp(stats?.totalPlayers ?? 0);
   const totalGamesAnim = useCountUp(totalGames);
   const scrapedAnim = useCountUp(scrapedGames);
+  const cardDrawsAnim = useCountUp(stats?.totalCardDraws ?? 0);
+  const trackerChangesAnim = useCountUp(stats?.totalPlayerTrackerChanges ?? 0);
+  const greeneriesAnim = useCountUp(stats?.totalNumberOfGreeneries ?? 0);
+  const citiesAnim = useCountUp(stats?.totalNumberOfCities ?? 0);
+  const awardsAnim = useCountUp(stats?.totalNumberOfAwards ?? 0);
+  const milestonesAnim = useCountUp(stats?.totalNumberOfMilestones ?? 0);
+  const parameterIncreasesAnim = useCountUp(stats?.totalNumberOfGlobalParameterIncreases ?? 0);
 
   const handleDownload = async () => {
     try {
@@ -324,7 +331,7 @@ export default function HomePage() {
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-            {Array.from({ length: 5 }).map((_, i) => (
+            {Array.from({ length: 10 }).map((_, i) => (
               <div
                 key={i}
                 className="h-28 bg-white/70 dark:bg-slate-800/70 rounded-2xl border border-slate-200 dark:border-slate-700 animate-pulse"
@@ -343,17 +350,7 @@ export default function HomePage() {
               value={playersAnim.toLocaleString()}
             />
             <BigStat
-              title="Indexed Games"
-              icon={<Database className="w-5 h-5" />}
-              value={totalGamesAnim.toLocaleString()}
-            />
-            <BigStat
-              title="Collected game logs"
-              icon={<Download className="w-5 h-5" />}
-              value={scrapedAnim.toLocaleString()}
-            />
-            <BigStat
-              title="Avg Elo (scraped)"
+              title="Avgerage Elo in scraped games"
               icon={<BarChart3 className="w-5 h-5" />}
               value={
                 stats.averageEloInScrapedGames != null
@@ -362,13 +359,34 @@ export default function HomePage() {
               }
             />
             <BigStat
-              title="Median Elo (scraped)"
-              icon={<Gauge className="w-5 h-5" />}
-              value={
-                stats.medianEloInScrapedGames != null
-                  ? Math.round(stats.medianEloInScrapedGames).toLocaleString()
-                  : "N/A"
-              }
+              title="Cards seen"
+              icon={<LineChart className="w-5 h-5" />}
+              value={cardDrawsAnim.toLocaleString()}
+            />
+            <BigStat
+              title="Greeneries placed"
+              icon={<TreePine className="w-5 h-5" />}
+              value={greeneriesAnim.toLocaleString()}
+            />
+            <BigStat
+              title="Cities built"
+              icon={<Building className="w-5 h-5" />}
+              value={citiesAnim.toLocaleString()}
+            />
+            <BigStat
+              title="Awards funded"
+              icon={<Trophy className="w-5 h-5" />}
+              value={awardsAnim.toLocaleString()}
+            />
+            <BigStat
+              title="Milestones claimed"
+              icon={<Target className="w-5 h-5" />}
+              value={milestonesAnim.toLocaleString()}
+            />
+            <BigStat
+              title="Global Parameters Increased"
+              icon={<Zap className="w-5 h-5" />}
+              value={parameterIncreasesAnim.toLocaleString()}
             />
           </div>
         ) : null}
