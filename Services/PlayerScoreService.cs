@@ -87,45 +87,57 @@ namespace BgaTmScraperRegistry.Services
                 /* One row per (TableId, PlayerId). No WHERE filters — export everything. */
                 ;WITH BestStats AS (
                   -- Deduplicate GamePlayerStats: keep highest FinalScore per player+game.
-                  -- (Use MAX as a deterministic rule; if you have UpdatedAt, see note below.)
                   SELECT
                       gps.TableId,
                       gps.PlayerId,
                       FinalScore   = MAX(gps.FinalScore),
-                      Corporation  = MAX(gps.Corporation)   -- deterministic pick if multiples exist
+                      Corporation  = MAX(gps.Corporation)
                   FROM dbo.GamePlayerStats AS gps
-                  WHERE Corporation <> 'Unknown'
+                  WHERE gps.Corporation <> 'Unknown'
                   GROUP BY gps.TableId, gps.PlayerId
                 ),
                 BestPlayers AS (
-                  -- If GamePlayers can contain dupes per (TableId, PlayerId), pick one deterministically
+                  -- Deduplicate GamePlayers if needed
                   SELECT
                       gp.TableId,
                       gp.PlayerId,
-                      PlayerName = MAX(gp.PlayerName),       -- or MIN; just be consistent
-                      Elo = MAX(Elo)
+                      PlayerName = MAX(gp.PlayerName),
+                      Elo        = MAX(gp.Elo)
                   FROM dbo.GamePlayers AS gp
                   GROUP BY gp.TableId, gp.PlayerId
+                ),
+                OneGame AS (
+                  -- Pick exactly one Games row per TableId to avoid multiplying by PlayerPerspective
+                  SELECT
+                      g.TableId,
+                      g.Map,
+                      g.ColoniesOn,
+                      g.GameMode,
+                      g.GameSpeed,
+                      g.PreludeOn,
+                      g.DraftOn,
+                      rn = ROW_NUMBER() OVER (PARTITION BY g.TableId ORDER BY g.PlayerPerspective)
+                  FROM dbo.Games AS g
                 )
                 SELECT
                     bs.TableId,
                     bs.PlayerId,
                     COALESCE(p.Name, bp.PlayerName) AS PlayerName,
                     bp.Elo,
-                    bs.Corporation,                 -- from GamePlayerStats
-                    g.Map,
-                    g.ColoniesOn,
-                    g.GameMode,
-                    g.GameSpeed,
-                    g.PreludeOn,
-                    g.DraftOn,
-                    gs.Generations,                 -- from GameStats
-                    gs.PlayerCount,                 -- from GameStats
+                    bs.Corporation,
+                    og.Map,
+                    og.ColoniesOn,
+                    og.GameMode,
+                    og.GameSpeed,
+                    og.PreludeOn,
+                    og.DraftOn,
+                    gs.Generations,
+                    gs.PlayerCount,
                     bs.FinalScore
                 FROM BestStats bs
                 LEFT JOIN BestPlayers bp ON bp.TableId = bs.TableId AND bp.PlayerId = bs.PlayerId
-                LEFT JOIN dbo.Players  p  ON p.PlayerId = bs.PlayerId
-                JOIN dbo.Games         g  ON g.TableId  = bs.TableId
+                LEFT JOIN dbo.Players  p ON p.PlayerId = bs.PlayerId
+                JOIN OneGame og ON og.TableId = bs.TableId AND og.rn = 1
                 LEFT JOIN dbo.GameStats gs ON gs.TableId = bs.TableId";
 
             var results = await connection.QueryAsync<PlayerScore>(query, commandTimeout: 300); // 5 minutes
