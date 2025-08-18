@@ -333,7 +333,7 @@ namespace BgaTmScraperRegistry.Services
                         TableId = tableId,
                         PlayerId = playerId,
                         Card = card,
-                        Kept = playerOpeningKeeps.Contains(card) || bought.Contains(card),
+                        Kept = (playerOpeningKeeps != null && playerOpeningKeeps.Contains(card)) || bought.Contains(card),
                         UpdatedAt = DateTime.UtcNow
                     });
                 }
