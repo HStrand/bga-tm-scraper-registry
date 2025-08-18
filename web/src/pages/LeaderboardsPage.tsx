@@ -102,6 +102,7 @@ export function LeaderboardsPage() {
   const [currentView, setCurrentView] = useCookieState<LeaderboardView>('tm_leaderboard_view', 'scores');
   const [selectedMilestone, setSelectedMilestone] = useCookieState<MilestoneType>('tm_milestone_type', 'terraformer');
   const [selectedAward, setSelectedAward] = useCookieState<AwardType>('tm_award_type', 'total');
+  const [greenerySortBy, setGreenerySortBy] = useCookieState<'greeneriesPerGame' | 'greeneriesPerGeneration'>('tm_greenery_sort', 'greeneriesPerGame');
   
   // Use CorporationFilters for high scores filtering to reuse FiltersPanel
   const [filters, setFilters, , meta] = useCookieState<CorporationFilters>(
@@ -295,7 +296,7 @@ export function LeaderboardsPage() {
       case 'scores':
         return getTopScores(filteredPlayerScores, 25); // Top 25 for high scores
       case 'greeneries':
-        return getTopGreeneries(greeneryStats); // Top 25 (default)
+        return getTopGreeneries(greeneryStats, greenerySortBy); // Top 25 (default)
       case 'parameters':
         return getTopParameters(parameterStats); // Top 25 (default)
       case 'milestones':
@@ -305,7 +306,7 @@ export function LeaderboardsPage() {
       default:
         return [];
     }
-  }, [currentView, filteredPlayerScores, greeneryStats, parameterStats, milestoneStats, awardStats, selectedMilestone, selectedAward]);
+  }, [currentView, filteredPlayerScores, greeneryStats, parameterStats, milestoneStats, awardStats, selectedMilestone, selectedAward, greenerySortBy]);
 
   const handleFiltersChange = useCallback((newFilters: CorporationFilters) => {
     setFilters(newFilters);
@@ -388,6 +389,9 @@ export function LeaderboardsPage() {
                   <>
                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Greeneries/Game
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Greeneries/Generation
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Total Games
@@ -481,6 +485,9 @@ export function LeaderboardsPage() {
                     <>
                       <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                         {(item as PlayerGreeneryStats).greeneriesPerGame.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                        {(item as PlayerGreeneryStats).greeneriesPerGeneration.toFixed(3)}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                         {(item as PlayerGreeneryStats).gameCount}
@@ -610,6 +617,28 @@ export function LeaderboardsPage() {
                         {option.label}
                       </Button>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {currentView === 'greeneries' && (
+                <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Sort By</h3>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      onClick={() => setGreenerySortBy('greeneriesPerGame')}
+                      variant={greenerySortBy === 'greeneriesPerGame' ? 'default' : 'outline'}
+                      size="sm"
+                    >
+                      Greeneries/Game
+                    </Button>
+                    <Button
+                      onClick={() => setGreenerySortBy('greeneriesPerGeneration')}
+                      variant={greenerySortBy === 'greeneriesPerGeneration' ? 'default' : 'outline'}
+                      size="sm"
+                    >
+                      Greeneries/Generation
+                    </Button>
                   </div>
                 </div>
               )}

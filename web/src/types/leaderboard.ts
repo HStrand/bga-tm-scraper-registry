@@ -23,6 +23,7 @@ export interface PlayerGreeneryStats {
   greeneries: number;
   gameCount: number;
   greeneriesPerGame: number;
+  greeneriesPerGeneration: number;
 }
 
 // Player Parameter Stats types

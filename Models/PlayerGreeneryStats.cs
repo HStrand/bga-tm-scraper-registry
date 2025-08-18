@@ -7,5 +7,6 @@ namespace BgaTmScraperRegistry.Models
         public int Greeneries { get; set; }
         public int GameCount { get; set; }
         public decimal GreeneriesPerGame { get; set; }
+        public decimal GreeneriesPerGeneration { get; set; }
     }
 }

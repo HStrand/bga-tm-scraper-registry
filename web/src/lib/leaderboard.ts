@@ -40,9 +40,13 @@ export function getTopScores(scores: PlayerScore[], limit: number = 100): Player
     .slice(0, limit);
 }
 
-export function getTopGreeneries(stats: PlayerGreeneryStats[], limit: number = 25): PlayerGreeneryStats[] {
+export function getTopGreeneries(
+  stats: PlayerGreeneryStats[], 
+  sortBy: 'greeneriesPerGame' | 'greeneriesPerGeneration' = 'greeneriesPerGame',
+  limit: number = 25
+): PlayerGreeneryStats[] {
   return [...stats]
-    .sort((a, b) => b.greeneriesPerGame - a.greeneriesPerGame)
+    .sort((a, b) => b[sortBy] - a[sortBy])
     .slice(0, limit);
 }
 
