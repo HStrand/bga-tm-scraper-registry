@@ -281,11 +281,17 @@ namespace BgaTmScraperRegistry.Services
                 }
 
                 // Get opening keeps from cards_kept dictionary
-                var playerOpeningKeeps = gameLogData.Moves
+                var matchingMove = gameLogData.Moves
                     .FirstOrDefault(move => move.CardsKept != null && 
                     move.CardsKept.ContainsKey(playerEntry.Key) &&
-                    move.CardsKept[playerEntry.Key].Any(cardKept => projectCardsInStartingHand.Contains(cardKept)))
-                    .CardsKept[playerEntry.Key];
+                    move.CardsKept[playerEntry.Key].Any(cardKept => projectCardsInStartingHand.Contains(cardKept)));
+
+                List<string> playerOpeningKeeps = null;
+                if (matchingMove?.CardsKept != null && 
+                    matchingMove.CardsKept.TryGetValue(playerEntry.Key, out var keeps))
+                {
+                    playerOpeningKeeps = keeps;
+                }
 
                 // Find earliest move for this player containing "You buy"
                 var earliestBuyMove = gameLogData.Moves?
