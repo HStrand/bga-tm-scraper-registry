@@ -16,6 +16,7 @@ namespace BgaTmScraperRegistry.Services
     {
         private static readonly MemoryCache Cache = new MemoryCache(new MemoryCacheOptions());
         private const string AllCardStatsCacheKey = "AllCardStats:v2";
+        private const string CorporationNamesCacheKey = "CorporationNames:v1";
         private const string PreludeNamesCacheKey = "PreludeNames:v1";
         private const string CacheContainerName = "cache";
         private const string CardStatsBlobName = "card-stats.json";
@@ -419,13 +420,40 @@ ORDER BY AvgEloChange DESC;";
             return preludeSet;
         }
 
+        public async Task<HashSet<string>> GetCorporationNamesAsync()
+        {
+            if (Cache.TryGetValue(CorporationNamesCacheKey, out HashSet<string> cached))
+            {
+                _logger.LogInformation($"Returning {cached.Count} corporation names from cache");
+                return cached;
+            }
+
+            var sql = "SELECT DISTINCT Corporation FROM StartingHandCorporations";
+
+            using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+
+            var corporationNames = await conn.QueryAsync<string>(sql);
+            var corporationSet = new HashSet<string>(corporationNames, StringComparer.OrdinalIgnoreCase);
+
+            // Cache for 24 hours
+            Cache.Set(
+                CorporationNamesCacheKey,
+                corporationSet,
+                new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+
+            _logger.LogInformation($"Retrieved and cached {corporationSet.Count} prelude names");
+            return corporationSet;
+        }
+
         public async Task<List<CardBasicStatsRow>> GetProjectCardStatsAsync()
         {
             var allStats = await GetAllCardStatsAsync();
             var preludeNames = await GetPreludeNamesAsync();
+            var corporationNames = await GetCorporationNamesAsync();
 
             var projectCardStats = allStats
-                .Where(card => !preludeNames.Contains(card.Card))
+                .Where(card => !preludeNames.Contains(card.Card) && !corporationNames.Contains(card.Card))
                 .OrderByDescending(card => card.AvgEloChange)
                 .ToList();
 
@@ -437,9 +465,10 @@ ORDER BY AvgEloChange DESC;";
         {
             var allStats = await GetAllCardOptionStatsAsync();
             var preludeNames = await GetPreludeNamesAsync();
+            var corporationNames = await GetCorporationNamesAsync();
 
             var projectCardStats = allStats
-                .Where(card => !preludeNames.Contains(card.Card))
+                .Where(card => !preludeNames.Contains(card.Card) && !corporationNames.Contains(card.Card))
                 .OrderByDescending(card => card.AvgEloChange)
                 .ToList();
 
