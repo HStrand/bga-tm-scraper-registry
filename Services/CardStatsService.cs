@@ -195,9 +195,10 @@ ORDER BY AvgEloChange DESC;";
                     "Sell patents",
                     "Undo (no undo beyond this point)",
                     "(no undo beyond this point)",
-            }
+            }            
             .Contains(c.Card) &&
-            !c.Card.Contains("a card "))
+            !c.Card.Contains("a card ") &&
+            !c.Card.StartsWith("card "))
             .ToList();
 
             return rows.ToList();
@@ -326,7 +327,8 @@ ORDER BY AvgEloChange DESC;";
                     "(no undo beyond this point)",
             }
             .Contains(c.Card) &&
-            !c.Card.Contains("a card "))
+            !c.Card.Contains("a card ") &&
+            !c.Card.StartsWith("card "))
             .ToList();
 
             return rows.ToList();

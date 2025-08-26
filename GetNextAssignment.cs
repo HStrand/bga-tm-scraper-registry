@@ -69,7 +69,6 @@ namespace BgaTmScraperRegistry
                 
                 log.LogInformation($"Found {unscrapedCount} unscraped games available");
 
-                // Priority logic: If >= 200 unscraped games, assign scraping work
                 if (unscrapedCount >= 200)
                 {
                     log.LogInformation("Assigning replay scraping work");
