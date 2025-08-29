@@ -8,6 +8,7 @@ import { ProjectCardStatsPage } from "@/pages/ProjectCardStatsPage";
 import { ProjectCardsOverviewPage } from "@/pages/ProjectCardsOverviewPage";
 import { PreludesOverviewPage } from "@/pages/PreludesOverviewPage";
 import { PreludeStatsPage } from "@/pages/PreludeStatsPage";
+import { MilestonesOverviewPage } from "@/pages/MilestonesOverviewPage";
 import { LeaderboardsPage } from "@/pages/LeaderboardsPage";
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/cards/:name" element={<ProjectCardStatsPage />} />
           <Route path="/preludes" element={<PreludesOverviewPage />} />
           <Route path="/prelude/:name" element={<PreludeStatsPage />} />
+          <Route path="/milestones" element={<MilestonesOverviewPage />} />
           <Route path="/leaderboards" element={<LeaderboardsPage />} />
         </Routes>
       </Layout>
