@@ -58,12 +58,21 @@ export function getTopParameters(stats: PlayerParameterStats[], limit: number = 
 
 export function getTopMilestones(
   stats: PlayerMilestoneStats[], 
-  milestoneType: 'terraformer' | 'gardener' | 'builder' | 'mayor' | 'planner',
+  milestoneType: 'terraformer' | 'gardener' | 'builder' | 'mayor' | 'planner' | 'total',
   limit: number = 25
 ): PlayerMilestoneStats[] {
-  const rateField = `${milestoneType}Rate` as keyof PlayerMilestoneStats;
   return [...stats]
-    .sort((a, b) => (b[rateField] as number) - (a[rateField] as number))
+    .sort((a, b) => {
+      if (milestoneType === 'total') {
+        // Calculate total milestone rate for sorting
+        const aTotal = (a.terraformerRate || 0) + (a.gardenerRate || 0) + (a.builderRate || 0) + (a.mayorRate || 0) + (a.plannerRate || 0);
+        const bTotal = (b.terraformerRate || 0) + (b.gardenerRate || 0) + (b.builderRate || 0) + (b.mayorRate || 0) + (b.plannerRate || 0);
+        return bTotal - aTotal;
+      } else {
+        const rateField = `${milestoneType}Rate` as keyof PlayerMilestoneStats;
+        return (b[rateField] as number) - (a[rateField] as number);
+      }
+    })
     .slice(0, limit);
 }
 

@@ -30,7 +30,7 @@ const navItems: NavLinkItem[] = [
   { to: "/", label: "Home", icon: Home },
   { to: "/corporations", label: "Corporations", icon: Building2 },
   { to: "/cards", label: "Project Cards", icon: Layers },
-  { to: "/preludes", label: "Preludes", icon: Target },
+  { to: "/preludes", label: "Preludes", icon: ChevronLeft },
   { to: "/milestones", label: "Milestones", icon: Flag },
   { to: "/leaderboards", label: "Leaderboards", icon: Trophy },
 ];

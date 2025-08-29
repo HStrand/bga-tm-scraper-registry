@@ -50,6 +50,7 @@ export interface PlayerMilestoneStats {
   builderRate: number;
   mayorRate: number;
   plannerRate: number;
+  totalMilestoneRate: number;
 }
 
 // Player Award Stats types
@@ -74,7 +75,7 @@ export interface PlayerAwardStats {
 // Leaderboard view types
 export type LeaderboardView = 'scores' | 'greeneries' | 'parameters' | 'milestones' | 'awards';
 
-export type MilestoneType = 'terraformer' | 'gardener' | 'builder' | 'mayor' | 'planner';
+export type MilestoneType = 'terraformer' | 'gardener' | 'builder' | 'mayor' | 'planner' | 'total';
 export type AwardType = 'thermalist' | 'banker' | 'scientist' | 'miner' | 'landlord' | 'total';
 
 // Filters for high scores view

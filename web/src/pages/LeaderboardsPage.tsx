@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Trophy, Leaf, TrendingUp, Target, Award } from 'lucide-react';
+import { Trophy, Leaf, TrendingUp, Flag, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FiltersPanel } from '@/components/FiltersPanel';
 import { useCookieState } from '@/hooks/useCookieState';
@@ -69,7 +69,7 @@ const viewConfigs: ViewConfig[] = [
     id: 'milestones',
     title: 'Milestones',
     description: 'Top milestone claim rates',
-    icon: Target,
+    icon: Flag,
     image: milestonesImage
   },
   {
@@ -86,7 +86,8 @@ const milestoneOptions: { value: MilestoneType; label: string }[] = [
   { value: 'gardener', label: 'Gardener' },
   { value: 'builder', label: 'Builder' },
   { value: 'mayor', label: 'Mayor' },
-  { value: 'planner', label: 'Planner' }
+  { value: 'planner', label: 'Planner' },
+  { value: 'total', label: 'Total Milestones' }
 ];
 
 const awardOptions: { value: AwardType; label: string }[] = [
@@ -507,7 +508,22 @@ export function LeaderboardsPage() {
                   {currentView === 'milestones' && (
                     <>
                       <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                        {((item as PlayerMilestoneStats)[`${selectedMilestone}Rate` as keyof PlayerMilestoneStats] as number).toFixed(3)}
+                        {(() => {
+                          const milestoneItem = item as PlayerMilestoneStats;
+                          if (selectedMilestone === 'total') {
+                            // Calculate total milestone rate from individual rates
+                            const totalRate = (milestoneItem.terraformerRate || 0) + 
+                                            (milestoneItem.gardenerRate || 0) + 
+                                            (milestoneItem.builderRate || 0) + 
+                                            (milestoneItem.mayorRate || 0) + 
+                                            (milestoneItem.plannerRate || 0);
+                            return totalRate.toFixed(3);
+                          } else {
+                            const rateField = `${selectedMilestone}Rate` as keyof PlayerMilestoneStats;
+                            const rate = milestoneItem[rateField] as number;
+                            return (rate || 0).toFixed(3);
+                          }
+                        })()}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                         {(item as PlayerMilestoneStats).tharsisGames}
