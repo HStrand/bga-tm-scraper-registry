@@ -8,6 +8,7 @@ import {
   Target,
   Trophy,
   Flag,
+  Award,
   X,
   Menu,
   ChevronLeft,
@@ -32,6 +33,7 @@ const navItems: NavLinkItem[] = [
   { to: "/cards", label: "Project Cards", icon: Layers },
   { to: "/preludes", label: "Preludes", icon: ChevronLeft },
   { to: "/milestones", label: "Milestones", icon: Flag },
+  { to: "/awards", label: "Awards", icon: Award },
   { to: "/leaderboards", label: "Leaderboards", icon: Trophy },
 ];
 

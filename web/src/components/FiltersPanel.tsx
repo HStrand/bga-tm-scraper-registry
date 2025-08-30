@@ -16,6 +16,7 @@ interface FiltersPanelProps {
   timesPlayedRange?: { min: number; max: number };
   playedGenRange?: { min: number; max: number };
   timesPlayedLabel?: string;
+  playedGenLabel?: string;
 }
 
 export function FiltersPanel({
@@ -32,6 +33,7 @@ export function FiltersPanel({
   timesPlayedRange,
   playedGenRange,
   timesPlayedLabel = "Times Played",
+  playedGenLabel = "Played Generation",
 }: FiltersPanelProps) {
   const [localFilters, setLocalFilters] = useState(filters);
   const [gameSpeedDropdownOpen, setGameSpeedDropdownOpen] = useState(false);
@@ -322,7 +324,7 @@ export function FiltersPanel({
       {playedGenRange && (
         <div className="space-y-3">
           <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            Claimed Generation
+            {playedGenLabel}
           </label>
           <div className="grid grid-cols-2 gap-2">
             <div>

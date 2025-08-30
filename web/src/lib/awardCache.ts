@@ -1,18 +1,18 @@
 import { api } from '@/lib/api';
-import { MilestoneClaimRow } from '@/types/milestone';
+import { AwardRow } from '@/types/award';
 
 // Cache configuration
 const TTL_MS = 10 * 60 * 1000; // 10 minutes
-const CACHE_KEY = 'milestone:claims:v1';
+const CACHE_KEY = 'award:rows:v2';
 
 // In-memory cache
 let inMemoryCache: {
-  data: MilestoneClaimRow[];
+  data: AwardRow[];
   fetchedAt: number;
 } | null = null;
 
 interface CacheEntry {
-  data: MilestoneClaimRow[];
+  data: AwardRow[];
   fetchedAt: number;
 }
 
@@ -48,7 +48,7 @@ function getFromLocalStorage(): CacheEntry | null {
 /**
  * Save data to localStorage cache
  */
-function saveToLocalStorage(data: MilestoneClaimRow[]): void {
+function saveToLocalStorage(data: AwardRow[]): void {
   try {
     const entry: CacheEntry = {
       data,
@@ -85,18 +85,18 @@ function saveToLocalStorage(data: MilestoneClaimRow[]): void {
 /**
  * Fetch fresh data from API
  */
-async function fetchFromAPI(): Promise<MilestoneClaimRow[]> {
-  const response = await api.get<MilestoneClaimRow[]>('/api/milestones/claims');
+async function fetchFromAPI(): Promise<AwardRow[]> {
+  const response = await api.get<AwardRow[]>('/api/awards/rows');
   return response.data;
 }
 
 /**
- * Get all milestone claim rows with caching
+ * Get all award rows with caching
  */
-export async function getAllMilestoneClaimRowsCached(forceRefresh = false): Promise<MilestoneClaimRow[]> {
+export async function getAllAwardRowsCached(forceRefresh = false): Promise<AwardRow[]> {
   // If force refresh, clear caches and fetch fresh
   if (forceRefresh) {
-    clearAllMilestoneClaimRowsCache();
+    clearAllAwardRowsCache();
   }
   
   // Check in-memory cache first
@@ -125,7 +125,7 @@ export async function getAllMilestoneClaimRowsCached(forceRefresh = false): Prom
     
     return data;
   } catch (error) {
-    console.error('Error fetching milestone claim rows:', error);
+    console.error('Error fetching award rows:', error);
     throw error;
   }
 }
@@ -133,7 +133,7 @@ export async function getAllMilestoneClaimRowsCached(forceRefresh = false): Prom
 /**
  * Clear all caches
  */
-export function clearAllMilestoneClaimRowsCache(): void {
+export function clearAllAwardRowsCache(): void {
   inMemoryCache = null;
   localStorage.removeItem(CACHE_KEY);
 }
