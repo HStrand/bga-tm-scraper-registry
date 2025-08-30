@@ -7,6 +7,7 @@ import { CorporationFilters } from '@/types/corporation';
 import { FiltersPanel } from '@/components/FiltersPanel';
 import { Button } from '@/components/ui/button';
 import { getAllAwardRowsCached, clearAllAwardRowsCache } from '@/lib/awardCache';
+import { getAwardImage, getPlaceholderImage, nameToSlug } from '@/lib/award';
 
 type SortField = keyof AwardOverviewRow;
 type SortDirection = 'asc' | 'desc' | null;
@@ -20,6 +21,71 @@ export function AwardsOverviewPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+
+  // Hover preview tooltip state
+  const [hoveredAward, setHoveredAward] = useState<{ slug: string; imageSrc: string; name: string } | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const desiredMidYRef = useRef(0);
+  const triggerRectRef = useRef<DOMRect | null>(null);
+
+  // Recalculate tooltip position with clamping and flipping
+  const updateTooltipPosition = useCallback(() => {
+    if (!tooltipRef.current) return;
+    const margin = 8;
+    const tipRect = tooltipRef.current.getBoundingClientRect();
+    const viewportH = window.innerHeight;
+    const viewportW = window.innerWidth;
+
+    // Vertical clamp
+    const desiredTop = desiredMidYRef.current - tipRect.height / 2;
+    const clampedTop = Math.max(margin, Math.min(desiredTop, viewportH - tipRect.height - margin));
+
+    // Horizontal placement with flip and hard clamp
+    let left = tooltipPos.left;
+
+    if (triggerRectRef.current) {
+      const trigger = triggerRectRef.current;
+
+      const spaceRight = viewportW - (trigger.right + 16) - margin;
+      const needsShrink = tipRect.width > (viewportW - 2 * margin);
+
+      if (!needsShrink) {
+        // Prefer right if it fits; otherwise flip left and clamp
+        if (tipRect.width <= spaceRight) {
+          left = trigger.right + 16;
+        } else {
+          const leftCandidate = trigger.left - tipRect.width - 16;
+          left = Math.max(margin, Math.min(leftCandidate, viewportW - tipRect.width - margin));
+        }
+      } else {
+        // Tooltip wider than viewport; anchor to margin
+        left = margin;
+      }
+    } else {
+      // Fallback clamp
+      const maxLeft = Math.max(margin, viewportW - tipRect.width - margin);
+      left = Math.max(margin, Math.min(left, maxLeft));
+    }
+
+    setTooltipPos({ top: clampedTop, left });
+  }, [tooltipPos.left]);
+
+  // Keep tooltip within viewport; also recompute on resize/scroll while visible
+  useEffect(() => {
+    if (!hoveredAward) return;
+
+    const handler = () => updateTooltipPosition();
+    // Initial position adjustment after mount
+    handler();
+
+    window.addEventListener('resize', handler);
+    window.addEventListener('scroll', handler, true);
+    return () => {
+      window.removeEventListener('resize', handler);
+      window.removeEventListener('scroll', handler, true);
+    };
+  }, [hoveredAward, updateTooltipPosition]);
 
   // Initialize filters with all options selected (persisted per page via cookie)
   const [filters, setFilters, , meta] = useCookieState<CorporationFilters>(
@@ -239,9 +305,12 @@ export function AwardsOverviewPage() {
     awardMap.forEach((value, award) => {
       if (value.fundedRows.length > 0) {
         const fundedRows = value.fundedRows;
-        const wins = fundedRows.filter(row => row.playerPlace === 1).length;
+        const wins = fundedRows.filter(row => row.position === 1).length; // game win (GamePlayers.Position = 1)
         const winRate = wins / fundedRows.length;
-        const flipRate = 1 - winRate; // Flip rate = didn't get 1st place
+
+        // Flip rate: funder did not take 1st place on the award (PlayerPlace != 1)
+        const awardFirsts = fundedRows.filter(row => row.playerPlace === 1).length;
+        const flipRate = 1 - (awardFirsts / fundedRows.length);
         
         result.push({
           award,
@@ -545,6 +614,7 @@ export function AwardsOverviewPage() {
                     <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                       {paginatedData.map((row) => {
                         const displayName = row.award;
+                        const imageSrc = getAwardImage(displayName) || getPlaceholderImage();
                         
                         return (
                           <tr 
@@ -553,7 +623,26 @@ export function AwardsOverviewPage() {
                             className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
                           >
                             <td className="px-4 py-3 text-sm">
-                              <div className="flex items-center gap-3">
+                              <div
+                                className="flex items-center gap-3 relative group"
+                                onMouseEnter={(e) => {
+                                  const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                                  desiredMidYRef.current = rect.top + rect.height / 2;
+                                  triggerRectRef.current = rect;
+                                  setHoveredAward({ slug: nameToSlug(displayName), imageSrc, name: displayName });
+                                  setTooltipPos({ left: rect.right + 16, top: desiredMidYRef.current });
+                                }}
+                                onMouseLeave={() => setHoveredAward(null)}
+                              >
+                                <img
+                                  src={imageSrc}
+                                  alt={displayName}
+                                  className="w-8 h-8 rounded object-cover"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = getPlaceholderImage();
+                                  }}
+                                />
                                 <span className="font-medium text-slate-900 dark:text-slate-100">
                                   {displayName}
                                 </span>
@@ -583,6 +672,32 @@ export function AwardsOverviewPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Hover image tooltip (single overlay) */}
+                {hoveredAward && createPortal(
+                  <div
+                    ref={tooltipRef}
+                    className="fixed z-50 pointer-events-none"
+                    style={{ top: tooltipPos.top, left: tooltipPos.left, maxWidth: 'calc(100vw - 32px)' }}
+                  >
+                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-2">
+                      <img
+                        src={hoveredAward.imageSrc}
+                        alt={hoveredAward.name}
+                        className="rounded max-w-full max-h-[80vh] h-auto w-auto"
+                        onLoad={updateTooltipPosition}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = getPlaceholderImage();
+                        }}
+                      />
+                      <div className="text-center mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">
+                        {hoveredAward.name}
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                )}
                 
                 {/* Pagination controls */}
                 {totalPages > 1 && (
