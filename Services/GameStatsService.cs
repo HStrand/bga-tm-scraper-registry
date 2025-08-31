@@ -102,7 +102,8 @@ namespace BgaTmScraperRegistry.Services
                     gameStats.Conceded,
                     gameStats.UpdatedAt
                 },
-                transaction);
+                transaction,
+                commandTimeout: 180);
         }
 
         private async Task UpsertGamePlayerStatsAsync(SqlConnection connection, SqlTransaction transaction, List<GamePlayerStats> playerStats)
@@ -128,7 +129,7 @@ namespace BgaTmScraperRegistry.Services
 
             foreach (var stats in playerStats)
             {
-                await connection.ExecuteAsync(mergeQuery, stats, transaction);
+                await connection.ExecuteAsync(mergeQuery, stats, transaction, commandTimeout: 180);
             }
         }
 
@@ -144,7 +145,7 @@ namespace BgaTmScraperRegistry.Services
                     DELETE FROM StartingHandCorporations 
                     WHERE TableId = @TableId AND PlayerId = @PlayerId";
 
-                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.TableId, playerGroup.Key.PlayerId }, transaction);
+                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.TableId, playerGroup.Key.PlayerId }, transaction, commandTimeout: 180);
 
                 // Then, insert all new records for this player
                 var insertQuery = @"
@@ -153,7 +154,7 @@ namespace BgaTmScraperRegistry.Services
 
                 foreach (var corp in playerGroup)
                 {
-                    await connection.ExecuteAsync(insertQuery, corp, transaction);
+                    await connection.ExecuteAsync(insertQuery, corp, transaction, commandTimeout: 180);
                 }
             }
         }
@@ -170,7 +171,7 @@ namespace BgaTmScraperRegistry.Services
                     DELETE FROM StartingHandPreludes 
                     WHERE TableId = @TableId AND PlayerId = @PlayerId";
 
-                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.TableId, playerGroup.Key.PlayerId }, transaction);
+                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.TableId, playerGroup.Key.PlayerId }, transaction, commandTimeout: 180);
 
                 // Then, insert all new records for this player
                 var insertQuery = @"
@@ -179,7 +180,7 @@ namespace BgaTmScraperRegistry.Services
 
                 foreach (var prelude in playerGroup)
                 {
-                    await connection.ExecuteAsync(insertQuery, prelude, transaction);
+                    await connection.ExecuteAsync(insertQuery, prelude, transaction, commandTimeout: 180);
                 }
             }
         }
@@ -196,7 +197,7 @@ namespace BgaTmScraperRegistry.Services
                     DELETE FROM StartingHandCards 
                     WHERE TableId = @TableId AND PlayerId = @PlayerId";
 
-                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.TableId, playerGroup.Key.PlayerId }, transaction);
+                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.TableId, playerGroup.Key.PlayerId }, transaction, commandTimeout: 180);
 
                 // Then, insert all new records for this player
                 var insertQuery = @"
@@ -205,7 +206,7 @@ namespace BgaTmScraperRegistry.Services
 
                 foreach (var card in playerGroup)
                 {
-                    await connection.ExecuteAsync(insertQuery, card, transaction);
+                    await connection.ExecuteAsync(insertQuery, card, transaction, commandTimeout: 180);
                 }
             }
         }
@@ -237,7 +238,7 @@ namespace BgaTmScraperRegistry.Services
                     VpScored INT NULL,
                     UpdatedAt DATETIME NOT NULL
                 );";
-            await connection.ExecuteAsync(createStage, transaction: transaction);
+            await connection.ExecuteAsync(createStage, transaction: transaction, commandTimeout: 180);
 
             // Build DataTable
             var dt = new DataTable();
@@ -286,15 +287,15 @@ namespace BgaTmScraperRegistry.Services
                 FROM GameCards gc
                 INNER JOIN (SELECT DISTINCT TableId, PlayerId FROM #GameCardsStage) s
                   ON gc.TableId = s.TableId AND gc.PlayerId = s.PlayerId;";
-            await connection.ExecuteAsync(deleteQuery, transaction: transaction);
+            await connection.ExecuteAsync(deleteQuery, transaction: transaction, commandTimeout: 180);
 
             var insertFromStage = @"
                 INSERT INTO GameCards (TableId, PlayerId, Card, SeenGen, DrawnGen, KeptGen, DraftedGen, BoughtGen, DrawType, DrawReason, PlayedGen, VpScored, UpdatedAt)
                 SELECT TableId, PlayerId, Card, SeenGen, DrawnGen, KeptGen, DraftedGen, BoughtGen, DrawType, DrawReason, PlayedGen, VpScored, UpdatedAt
                 FROM #GameCardsStage;";
-            await connection.ExecuteAsync(insertFromStage, transaction: transaction);
+            await connection.ExecuteAsync(insertFromStage, transaction: transaction, commandTimeout: 180);
 
-            await connection.ExecuteAsync("DROP TABLE #GameCardsStage;", transaction: transaction);
+            await connection.ExecuteAsync("DROP TABLE #GameCardsStage;", transaction: transaction, commandTimeout: 180);
         }
  
         private async Task UpsertGameMilestonesAsync(SqlConnection connection, SqlTransaction transaction, List<GameMilestone> milestones)
@@ -311,7 +312,7 @@ namespace BgaTmScraperRegistry.Services
                 DELETE FROM GameMilestones
                 WHERE TableId = @TableId";
 
-            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction);
+            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction, commandTimeout: 180);
 
             var insertQuery = @"
                 INSERT INTO GameMilestones (TableId, Milestone, ClaimedBy, ClaimedGen, UpdatedAt)
@@ -319,7 +320,7 @@ namespace BgaTmScraperRegistry.Services
 
             foreach (var ms in milestones)
             {
-                await connection.ExecuteAsync(insertQuery, ms, transaction);
+                await connection.ExecuteAsync(insertQuery, ms, transaction, commandTimeout: 180);
             }
         }
 
@@ -337,7 +338,7 @@ namespace BgaTmScraperRegistry.Services
                 DELETE FROM GamePlayerAwards
                 WHERE TableId = @TableId";
 
-            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction);
+            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction, commandTimeout: 180);
 
             var insertQuery = @"
                 INSERT INTO GamePlayerAwards (TableId, PlayerId, Award, FundedBy, FundedGen, PlayerPlace, PlayerCounter, UpdatedAt)
@@ -345,7 +346,7 @@ namespace BgaTmScraperRegistry.Services
 
             foreach (var row in awards)
             {
-                await connection.ExecuteAsync(insertQuery, row, transaction);
+                await connection.ExecuteAsync(insertQuery, row, transaction, commandTimeout: 180);
             }
         }
 
@@ -370,7 +371,7 @@ namespace BgaTmScraperRegistry.Services
                     IncreasedBy INT NULL,
                     UpdatedAt DATETIME NOT NULL
                 );";
-            await connection.ExecuteAsync(createStage, transaction: transaction);
+            await connection.ExecuteAsync(createStage, transaction: transaction, commandTimeout: 180);
 
             // Build DataTable
             var dt = new DataTable();
@@ -400,15 +401,15 @@ namespace BgaTmScraperRegistry.Services
             }
 
             // Replace scope: delete existing then insert from stage
-            await connection.ExecuteAsync("DELETE FROM ParameterChanges WHERE TableId = @TableId;", new { TableId = tableId }, transaction);
+            await connection.ExecuteAsync("DELETE FROM ParameterChanges WHERE TableId = @TableId;", new { TableId = tableId }, transaction, commandTimeout: 180);
 
             var insertFromStage = @"
                 INSERT INTO ParameterChanges (TableId, Parameter, Generation, IncreasedTo, IncreasedBy, UpdatedAt)
                 SELECT TableId, Parameter, Generation, IncreasedTo, IncreasedBy, UpdatedAt
                 FROM #ParamStage;";
-            await connection.ExecuteAsync(insertFromStage, transaction: transaction);
+            await connection.ExecuteAsync(insertFromStage, transaction: transaction, commandTimeout: 180);
 
-            await connection.ExecuteAsync("DROP TABLE #ParamStage;", transaction: transaction);
+            await connection.ExecuteAsync("DROP TABLE #ParamStage;", transaction: transaction, commandTimeout: 180);
         }
 
         private async Task UpsertGameCityLocationsAsync(SqlConnection connection, SqlTransaction transaction, List<GameCityLocation> cityLocations)
@@ -424,7 +425,7 @@ namespace BgaTmScraperRegistry.Services
                 DELETE FROM GameCityLocations
                 WHERE TableId = @TableId";
 
-            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction);
+            await connection.ExecuteAsync(deleteQuery, new { TableId = tableId }, transaction, commandTimeout: 180);
 
             var insertQuery = @"
                 INSERT INTO GameCityLocations (TableId, PlayerId, CityLocation, Points, PlacedGen, UpdatedAt)
@@ -432,7 +433,7 @@ namespace BgaTmScraperRegistry.Services
 
             foreach (var loc in cityLocations)
             {
-                await connection.ExecuteAsync(insertQuery, loc, transaction);
+                await connection.ExecuteAsync(insertQuery, loc, transaction, commandTimeout: 180);
             }
         }
 
@@ -479,15 +480,15 @@ namespace BgaTmScraperRegistry.Services
                 await bulk.WriteToServerAsync(dt);
             }
 
-            await connection.ExecuteAsync("DELETE FROM GameGreeneryLocations WHERE TableId = @TableId;", new { TableId = tableId }, transaction);
+            await connection.ExecuteAsync("DELETE FROM GameGreeneryLocations WHERE TableId = @TableId;", new { TableId = tableId }, transaction, commandTimeout: 180);
 
             var insertFromStage = @"
                 INSERT INTO GameGreeneryLocations (TableId, PlayerId, GreeneryLocation, PlacedGen, UpdatedAt)
                 SELECT TableId, PlayerId, GreeneryLocation, PlacedGen, UpdatedAt
                 FROM #GreenStage;";
-            await connection.ExecuteAsync(insertFromStage, transaction: transaction);
+            await connection.ExecuteAsync(insertFromStage, transaction: transaction, commandTimeout: 180);
 
-            await connection.ExecuteAsync("DROP TABLE #GreenStage;", transaction: transaction);
+            await connection.ExecuteAsync("DROP TABLE #GreenStage;", transaction: transaction, commandTimeout: 180);
         }
 
         private async Task UpsertGamePlayerTrackerChangesAsync(SqlConnection connection, SqlTransaction transaction, List<GamePlayerTrackerChange> changes)
@@ -511,7 +512,7 @@ namespace BgaTmScraperRegistry.Services
                     ChangedTo INT NOT NULL,
                     UpdatedAt DATETIME NOT NULL
                 );";
-            await connection.ExecuteAsync(createStage, transaction: transaction);
+            await connection.ExecuteAsync(createStage, transaction: transaction, commandTimeout: 180);
 
             var dt = new DataTable();
             dt.Columns.Add("TableId", typeof(int));
@@ -542,15 +543,15 @@ namespace BgaTmScraperRegistry.Services
                 await bulk.WriteToServerAsync(dt);
             }
 
-            await connection.ExecuteAsync("DELETE FROM GamePlayerTrackerChanges WHERE TableId = @TableId;", new { TableId = tableId }, transaction);
+            await connection.ExecuteAsync("DELETE FROM GamePlayerTrackerChanges WHERE TableId = @TableId;", new { TableId = tableId }, transaction, commandTimeout: 180);
 
             var insertFromStage = @"
                 INSERT INTO GamePlayerTrackerChanges (TableId, PlayerId, Tracker, TrackerType, Generation, MoveNumber, ChangedTo, UpdatedAt)
                 SELECT TableId, PlayerId, Tracker, TrackerType, Generation, MoveNumber, ChangedTo, UpdatedAt
                 FROM #TrackerStage;";
-            await connection.ExecuteAsync(insertFromStage, transaction: transaction);
+            await connection.ExecuteAsync(insertFromStage, transaction: transaction, commandTimeout: 180);
 
-            await connection.ExecuteAsync("DROP TABLE #TrackerStage;", transaction: transaction);
+            await connection.ExecuteAsync("DROP TABLE #TrackerStage;", transaction: transaction, commandTimeout: 180);
         }
     }
 }
