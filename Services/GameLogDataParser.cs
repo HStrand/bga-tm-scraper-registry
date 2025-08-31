@@ -417,40 +417,86 @@ namespace BgaTmScraperRegistry.Services
             var finalAwards = finalState?.Awards;
             var finalPlayerVp = finalState?.PlayerVp;
 
-            if (finalAwards == null || finalAwards.Count == 0 || finalPlayerVp == null || finalPlayerVp.Count == 0)
+            if (finalPlayerVp == null || finalPlayerVp.Count == 0)
             {
                 return awardsRows;
             }
 
             // Precompute funded-by and funded generation for each award
             var fundedByMap = new Dictionary<string, (int FundedBy, int FundedGen)>(StringComparer.OrdinalIgnoreCase);
-            foreach (var kvp in finalAwards)
+            if (finalAwards != null)
             {
-                var awardName = kvp.Key;
-                var info = kvp.Value;
-                if (info == null) continue;
-
-                // FundedBy comes from AwardInfo.PlayerId
-                if (!int.TryParse(info.PlayerId, out int fundedBy))
+                foreach (var kvp in finalAwards)
                 {
-                    // If fundedBy cannot be parsed, skip this award
-                    Console.WriteLine($"Table {tableId}: Unable to parse AwardInfo.PlayerId '{info.PlayerId}' for award '{awardName}', skipping funding info.");
-                    continue;
-                }
+                    var awardName = kvp.Key;
+                    var info = kvp.Value;
+                    if (info == null) continue;
 
-                int fundedGen = 0;
-                if (info.MoveNumber.HasValue && gameLogData.Moves != null)
-                {
-                    var fundedMove = gameLogData.Moves.FirstOrDefault(m => m.MoveNumber == info.MoveNumber.Value);
-                    fundedGen = fundedMove?.GameState?.Generation ?? 0;
-                }
+                    // FundedBy comes from AwardInfo.PlayerId
+                    if (!int.TryParse(info.PlayerId, out int fundedBy))
+                    {
+                        // If fundedBy cannot be parsed, skip this award
+                        Console.WriteLine($"Table {tableId}: Unable to parse AwardInfo.PlayerId '{info.PlayerId}' for award '{awardName}', skipping funding info.");
+                        continue;
+                    }
 
-                fundedByMap[awardName] = (fundedBy, fundedGen);
+                    int fundedGen = 0;
+                    if (info.MoveNumber.HasValue && gameLogData.Moves != null)
+                    {
+                        var fundedMove = gameLogData.Moves.FirstOrDefault(m => m.MoveNumber == info.MoveNumber.Value);
+                        fundedGen = fundedMove?.GameState?.Generation ?? 0;
+                    }
+
+                    fundedByMap[awardName] = (fundedBy, fundedGen);
+                }
             }
 
-            if (fundedByMap.Count == 0)
+
+            // Fallback: detect awards present in player_vp but missing from final awards
+            var vpAwardNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pv in finalPlayerVp)
             {
-                return awardsRows;
+                var detailsAwards = pv.Value?.Details?.Awards;
+                if (detailsAwards == null) continue;
+                foreach (var name in detailsAwards.Keys)
+                {
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        vpAwardNames.Add(name);
+                    }
+                }
+            }
+
+            // For each missing award, try to recover funding info from moves
+            if (vpAwardNames.Count > 0)
+            {
+                foreach (var awardName in vpAwardNames.Where(n => !fundedByMap.ContainsKey(n)))
+                {
+                    GameLogMove fundedMove = null;
+
+                    if (gameLogData.Moves != null)
+                    {
+                        fundedMove = gameLogData.Moves.FirstOrDefault(m =>
+                            m != null &&
+                            !string.IsNullOrWhiteSpace(m.Description) &&
+                            string.Equals(m.ActionType, "fund_award", StringComparison.OrdinalIgnoreCase) &&
+                            m.Description.IndexOf($"funds {awardName} award", StringComparison.OrdinalIgnoreCase) >= 0);
+                    }
+
+                    if (fundedMove != null && int.TryParse(fundedMove.PlayerId, out int fb))
+                    {
+                        int fg = fundedMove.GameState?.Generation ?? 0;
+                        fundedByMap[awardName] = (fb, fg);
+                    }
+                    else
+                    {
+                        // Placeholder so we still emit award rows with place/counter
+                        if (!fundedByMap.ContainsKey(awardName))
+                        {
+                            fundedByMap[awardName] = (0, 0);
+                        }
+                    }
+                }
             }
 
             // For each player, read their award details (place, counter) for each funded award
@@ -1113,19 +1159,33 @@ namespace BgaTmScraperRegistry.Services
             {
                 gameLogData.Players.TryGetValue(gameLogData.PlayerPerspective, out povPlayer);
             }
-            foreach (var entry in gameLogData.Players)
+            if (gameLogData.Players != null)
             {
-                var player = entry.Value;
-                var playerId = int.Parse(entry.Key);
-                
-                foreach (var shCard in player.StartingHand.ProjectCards)
+                foreach (var entry in gameLogData.Players)
                 {
-                    if (string.IsNullOrWhiteSpace(shCard)) continue;
-                    var gc = GetOrCreateForPlayer(playerId, shCard);
-                    if (!gc.SeenGen.HasValue) gc.SeenGen = 1;
-                    if (!gc.DrawnGen.HasValue) gc.DrawnGen = 1;
-                    if (gc.DrawType == null) gc.DrawType = "StartingHand";
-                    if (gc.DrawReason == null) gc.DrawReason = "Starting Hand";
+                    if (!int.TryParse(entry.Key, out int playerId))
+                    {
+                        // Skip malformed player IDs instead of throwing
+                        continue;
+                    }
+
+                    var player = entry.Value;
+                    var projectCards = player?.StartingHand?.ProjectCards;
+                    if (projectCards == null)
+                    {
+                        // Some logs may not include starting-hand project cards for a player
+                        continue;
+                    }
+
+                    foreach (var shCard in projectCards)
+                    {
+                        if (string.IsNullOrWhiteSpace(shCard)) continue;
+                        var gc = GetOrCreateForPlayer(playerId, shCard);
+                        if (!gc.SeenGen.HasValue) gc.SeenGen = 1;
+                        if (!gc.DrawnGen.HasValue) gc.DrawnGen = 1;
+                        if (gc.DrawType == null) gc.DrawType = "StartingHand";
+                        if (gc.DrawReason == null) gc.DrawReason = "Starting Hand";
+                    }
                 }
             }
 
@@ -2115,9 +2175,13 @@ namespace BgaTmScraperRegistry.Services
             if (string.IsNullOrWhiteSpace(move?.CardDrafted)) return;
             if (!int.TryParse(move.PlayerId, out int draftingPlayerId)) return;
 
-            if (data.Players[draftingPlayerId.ToString()].StartingHand.Corporations.Contains(move.CardDrafted))
+            if (data.Players.TryGetValue(draftingPlayerId.ToString(), out var draftingPlayer))
             {
-                return; // Skip corporations
+                var sh = draftingPlayer?.StartingHand;
+                if (sh?.Corporations != null && sh.Corporations.Contains(move.CardDrafted))
+                {
+                    return; // Skip corporations
+                }
             }
 
             var gc = getOrCreateForPlayer(draftingPlayerId, move.CardDrafted);
@@ -2155,9 +2219,13 @@ namespace BgaTmScraperRegistry.Services
 
                 foreach (var cardName in keptCardList)
                 {
-                    if (data.Players[keepingPlayerId.ToString()].StartingHand.Corporations.Contains(cardName))
+                    if (data.Players.TryGetValue(keepingPlayerId.ToString(), out var keepingPlayer))
                     {
-                        continue; // Skip corporations
+                        var sh = keepingPlayer?.StartingHand;
+                        if (sh?.Corporations != null && sh.Corporations.Contains(cardName))
+                        {
+                            continue; // Skip corporations
+                        }
                     }
 
                     if (string.IsNullOrWhiteSpace(cardName)) continue;
@@ -2166,9 +2234,10 @@ namespace BgaTmScraperRegistry.Services
                     if (!gc.KeptGen.HasValue) gc.KeptGen = gen;
                     if (!gc.DrawnGen.HasValue) gc.DrawnGen = gen; // kept implies drawn
 
-                    if (data.Players[keepingPlayerId.ToString()].StartingHand != null)
+                    if (data.Players.TryGetValue(keepingPlayerId.ToString(), out var kp2))
                     {
-                        if (data.Players[keepingPlayerId.ToString()].StartingHand.Preludes.Contains(cardName))
+                        var sh2 = kp2?.StartingHand;
+                        if (sh2?.Preludes != null && sh2.Preludes.Contains(cardName))
                         {
                             gc.DrawType = "StartingHand";
                             gc.DrawReason = "Starting Hand";
