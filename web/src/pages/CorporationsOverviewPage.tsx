@@ -191,17 +191,17 @@ export function CorporationsOverviewPage() {
       // Player name filter
       if (filters.playerName && row.playerName !== filters.playerName) return false;
 
-      // Player count filter
-      if (row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
+      // Player count filter (only apply when user has selected one or more)
+      if (filters.playerCounts.length > 0 && row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
 
-      // Map filter
-      if (row.map && !filters.maps.includes(row.map)) return false;
+      // Map filter (only apply when user has selected one or more)
+      if (filters.maps.length > 0 && row.map && !filters.maps.includes(row.map)) return false;
 
-      // Game mode filter
-      if (row.gameMode && !filters.gameModes.includes(row.gameMode)) return false;
+      // Game mode filter (only apply when user has selected one or more)
+      if (filters.gameModes.length > 0 && row.gameMode && !filters.gameModes.includes(row.gameMode)) return false;
 
-      // Game speed filter
-      if (row.gameSpeed && !filters.gameSpeeds.includes(row.gameSpeed)) return false;
+      // Game speed filter (only apply when user has selected one or more)
+      if (filters.gameSpeeds.length > 0 && row.gameSpeed && !filters.gameSpeeds.includes(row.gameSpeed)) return false;
 
       // Expansion filters
       if (filters.preludeOn !== undefined && row.preludeOn !== filters.preludeOn) return false;
