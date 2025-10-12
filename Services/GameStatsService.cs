@@ -549,9 +549,9 @@ namespace BgaTmScraperRegistry.Services
                 INSERT INTO GamePlayerTrackerChanges (TableId, PlayerId, Tracker, TrackerType, Generation, MoveNumber, ChangedTo, UpdatedAt)
                 SELECT TableId, PlayerId, Tracker, TrackerType, Generation, MoveNumber, ChangedTo, UpdatedAt
                 FROM #TrackerStage;";
-            await connection.ExecuteAsync(insertFromStage, transaction: transaction, commandTimeout: 180);
+            await connection.ExecuteAsync(insertFromStage, transaction: transaction, commandTimeout: 600); // 10 minutes
 
-            await connection.ExecuteAsync("DROP TABLE #TrackerStage;", transaction: transaction, commandTimeout: 180);
+            await connection.ExecuteAsync("DROP TABLE #TrackerStage;", transaction: transaction, commandTimeout: 600); // 10 minutes
         }
     }
 }

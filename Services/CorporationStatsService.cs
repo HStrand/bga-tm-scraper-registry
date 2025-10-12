@@ -164,7 +164,7 @@ ORDER BY gs.TableId DESC;";
             using var conn = new SqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            var rows = await conn.QueryAsync<CorporationPlayerStatsRow>(sql, commandTimeout: 300); // 5 minutes
+            var rows = await conn.QueryAsync<CorporationPlayerStatsRow>(sql, commandTimeout: 600); // 10 minutes
             return rows.ToList();
         }
 
