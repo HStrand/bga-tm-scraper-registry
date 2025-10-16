@@ -103,7 +103,7 @@ namespace BgaTmScraperRegistry.Services
                     gameStats.UpdatedAt
                 },
                 transaction,
-                commandTimeout: 180);
+                commandTimeout: 300);
         }
 
         private async Task UpsertGamePlayerStatsAsync(SqlConnection connection, SqlTransaction transaction, List<GamePlayerStats> playerStats)
@@ -129,7 +129,7 @@ namespace BgaTmScraperRegistry.Services
 
             foreach (var stats in playerStats)
             {
-                await connection.ExecuteAsync(mergeQuery, stats, transaction, commandTimeout: 180);
+                await connection.ExecuteAsync(mergeQuery, stats, transaction, commandTimeout: 300);
             }
         }
 
@@ -145,7 +145,7 @@ namespace BgaTmScraperRegistry.Services
                     DELETE FROM StartingHandCorporations 
                     WHERE TableId = @TableId AND PlayerId = @PlayerId";
 
-                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.TableId, playerGroup.Key.PlayerId }, transaction, commandTimeout: 180);
+                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.TableId, playerGroup.Key.PlayerId }, transaction, commandTimeout: 300);
 
                 // Then, insert all new records for this player
                 var insertQuery = @"
@@ -154,7 +154,7 @@ namespace BgaTmScraperRegistry.Services
 
                 foreach (var corp in playerGroup)
                 {
-                    await connection.ExecuteAsync(insertQuery, corp, transaction, commandTimeout: 180);
+                    await connection.ExecuteAsync(insertQuery, corp, transaction, commandTimeout: 300);
                 }
             }
         }
@@ -171,7 +171,7 @@ namespace BgaTmScraperRegistry.Services
                     DELETE FROM StartingHandPreludes 
                     WHERE TableId = @TableId AND PlayerId = @PlayerId";
 
-                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.TableId, playerGroup.Key.PlayerId }, transaction, commandTimeout: 180);
+                await connection.ExecuteAsync(deleteQuery, new { playerGroup.Key.TableId, playerGroup.Key.PlayerId }, transaction, commandTimeout: 300);
 
                 // Then, insert all new records for this player
                 var insertQuery = @"
@@ -180,7 +180,7 @@ namespace BgaTmScraperRegistry.Services
 
                 foreach (var prelude in playerGroup)
                 {
-                    await connection.ExecuteAsync(insertQuery, prelude, transaction, commandTimeout: 180);
+                    await connection.ExecuteAsync(insertQuery, prelude, transaction, commandTimeout: 300);
                 }
             }
         }
