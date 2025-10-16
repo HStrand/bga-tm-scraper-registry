@@ -38,7 +38,7 @@ namespace BgaTmScraperRegistry.Services
             var gameCards = parser.ParseGameCards(gameLogData);
             var cityLocations = parser.ParseGameCityLocations(gameLogData);
             var greeneryLocations = parser.ParseGameGreeneryLocations(gameLogData);
-            var trackerChanges = parser.ParseGamePlayerTrackerChanges(gameLogData);
+            //var trackerChanges = parser.ParseGamePlayerTrackerChanges(gameLogData); // Not used and very heavy query
 
             _logger.LogInformation($"Upserting GameStats for TableId {gameStats.TableId}: Generations={gameStats.Generations}, DurationMinutes={gameStats.DurationMinutes}");
 
@@ -59,7 +59,7 @@ namespace BgaTmScraperRegistry.Services
                 await UpsertGameCardsAsync(connection, transaction, gameCards);
                 await UpsertGameCityLocationsAsync(connection, transaction, cityLocations);
                 await UpsertGameGreeneryLocationsAsync(connection, transaction, greeneryLocations);
-                await UpsertGamePlayerTrackerChangesAsync(connection, transaction, trackerChanges);
+                //await UpsertGamePlayerTrackerChangesAsync(connection, transaction, trackerChanges); // Not used and very heavy query
                 transaction.Commit();
                 
                 _logger.LogInformation($"Successfully upserted GameStats for TableId {gameStats.TableId}");

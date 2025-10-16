@@ -163,29 +163,6 @@ namespace BgaTmScraperRegistry.Services
                 return null;
             }
 
-            // First priority: Priority PlayerIds with ScrapedAt older than 2025-10-01
-            var priorityPlayerIds = new List<int>
-            {
-                95977837, 98091335, 92811692, 94308984, 95545017,
-                97095366, 95077095, 95353232, 96938426, 85014197,
-                95913254, 89631858, 86725807, 97738245, 97679673,
-                93234993, 86465656, 84967084, 84906646, 96099926
-            };
-
-            var cutoffDate = new DateTime(2025, 10, 1);
-            
-            foreach (var priorityId in priorityPlayerIds)
-            {
-                var priorityPlayer = playerList.FirstOrDefault(p => p.PlayerId == priorityId);
-                if (priorityPlayer != null && 
-                    (!priorityPlayer.LastScrapedAt.HasValue || priorityPlayer.LastScrapedAt.Value < cutoffDate))
-                {
-                    _logger.LogInformation($"Found priority player: {priorityPlayer.PlayerId} (Last scraped: {priorityPlayer.LastScrapedAt?.ToString() ?? "never"})");
-                    return priorityPlayer.PlayerId;
-                }
-            }
-
-            // Second priority: Highest Elo player that has never been indexed
             var unindexedPlayer = playerList
                 .Where(p => p.LastIndexedAt == null)
                 .OrderByDescending(p => p.Elo)
