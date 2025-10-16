@@ -55,6 +55,121 @@ namespace BgaTmScraperRegistry.Services
             public int? Position { get; set; }
         }
 
+        public class CorpFilter
+        {
+            public string[] Maps { get; set; }
+            public bool? PreludeOn { get; set; }
+            public bool? ColoniesOn { get; set; }
+            public bool? DraftOn { get; set; }
+            public string[] Modes { get; set; }
+            public string[] Speeds { get; set; }
+            public int[] PlayerCounts { get; set; }
+            public int? EloMin { get; set; }
+            public int? EloMax { get; set; }
+            public int? GenerationsMin { get; set; }
+            public int? GenerationsMax { get; set; }
+            public int? TimesPlayedMin { get; set; }
+            public int? TimesPlayedMax { get; set; }
+            public string PlayerName { get; set; }
+        }
+
+        public class CorpRanking
+        {
+            public string Corporation { get; set; }
+            public double WinRate { get; set; }
+            public double AvgEloGain { get; set; }
+            public int GamesPlayed { get; set; }
+            public double AvgElo { get; set; }
+        }
+
+        private static string BuildRankingsCacheKey(CorpFilter f)
+        {
+            string Join(string[] arr) => arr == null ? "" : string.Join(",", arr.OrderBy(x => x ?? string.Empty));
+            string JoinInt(int[] arr) => arr == null ? "" : string.Join(",", arr.OrderBy(x => x));
+            string B(bool? b) => b.HasValue ? (b.Value ? "1" : "0") : "";
+            string N(int? n) => n.HasValue ? n.Value.ToString() : "";
+            f ??= new CorpFilter();
+            var key = $"CorpRankings:v1|maps={Join(f.Maps)}|prelude={B(f.PreludeOn)}|colonies={B(f.ColoniesOn)}|draft={B(f.DraftOn)}|modes={Join(f.Modes)}|speeds={Join(f.Speeds)}|pc={JoinInt(f.PlayerCounts)}|eloMin={N(f.EloMin)}|eloMax={N(f.EloMax)}|genMin={N(f.GenerationsMin)}|genMax={N(f.GenerationsMax)}|tpMin={N(f.TimesPlayedMin)}|tpMax={N(f.TimesPlayedMax)}|player={f.PlayerName?.Trim().ToLowerInvariant() ?? ""}";
+            return key;
+        }
+
+        public async Task<List<CorpRanking>> GetCorporationRankingsAsync(CorpFilter filter)
+        {
+            // Try memory cache first
+            var cacheKey = BuildRankingsCacheKey(filter);
+            if (Cache.TryGetValue(cacheKey, out List<CorpRanking> cached))
+            {
+                _logger.LogInformation($"Returning {cached.Count} corporation rankings from memory cache for key {cacheKey}");
+                return cached;
+            }
+
+            var rows = await GetAllCorporationPlayerStatsAsync();
+            IEnumerable<CorporationPlayerStatsRow> q = rows;
+
+            if (filter != null)
+            {
+                if (filter.Maps != null && filter.Maps.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.Map) && filter.Maps.Contains(r.Map));
+                if (filter.PreludeOn.HasValue)
+                    q = q.Where(r => r.PreludeOn == filter.PreludeOn.Value);
+                if (filter.ColoniesOn.HasValue)
+                    q = q.Where(r => r.ColoniesOn == filter.ColoniesOn.Value);
+                if (filter.DraftOn.HasValue)
+                    q = q.Where(r => r.DraftOn == filter.DraftOn.Value);
+                if (filter.Modes != null && filter.Modes.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.GameMode) && filter.Modes.Contains(r.GameMode));
+                if (filter.Speeds != null && filter.Speeds.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.GameSpeed) && filter.Speeds.Contains(r.GameSpeed));
+                if (filter.PlayerCounts != null && filter.PlayerCounts.Length > 0)
+                    q = q.Where(r => r.PlayerCount.HasValue && filter.PlayerCounts.Contains(r.PlayerCount.Value));
+                if (filter.EloMin.HasValue)
+                    q = q.Where(r => r.Elo.HasValue && r.Elo.Value >= filter.EloMin.Value);
+                if (filter.EloMax.HasValue)
+                    q = q.Where(r => r.Elo.HasValue && r.Elo.Value <= filter.EloMax.Value);
+                if (filter.GenerationsMin.HasValue)
+                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value >= filter.GenerationsMin.Value);
+                if (filter.GenerationsMax.HasValue)
+                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value <= filter.GenerationsMax.Value);
+                if (!string.IsNullOrWhiteSpace(filter.PlayerName))
+                    q = q.Where(r => !string.IsNullOrEmpty(r.PlayerName) && r.PlayerName.Contains(filter.PlayerName, StringComparison.OrdinalIgnoreCase));
+            }
+
+            var rankings = q
+                .GroupBy(r => r.Corporation)
+                .Select(g =>
+                {
+                    var games = g.Count();
+                    var wins = g.Count(r => r.Position == 1);
+                    var avgEloGain = g.Select(r => (double)(r.EloChange ?? 0)).DefaultIfEmpty(0).Average();
+                    var avgElo = g.Select(r => (double)(r.Elo ?? 0)).DefaultIfEmpty(0).Average();
+                    return new CorpRanking
+                    {
+                        Corporation = g.Key,
+                        WinRate = games == 0 ? 0.0 : (double)wins / games * 100.0,
+                        AvgEloGain = avgEloGain,
+                        GamesPlayed = games,
+                        AvgElo = avgElo
+                    };
+                })
+                .ToList();
+
+            if (filter?.TimesPlayedMin.HasValue == true)
+                rankings = rankings.Where(r => r.GamesPlayed >= filter.TimesPlayedMin.Value).ToList();
+            if (filter?.TimesPlayedMax.HasValue == true)
+                rankings = rankings.Where(r => r.GamesPlayed <= filter.TimesPlayedMax.Value).ToList();
+
+            // Default order by WinRate desc, then GamesPlayed desc
+            rankings = rankings
+                .OrderByDescending(r => r.WinRate)
+                .ThenByDescending(r => r.GamesPlayed)
+                .ToList();
+
+            Cache.Set(cacheKey, rankings, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30) });
+            _logger.LogInformation($"Computed and cached {rankings.Count} corporation rankings for key {cacheKey}");
+
+            return rankings;
+        }
+
         public async Task<List<CorporationPlayerStatsRow>> GetAllCorporationPlayerStatsAsync()
         {
             if (Cache.TryGetValue(AllCorporationStatsCacheKey, out List<CorporationPlayerStatsRow> cached))

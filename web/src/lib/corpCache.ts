@@ -133,3 +133,67 @@ export function getCacheStatus(): {
                  localEntry?.fetchedAt ? new Date(localEntry.fetchedAt) : undefined,
   };
 }
+
+/**
+ * SERVER-SIDE FILTERING
+ * Fetch aggregated corporation rankings from the API for the given filters.
+ * Returns data mapped to CorporationOverviewRow (winRate as 0..1 fraction).
+ */
+export interface CorporationRankingsApiRow {
+  corporation: string;   // e.g. "Mining Guild"
+  winRate: number;       // percent 0..100 from API
+  avgEloGain: number;
+  gamesPlayed: number;
+  avgElo: number;
+}
+
+import type { CorporationFilters, CorporationOverviewRow } from '@/types/corporation';
+
+/**
+ * Build query string from filters
+ */
+function buildRankingsQuery(filters: CorporationFilters): string {
+  const params = new URLSearchParams();
+
+  const pushCsv = (key: string, arr?: (string | number)[]) => {
+    if (arr && arr.length > 0) params.set(key, arr.join(','));
+  };
+
+  if (filters.eloMin !== undefined) params.set('eloMin', String(filters.eloMin));
+  if (filters.eloMax !== undefined) params.set('eloMax', String(filters.eloMax));
+  if (filters.timesPlayedMin !== undefined) params.set('timesPlayedMin', String(filters.timesPlayedMin));
+  if (filters.timesPlayedMax !== undefined) params.set('timesPlayedMax', String(filters.timesPlayedMax));
+  if (filters.generationsMin !== undefined) params.set('generationsMin', String(filters.generationsMin));
+  if (filters.generationsMax !== undefined) params.set('generationsMax', String(filters.generationsMax));
+  if (filters.playerName) params.set('playerName', filters.playerName);
+  if (filters.preludeOn !== undefined) params.set('preludeOn', String(filters.preludeOn));
+  if (filters.coloniesOn !== undefined) params.set('coloniesOn', String(filters.coloniesOn));
+  if (filters.draftOn !== undefined) params.set('draftOn', String(filters.draftOn));
+
+  pushCsv('playerCounts', filters.playerCounts);
+  pushCsv('maps', filters.maps);
+  pushCsv('modes', filters.gameModes);
+  pushCsv('speed', filters.gameSpeeds);
+
+  return params.toString();
+}
+
+/**
+ * Call /api/corporations/rankings and map to CorporationOverviewRow
+ */
+export async function getCorporationRankings(filters: CorporationFilters): Promise<CorporationOverviewRow[]> {
+  const qs = buildRankingsQuery(filters);
+  const url = `/api/corporations/rankings${qs ? `?${qs}` : ''}`;
+  const res = await api.get<CorporationRankingsApiRow[]>(url);
+  const rows = res.data;
+
+  // Map API rows to UI shape; convert corporation to slug and winRate to fraction
+  const { nameToSlug } = await import('@/lib/corp');
+  return rows.map(r => ({
+    corporation: nameToSlug(r.corporation),
+    totalGames: r.gamesPlayed,
+    winRate: (r.winRate ?? 0) / 100,
+    avgElo: r.avgElo ?? 0,
+    avgEloChange: r.avgEloGain ?? 0,
+  }));
+}

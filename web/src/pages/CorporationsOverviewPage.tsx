@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { AllCorporationPlayerStatsRow, CorporationOverviewRow, CorporationFilters } from '@/types/corporation';
 import { FiltersPanel } from '@/components/FiltersPanel';
 import { Button } from '@/components/ui/button';
-import { getAllCorporationStatsCached, clearAllCorporationStatsCache } from '@/lib/corpCache';
+import { getAllCorporationStatsCached, clearAllCorporationStatsCache, getCorporationRankings } from '@/lib/corpCache';
 import { getCorpImage, getPlaceholderImage, slugToTitle, nameToSlug } from '@/lib/corp';
 
 type SortField = keyof CorporationOverviewRow;
@@ -14,12 +14,14 @@ type SortDirection = 'asc' | 'desc' | null;
 export function CorporationsOverviewPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<AllCorporationPlayerStatsRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>('winRate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [overviewRows, setOverviewRows] = useState<CorporationOverviewRow[]>([]);
 
   // Hover preview tooltip state
   const [hoveredCorp, setHoveredCorp] = useState<{ slug: string; imageSrc: string; name: string } | null>(null);
@@ -90,7 +92,7 @@ export function CorporationsOverviewPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
+        setIsInitialLoad(true);
         setError(null);
         const response = await getAllCorporationStatsCached();
         setData(response);
@@ -136,12 +138,32 @@ export function CorporationsOverviewPage() {
         console.error('Error fetching corporation stats:', err);
         setError('Failed to load corporation statistics. Please try again.');
       } finally {
-        setLoading(false);
+        setIsInitialLoad(false);
       }
     };
 
     fetchData();
   }, []);
+
+  // Fetch server-side aggregated rankings whenever filters change
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        setIsRefreshing(true);
+        setError(null);
+        const rows = await getCorporationRankings(filters);
+        if (!cancelled) setOverviewRows(rows);
+      } catch (err) {
+        console.error('Error fetching corporation rankings:', err);
+        if (!cancelled) setError('Failed to load corporation rankings. Please try again.');
+      } finally {
+        if (!cancelled) setIsRefreshing(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [filters]);
 
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => {
@@ -181,77 +203,11 @@ export function CorporationsOverviewPage() {
   }, [data]);
 
 
-  // Filter data based on current filters
-  const filteredData = useMemo(() => {
-    return data.filter(row => {
-      // Elo range filter
-      if (filters.eloMin && (!row.elo || row.elo < filters.eloMin)) return false;
-      if (filters.eloMax && (!row.elo || row.elo > filters.eloMax)) return false;
+  // Server-side filtering: rankings are fetched from the API when filters change
+  const filteredData: AllCorporationPlayerStatsRow[] = [];
 
-      // Player name filter
-      if (filters.playerName && row.playerName !== filters.playerName) return false;
-
-      // Player count filter (only apply when user has selected one or more)
-      if (filters.playerCounts.length > 0 && row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
-
-      // Map filter (only apply when user has selected one or more)
-      if (filters.maps.length > 0 && row.map && !filters.maps.includes(row.map)) return false;
-
-      // Game mode filter (only apply when user has selected one or more)
-      if (filters.gameModes.length > 0 && row.gameMode && !filters.gameModes.includes(row.gameMode)) return false;
-
-      // Game speed filter (only apply when user has selected one or more)
-      if (filters.gameSpeeds.length > 0 && row.gameSpeed && !filters.gameSpeeds.includes(row.gameSpeed)) return false;
-
-      // Expansion filters
-      if (filters.preludeOn !== undefined && row.preludeOn !== filters.preludeOn) return false;
-      if (filters.coloniesOn !== undefined && row.coloniesOn !== filters.coloniesOn) return false;
-      if (filters.draftOn !== undefined && row.draftOn !== filters.draftOn) return false;
-
-      // Generations filter
-      if (filters.generationsMin !== undefined && (row.generations === undefined || row.generations < filters.generationsMin)) return false;
-      if (filters.generationsMax !== undefined && (row.generations === undefined || row.generations > filters.generationsMax)) return false;
-
-      return true;
-    });
-  }, [data, filters]);
-
-  // Aggregate data by corporation
-  const corporationOverview = useMemo((): CorporationOverviewRow[] => {
-    const corporationMap = new Map<string, {
-      totalGames: number;
-      wins: number;
-      eloSum: number;
-      eloChangeSum: number;
-    }>();
-
-    filteredData.forEach(row => {
-      const slug = nameToSlug(row.corporation);
-      const existing = corporationMap.get(slug) || { totalGames: 0, wins: 0, eloSum: 0, eloChangeSum: 0 };
-      
-      existing.totalGames++;
-      if (row.position === 1) existing.wins++;
-      existing.eloSum += row.elo || 0;
-      existing.eloChangeSum += row.eloChange || 0;
-      
-      corporationMap.set(slug, existing);
-    });
-
-    const result: CorporationOverviewRow[] = [];
-    corporationMap.forEach((value, slug) => {
-      if (value.totalGames > 0) {
-        result.push({
-          corporation: slug,
-          totalGames: value.totalGames,
-          winRate: value.wins / value.totalGames,
-          avgElo: value.eloSum / value.totalGames,
-          avgEloChange: value.eloChangeSum / value.totalGames,
-        });
-      }
-    });
-
-    return result;
-  }, [filteredData]);
+  // Use server-provided aggregated rows
+  const corporationOverview: CorporationOverviewRow[] = useMemo(() => overviewRows, [overviewRows]);
 
   // Calculate times played range from aggregated data
   const timesPlayedRange = useMemo(() => {
@@ -358,15 +314,18 @@ export function CorporationsOverviewPage() {
 
   const handleRefresh = async () => {
     try {
-      setLoading(true);
+      setIsRefreshing(true);
       setError(null);
-      const response = await getAllCorporationStatsCached(true); // Force refresh
+      clearAllCorporationStatsCache();
+      const response = await getAllCorporationStatsCached(true); // Force refresh options
       setData(response);
+      const rows = await getCorporationRankings(filters); // Refresh rankings
+      setOverviewRows(rows);
     } catch (err) {
       console.error('Error refreshing corporation stats:', err);
       setError('Failed to refresh corporation statistics. Please try again.');
     } finally {
-      setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -433,7 +392,7 @@ export function CorporationsOverviewPage() {
                 Compare corporation performance and click on a corporation to view detailed statistics
               </p>
             </div>
-            <Button onClick={handleRefresh} variant="outline" disabled={loading}>
+            <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing || isInitialLoad}>
               Refresh Data
             </Button>
           </div>
@@ -444,7 +403,7 @@ export function CorporationsOverviewPage() {
           {/* Filters sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              {!loading && (
+              {!isInitialLoad && (
                 <FiltersPanel
                   filters={filters}
                   onFiltersChange={handleFiltersChange}
@@ -463,7 +422,7 @@ export function CorporationsOverviewPage() {
 
           {/* Table area */}
           <div className="lg:col-span-3">
-            {loading ? (
+            {isInitialLoad ? (
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
                 <div className="h-6 w-48 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-4"></div>
                 <div className="space-y-3">
@@ -485,6 +444,7 @@ export function CorporationsOverviewPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
+                      {isRefreshing && <span className="text-sm text-slate-500">Updating…</span>}
                       <span className="text-sm text-slate-600 dark:text-slate-400">Rows per page:</span>
                       <select
                         value={pageSize}
