@@ -464,7 +464,14 @@ namespace BgaTmScraperRegistry.Services
                     INNER JOIN Players p ON g.PlayerPerspective = p.PlayerId
                     WHERE g.ScrapedAt IS NULL 
                     AND (g.AssignedTo IS NULL OR g.AssignedAt < DATEADD(hour, -24, GETUTCDATE()))
-                    ORDER BY g.Id";
+                    ORDER BY CASE g.Map
+                        WHEN 'Hellas' THEN 1
+                        WHEN 'Vastitas Borealis' THEN 2
+                        WHEN 'Elysium' THEN 3
+                        WHEN 'Tharsis' THEN 4
+                        WHEN 'Amazonis Planitia' THEN 5
+                        ELSE 6
+                        END;";
 
                 var games = await connection.QueryAsync<GameAssignmentDetails>(
                     selectQuery, 
