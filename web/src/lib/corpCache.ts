@@ -197,3 +197,63 @@ export async function getCorporationRankings(filters: CorporationFilters): Promi
     avgEloChange: r.avgEloGain ?? 0,
   }));
 }
+
+/**
+ * Lightweight filter options to avoid downloading the entire playerstats dataset.
+ */
+export interface CorporationFilterOptions {
+  maps: string[];
+  gameModes: string[];
+  gameSpeeds: string[];
+  playerCounts: number[];
+  eloRange: { min: number; max: number };
+  generationsRange: { min: number; max: number };
+}
+
+const OPTIONS_CACHE_KEY = 'corp:options:v1';
+let optionsInMemory: { data: CorporationFilterOptions; fetchedAt: number } | null = null;
+const OPTIONS_TTL_MS = 30 * 60 * 1000;
+
+/**
+ * Get filter options with small payload (served by /api/corporations/options).
+ * Uses in-memory + localStorage cache.
+ */
+export async function getCorporationFilterOptions(forceRefresh = false): Promise<CorporationFilterOptions> {
+  const now = Date.now();
+
+  const fresh = (t: number) => now - t < OPTIONS_TTL_MS;
+
+  if (forceRefresh) {
+    optionsInMemory = null;
+    try { localStorage.removeItem(OPTIONS_CACHE_KEY); } catch {}
+  }
+
+  if (optionsInMemory && fresh(optionsInMemory.fetchedAt)) {
+    return optionsInMemory.data;
+  }
+
+  try {
+    const ls = localStorage.getItem(OPTIONS_CACHE_KEY);
+    if (ls) {
+      const parsed = JSON.parse(ls) as { data: CorporationFilterOptions; fetchedAt: number };
+      if (fresh(parsed.fetchedAt)) {
+        optionsInMemory = parsed;
+        return parsed.data;
+      }
+    }
+  } catch {
+    // ignore cache parsing errors
+  }
+
+  const res = await api.get<CorporationFilterOptions>('/api/corporations/options');
+  const data = res.data;
+
+  optionsInMemory = { data, fetchedAt: now };
+  try {
+    localStorage.setItem(OPTIONS_CACHE_KEY, JSON.stringify(optionsInMemory));
+  } catch {
+    // ignore storage quota errors
+  }
+
+  return data;
+}

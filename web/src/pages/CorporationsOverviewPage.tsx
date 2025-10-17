@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom';
 import { AllCorporationPlayerStatsRow, CorporationOverviewRow, CorporationFilters } from '@/types/corporation';
 import { FiltersPanel } from '@/components/FiltersPanel';
 import { Button } from '@/components/ui/button';
-import { getAllCorporationStatsCached, clearAllCorporationStatsCache, getCorporationRankings } from '@/lib/corpCache';
+import { getCorporationRankings, getCorporationFilterOptions } from '@/lib/corpCache';
+import type { CorporationFilterOptions } from '@/lib/corpCache';
 import { getCorpImage, getPlaceholderImage, slugToTitle, nameToSlug } from '@/lib/corp';
 
 type SortField = keyof CorporationOverviewRow;
@@ -22,6 +23,7 @@ export function CorporationsOverviewPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [overviewRows, setOverviewRows] = useState<CorporationOverviewRow[]>([]);
+  const [options, setOptions] = useState<CorporationFilterOptions | null>(null);
 
   // Hover preview tooltip state
   const [hoveredCorp, setHoveredCorp] = useState<{ slug: string; imageSrc: string; name: string } | null>(null);
@@ -94,50 +96,59 @@ export function CorporationsOverviewPage() {
       try {
         setIsInitialLoad(true);
         setError(null);
-        const response = await getAllCorporationStatsCached();
-        setData(response);
 
-        // Initialize filters with all available options
-        const playerCounts = [...new Set(response.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
-        const maps = [...new Set(response.map(row => row.map).filter(Boolean))].sort() as string[];
-        const gameModes = [...new Set(response.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-        const gameSpeeds = [...new Set(response.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
+        if (meta.hasStoredValue) {
+          // Use stored filters to fetch rankings immediately (in the filters effect).
+          // Load options in the background so the sidebar populates when ready.
+          getCorporationFilterOptions()
+            .then(setOptions)
+            .catch(err => console.error('Error fetching corporation options:', err));
+          // Keep isInitialLoad true for now; it will be turned off when rankings arrive.
+        } else {
+          // No stored filters: load options first to establish sensible defaults.
+          const opts = await getCorporationFilterOptions();
+          setOptions(opts);
 
-        setFilters(prev => {
-          // If we already loaded a stored value, don't override with defaults
-          if (meta.hasStoredValue) return prev;
+          const playerCounts = opts.playerCounts;
+          const maps = opts.maps;
+          const gameModes = opts.gameModes;
+          const gameSpeeds = opts.gameSpeeds;
 
-          // Apply defaults only if previous filters were effectively empty (fresh load)
-          if (
-            prev.playerCounts.length === 0 &&
-            prev.maps.length === 0 &&
-            prev.gameModes.length === 0 &&
-            prev.gameSpeeds.length === 0 &&
-            prev.preludeOn === undefined &&
-            prev.coloniesOn === undefined &&
-            prev.draftOn === undefined &&
-            !prev.playerName &&
-            prev.eloMin === undefined &&
-            prev.eloMax === undefined &&
-            prev.timesPlayedMin === undefined &&
-            prev.timesPlayedMax === undefined
-          ) {
-            return {
-              playerCounts: playerCounts as number[],
-              maps,
-              gameModes,
-              gameSpeeds,
-              preludeOn: undefined,
-              coloniesOn: undefined,
-              draftOn: undefined,
-            };
-          }
-          return prev;
-        });
+          setFilters(prev => {
+            // Apply defaults only if previous filters were effectively empty (fresh load)
+            if (
+              prev.playerCounts.length === 0 &&
+              prev.maps.length === 0 &&
+              prev.gameModes.length === 0 &&
+              prev.gameSpeeds.length === 0 &&
+              prev.preludeOn === undefined &&
+              prev.coloniesOn === undefined &&
+              prev.draftOn === undefined &&
+              !prev.playerName &&
+              prev.eloMin === undefined &&
+              prev.eloMax === undefined &&
+              prev.timesPlayedMin === undefined &&
+              prev.timesPlayedMax === undefined
+            ) {
+              return {
+                playerCounts: playerCounts as number[],
+                maps,
+                gameModes,
+                gameSpeeds,
+                preludeOn: undefined,
+                coloniesOn: undefined,
+                draftOn: undefined,
+              };
+            }
+            return prev;
+          });
+
+          // Done with initial step; rankings effect will fetch next.
+          setIsInitialLoad(false);
+        }
       } catch (err) {
-        console.error('Error fetching corporation stats:', err);
+        console.error('Error preparing corporations overview:', err);
         setError('Failed to load corporation statistics. Please try again.');
-      } finally {
         setIsInitialLoad(false);
       }
     };
@@ -153,7 +164,10 @@ export function CorporationsOverviewPage() {
         setIsRefreshing(true);
         setError(null);
         const rows = await getCorporationRankings(filters);
-        if (!cancelled) setOverviewRows(rows);
+        if (!cancelled) {
+          setOverviewRows(rows);
+          setIsInitialLoad(false);
+        }
       } catch (err) {
         console.error('Error fetching corporation rankings:', err);
         if (!cancelled) setError('Failed to load corporation rankings. Please try again.');
@@ -167,40 +181,38 @@ export function CorporationsOverviewPage() {
 
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => {
-    return [...new Set(data.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!) as number[];
-  }, [data]);
+    return options?.playerCounts ?? [];
+  }, [options]);
 
   const availableMaps = useMemo(() => {
-    return [...new Set(data.map(row => row.map).filter(Boolean))].sort() as string[];
-  }, [data]);
+    return options?.maps ?? [];
+  }, [options]);
 
   const availableGameModes = useMemo(() => {
-    return [...new Set(data.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-  }, [data]);
+    return options?.gameModes ?? [];
+  }, [options]);
 
   const availableGameSpeeds = useMemo(() => {
-    return [...new Set(data.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
-  }, [data]);
+    return options?.gameSpeeds ?? [];
+  }, [options]);
 
   const availablePlayerNames = useMemo(() => {
-    return [...new Set(data.map(row => row.playerName).filter(Boolean))].sort() as string[];
-  }, [data]);
+    return [] as string[]; // optional: add server-side player search later
+  }, []);
 
   const eloRange = useMemo(() => {
-    const elos = data.map(row => row.elo).filter(Boolean) as number[];
     return {
-      min: Math.min(...elos) || 0,
-      max: Math.max(...elos) || 2000,
+      min: options?.eloRange.min ?? 0,
+      max: options?.eloRange.max ?? 0,
     };
-  }, [data]);
+  }, [options]);
 
   const generationsRange = useMemo(() => {
-    const gens = data.map(row => row.generations).filter(Boolean) as number[];
     return {
-      min: Math.min(...gens) || 0,
-      max: Math.max(...gens) || 20,
+      min: options?.generationsRange.min ?? 0,
+      max: options?.generationsRange.max ?? 0,
     };
-  }, [data]);
+  }, [options]);
 
 
   // Server-side filtering: rankings are fetched from the API when filters change
@@ -316,9 +328,8 @@ export function CorporationsOverviewPage() {
     try {
       setIsRefreshing(true);
       setError(null);
-      clearAllCorporationStatsCache();
-      const response = await getAllCorporationStatsCached(true); // Force refresh options
-      setData(response);
+      const opts = await getCorporationFilterOptions(true); // Force refresh options
+      setOptions(opts);
       const rows = await getCorporationRankings(filters); // Refresh rankings
       setOverviewRows(rows);
     } catch (err) {
@@ -403,7 +414,7 @@ export function CorporationsOverviewPage() {
           {/* Filters sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              {!isInitialLoad && (
+              {!isInitialLoad && options && (
                 <FiltersPanel
                   filters={filters}
                   onFiltersChange={handleFiltersChange}

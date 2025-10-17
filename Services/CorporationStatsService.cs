@@ -18,6 +18,7 @@ namespace BgaTmScraperRegistry.Services
         private const string AllCorporationStatsCacheKey = "AllCorporationPlayerStats:v2";
         private const string CacheContainerName = "cache";
         private const string BlobName = "corporation-player-stats.json";
+        private const string OptionsCacheKey = "CorpFilterOptions:v1";
 
         private readonly string _connectionString;
         private readonly ILogger _logger;
@@ -80,6 +81,87 @@ namespace BgaTmScraperRegistry.Services
             public double AvgEloGain { get; set; }
             public int GamesPlayed { get; set; }
             public double AvgElo { get; set; }
+        }
+
+        public class CorpFilterOptions
+        {
+            public string[] Maps { get; set; }
+            public string[] GameModes { get; set; }
+            public string[] GameSpeeds { get; set; }
+            public int[] PlayerCounts { get; set; }
+            public Range EloRange { get; set; }
+            public Range GenerationsRange { get; set; }
+
+            public class Range
+            {
+                public int Min { get; set; }
+                public int Max { get; set; }
+            }
+        }
+
+        public async Task<CorpFilterOptions> GetCorporationFilterOptionsAsync()
+        {
+            if (Cache.TryGetValue(OptionsCacheKey, out CorpFilterOptions cached))
+            {
+                _logger.LogInformation("Returning corporation filter options from memory cache");
+                return cached;
+            }
+
+            var rows = await GetAllCorporationPlayerStatsAsync();
+
+            var maps = rows.Where(r => !string.IsNullOrWhiteSpace(r.Map))
+                           .Select(r => r.Map)
+                           .Distinct()
+                           .OrderBy(x => x)
+                           .ToArray();
+
+            var modes = rows.Where(r => !string.IsNullOrWhiteSpace(r.GameMode))
+                            .Select(r => r.GameMode)
+                            .Distinct()
+                            .OrderBy(x => x)
+                            .ToArray();
+
+            var speeds = rows.Where(r => !string.IsNullOrWhiteSpace(r.GameSpeed))
+                             .Select(r => r.GameSpeed)
+                             .Distinct()
+                             .OrderBy(x => x)
+                             .ToArray();
+
+            var playerCounts = rows.Where(r => r.PlayerCount.HasValue)
+                                   .Select(r => r.PlayerCount!.Value)
+                                   .Distinct()
+                                   .OrderBy(x => x)
+                                   .ToArray();
+
+            var eloVals = rows.Where(r => r.Elo.HasValue).Select(r => r.Elo!.Value).ToArray();
+            var genVals = rows.Where(r => r.Generations.HasValue).Select(r => r.Generations!.Value).ToArray();
+
+            var options = new CorpFilterOptions
+            {
+                Maps = maps,
+                GameModes = modes,
+                GameSpeeds = speeds,
+                PlayerCounts = playerCounts,
+                EloRange = new CorpFilterOptions.Range
+                {
+                    Min = eloVals.Length > 0 ? eloVals.Min() : 0,
+                    Max = eloVals.Length > 0 ? eloVals.Max() : 0
+                },
+                GenerationsRange = new CorpFilterOptions.Range
+                {
+                    Min = genVals.Length > 0 ? genVals.Min() : 0,
+                    Max = genVals.Length > 0 ? genVals.Max() : 0
+                }
+            };
+
+            Cache.Set(OptionsCacheKey, options, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+            });
+
+            _logger.LogInformation("Computed and cached corporation filter options");
+
+            return options;
         }
 
         private static string BuildRankingsCacheKey(CorpFilter f)
