@@ -6,7 +6,10 @@ import { AwardRow, AwardOverviewRow } from '@/types/award';
 import { CorporationFilters } from '@/types/corporation';
 import { FiltersPanel } from '@/components/FiltersPanel';
 import { Button } from '@/components/ui/button';
-import { getAllAwardRowsCached, clearAllAwardRowsCache } from '@/lib/awardCache';
+import { getAwardsOverview, getAwardsFilterOptions } from '@/lib/awardCache';
+import { getCorporationFilterOptions } from '@/lib/corpCache';
+import type { AwardsFilterOptions } from '@/lib/awardCache';
+import type { CorporationFilterOptions } from '@/lib/corpCache';
 import { getAwardImage, getPlaceholderImage, nameToSlug } from '@/lib/award';
 
 type SortField = keyof AwardOverviewRow;
@@ -15,7 +18,11 @@ type SortDirection = 'asc' | 'desc' | null;
 export function AwardsOverviewPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<AwardRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [overviewRows, setOverviewRows] = useState<AwardOverviewRow[]>([]);
+  const [awardOptions, setAwardOptions] = useState<AwardsFilterOptions | null>(null);
+  const [globalOptions, setGlobalOptions] = useState<CorporationFilterOptions | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>('winRate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -101,231 +108,142 @@ export function AwardsOverviewPage() {
     }
   );
 
-  // Fetch data
+  // Initial load: fetch options; if we have stored filters, fetch overview immediately and load options in background
   useEffect(() => {
-    const fetchData = async () => {
+    const run = async () => {
       try {
-        setLoading(true);
+        setIsInitialLoad(true);
         setError(null);
-        const response = await getAllAwardRowsCached();
-        setData(response);
 
-        // Initialize filters with all available options
-        const playerCounts = [...new Set(response.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
-        const maps = [...new Set(response.map(row => row.map).filter(Boolean))].sort() as string[];
-        const gameModes = [...new Set(response.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-        const gameSpeeds = [...new Set(response.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
+        if (meta.hasStoredValue) {
+          // Kick off options in background
+          getCorporationFilterOptions().then(setGlobalOptions).catch(() => {});
+          getAwardsFilterOptions().then(setAwardOptions).catch(() => {});
+          // Rankings will be fetched in the filters effect below
+        } else {
+          // No stored filters: fetch options to establish sensible defaults
+          const [gOpts, aOpts] = await Promise.all([getCorporationFilterOptions(), getAwardsFilterOptions()]);
+          setGlobalOptions(gOpts);
+          setAwardOptions(aOpts);
 
-        setFilters(prev => {
-          // If we already loaded a stored value, don't override with defaults
-          if (meta.hasStoredValue) return prev;
+          const playerCounts = gOpts.playerCounts;
+          const maps = gOpts.maps;
+          const gameModes = gOpts.gameModes;
+          const gameSpeeds = gOpts.gameSpeeds;
 
-          // Apply defaults only if previous filters were effectively empty (fresh load)
-          if (
-            prev.playerCounts.length === 0 &&
-            prev.maps.length === 0 &&
-            prev.gameModes.length === 0 &&
-            prev.gameSpeeds.length === 0 &&
-            prev.preludeOn === undefined &&
-            prev.coloniesOn === undefined &&
-            prev.draftOn === undefined &&
-            !prev.playerName &&
-            prev.eloMin === undefined &&
-            prev.eloMax === undefined &&
-            prev.timesPlayedMin === undefined &&
-            prev.timesPlayedMax === undefined
-          ) {
-            return {
-              playerCounts: playerCounts as number[],
-              maps,
-              gameModes,
-              gameSpeeds,
-              preludeOn: undefined,
-              coloniesOn: undefined,
-              draftOn: undefined,
-            };
-          }
-          return prev;
-        });
+          setFilters(prev => {
+            if (
+              prev.playerCounts.length === 0 &&
+              prev.maps.length === 0 &&
+              prev.gameModes.length === 0 &&
+              prev.gameSpeeds.length === 0 &&
+              prev.preludeOn === undefined &&
+              prev.coloniesOn === undefined &&
+              prev.draftOn === undefined &&
+              !prev.playerName &&
+              prev.eloMin === undefined &&
+              prev.eloMax === undefined &&
+              prev.timesPlayedMin === undefined &&
+              prev.timesPlayedMax === undefined
+            ) {
+              return {
+                playerCounts: playerCounts as number[],
+                maps,
+                gameModes,
+                gameSpeeds,
+                preludeOn: undefined,
+                coloniesOn: undefined,
+                draftOn: undefined,
+              };
+            }
+            return prev;
+          });
+
+          setIsInitialLoad(false);
+        }
       } catch (err) {
-        console.error('Error fetching award rows:', err);
+        console.error('Error preparing awards overview:', err);
         setError('Failed to load award statistics. Please try again.');
-      } finally {
-        setLoading(false);
+        setIsInitialLoad(false);
       }
     };
-
-    fetchData();
+    run();
   }, []);
+
+  // Fetch awards overview whenever filters change
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        setIsRefreshing(true);
+        setError(null);
+        const rows = await getAwardsOverview(filters);
+        if (!cancelled) {
+          setOverviewRows(rows);
+          setIsInitialLoad(false);
+        }
+      } catch (err) {
+        console.error('Error fetching awards overview:', err);
+        if (!cancelled) setError('Failed to load award statistics. Please try again.');
+      } finally {
+        if (!cancelled) setIsRefreshing(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [filters]);
 
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => {
-    return [...new Set(data.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!) as number[];
-  }, [data]);
+    return globalOptions?.playerCounts ?? [];
+  }, [globalOptions]);
 
   const availableMaps = useMemo(() => {
-    return [...new Set(data.map(row => row.map).filter(Boolean))].sort() as string[];
-  }, [data]);
+    return globalOptions?.maps ?? [];
+  }, [globalOptions]);
 
   const availableGameModes = useMemo(() => {
-    return [...new Set(data.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-  }, [data]);
+    return globalOptions?.gameModes ?? [];
+  }, [globalOptions]);
 
   const availableGameSpeeds = useMemo(() => {
-    return [...new Set(data.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
-  }, [data]);
+    return globalOptions?.gameSpeeds ?? [];
+  }, [globalOptions]);
 
   const availablePlayerNames = useMemo(() => {
-    return [...new Set(data.map(row => row.playerName).filter(Boolean))].sort() as string[];
-  }, [data]);
+    return [] as string[]; // use server-side autocomplete
+  }, []);
   
   const availableCorporations = useMemo(() => {
-    return [...new Set(data.map(row => row.corporation).filter(c => !!c && c !== 'Unknown'))].sort() as string[];
-  }, [data]);
+    return awardOptions?.corporations ?? [];
+  }, [awardOptions]);
 
   const eloRange = useMemo(() => {
-    const elos = data
-      .map(row => row.elo)
-      .filter((v): v is number => typeof v === 'number');
-
-    if (elos.length === 0) {
-      return { min: 0, max: 2000 };
-    }
-
-    let min = Number.POSITIVE_INFINITY;
-    let max = Number.NEGATIVE_INFINITY;
-    for (const v of elos) {
-      if (v < min) min = v;
-      if (v > max) max = v;
-    }
-    return { min, max };
-  }, [data]);
+    return {
+      min: globalOptions?.eloRange.min ?? 0,
+      max: globalOptions?.eloRange.max ?? 0,
+    };
+  }, [globalOptions]);
 
   const generationsRange = useMemo(() => {
-    const gens = data
-      .map(row => row.generations)
-      .filter((v): v is number => typeof v === 'number');
-
-    if (gens.length === 0) {
-      return { min: 0, max: 20 };
-    }
-
-    let min = Number.POSITIVE_INFINITY;
-    let max = Number.NEGATIVE_INFINITY;
-    for (const v of gens) {
-      if (v < min) min = v;
-      if (v > max) max = v;
-    }
-    return { min, max };
-  }, [data]);
+    return {
+      min: globalOptions?.generationsRange.min ?? 0,
+      max: globalOptions?.generationsRange.max ?? 0,
+    };
+  }, [globalOptions]);
 
   const fundedGenRange = useMemo(() => {
-    const fundedGens = data
-      .map(row => row.fundedGen)
-      .filter((v): v is number => typeof v === 'number');
+    return {
+      min: awardOptions?.fundedGenRange.min ?? 0,
+      max: awardOptions?.fundedGenRange.max ?? 0,
+    };
+  }, [awardOptions]);
 
-    if (fundedGens.length === 0) {
-      return { min: 0, max: 20 };
-    }
+  // Server-side filtering: overview is fetched from API when filters change
+  const filteredData: AwardRow[] = [];
 
-    let min = Number.POSITIVE_INFINITY;
-    let max = Number.NEGATIVE_INFINITY;
-    for (const v of fundedGens) {
-      if (v < min) min = v;
-      if (v > max) max = v;
-    }
-    return { min, max };
-  }, [data]);
-
-  // Filter data based on current filters
-  const filteredData = useMemo(() => {
-    return data.filter(row => {
-      // Elo range filter
-      if (filters.eloMin && (!row.elo || row.elo < filters.eloMin)) return false;
-      if (filters.eloMax && (!row.elo || row.elo > filters.eloMax)) return false;
-
-      // Player name filter
-      if (filters.playerName && row.playerName !== filters.playerName) return false;
-      
-      // Corporation filter
-      if (filters.corporation && row.corporation !== filters.corporation) return false;
-
-      // Player count filter (only apply when user has selected one or more)
-      if (filters.playerCounts.length > 0 && row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
-
-      // Map filter (only apply when user has selected one or more)
-      if (filters.maps.length > 0 && row.map && !filters.maps.includes(row.map)) return false;
-
-      // Game mode filter (only apply when user has selected one or more)
-      if (filters.gameModes.length > 0 && row.gameMode && !filters.gameModes.includes(row.gameMode)) return false;
-
-      // Game speed filter (only apply when user has selected one or more)
-      if (filters.gameSpeeds.length > 0 && row.gameSpeed && !filters.gameSpeeds.includes(row.gameSpeed)) return false;
-
-      // Expansion filters
-      if (filters.preludeOn !== undefined && row.preludeOn !== filters.preludeOn) return false;
-      if (filters.coloniesOn !== undefined && row.coloniesOn !== filters.coloniesOn) return false;
-      if (filters.draftOn !== undefined && row.draftOn !== filters.draftOn) return false;
-
-      // Generations filter
-      if (filters.generationsMin !== undefined && (row.generations === undefined || row.generations < filters.generationsMin)) return false;
-      if (filters.generationsMax !== undefined && (row.generations === undefined || row.generations > filters.generationsMax)) return false;
-
-      // Funded generation filter (using playedGen filters for compatibility)
-      if (filters.playedGenMin !== undefined && (row.fundedGen === undefined || row.fundedGen < filters.playedGenMin)) return false;
-      if (filters.playedGenMax !== undefined && (row.fundedGen === undefined || row.fundedGen > filters.playedGenMax)) return false;
-
-      return true;
-    });
-  }, [data, filters]);
-
-  // Aggregate data by award - focus on funded rows (where playerId === fundedBy)
-  const awardOverview = useMemo((): AwardOverviewRow[] => {
-    const awardMap = new Map<string, {
-      fundedRows: AwardRow[];
-    }>();
-
-    // Group all rows by award
-    filteredData.forEach(row => {
-      if (!awardMap.has(row.award)) {
-        awardMap.set(row.award, { fundedRows: [] });
-      }
-      
-      const awardData = awardMap.get(row.award)!;
-      
-      // Only consider rows where the player funded the award.
-      // FundedBy in DB refers to the player's counter index for the game (1..5) in many logs.
-      // Fall back to PlayerId equality where applicable.
-      if (row.playerId === row.fundedBy || (row.playerCounter != null && row.playerCounter === row.fundedBy)) {
-        awardData.fundedRows.push(row);
-      }
-    });
-
-    const result: AwardOverviewRow[] = [];
-    awardMap.forEach((value, award) => {
-      if (value.fundedRows.length > 0) {
-        const fundedRows = value.fundedRows;
-        const wins = fundedRows.filter(row => row.position === 1).length; // game win (GamePlayers.Position = 1)
-        const winRate = wins / fundedRows.length;
-
-        // Flip rate: funder did not take 1st place on the award (PlayerPlace != 1)
-        const awardFirsts = fundedRows.filter(row => row.playerPlace === 1).length;
-        const flipRate = 1 - (awardFirsts / fundedRows.length);
-        
-        result.push({
-          award,
-          timesFunded: fundedRows.length,
-          winRate,
-          avgEloGain: fundedRows.reduce((sum, row) => sum + (row.eloChange || 0), 0) / fundedRows.length,
-          avgFundedGen: fundedRows.reduce((sum, row) => sum + row.fundedGen, 0) / fundedRows.length,
-          avgElo: fundedRows.reduce((sum, row) => sum + (row.elo || 0), 0) / fundedRows.length,
-          flipRate,
-        });
-      }
-    });
-
-    return result;
-  }, [filteredData]);
+  // Use server-provided aggregated rows
+  const awardOverview: AwardOverviewRow[] = useMemo(() => overviewRows, [overviewRows]);
 
   // Calculate times played range from aggregated data
   const timesPlayedRange = useMemo(() => {
@@ -416,15 +334,17 @@ export function AwardsOverviewPage() {
 
   const handleRefresh = async () => {
     try {
-      setLoading(true);
+      setIsRefreshing(true);
       setError(null);
-      const response = await getAllAwardRowsCached(true); // Force refresh
-      setData(response);
+      const [aOpts] = await Promise.all([getAwardsFilterOptions(true)]);
+      setAwardOptions(aOpts);
+      const rows = await getAwardsOverview(filters);
+      setOverviewRows(rows);
     } catch (err) {
-      console.error('Error refreshing award rows:', err);
+      console.error('Error refreshing award statistics:', err);
       setError('Failed to refresh award statistics. Please try again.');
     } finally {
-      setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -492,7 +412,7 @@ export function AwardsOverviewPage() {
                 Compare award performance and funding statistics
               </p>
             </div>
-            <Button onClick={handleRefresh} variant="outline" disabled={loading}>
+            <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing || isInitialLoad}>
               Refresh Data
             </Button>
           </div>
@@ -503,7 +423,7 @@ export function AwardsOverviewPage() {
           {/* Filters sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              {!loading && (
+              {!isInitialLoad && globalOptions && awardOptions && (
                 <FiltersPanel
                   filters={filters}
                   onFiltersChange={handleFiltersChange}
@@ -526,7 +446,7 @@ export function AwardsOverviewPage() {
 
           {/* Table area */}
           <div className="lg:col-span-3">
-            {loading ? (
+            {isInitialLoad ? (
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
                 <div className="h-6 w-48 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-4"></div>
                 <div className="space-y-3">

@@ -78,6 +78,203 @@ namespace BgaTmScraperRegistry.Services
             _logger.LogInformation($"Refreshed award rows cache with {list.Count} rows");
         }
 
+        public class AwardFilter
+        {
+            public string[] Maps { get; set; }
+            public bool? PreludeOn { get; set; }
+            public bool? ColoniesOn { get; set; }
+            public bool? DraftOn { get; set; }
+            public string[] Modes { get; set; }
+            public string[] Speeds { get; set; }
+            public int[] PlayerCounts { get; set; }
+            public int? EloMin { get; set; }
+            public int? EloMax { get; set; }
+            public int? GenerationsMin { get; set; }
+            public int? GenerationsMax { get; set; }
+            public string PlayerName { get; set; }
+            public string Corporation { get; set; }
+            public int? FundedGenMin { get; set; }
+            public int? FundedGenMax { get; set; }
+            public int? TimesPlayedMin { get; set; } // applies to times funded
+            public int? TimesPlayedMax { get; set; }
+        }
+
+        public class AwardOverview
+        {
+            public string Award { get; set; }
+            public int TimesFunded { get; set; }
+            public double WinRate { get; set; }
+            public double AvgEloGain { get; set; }
+            public double AvgFundedGen { get; set; }
+            public double AvgElo { get; set; }
+            public double FlipRate { get; set; }
+        }
+
+        public class AwardsFilterOptions
+        {
+            public Range FundedGenRange { get; set; }
+            public string[] Corporations { get; set; }
+
+            public class Range
+            {
+                public int Min { get; set; }
+                public int Max { get; set; }
+            }
+        }
+
+        private static string BuildAwardsCacheKey(AwardFilter f)
+        {
+            string Join(string[] arr) => arr == null ? "" : string.Join(",", arr.OrderBy(x => x ?? string.Empty));
+            string JoinInt(int[] arr) => arr == null ? "" : string.Join(",", arr.OrderBy(x => x));
+            string B(bool? b) => b.HasValue ? (b.Value ? "1" : "0") : "";
+            string N(int? n) => n.HasValue ? n.Value.ToString() : "";
+            f ??= new AwardFilter();
+            var key = $"AwardsOverview:v1" +
+                      $"|maps={Join(f.Maps)}" +
+                      $"|prelude={B(f.PreludeOn)}" +
+                      $"|colonies={B(f.ColoniesOn)}" +
+                      $"|draft={B(f.DraftOn)}" +
+                      $"|modes={Join(f.Modes)}" +
+                      $"|speeds={Join(f.Speeds)}" +
+                      $"|pc={JoinInt(f.PlayerCounts)}" +
+                      $"|eloMin={N(f.EloMin)}|eloMax={N(f.EloMax)}" +
+                      $"|genMin={N(f.GenerationsMin)}|genMax={N(f.GenerationsMax)}" +
+                      $"|fundMin={N(f.FundedGenMin)}|fundMax={N(f.FundedGenMax)}" +
+                      $"|tpMin={N(f.TimesPlayedMin)}|tpMax={N(f.TimesPlayedMax)}" +
+                      $"|player={(f.PlayerName ?? "").Trim().ToLowerInvariant()}" +
+                      $"|corp={(f.Corporation ?? "").Trim().ToLowerInvariant()}";
+            return key;
+        }
+
+        public async Task<List<AwardOverview>> GetAwardsOverviewAsync(AwardFilter filter)
+        {
+            var cacheKey = BuildAwardsCacheKey(filter);
+            if (Cache.TryGetValue(cacheKey, out List<AwardOverview> cached))
+            {
+                _logger.LogInformation("Returning awards overview from cache for key {key}", cacheKey);
+                return cached;
+            }
+
+            var rows = await GetAllAwardRowsAsync();
+            IEnumerable<AwardRow> q = rows;
+
+            if (filter != null)
+            {
+                if (filter.Maps != null && filter.Maps.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.Map) && filter.Maps.Contains(r.Map));
+                if (filter.PreludeOn.HasValue)
+                    q = q.Where(r => r.PreludeOn == filter.PreludeOn.Value);
+                if (filter.ColoniesOn.HasValue)
+                    q = q.Where(r => r.ColoniesOn == filter.ColoniesOn.Value);
+                if (filter.DraftOn.HasValue)
+                    q = q.Where(r => r.DraftOn == filter.DraftOn.Value);
+                if (filter.Modes != null && filter.Modes.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.GameMode) && filter.Modes.Contains(r.GameMode));
+                if (filter.Speeds != null && filter.Speeds.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.GameSpeed) && filter.Speeds.Contains(r.GameSpeed));
+                if (filter.PlayerCounts != null && filter.PlayerCounts.Length > 0)
+                    q = q.Where(r => r.PlayerCount.HasValue && filter.PlayerCounts.Contains(r.PlayerCount.Value));
+                if (filter.EloMin.HasValue)
+                    q = q.Where(r => r.Elo.HasValue && r.Elo.Value >= filter.EloMin.Value);
+                if (filter.EloMax.HasValue)
+                    q = q.Where(r => r.Elo.HasValue && r.Elo.Value <= filter.EloMax.Value);
+                if (filter.GenerationsMin.HasValue)
+                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value >= filter.GenerationsMin.Value);
+                if (filter.GenerationsMax.HasValue)
+                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value <= filter.GenerationsMax.Value);
+                if (!string.IsNullOrWhiteSpace(filter.PlayerName))
+                    q = q.Where(r => !string.IsNullOrEmpty(r.PlayerName) && r.PlayerName.Contains(filter.PlayerName, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(filter.Corporation))
+                    q = q.Where(r => !string.IsNullOrEmpty(r.Corporation) && r.Corporation.Equals(filter.Corporation, StringComparison.OrdinalIgnoreCase));
+                if (filter.FundedGenMin.HasValue)
+                    q = q.Where(r => r.FundedGen >= filter.FundedGenMin.Value);
+                if (filter.FundedGenMax.HasValue)
+                    q = q.Where(r => r.FundedGen <= filter.FundedGenMax.Value);
+            }
+
+            // Group by award; only consider rows where the player actually funded the award
+            var grouped = q.GroupBy(r => r.Award);
+
+            var list = new List<AwardOverview>();
+            foreach (var g in grouped)
+            {
+                var fundedRows = g.Where(r =>
+                    r.PlayerId == r.FundedBy ||
+                    (r.PlayerCounter.HasValue && r.PlayerCounter.Value == r.FundedBy)).ToList();
+
+                var n = fundedRows.Count;
+                if (n == 0) continue;
+
+                var wins = fundedRows.Count(r => r.Position == 1);
+                var awardFirsts = fundedRows.Count(r => r.PlayerPlace == 1);
+
+                var avgEloGain = fundedRows.Select(r => (double)(r.EloChange ?? 0)).DefaultIfEmpty(0).Average();
+                var avgElo = fundedRows.Select(r => (double)(r.Elo ?? 0)).DefaultIfEmpty(0).Average();
+                var avgFundedGen = fundedRows.Select(r => (double)r.FundedGen).DefaultIfEmpty(0).Average();
+
+                var overview = new AwardOverview
+                {
+                    Award = g.Key,
+                    TimesFunded = n,
+                    WinRate = n == 0 ? 0 : (double)wins / n,
+                    AvgEloGain = avgEloGain,
+                    AvgFundedGen = avgFundedGen,
+                    AvgElo = avgElo,
+                    FlipRate = n == 0 ? 0 : 1.0 - ((double)awardFirsts / n),
+                };
+
+                list.Add(overview);
+            }
+
+            // Apply times funded filter after aggregation
+            if (filter?.TimesPlayedMin.HasValue == true)
+                list = list.Where(r => r.TimesFunded >= filter.TimesPlayedMin.Value).ToList();
+            if (filter?.TimesPlayedMax.HasValue == true)
+                list = list.Where(r => r.TimesFunded <= filter.TimesPlayedMax.Value).ToList();
+
+            Cache.Set(cacheKey, list, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+            });
+
+            _logger.LogInformation("Computed and cached awards overview with {count} rows for key {key}", list.Count, cacheKey);
+            return list;
+        }
+
+        public async Task<AwardsFilterOptions> GetAwardsFilterOptionsAsync()
+        {
+            const string key = "AwardsFilterOptions:v1";
+            if (Cache.TryGetValue(key, out AwardsFilterOptions cached))
+            {
+                return cached;
+            }
+
+            var rows = await GetAllAwardRowsAsync();
+            var gens = rows.Select(r => r.FundedGen).ToList();
+
+            var min = gens.Count > 0 ? gens.Min() : 0;
+            var max = gens.Count > 0 ? gens.Max() : 0;
+
+            var corporations = rows.Select(r => r.Corporation)
+                                   .Where(s => !string.IsNullOrWhiteSpace(s) && !string.Equals(s, "Unknown", StringComparison.OrdinalIgnoreCase))
+                                   .Distinct(StringComparer.OrdinalIgnoreCase)
+                                   .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                                   .ToArray();
+
+            var options = new AwardsFilterOptions
+            {
+                FundedGenRange = new AwardsFilterOptions.Range { Min = min, Max = max },
+                Corporations = corporations
+            };
+
+            Cache.Set(key, options, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+            });
+
+            return options;
+        }
+
         private async Task<List<AwardRow>> ComputeAwardRowsFromDbAsync()
         {
             var sql = @"

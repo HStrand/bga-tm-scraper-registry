@@ -440,6 +440,191 @@ ORDER BY WinRate DESC;";
             _logger.LogInformation($"Refreshed milestone claim rows cache with {list.Count} rows");
         }
 
+        public class MilestoneFilter
+        {
+            public string[] Maps { get; set; }
+            public bool? PreludeOn { get; set; }
+            public bool? ColoniesOn { get; set; }
+            public bool? DraftOn { get; set; }
+            public string[] Modes { get; set; }
+            public string[] Speeds { get; set; }
+            public int[] PlayerCounts { get; set; }
+            public int? EloMin { get; set; }
+            public int? EloMax { get; set; }
+            public int? GenerationsMin { get; set; }
+            public int? GenerationsMax { get; set; }
+            public string PlayerName { get; set; }
+            public string Corporation { get; set; }
+            public int? ClaimedGenMin { get; set; }
+            public int? ClaimedGenMax { get; set; }
+            public int? TimesPlayedMin { get; set; } // applies to times claimed
+            public int? TimesPlayedMax { get; set; }
+        }
+
+        public class MilestoneOverview
+        {
+            public string Milestone { get; set; }
+            public int TimesClaimed { get; set; }
+            public double WinRate { get; set; }        // 0..1
+            public double AvgEloGain { get; set; }
+            public double AvgGenClaimed { get; set; }
+            public double AvgElo { get; set; }
+        }
+
+        public class MilestonesFilterOptions
+        {
+            public Range ClaimedGenRange { get; set; }
+            public string[] Corporations { get; set; }
+
+            public class Range
+            {
+                public int Min { get; set; }
+                public int Max { get; set; }
+            }
+        }
+
+        private static string BuildMilestonesCacheKey(MilestoneFilter f)
+        {
+            string Join(string[] arr) => arr == null ? "" : string.Join(",", arr.OrderBy(x => x ?? string.Empty));
+            string JoinInt(int[] arr) => arr == null ? "" : string.Join(",", arr.OrderBy(x => x));
+            string B(bool? b) => b.HasValue ? (b.Value ? "1" : "0") : "";
+            string N(int? n) => n.HasValue ? n.Value.ToString() : "";
+            f ??= new MilestoneFilter();
+            var key = $"MilestonesOverview:v1" +
+                      $"|maps={Join(f.Maps)}" +
+                      $"|prelude={B(f.PreludeOn)}" +
+                      $"|colonies={B(f.ColoniesOn)}" +
+                      $"|draft={B(f.DraftOn)}" +
+                      $"|modes={Join(f.Modes)}" +
+                      $"|speeds={Join(f.Speeds)}" +
+                      $"|pc={JoinInt(f.PlayerCounts)}" +
+                      $"|eloMin={N(f.EloMin)}|eloMax={N(f.EloMax)}" +
+                      $"|genMin={N(f.GenerationsMin)}|genMax={N(f.GenerationsMax)}" +
+                      $"|claimMin={N(f.ClaimedGenMin)}|claimMax={N(f.ClaimedGenMax)}" +
+                      $"|tpMin={N(f.TimesPlayedMin)}|tpMax={N(f.TimesPlayedMax)}" +
+                      $"|player={(f.PlayerName ?? "").Trim().ToLowerInvariant()}" +
+                      $"|corp={(f.Corporation ?? "").Trim().ToLowerInvariant()}";
+            return key;
+        }
+
+        public async Task<List<MilestoneOverview>> GetMilestonesOverviewAsync(MilestoneFilter filter)
+        {
+            var cacheKey = BuildMilestonesCacheKey(filter);
+            if (Cache.TryGetValue(cacheKey, out List<MilestoneOverview> cached))
+            {
+                _logger.LogInformation("Returning milestones overview from cache for key {key}", cacheKey);
+                return cached;
+            }
+
+            var rows = await GetAllMilestoneClaimRowsAsync();
+            IEnumerable<MilestoneClaimRow> q = rows;
+
+            if (filter != null)
+            {
+                if (filter.Maps != null && filter.Maps.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.Map) && filter.Maps.Contains(r.Map));
+                if (filter.PreludeOn.HasValue)
+                    q = q.Where(r => r.PreludeOn == filter.PreludeOn.Value);
+                if (filter.ColoniesOn.HasValue)
+                    q = q.Where(r => r.ColoniesOn == filter.ColoniesOn.Value);
+                if (filter.DraftOn.HasValue)
+                    q = q.Where(r => r.DraftOn == filter.DraftOn.Value);
+                if (filter.Modes != null && filter.Modes.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.GameMode) && filter.Modes.Contains(r.GameMode));
+                if (filter.Speeds != null && filter.Speeds.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.GameSpeed) && filter.Speeds.Contains(r.GameSpeed));
+                if (filter.PlayerCounts != null && filter.PlayerCounts.Length > 0)
+                    q = q.Where(r => r.PlayerCount.HasValue && filter.PlayerCounts.Contains(r.PlayerCount.Value));
+                if (filter.EloMin.HasValue)
+                    q = q.Where(r => r.Elo.HasValue && r.Elo.Value >= filter.EloMin.Value);
+                if (filter.EloMax.HasValue)
+                    q = q.Where(r => r.Elo.HasValue && r.Elo.Value <= filter.EloMax.Value);
+                if (filter.GenerationsMin.HasValue)
+                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value >= filter.GenerationsMin.Value);
+                if (filter.GenerationsMax.HasValue)
+                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value <= filter.GenerationsMax.Value);
+                if (!string.IsNullOrWhiteSpace(filter.PlayerName))
+                    q = q.Where(r => !string.IsNullOrEmpty(r.PlayerName) && r.PlayerName.Contains(filter.PlayerName, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(filter.Corporation))
+                    q = q.Where(r => !string.IsNullOrEmpty(r.Corporation) && r.Corporation.Equals(filter.Corporation, StringComparison.OrdinalIgnoreCase));
+                if (filter.ClaimedGenMin.HasValue)
+                    q = q.Where(r => r.ClaimedGen >= filter.ClaimedGenMin.Value);
+                if (filter.ClaimedGenMax.HasValue)
+                    q = q.Where(r => r.ClaimedGen <= filter.ClaimedGenMax.Value);
+            }
+
+            var grouped = q.GroupBy(r => r.Milestone);
+
+            var list = new List<MilestoneOverview>();
+            foreach (var g in grouped)
+            {
+                var n = g.Count();
+                if (n == 0) continue;
+
+                var wins = g.Count(r => r.Position == 1);
+                var avgEloGain = g.Select(r => (double)(r.EloChange ?? 0)).DefaultIfEmpty(0).Average();
+                var avgElo = g.Select(r => (double)(r.Elo ?? 0)).DefaultIfEmpty(0).Average();
+                var avgGenClaimed = g.Select(r => (double)r.ClaimedGen).DefaultIfEmpty(0).Average();
+
+                list.Add(new MilestoneOverview
+                {
+                    Milestone = g.Key,
+                    TimesClaimed = n,
+                    WinRate = n == 0 ? 0 : (double)wins / n,
+                    AvgEloGain = avgEloGain,
+                    AvgGenClaimed = avgGenClaimed,
+                    AvgElo = avgElo
+                });
+            }
+
+            if (filter?.TimesPlayedMin.HasValue == true)
+                list = list.Where(r => r.TimesClaimed >= filter.TimesPlayedMin.Value).ToList();
+            if (filter?.TimesPlayedMax.HasValue == true)
+                list = list.Where(r => r.TimesClaimed <= filter.TimesPlayedMax.Value).ToList();
+
+            Cache.Set(cacheKey, list, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+            });
+
+            _logger.LogInformation("Computed and cached milestones overview with {count} rows for key {key}", list.Count, cacheKey);
+            return list;
+        }
+
+        public async Task<MilestonesFilterOptions> GetMilestonesFilterOptionsAsync()
+        {
+            const string key = "MilestonesFilterOptions:v1";
+            if (Cache.TryGetValue(key, out MilestonesFilterOptions cached))
+            {
+                return cached;
+            }
+
+            var rows = await GetAllMilestoneClaimRowsAsync();
+            var gens = rows.Where(r => r.ClaimedGen.HasValue).Select(r => r.ClaimedGen!.Value).ToList();
+
+            var min = gens.Count > 0 ? gens.Min() : 0;
+            var max = gens.Count > 0 ? gens.Max() : 0;
+
+            var corporations = rows.Select(r => r.Corporation)
+                                   .Where(s => !string.IsNullOrWhiteSpace(s) && !string.Equals(s, "Unknown", StringComparison.OrdinalIgnoreCase))
+                                   .Distinct(StringComparer.OrdinalIgnoreCase)
+                                   .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                                   .ToArray();
+
+            var options = new MilestonesFilterOptions
+            {
+                ClaimedGenRange = new MilestonesFilterOptions.Range { Min = min, Max = max },
+                Corporations = corporations
+            };
+
+            Cache.Set(key, options, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+            });
+
+            return options;
+        }
+
         private async Task<List<MilestoneClaimRow>> ComputeMilestoneClaimRowsFromDbAsync()
         {
             var sql = @"

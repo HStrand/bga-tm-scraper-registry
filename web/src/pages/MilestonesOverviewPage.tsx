@@ -5,7 +5,10 @@ import { createPortal } from 'react-dom';
 import { MilestoneClaimRow, MilestoneOverviewRow, MilestoneFilters } from '@/types/milestone';
 import { FiltersPanel } from '@/components/FiltersPanel';
 import { Button } from '@/components/ui/button';
-import { getAllMilestoneClaimRowsCached, clearAllMilestoneClaimRowsCache } from '@/lib/milestoneCache';
+import { getMilestonesOverview, getMilestonesFilterOptions } from '@/lib/milestoneCache';
+import { getCorporationFilterOptions } from '@/lib/corpCache';
+import type { MilestonesFilterOptions } from '@/lib/milestoneCache';
+import type { CorporationFilterOptions } from '@/lib/corpCache';
 import { getMilestoneImage, getPlaceholderImage, slugToTitle, nameToSlug } from '@/lib/milestone';
 
 type SortField = keyof MilestoneOverviewRow;
@@ -14,7 +17,11 @@ type SortDirection = 'asc' | 'desc' | null;
 export function MilestonesOverviewPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<MilestoneClaimRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [overviewRows, setOverviewRows] = useState<MilestoneOverviewRow[]>([]);
+  const [milestoneOptions, setMilestoneOptions] = useState<MilestonesFilterOptions | null>(null);
+  const [globalOptions, setGlobalOptions] = useState<CorporationFilterOptions | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>('winRate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -86,198 +93,142 @@ export function MilestonesOverviewPage() {
     }
   );
 
-  // Fetch data
+  // Initial load: fetch options; if stored filters exist, load options in background and let the filters effect fetch overview
   useEffect(() => {
-    const fetchData = async () => {
+    const run = async () => {
       try {
-        setLoading(true);
+        setIsInitialLoad(true);
         setError(null);
-        const response = await getAllMilestoneClaimRowsCached();
-        setData(response);
 
-        // Initialize filters with all available options
-        const playerCounts = [...new Set(response.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
-        const maps = [...new Set(response.map(row => row.map).filter(Boolean))].sort() as string[];
-        const gameModes = [...new Set(response.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-        const gameSpeeds = [...new Set(response.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
+        if (meta.hasStoredValue) {
+          getCorporationFilterOptions().then(setGlobalOptions).catch(() => {});
+          getMilestonesFilterOptions().then(setMilestoneOptions).catch(() => {});
+          // Overview will be fetched by the filters effect
+        } else {
+          const [gOpts, mOpts] = await Promise.all([getCorporationFilterOptions(), getMilestonesFilterOptions()]);
+          setGlobalOptions(gOpts);
+          setMilestoneOptions(mOpts);
 
-        setFilters(prev => {
-          // If we already loaded a stored value, don't override with defaults
-          if (meta.hasStoredValue) return prev;
+          const playerCounts = gOpts.playerCounts;
+          const maps = gOpts.maps;
+          const gameModes = gOpts.gameModes;
+          const gameSpeeds = gOpts.gameSpeeds;
 
-          // Apply defaults only if previous filters were effectively empty (fresh load)
-          if (
-            prev.playerCounts.length === 0 &&
-            prev.maps.length === 0 &&
-            prev.gameModes.length === 0 &&
-            prev.gameSpeeds.length === 0 &&
-            prev.preludeOn === undefined &&
-            prev.coloniesOn === undefined &&
-            prev.draftOn === undefined &&
-            !prev.playerName &&
-            prev.eloMin === undefined &&
-            prev.eloMax === undefined &&
-            prev.timesPlayedMin === undefined &&
-            prev.timesPlayedMax === undefined
-          ) {
-            return {
-              playerCounts: playerCounts as number[],
-              maps,
-              gameModes,
-              gameSpeeds,
-              preludeOn: undefined,
-              coloniesOn: undefined,
-              draftOn: undefined,
-            };
-          }
-          return prev;
-        });
+          setFilters(prev => {
+            if (
+              prev.playerCounts.length === 0 &&
+              prev.maps.length === 0 &&
+              prev.gameModes.length === 0 &&
+              prev.gameSpeeds.length === 0 &&
+              prev.preludeOn === undefined &&
+              prev.coloniesOn === undefined &&
+              prev.draftOn === undefined &&
+              !prev.playerName &&
+              prev.eloMin === undefined &&
+              prev.eloMax === undefined &&
+              prev.timesPlayedMin === undefined &&
+              prev.timesPlayedMax === undefined
+            ) {
+              return {
+                playerCounts: playerCounts as number[],
+                maps,
+                gameModes,
+                gameSpeeds,
+                preludeOn: undefined,
+                coloniesOn: undefined,
+                draftOn: undefined,
+              };
+            }
+            return prev;
+          });
+
+          setIsInitialLoad(false);
+        }
       } catch (err) {
-        console.error('Error fetching milestone claim rows:', err);
+        console.error('Error preparing milestones overview:', err);
         setError('Failed to load milestone statistics. Please try again.');
-      } finally {
-        setLoading(false);
+        setIsInitialLoad(false);
       }
     };
 
-    fetchData();
+    run();
   }, []);
+
+  // Fetch milestones overview whenever filters change
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        setIsRefreshing(true);
+        setError(null);
+        const rows = await getMilestonesOverview(filters);
+        if (!cancelled) {
+          setOverviewRows(rows);
+          setIsInitialLoad(false);
+        }
+      } catch (err) {
+        console.error('Error fetching milestones overview:', err);
+        if (!cancelled) setError('Failed to load milestone statistics. Please try again.');
+      } finally {
+        if (!cancelled) setIsRefreshing(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [filters]);
 
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => {
-    return [...new Set(data.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!) as number[];
-  }, [data]);
+    return globalOptions?.playerCounts ?? [];
+  }, [globalOptions]);
 
   const availableMaps = useMemo(() => {
-    return [...new Set(data.map(row => row.map).filter(Boolean))].sort() as string[];
-  }, [data]);
+    return globalOptions?.maps ?? [];
+  }, [globalOptions]);
 
   const availableGameModes = useMemo(() => {
-    return [...new Set(data.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-  }, [data]);
+    return globalOptions?.gameModes ?? [];
+  }, [globalOptions]);
 
   const availableGameSpeeds = useMemo(() => {
-    return [...new Set(data.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
-  }, [data]);
+    return globalOptions?.gameSpeeds ?? [];
+  }, [globalOptions]);
 
   const availablePlayerNames = useMemo(() => {
-    return [...new Set(data.map(row => row.playerName).filter(Boolean))].sort() as string[];
-  }, [data]);
+    return [] as string[]; // use server-side autocomplete
+  }, []);
   
   const availableCorporations = useMemo(() => {
-    return [...new Set(data.map(row => row.corporation).filter(c => !!c && c !== 'Unknown'))].sort() as string[];
-  }, [data]);
+    return milestoneOptions?.corporations ?? [];
+  }, [milestoneOptions]);
 
   const eloRange = useMemo(() => {
-    const elos = data.map(row => row.elo).filter(Boolean) as number[];
     return {
-      min: Math.min(...elos) || 0,
-      max: Math.max(...elos) || 2000,
+      min: globalOptions?.eloRange.min ?? 0,
+      max: globalOptions?.eloRange.max ?? 0,
     };
-  }, [data]);
+  }, [globalOptions]);
 
   const generationsRange = useMemo(() => {
-    const gens = data.map(row => row.generations).filter(Boolean) as number[];
     return {
-      min: Math.min(...gens) || 0,
-      max: Math.max(...gens) || 20,
+      min: globalOptions?.generationsRange.min ?? 0,
+      max: globalOptions?.generationsRange.max ?? 0,
     };
-  }, [data]);
+  }, [globalOptions]);
 
   const playedGenRange = useMemo(() => {
-    const claimedGens = data.map(row => row.claimedGen).filter(Boolean) as number[];
     return {
-      min: Math.min(...claimedGens) || 0,
-      max: Math.max(...claimedGens) || 20,
+      min: milestoneOptions?.claimedGenRange.min ?? 0,
+      max: milestoneOptions?.claimedGenRange.max ?? 0,
     };
-  }, [data]);
+  }, [milestoneOptions]);
 
-  // Filter data based on current filters
-  const filteredData = useMemo(() => {
-    return data.filter(row => {
-      // Elo range filter
-      if (filters.eloMin && (!row.elo || row.elo < filters.eloMin)) return false;
-      if (filters.eloMax && (!row.elo || row.elo > filters.eloMax)) return false;
-
-      // Player name filter
-      if (filters.playerName && row.playerName !== filters.playerName) return false;
-      
-      // Corporation filter
-      if (filters.corporation && row.corporation !== filters.corporation) return false;
-
-      // Player count filter (only apply when user has selected one or more)
-      if (filters.playerCounts.length > 0 && row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
-
-      // Map filter (only apply when user has selected one or more)
-      if (filters.maps.length > 0 && row.map && !filters.maps.includes(row.map)) return false;
-
-      // Game mode filter (only apply when user has selected one or more)
-      if (filters.gameModes.length > 0 && row.gameMode && !filters.gameModes.includes(row.gameMode)) return false;
-
-      // Game speed filter (only apply when user has selected one or more)
-      if (filters.gameSpeeds.length > 0 && row.gameSpeed && !filters.gameSpeeds.includes(row.gameSpeed)) return false;
-
-      // Expansion filters
-      if (filters.preludeOn !== undefined && row.preludeOn !== filters.preludeOn) return false;
-      if (filters.coloniesOn !== undefined && row.coloniesOn !== filters.coloniesOn) return false;
-      if (filters.draftOn !== undefined && row.draftOn !== filters.draftOn) return false;
-
-      // Generations filter
-      if (filters.generationsMin !== undefined && (row.generations === undefined || row.generations < filters.generationsMin)) return false;
-      if (filters.generationsMax !== undefined && (row.generations === undefined || row.generations > filters.generationsMax)) return false;
-
-      // Claimed generation filter
-      if (filters.playedGenMin !== undefined && (row.claimedGen === undefined || row.claimedGen < filters.playedGenMin)) return false;
-      if (filters.playedGenMax !== undefined && (row.claimedGen === undefined || row.claimedGen > filters.playedGenMax)) return false;
-
-      return true;
-    });
-  }, [data, filters]);
+  // Server-side filtering: overview is fetched from API when filters change
+  const filteredData: MilestoneClaimRow[] = [];
 
   // Aggregate data by milestone
-  const milestoneOverview = useMemo((): MilestoneOverviewRow[] => {
-    const milestoneMap = new Map<string, {
-      totalClaims: number;
-      wins: number;
-      eloSum: number;
-      eloChangeSum: number;
-      claimedGenSum: number;
-    }>();
-
-    filteredData.forEach(row => {
-      const existing = milestoneMap.get(row.milestone) || { 
-        totalClaims: 0, 
-        wins: 0, 
-        eloSum: 0, 
-        eloChangeSum: 0, 
-        claimedGenSum: 0 
-      };
-      
-      existing.totalClaims++;
-      if (row.position === 1) existing.wins++;
-      existing.eloSum += row.elo || 0;
-      existing.eloChangeSum += row.eloChange || 0;
-      existing.claimedGenSum += row.claimedGen || 0;
-      
-      milestoneMap.set(row.milestone, existing);
-    });
-
-    const result: MilestoneOverviewRow[] = [];
-    milestoneMap.forEach((value, milestone) => {
-      if (value.totalClaims > 0) {
-        result.push({
-          milestone,
-          timesClaimed: value.totalClaims,
-          winRate: value.wins / value.totalClaims,
-          avgEloGain: value.eloChangeSum / value.totalClaims,
-          avgGenClaimed: value.claimedGenSum / value.totalClaims,
-          avgElo: value.eloSum / value.totalClaims,
-        });
-      }
-    });
-
-    return result;
-  }, [filteredData]);
+  // Use server-provided aggregated rows
+  const milestoneOverview: MilestoneOverviewRow[] = useMemo(() => overviewRows, [overviewRows]);
 
   // Calculate times played range from aggregated data
   const timesPlayedRange = useMemo(() => {
@@ -384,15 +335,17 @@ export function MilestonesOverviewPage() {
 
   const handleRefresh = async () => {
     try {
-      setLoading(true);
+      setIsRefreshing(true);
       setError(null);
-      const response = await getAllMilestoneClaimRowsCached(true); // Force refresh
-      setData(response);
+      const [mOpts] = await Promise.all([getMilestonesFilterOptions(true)]);
+      setMilestoneOptions(mOpts);
+      const rows = await getMilestonesOverview(filters);
+      setOverviewRows(rows);
     } catch (err) {
-      console.error('Error refreshing milestone claim rows:', err);
+      console.error('Error refreshing milestone statistics:', err);
       setError('Failed to refresh milestone statistics. Please try again.');
     } finally {
-      setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -460,7 +413,7 @@ export function MilestonesOverviewPage() {
                 Compare milestone performance and claim statistics
               </p>
             </div>
-            <Button onClick={handleRefresh} variant="outline" disabled={loading}>
+            <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing || isInitialLoad}>
               Refresh Data
             </Button>
           </div>
@@ -471,7 +424,7 @@ export function MilestonesOverviewPage() {
           {/* Filters sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              {!loading && (
+              {!isInitialLoad && globalOptions && milestoneOptions && (
                 <FiltersPanel
                   filters={filters}
                   onFiltersChange={handleFiltersChange}
@@ -493,7 +446,7 @@ export function MilestonesOverviewPage() {
 
           {/* Table area */}
           <div className="lg:col-span-3">
-            {loading ? (
+            {isInitialLoad ? (
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
                 <div className="h-6 w-48 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-4"></div>
                 <div className="space-y-3">

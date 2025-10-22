@@ -155,3 +155,111 @@ export function getCacheStatus(): {
                  localEntry?.fetchedAt ? new Date(localEntry.fetchedAt) : undefined,
   };
 }
+
+/**
+ * SERVER-SIDE FILTERING: Milestones overview
+ */
+import type { MilestoneOverviewRow } from '@/types/milestone';
+import type { CorporationFilters } from '@/types/corporation';
+
+interface MilestonesOverviewApiRow {
+  milestone: string;
+  timesClaimed: number;
+  winRate: number;       // 0..1 from API
+  avgEloGain: number;
+  avgGenClaimed: number;
+  avgElo: number;
+}
+
+export interface MilestonesFilterOptions {
+  claimedGenRange: { min: number; max: number };
+  corporations: string[];
+}
+
+const MILESTONES_OPTIONS_CACHE_KEY = 'milestones:options:v1';
+let milestonesOptionsInMemory: { data: MilestonesFilterOptions; fetchedAt: number } | null = null;
+const MILESTONES_OPTIONS_TTL_MS = 30 * 60 * 1000;
+
+function buildMilestonesQuery(filters: CorporationFilters): string {
+  const params = new URLSearchParams();
+
+  const pushCsv = (key: string, arr?: (string | number)[]) => {
+    if (arr && arr.length > 0) params.set(key, arr.join(','));
+  };
+
+  if (filters.eloMin !== undefined) params.set('eloMin', String(filters.eloMin));
+  if (filters.eloMax !== undefined) params.set('eloMax', String(filters.eloMax));
+  if (filters.generationsMin !== undefined) params.set('generationsMin', String(filters.generationsMin));
+  if (filters.generationsMax !== undefined) params.set('generationsMax', String(filters.generationsMax));
+  if (filters.timesPlayedMin !== undefined) params.set('timesPlayedMin', String(filters.timesPlayedMin));
+  if (filters.timesPlayedMax !== undefined) params.set('timesPlayedMax', String(filters.timesPlayedMax));
+  if (filters.playedGenMin !== undefined) params.set('claimedGenMin', String(filters.playedGenMin));
+  if (filters.playedGenMax !== undefined) params.set('claimedGenMax', String(filters.playedGenMax));
+  if (filters.playerName) params.set('playerName', filters.playerName);
+  if (filters.corporation) params.set('corporation', filters.corporation);
+  if (filters.preludeOn !== undefined) params.set('preludeOn', String(filters.preludeOn));
+  if (filters.coloniesOn !== undefined) params.set('coloniesOn', String(filters.coloniesOn));
+  if (filters.draftOn !== undefined) params.set('draftOn', String(filters.draftOn));
+
+  pushCsv('playerCounts', filters.playerCounts);
+  pushCsv('maps', filters.maps);
+  pushCsv('modes', filters.gameModes);
+  pushCsv('speeds', filters.gameSpeeds);
+
+  return params.toString();
+}
+
+export async function getMilestonesOverview(filters: CorporationFilters): Promise<MilestoneOverviewRow[]> {
+  const qs = buildMilestonesQuery(filters);
+  const url = `/api/milestones/overview${qs ? `?${qs}` : ''}`;
+  const res = await api.get<MilestonesOverviewApiRow[]>(url);
+  const rows = res.data ?? [];
+  // API already returns proper types/ranges
+  return rows.map(r => ({
+    milestone: r.milestone,
+    timesClaimed: r.timesClaimed,
+    winRate: r.winRate ?? 0,
+    avgEloGain: r.avgEloGain ?? 0,
+    avgGenClaimed: r.avgGenClaimed ?? 0,
+    avgElo: r.avgElo ?? 0,
+  }));
+}
+
+export async function getMilestonesFilterOptions(forceRefresh = false): Promise<MilestonesFilterOptions> {
+  const now = Date.now();
+  const fresh = (t: number) => now - t < MILESTONES_OPTIONS_TTL_MS;
+
+  if (forceRefresh) {
+    milestonesOptionsInMemory = null;
+    try { localStorage.removeItem(MILESTONES_OPTIONS_CACHE_KEY); } catch {}
+  }
+
+  if (milestonesOptionsInMemory && fresh(milestonesOptionsInMemory.fetchedAt)) {
+    return milestonesOptionsInMemory.data;
+  }
+
+  try {
+    const ls = localStorage.getItem(MILESTONES_OPTIONS_CACHE_KEY);
+    if (ls) {
+      const parsed = JSON.parse(ls) as { data: MilestonesFilterOptions; fetchedAt: number };
+      if (fresh(parsed.fetchedAt)) {
+        milestonesOptionsInMemory = parsed;
+        return parsed.data;
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  const res = await api.get<MilestonesFilterOptions>('/api/milestones/options');
+  const data = res.data;
+
+  milestonesOptionsInMemory = { data, fetchedAt: now };
+  try {
+    localStorage.setItem(MILESTONES_OPTIONS_CACHE_KEY, JSON.stringify(milestonesOptionsInMemory));
+  } catch {
+    // ignore storage quota errors
+  }
+
+  return data;
+}
