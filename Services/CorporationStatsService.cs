@@ -19,6 +19,7 @@ namespace BgaTmScraperRegistry.Services
         private const string CacheContainerName = "cache";
         private const string BlobName = "corporation-player-stats.json";
         private const string OptionsCacheKey = "CorpFilterOptions:v1";
+        private const string PlayerNamesIndexCacheKey = "PlayerNamesIndex:v1";
 
         private readonly string _connectionString;
         private readonly ILogger _logger;
@@ -162,6 +163,62 @@ namespace BgaTmScraperRegistry.Services
             _logger.LogInformation("Computed and cached corporation filter options");
 
             return options;
+        }
+
+        private async Task<Dictionary<string, int>> GetPlayerNameIndexAsync()
+        {
+            if (Cache.TryGetValue(PlayerNamesIndexCacheKey, out Dictionary<string, int> cached))
+            {
+                _logger.LogInformation("Returning player names index from memory cache");
+                return cached;
+            }
+
+            var rows = await GetAllCorporationPlayerStatsAsync();
+
+            var dict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var name in rows.Select(r => r.PlayerName).Where(n => !string.IsNullOrWhiteSpace(n)))
+            {
+                if (dict.TryGetValue(name, out var count))
+                {
+                    dict[name] = count + 1;
+                }
+                else
+                {
+                    dict[name] = 1;
+                }
+            }
+
+            Cache.Set(PlayerNamesIndexCacheKey, dict, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(60)
+            });
+
+            _logger.LogInformation("Built and cached player names index with {count} entries", dict.Count);
+            return dict;
+        }
+
+        public async Task<List<string>> GetPlayerNameSuggestionsAsync(string query, int limit = 10)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return new List<string>();
+            }
+
+            limit = Math.Clamp(limit, 1, 25);
+            var q = query.Trim();
+
+            var index = await GetPlayerNameIndexAsync();
+
+            // case-insensitive substring search; order by popularity then name
+            var matches = index
+                .Where(kv => kv.Key?.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0)
+                .OrderByDescending(kv => kv.Value)
+                .ThenBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+                .Take(limit)
+                .Select(kv => kv.Key)
+                .ToList();
+
+            return matches;
         }
 
         private static string BuildRankingsCacheKey(CorpFilter f)

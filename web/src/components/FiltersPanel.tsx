@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { CorporationFilters } from '@/types/corporation';
 import { Button } from '@/components/ui/button';
+import { searchPlayers } from '@/lib/corpCache';
 
 interface FiltersPanelProps {
   filters: CorporationFilters;
@@ -42,6 +43,7 @@ export function FiltersPanel({
   const [playerSearchQuery, setPlayerSearchQuery] = useState('');
   const [selectedPlayerIndex, setSelectedPlayerIndex] = useState(-1);
   const playerSearchRef = useRef<HTMLDivElement>(null);
+  const [playerSuggestions, setPlayerSuggestions] = useState<string[]>([]);
   const [corporationSearchOpen, setCorporationSearchOpen] = useState(false);
   const [corporationSearchQuery, setCorporationSearchQuery] = useState('');
   const [selectedCorporationIndex, setSelectedCorporationIndex] = useState(-1);
@@ -75,6 +77,29 @@ export function FiltersPanel({
 
     return () => clearTimeout(timer);
   }, [localFilters, onFiltersChange]);
+
+  // Debounced player name suggestions from server
+  useEffect(() => {
+    const q = playerSearchQuery.trim();
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      if (q.length >= 2) {
+        try {
+          const names = await searchPlayers(q, 10);
+          if (!cancelled) setPlayerSuggestions(names);
+        } catch {
+          if (!cancelled) setPlayerSuggestions([]);
+        }
+      } else {
+        if (!cancelled) setPlayerSuggestions([]);
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [playerSearchQuery]);
 
   const updateFilters = (updates: Partial<CorporationFilters>) => {
     setLocalFilters(prev => ({ ...prev, ...updates }));
@@ -122,9 +147,11 @@ export function FiltersPanel({
   };
 
   // Get filtered player names for keyboard navigation
-  const filteredPlayerNames = availablePlayerNames
-    .filter(name => name.toLowerCase().includes(playerSearchQuery.toLowerCase()))
-    .slice(0, 10);
+  const filteredPlayerNames = playerSearchQuery.length >= 2
+    ? playerSuggestions
+    : availablePlayerNames
+        .filter(name => name.toLowerCase().includes(playerSearchQuery.toLowerCase()))
+        .slice(0, 10);
 
   const selectPlayer = (playerName: string) => {
     updateFilters({ playerName });
@@ -153,6 +180,9 @@ export function FiltersPanel({
         e.preventDefault();
         if (selectedPlayerIndex >= 0 && selectedPlayerIndex < filteredPlayerNames.length) {
           selectPlayer(filteredPlayerNames[selectedPlayerIndex]);
+        } else if (playerSearchQuery.trim().length > 0) {
+          // Free-text entry applies the filter even without selecting a suggestion
+          selectPlayer(playerSearchQuery.trim());
         }
         break;
       case 'Escape':

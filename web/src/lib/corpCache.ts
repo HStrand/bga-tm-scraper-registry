@@ -257,3 +257,13 @@ export async function getCorporationFilterOptions(forceRefresh = false): Promise
 
   return data;
 }
+
+/**
+ * Player name suggestions (autocomplete)
+ */
+export async function searchPlayers(query: string, limit = 10): Promise<string[]> {
+  const q = query?.trim() ?? '';
+  if (q.length < 2) return [];
+  const res = await api.get<string[]>('/api/players/search', { params: { q, limit } });
+  return res.data ?? [];
+}
