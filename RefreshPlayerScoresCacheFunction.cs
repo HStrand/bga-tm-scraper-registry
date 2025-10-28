@@ -13,7 +13,7 @@ namespace BgaTmScraperRegistry
         [Disable("disableTriggers")]
         [FunctionName(nameof(RefreshPlayerScoresCache))]
         public static async Task Run(
-            [TimerTrigger("0 */10 * * * *")] TimerInfo timer,
+            [TimerTrigger("0 */42 * * * *")] TimerInfo timer,
             ILogger log)
         {
             log.LogInformation("RefreshPlayerScoresCache triggered at: {time}", DateTime.UtcNow);

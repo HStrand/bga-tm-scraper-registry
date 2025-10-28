@@ -13,7 +13,7 @@ namespace BgaTmScraperRegistry.Functions
         [Disable("disableTriggers")]
         [FunctionName(nameof(RefreshCorporationStatsCache))]
         public static async Task Run(
-            [TimerTrigger("0 */10 * * * *")] TimerInfo timer,
+            [TimerTrigger("0 */45 * * * *")] TimerInfo timer,
             ILogger log)
         {
             log.LogInformation("RefreshCorporationStatsCache triggered at: {time}", DateTime.UtcNow);

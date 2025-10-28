@@ -13,7 +13,7 @@ namespace BgaTmScraperRegistry.Functions
         [Disable("disableTriggers")]
         [FunctionName(nameof(RefreshCardStatsCache))]
         public static async Task Run(
-            [TimerTrigger("0 */10 * * * *")] TimerInfo timer,
+            [TimerTrigger("0 */60 * * * *")] TimerInfo timer,
             ILogger log)
         {
             log.LogInformation("RefreshCardStatsCache triggered at: {time}", DateTime.UtcNow);
