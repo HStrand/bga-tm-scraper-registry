@@ -78,6 +78,171 @@ namespace BgaTmScraperRegistry.Services
             _logger.LogInformation($"Refreshed player scores cache with {list.Count} rows");
         }
 
+        public class ScoreFilter
+        {
+            public string[] Maps { get; set; }
+            public string[] Modes { get; set; }
+            public string[] Speeds { get; set; }
+            public int[] PlayerCounts { get; set; }
+            public bool? PreludeOn { get; set; }
+            public bool? ColoniesOn { get; set; }
+            public bool? DraftOn { get; set; }
+            public int? EloMin { get; set; }
+            public int? EloMax { get; set; }
+            public int? GenerationsMin { get; set; }
+            public int? GenerationsMax { get; set; }
+            public string PlayerName { get; set; }
+            public string Corporation { get; set; }
+        }
+
+        public class ScoreFilterOptions
+        {
+            public string[] Maps { get; set; }
+            public string[] GameModes { get; set; }
+            public string[] GameSpeeds { get; set; }
+            public int[] PlayerCounts { get; set; }
+            public string[] Corporations { get; set; }
+            public Range EloRange { get; set; }
+            public Range GenerationsRange { get; set; }
+
+            public class Range
+            {
+                public int Min { get; set; }
+                public int Max { get; set; }
+            }
+        }
+
+        private static string BuildScoresCacheKey(ScoreFilter f, int limit)
+        {
+            string Join(string[] arr) => arr == null ? "" : string.Join(",", arr.OrderBy(x => x ?? string.Empty));
+            string JoinInt(int[] arr) => arr == null ? "" : string.Join(",", arr.OrderBy(x => x));
+            string B(bool? b) => b.HasValue ? (b.Value ? "1" : "0") : "";
+            string N(int? n) => n.HasValue ? n.Value.ToString() : "";
+            f ??= new ScoreFilter();
+            var key = $"HighScores:v1|maps={Join(f.Maps)}|modes={Join(f.Modes)}|speeds={Join(f.Speeds)}|pc={JoinInt(f.PlayerCounts)}|prelude={B(f.PreludeOn)}|colonies={B(f.ColoniesOn)}|draft={B(f.DraftOn)}|eloMin={N(f.EloMin)}|eloMax={N(f.EloMax)}|genMin={N(f.GenerationsMin)}|genMax={N(f.GenerationsMax)}|player={f.PlayerName?.Trim().ToLowerInvariant() ?? ""}|corp={f.Corporation?.Trim().ToLowerInvariant() ?? ""}|limit={limit}";
+            return key;
+        }
+
+        public async Task<ScoreFilterOptions> GetScoreFilterOptionsAsync()
+        {
+            // Build options from cached full list to keep payload small client-side
+            var rows = await GetPlayerScoresAsync();
+
+            var maps = rows.Where(r => !string.IsNullOrWhiteSpace(r.Map))
+                           .Select(r => r.Map)
+                           .Distinct()
+                           .OrderBy(x => x)
+                           .ToArray();
+
+            var modes = rows.Where(r => !string.IsNullOrWhiteSpace(r.GameMode))
+                            .Select(r => r.GameMode)
+                            .Distinct()
+                            .OrderBy(x => x)
+                            .ToArray();
+
+            var speeds = rows.Where(r => !string.IsNullOrWhiteSpace(r.GameSpeed))
+                             .Select(r => r.GameSpeed)
+                             .Distinct()
+                             .OrderBy(x => x)
+                             .ToArray();
+
+            var playerCounts = rows.Where(r => r.PlayerCount.HasValue)
+                                   .Select(r => r.PlayerCount!.Value)
+                                   .Distinct()
+                                   .OrderBy(x => x)
+                                   .ToArray();
+
+            var corporations = rows.Where(r => !string.IsNullOrWhiteSpace(r.Corporation))
+                                   .Select(r => r.Corporation)
+                                   .Distinct(StringComparer.OrdinalIgnoreCase)
+                                   .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                                   .ToArray();
+
+            // Treat Elo <= 0 as "missing"
+            var eloVals = rows.Select(r => r.Elo).Where(e => e > 0).ToArray();
+            var genVals = rows.Where(r => r.Generations.HasValue).Select(r => r.Generations!.Value).ToArray();
+
+            return new ScoreFilterOptions
+            {
+                Maps = maps,
+                GameModes = modes,
+                GameSpeeds = speeds,
+                PlayerCounts = playerCounts,
+                Corporations = corporations,
+                EloRange = new ScoreFilterOptions.Range
+                {
+                    Min = eloVals.Length > 0 ? eloVals.Min() : 0,
+                    Max = eloVals.Length > 0 ? eloVals.Max() : 0
+                },
+                GenerationsRange = new ScoreFilterOptions.Range
+                {
+                    Min = genVals.Length > 0 ? genVals.Min() : 0,
+                    Max = genVals.Length > 0 ? genVals.Max() : 0
+                }
+            };
+        }
+
+        public async Task<List<PlayerScore>> GetPlayerScoresFilteredAsync(ScoreFilter filter, int limit = 25)
+        {
+            // Try memory cache for filtered result
+            var cacheKey = BuildScoresCacheKey(filter, limit);
+            if (Cache.TryGetValue(cacheKey, out List<PlayerScore> cached))
+            {
+                _logger.LogInformation("Returning high scores from memory cache with key {key}", cacheKey);
+                return cached;
+            }
+
+            var rows = await GetPlayerScoresAsync();
+            IEnumerable<PlayerScore> q = rows;
+
+            if (filter != null)
+            {
+                if (filter.Maps != null && filter.Maps.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.Map) && filter.Maps.Contains(r.Map));
+                if (filter.Modes != null && filter.Modes.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.GameMode) && filter.Modes.Contains(r.GameMode));
+                if (filter.Speeds != null && filter.Speeds.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.GameSpeed) && filter.Speeds.Contains(r.GameSpeed));
+                if (filter.PlayerCounts != null && filter.PlayerCounts.Length > 0)
+                    q = q.Where(r => r.PlayerCount.HasValue && filter.PlayerCounts.Contains(r.PlayerCount.Value));
+
+                if (filter.PreludeOn.HasValue)
+                    q = q.Where(r => r.PreludeOn == filter.PreludeOn.Value);
+                if (filter.ColoniesOn.HasValue)
+                    q = q.Where(r => r.ColoniesOn == filter.ColoniesOn.Value);
+                if (filter.DraftOn.HasValue)
+                    q = q.Where(r => r.DraftOn == filter.DraftOn.Value);
+
+                // Elo range; treat 0 or less as "missing"
+                if (filter.EloMin.HasValue)
+                    q = q.Where(r => r.Elo > 0 && r.Elo >= filter.EloMin.Value);
+                if (filter.EloMax.HasValue)
+                    q = q.Where(r => r.Elo > 0 && r.Elo <= filter.EloMax.Value);
+
+                if (filter.GenerationsMin.HasValue)
+                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value >= filter.GenerationsMin.Value);
+                if (filter.GenerationsMax.HasValue)
+                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value <= filter.GenerationsMax.Value);
+
+                if (!string.IsNullOrWhiteSpace(filter.PlayerName))
+                    q = q.Where(r => !string.IsNullOrEmpty(r.PlayerName) && r.PlayerName.Contains(filter.PlayerName, StringComparison.OrdinalIgnoreCase));
+
+                if (!string.IsNullOrWhiteSpace(filter.Corporation))
+                    q = q.Where(r => !string.IsNullOrEmpty(r.Corporation) && r.Corporation.Equals(filter.Corporation, StringComparison.OrdinalIgnoreCase));
+            }
+
+            var list = q
+                .OrderByDescending(r => r.FinalScore)
+                .ThenByDescending(r => r.Elo) // stabilize ties by Elo if available
+                .Take(Math.Max(1, Math.Min(limit, 100)))
+                .ToList();
+
+            Cache.Set(cacheKey, list, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30) });
+            _logger.LogInformation("Computed and cached {count} filtered high scores for key {key}", list.Count, cacheKey);
+
+            return list;
+        }
+
         private async Task<List<PlayerScore>> ComputePlayerScoresFromDbAsync()
         {
             using var connection = new SqlConnection(_connectionString);

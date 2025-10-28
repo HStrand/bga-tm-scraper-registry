@@ -11,22 +11,20 @@ import type {
   PlayerMilestoneStats,
   PlayerAwardStats,
   MilestoneType,
-  AwardType,
-  HighScoreFilters
+  AwardType
 } from '@/types/leaderboard';
 import type { CorporationFilters } from '@/types/corporation';
 import {
-  getPlayerScores,
   getPlayerGreeneryStats,
   getPlayerParameterStats,
   getPlayerMilestoneStats,
   getPlayerAwardStats,
-  getTopScores,
   getTopGreeneries,
   getTopParameters,
   getTopMilestones,
   getTopAwards
 } from '@/lib/leaderboard';
+import { getHighScores, getLeaderboardScoreOptions, type ScoreFilterOptions } from '@/lib/scores';
 
 // Import images
 import vpImage from '/assets/vp.png';
@@ -125,6 +123,7 @@ export function LeaderboardsPage() {
   const [parameterStats, setParameterStats] = useState<PlayerParameterStats[]>([]);
   const [milestoneStats, setMilestoneStats] = useState<PlayerMilestoneStats[]>([]);
   const [awardStats, setAwardStats] = useState<PlayerAwardStats[]>([]);
+  const [scoreOptions, setScoreOptions] = useState<ScoreFilterOptions | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,42 +137,45 @@ export function LeaderboardsPage() {
 
         switch (currentView) {
           case 'scores':
-            if (playerScores.length === 0) {
-              const scores = await getPlayerScores();
-              setPlayerScores(scores);
-              
-              // Initialize filters with all available options
-              const playerCounts = [...new Set(scores.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
-              const maps = [...new Set(scores.map(row => row.map).filter(Boolean))].sort() as string[];
-              const gameModes = [...new Set(scores.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-              const gameSpeeds = [...new Set(scores.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
+            if (!scoreOptions) {
+              if (meta.hasStoredValue) {
+                getLeaderboardScoreOptions()
+                  .then(setScoreOptions)
+                  .catch(err => console.error('Error fetching score options:', err));
+              } else {
+                const opts = await getLeaderboardScoreOptions();
+                setScoreOptions(opts);
 
-              setFilters(prev => {
-                // If we already loaded a stored value, don't override with defaults
-                if (meta.hasStoredValue) return prev;
-
-                // Apply defaults only if previous filters were effectively empty (fresh load)
-                if (
-                  prev.playerCounts.length === 0 &&
-                  prev.maps.length === 0 &&
-                  prev.gameModes.length === 0 &&
-                  prev.gameSpeeds.length === 0 &&
-                  prev.preludeOn === undefined &&
-                  prev.coloniesOn === undefined &&
-                  prev.draftOn === undefined
-                ) {
-                  return {
-                    playerCounts: playerCounts as number[],
-                    maps,
-                    gameModes,
-                    gameSpeeds,
-                    preludeOn: undefined,
-                    coloniesOn: undefined,
-                    draftOn: undefined,
-                  };
-                }
-                return prev;
-              });
+                setFilters(prev => {
+                  // Apply defaults only if previous filters were effectively empty (fresh load)
+                  if (
+                    prev.playerCounts.length === 0 &&
+                    prev.maps.length === 0 &&
+                    prev.gameModes.length === 0 &&
+                    prev.gameSpeeds.length === 0 &&
+                    prev.preludeOn === undefined &&
+                    prev.coloniesOn === undefined &&
+                    prev.draftOn === undefined &&
+                    !prev.playerName &&
+                    !prev.corporation &&
+                    prev.eloMin === undefined &&
+                    prev.eloMax === undefined &&
+                    prev.generationsMin === undefined &&
+                    prev.generationsMax === undefined
+                  ) {
+                    return {
+                      playerCounts: opts.playerCounts as number[],
+                      maps: opts.maps,
+                      gameModes: opts.gameModes,
+                      gameSpeeds: opts.gameSpeeds,
+                      preludeOn: undefined,
+                      coloniesOn: undefined,
+                      draftOn: undefined,
+                    };
+                  }
+                  return prev;
+                });
+              }
             }
             break;
           case 'greeneries':
@@ -210,92 +212,72 @@ export function LeaderboardsPage() {
     };
 
     loadData();
-  }, [currentView, playerScores.length, greeneryStats.length, parameterStats.length, milestoneStats.length, awardStats.length]);
+  }, [currentView, scoreOptions, greeneryStats.length, parameterStats.length, milestoneStats.length, awardStats.length]);
 
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => {
-    return [...new Set(playerScores.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!) as number[];
-  }, [playerScores]);
+    return scoreOptions?.playerCounts ?? [];
+  }, [scoreOptions]);
 
   const availableMaps = useMemo(() => {
-    return [...new Set(playerScores.map(row => row.map).filter(Boolean))].sort() as string[];
-  }, [playerScores]);
+    return scoreOptions?.maps ?? [];
+  }, [scoreOptions]);
 
   const availableGameModes = useMemo(() => {
-    return [...new Set(playerScores.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-  }, [playerScores]);
+    return scoreOptions?.gameModes ?? [];
+  }, [scoreOptions]);
 
   const availableGameSpeeds = useMemo(() => {
-    return [...new Set(playerScores.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
-  }, [playerScores]);
+    return scoreOptions?.gameSpeeds ?? [];
+  }, [scoreOptions]);
 
   const availablePlayerNames = useMemo(() => {
-    return [...new Set(playerScores.map(row => row.playerName).filter(Boolean))].sort() as string[];
-  }, [playerScores]);
+    return [] as string[]; // autocomplete handled via server search; avoid shipping full list
+  }, []);
 
   const availableCorporations = useMemo(() => {
-    return [...new Set(playerScores.map(row => row.corporation).filter(Boolean))].sort() as string[];
-  }, [playerScores]);
+    return scoreOptions?.corporations ?? [];
+  }, [scoreOptions]);
 
   const eloRange = useMemo(() => {
-    const elos = playerScores.map(row => row.elo).filter(Boolean) as number[];
     return {
-      min: Math.min(...elos) || 0,
-      max: Math.max(...elos) || 2000,
+      min: scoreOptions?.eloRange.min ?? 0,
+      max: scoreOptions?.eloRange.max ?? 0,
     };
-  }, [playerScores]);
+  }, [scoreOptions]);
 
   const generationsRange = useMemo(() => {
-    const gens = playerScores.map(row => row.generations).filter(Boolean) as number[];
     return {
-      min: Math.min(...gens) || 0,
-      max: Math.max(...gens) || 20,
+      min: scoreOptions?.generationsRange.min ?? 0,
+      max: scoreOptions?.generationsRange.max ?? 0,
     };
-  }, [playerScores]);
+  }, [scoreOptions]);
 
-  // Filter data based on current filters
-  const filteredPlayerScores = useMemo(() => {
-    return playerScores.filter(row => {
-      // Elo range filter - exclude N/A elo when min/max elo filters are applied
-      if (filters.eloMin && (!row.elo || row.elo < filters.eloMin)) return false;
-      if (filters.eloMax && (!row.elo || row.elo > filters.eloMax)) return false;
-
-      // Player name filter
-      if (filters.playerName && row.playerName !== filters.playerName) return false;
-
-      // Corporation filter
-      if (filters.corporation && row.corporation !== filters.corporation) return false;
-
-      // Player count filter
-      if (row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
-
-      // Map filter
-      if (row.map && !filters.maps.includes(row.map)) return false;
-
-      // Game mode filter
-      if (row.gameMode && !filters.gameModes.includes(row.gameMode)) return false;
-
-      // Game speed filter
-      if (row.gameSpeed && !filters.gameSpeeds.includes(row.gameSpeed)) return false;
-
-      // Expansion filters
-      if (filters.preludeOn !== undefined && row.preludeOn !== filters.preludeOn) return false;
-      if (filters.coloniesOn !== undefined && row.coloniesOn !== filters.coloniesOn) return false;
-      if (filters.draftOn !== undefined && row.draftOn !== filters.draftOn) return false;
-
-      // Generations filter
-      if (filters.generationsMin !== undefined && (row.generations === null || row.generations === undefined || row.generations < filters.generationsMin)) return false;
-      if (filters.generationsMax !== undefined && (row.generations === null || row.generations === undefined || row.generations > filters.generationsMax)) return false;
-
-      return true;
-    });
-  }, [playerScores, filters]);
+  // Server-side filtering for High Scores: fetch rows whenever filters change
+  useEffect(() => {
+    if (currentView !== 'scores') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const rows = await getHighScores(filters, 25);
+        if (!cancelled) setPlayerScores(rows);
+      } catch (err) {
+        console.error('Error fetching high scores:', err);
+        if (!cancelled) setError('Failed to load high scores. Please try again.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [currentView, filters]);
 
   // Filter and get top data for current view
   const displayData = useMemo(() => {
     switch (currentView) {
       case 'scores':
-        return getTopScores(filteredPlayerScores, 25); // Top 25 for high scores
+        return playerScores; // Already filtered and limited server-side
       case 'greeneries':
         return getTopGreeneries(greeneryStats, greenerySortBy); // Top 25 (default)
       case 'parameters':
@@ -307,7 +289,7 @@ export function LeaderboardsPage() {
       default:
         return [];
     }
-  }, [currentView, filteredPlayerScores, greeneryStats, parameterStats, milestoneStats, awardStats, selectedMilestone, selectedAward, greenerySortBy]);
+  }, [currentView, playerScores, greeneryStats, parameterStats, milestoneStats, awardStats, selectedMilestone, selectedAward, greenerySortBy]);
 
   const handleFiltersChange = useCallback((newFilters: CorporationFilters) => {
     setFilters(newFilters);
@@ -604,7 +586,7 @@ export function LeaderboardsPage() {
           {/* Filters sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              {currentView === 'scores' && !loading && (
+              {currentView === 'scores' && scoreOptions && (
                 <FiltersPanel
                   filters={filters}
                   onFiltersChange={handleFiltersChange}
