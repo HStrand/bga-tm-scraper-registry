@@ -88,50 +88,64 @@ namespace BgaTmScraperRegistry.Services
             await connection.OpenAsync();
 
             var query = @"
-                ;WITH TharsisGames AS (
-                  SELECT
-                      gp.PlayerId,
-                      gp.PlayerName,
-                      TharsisGames = COUNT(DISTINCT gp.TableId)
-                  FROM dbo.GamePlayers AS gp
-                  JOIN dbo.Games      AS g  ON g.TableId = gp.TableId
-                  WHERE g.Map = N'Tharsis'
-                  GROUP BY gp.PlayerId, gp.PlayerName
-                ),
-                Milestones AS (
-                  SELECT
-                      gm.ClaimedBy AS PlayerId,
-                      Terraformer = SUM(CASE WHEN gm.Milestone = N'Terraformer' THEN 1 ELSE 0 END),
-                      Gardener    = SUM(CASE WHEN gm.Milestone = N'Gardener'    THEN 1 ELSE 0 END),
-                      Builder     = SUM(CASE WHEN gm.Milestone = N'Builder'     THEN 1 ELSE 0 END),
-                      Mayor       = SUM(CASE WHEN gm.Milestone = N'Mayor'       THEN 1 ELSE 0 END),
-                      Planner     = SUM(CASE WHEN gm.Milestone = N'Planner'     THEN 1 ELSE 0 END)
-                  FROM dbo.GameMilestones AS gm
-                  JOIN dbo.Games          AS g ON g.TableId = gm.TableId
-                  WHERE g.Map = N'Tharsis'
-                    AND gm.Milestone IN (N'Terraformer', N'Gardener', N'Builder', N'Mayor', N'Planner')
-                  GROUP BY gm.ClaimedBy
-                )
-                SELECT
-                    tg.PlayerId,
-                    tg.PlayerName,
-                    tg.TharsisGames,
-                    Terraformer = ISNULL(m.Terraformer, 0),
-                    Gardener    = ISNULL(m.Gardener,    0),
-                    Builder     = ISNULL(m.Builder,     0),
-                    Mayor       = ISNULL(m.Mayor,       0),
-                    Planner     = ISNULL(m.Planner,     0),
+                ;WITH PlayerTharsisTables AS (          -- all perspectives, de-duped
+  SELECT DISTINCT gp.PlayerId, gp.PlayerName, gp.TableId
+  FROM dbo.GamePlayers gp
+  JOIN dbo.Games g
+    ON g.TableId = gp.TableId
+  WHERE g.Map = N'Tharsis'
+),
+TharsisGames AS (
+  SELECT
+      PlayerId,
+      MAX(PlayerName) AS PlayerName,
+      TharsisGames = COUNT(DISTINCT TableId)
+  FROM PlayerTharsisTables
+  GROUP BY PlayerId
+),
+MilestoneClaims AS (                    -- de-dupe milestone rows, same key
+  SELECT
+      gm.ClaimedBy   AS PlayerId,
+      gm.Milestone,
+      Claims = COUNT(DISTINCT gm.TableId)
+  FROM dbo.GameMilestones gm
+  JOIN dbo.Games g
+    ON g.TableId = gm.TableId
+  WHERE g.Map = N'Tharsis'
+    AND gm.Milestone IN (N'Terraformer', N'Gardener', N'Builder', N'Mayor', N'Planner')
+  GROUP BY gm.ClaimedBy, gm.Milestone
+),
+MilestonesPivot AS (
+  SELECT
+      PlayerId,
+      Terraformer = SUM(CASE WHEN Milestone = N'Terraformer' THEN Claims ELSE 0 END),
+      Gardener    = SUM(CASE WHEN Milestone = N'Gardener'    THEN Claims ELSE 0 END),
+      Builder     = SUM(CASE WHEN Milestone = N'Builder'     THEN Claims ELSE 0 END),
+      Mayor       = SUM(CASE WHEN Milestone = N'Mayor'       THEN Claims ELSE 0 END),
+      Planner     = SUM(CASE WHEN Milestone = N'Planner'     THEN Claims ELSE 0 END)
+  FROM MilestoneClaims
+  GROUP BY PlayerId
+)
+SELECT
+    tg.PlayerId,
+    tg.PlayerName,
+    tg.TharsisGames,
+    Terraformer = ISNULL(mp.Terraformer, 0),
+    Gardener    = ISNULL(mp.Gardener,    0),
+    Builder     = ISNULL(mp.Builder,     0),
+    Mayor       = ISNULL(mp.Mayor,       0),
+    Planner     = ISNULL(mp.Planner,     0),
 
-                    -- rates (claims per Tharsis game)
-                    TerraformerRate = CAST(ISNULL(m.Terraformer, 0) AS decimal(18,4)) / NULLIF(tg.TharsisGames, 0),
-                    GardenerRate    = CAST(ISNULL(m.Gardener,    0) AS decimal(18,4)) / NULLIF(tg.TharsisGames, 0),
-                    BuilderRate     = CAST(ISNULL(m.Builder,     0) AS decimal(18,4)) / NULLIF(tg.TharsisGames, 0),
-                    MayorRate       = CAST(ISNULL(m.Mayor,       0) AS decimal(18,4)) / NULLIF(tg.TharsisGames, 0),
-                    PlannerRate     = CAST(ISNULL(m.Planner,     0) AS decimal(18,4)) / NULLIF(tg.TharsisGames, 0)
-                FROM TharsisGames AS tg
-                LEFT JOIN Milestones AS m
-                  ON m.PlayerId = tg.PlayerId
-                WHERE tg.TharsisGames >= 30";
+    TerraformerRate = CAST(ISNULL(mp.Terraformer, 0) AS decimal(18,4)) / NULLIF(tg.TharsisGames, 0),
+    GardenerRate    = CAST(ISNULL(mp.Gardener,    0) AS decimal(18,4)) / NULLIF(tg.TharsisGames, 0),
+    BuilderRate     = CAST(ISNULL(mp.Builder,     0) AS decimal(18,4)) / NULLIF(tg.TharsisGames, 0),
+    MayorRate       = CAST(ISNULL(mp.Mayor,       0) AS decimal(18,4)) / NULLIF(tg.TharsisGames, 0),
+    PlannerRate     = CAST(ISNULL(mp.Planner,     0) AS decimal(18,4)) / NULLIF(tg.TharsisGames, 0)
+FROM TharsisGames tg
+LEFT JOIN MilestonesPivot mp
+  ON mp.PlayerId = tg.PlayerId
+WHERE tg.TharsisGames >= 30;
+";
 
             var results = await connection.QueryAsync<PlayerMilestoneStats>(query, commandTimeout: 300); // 5 minutes
             return results.ToList();
