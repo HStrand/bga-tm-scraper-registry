@@ -100,6 +100,241 @@ namespace BgaTmScraperRegistry.Services
             }
         }
 
+        // Detail page DTOs
+        public class HistogramBin
+        {
+            public double Min { get; set; }
+            public double Max { get; set; }
+            public int Count { get; set; }
+            public string Label { get; set; }
+        }
+
+        public class CorpDetailSummary
+        {
+            public int TotalGames { get; set; }
+            public double WinRate { get; set; }            // 0..1 fraction
+            public double AvgElo { get; set; }
+            public double AvgEloChange { get; set; }
+            public double AvgFinalScore { get; set; }
+            public double AvgTr { get; set; }
+            public double AvgCardPoints { get; set; }
+            public double AvgGreeneryPoints { get; set; }
+            public double AvgCityPoints { get; set; }
+            public double AvgMilestonePoints { get; set; }
+            public double AvgAwardPoints { get; set; }
+            public double AvgDuration { get; set; }
+            public double AvgGenerations { get; set; }
+            public Dictionary<int, int> PositionsCount { get; set; } = new();
+            public Dictionary<int, int> PlayerCountDistribution { get; set; } = new();
+            public List<HistogramBin> EloHistogramBins { get; set; } = new();
+            public List<HistogramBin> EloChangeHistogramBins { get; set; } = new();
+        }
+
+        private static string BuildCorpDetailSummaryCacheKey(string corporation, CorpFilter f)
+        {
+            string Join(string[] arr) => arr == null ? "" : string.Join(",", arr.OrderBy(x => x ?? string.Empty));
+            string JoinInt(int[] arr) => arr == null ? "" : string.Join(",", arr.OrderBy(x => x));
+            string B(bool? b) => b.HasValue ? (b.Value ? "1" : "0") : "";
+            string N(int? n) => n.HasValue ? n.Value.ToString() : "";
+            f ??= new CorpFilter();
+            var key = $"CorpDetailSummary:v1|corp={corporation?.Trim().ToLowerInvariant()}|maps={Join(f.Maps)}|prelude={B(f.PreludeOn)}|colonies={B(f.ColoniesOn)}|draft={B(f.DraftOn)}|modes={Join(f.Modes)}|speeds={Join(f.Speeds)}|pc={JoinInt(f.PlayerCounts)}|eloMin={N(f.EloMin)}|eloMax={N(f.EloMax)}|genMin={N(f.GenerationsMin)}|genMax={N(f.GenerationsMax)}|player={f.PlayerName?.Trim().ToLowerInvariant() ?? ""}";
+            return key;
+        }
+
+        public async Task<CorpFilterOptions> GetCorporationDetailOptionsAsync(string corporation)
+        {
+            var rows = await GetAllCorporationPlayerStatsAsync();
+            var filtered = rows.Where(r => string.Equals(r.Corporation, corporation, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            var maps = filtered.Where(r => !string.IsNullOrWhiteSpace(r.Map))
+                               .Select(r => r.Map)
+                               .Distinct()
+                               .OrderBy(x => x)
+                               .ToArray();
+
+            var modes = filtered.Where(r => !string.IsNullOrWhiteSpace(r.GameMode))
+                                .Select(r => r.GameMode)
+                                .Distinct()
+                                .OrderBy(x => x)
+                                .ToArray();
+
+            var speeds = filtered.Where(r => !string.IsNullOrWhiteSpace(r.GameSpeed))
+                                 .Select(r => r.GameSpeed)
+                                 .Distinct()
+                                 .OrderBy(x => x)
+                                 .ToArray();
+
+            var playerCounts = filtered.Where(r => r.PlayerCount.HasValue)
+                                       .Select(r => r.PlayerCount!.Value)
+                                       .Distinct()
+                                       .OrderBy(x => x)
+                                       .ToArray();
+
+            var eloVals = filtered.Where(r => r.Elo.HasValue && r.Elo.Value > 0).Select(r => r.Elo!.Value).ToArray();
+            var genVals = filtered.Where(r => r.Generations.HasValue).Select(r => r.Generations!.Value).ToArray();
+
+            return new CorpFilterOptions
+            {
+                Maps = maps,
+                GameModes = modes,
+                GameSpeeds = speeds,
+                PlayerCounts = playerCounts,
+                EloRange = new CorpFilterOptions.Range
+                {
+                    Min = eloVals.Length > 0 ? eloVals.Min() : 0,
+                    Max = eloVals.Length > 0 ? eloVals.Max() : 0
+                },
+                GenerationsRange = new CorpFilterOptions.Range
+                {
+                    Min = genVals.Length > 0 ? genVals.Min() : 0,
+                    Max = genVals.Length > 0 ? genVals.Max() : 0
+                }
+            };
+        }
+
+        public async Task<CorpDetailSummary> GetCorporationDetailSummaryAsync(string corporation, CorpFilter filter)
+        {
+            var cacheKey = BuildCorpDetailSummaryCacheKey(corporation, filter);
+            if (Cache.TryGetValue(cacheKey, out CorpDetailSummary cached))
+            {
+                _logger.LogInformation("Returning corp detail summary from memory cache for {corp}", corporation);
+                return cached;
+            }
+
+            var rows = await GetAllCorporationPlayerStatsAsync();
+            IEnumerable<CorporationPlayerStatsRow> q = rows.Where(r => string.Equals(r.Corporation, corporation, StringComparison.OrdinalIgnoreCase));
+
+            if (filter != null)
+            {
+                if (filter.Maps != null && filter.Maps.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.Map) && filter.Maps.Contains(r.Map));
+                if (filter.PreludeOn.HasValue)
+                    q = q.Where(r => r.PreludeOn == filter.PreludeOn.Value);
+                if (filter.ColoniesOn.HasValue)
+                    q = q.Where(r => r.ColoniesOn == filter.ColoniesOn.Value);
+                if (filter.DraftOn.HasValue)
+                    q = q.Where(r => r.DraftOn == filter.DraftOn.Value);
+                if (filter.Modes != null && filter.Modes.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.GameMode) && filter.Modes.Contains(r.GameMode));
+                if (filter.Speeds != null && filter.Speeds.Length > 0)
+                    q = q.Where(r => !string.IsNullOrEmpty(r.GameSpeed) && filter.Speeds.Contains(r.GameSpeed));
+                if (filter.PlayerCounts != null && filter.PlayerCounts.Length > 0)
+                    q = q.Where(r => r.PlayerCount.HasValue && filter.PlayerCounts.Contains(r.PlayerCount.Value));
+                if (filter.EloMin.HasValue)
+                    q = q.Where(r => r.Elo.HasValue && r.Elo.Value > 0 && r.Elo.Value >= filter.EloMin.Value);
+                if (filter.EloMax.HasValue)
+                    q = q.Where(r => r.Elo.HasValue && r.Elo.Value > 0 && r.Elo.Value <= filter.EloMax.Value);
+                if (filter.GenerationsMin.HasValue)
+                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value >= filter.GenerationsMin.Value);
+                if (filter.GenerationsMax.HasValue)
+                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value <= filter.GenerationsMax.Value);
+                if (!string.IsNullOrWhiteSpace(filter.PlayerName))
+                    q = q.Where(r => !string.IsNullOrEmpty(r.PlayerName) && r.PlayerName.Contains(filter.PlayerName, StringComparison.OrdinalIgnoreCase));
+            }
+
+            var list = q.ToList();
+            var valid = list.Where(r => r.FinalScore.HasValue).ToList();
+            var total = valid.Count;
+
+            var summary = new CorpDetailSummary();
+            if (total == 0)
+            {
+                Cache.Set(cacheKey, summary, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30) });
+                return summary;
+            }
+
+            int SafeInt(int? v) => v ?? 0;
+            double Avg(IEnumerable<int?> seq) => seq.Select(v => (double)(v ?? 0)).DefaultIfEmpty(0).Average();
+
+            var wins = valid.Count(r => (r.Position ?? 0) == 1);
+            summary.TotalGames = total;
+            summary.WinRate = total == 0 ? 0 : (double)wins / total;
+            summary.AvgElo = Avg(valid.Select(r => r.Elo));
+            summary.AvgEloChange = Avg(valid.Select(r => r.EloChange));
+            summary.AvgFinalScore = Avg(valid.Select(r => r.FinalScore));
+            summary.AvgTr = Avg(valid.Select(r => r.FinalTr));
+            summary.AvgCardPoints = Avg(valid.Select(r => r.CardPoints));
+            summary.AvgGreeneryPoints = Avg(valid.Select(r => r.GreeneryPoints));
+            summary.AvgCityPoints = Avg(valid.Select(r => r.CityPoints));
+            summary.AvgMilestonePoints = Avg(valid.Select(r => r.MilestonePoints));
+            summary.AvgAwardPoints = Avg(valid.Select(r => r.AwardPoints));
+            summary.AvgDuration = Avg(valid.Select(r => r.DurationMinutes));
+            summary.AvgGenerations = Avg(valid.Select(r => r.Generations));
+
+            summary.PositionsCount = valid.Where(r => r.Position.HasValue)
+                                          .GroupBy(r => r.Position!.Value)
+                                          .ToDictionary(g => g.Key, g => g.Count());
+
+            summary.PlayerCountDistribution = valid.Where(r => r.PlayerCount.HasValue)
+                                                   .GroupBy(r => r.PlayerCount!.Value)
+                                                   .ToDictionary(g => g.Key, g => g.Count());
+
+            // Elo histogram (dynamic bin count as on client)
+            var elos = valid.Where(r => r.Elo.HasValue && r.Elo.Value > 0).Select(r => (double)r.Elo!.Value).ToList();
+            summary.EloHistogramBins = BuildDynamicHistogram(elos);
+
+            // Elo change histogram: fixed -20..20 with 20 bins
+            var eloChanges = valid.Where(r => r.EloChange.HasValue).Select(r => (double)r.EloChange!.Value).ToList();
+            summary.EloChangeHistogramBins = BuildFixedHistogram(eloChanges, -20, 20, 20);
+
+            Cache.Set(cacheKey, summary, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30) });
+            return summary;
+        }
+
+        private static List<HistogramBin> BuildDynamicHistogram(List<double> values)
+        {
+            var bins = new List<HistogramBin>();
+            if (values == null || values.Count == 0) return bins;
+
+            var min = values.Min();
+            var max = values.Max();
+            if (min == max)
+            {
+                bins.Add(new HistogramBin { Min = min, Max = max, Count = values.Count, Label = $"{Math.Round(min)}-{Math.Round(max)}" });
+                return bins;
+            }
+
+            var binCount = Math.Min(12, Math.Max(5, (int)Math.Ceiling(values.Count / 20.0)));
+            var binSize = (max - min) / binCount;
+
+            for (int i = 0; i < binCount; i++)
+            {
+                var bMin = min + i * binSize;
+                var bMax = (i == binCount - 1) ? max : min + (i + 1) * binSize;
+                var count = values.Count(v => v >= bMin && (i == binCount - 1 ? v <= bMax : v < bMax));
+                bins.Add(new HistogramBin
+                {
+                    Min = bMin,
+                    Max = bMax,
+                    Count = count,
+                    Label = $"{Math.Round(bMin)}-{Math.Round(bMax)}"
+                });
+            }
+            return bins;
+        }
+
+        private static List<HistogramBin> BuildFixedHistogram(List<double> values, double min, double max, int binCount)
+        {
+            var bins = new List<HistogramBin>();
+            if (binCount <= 0) return bins;
+            var binSize = (max - min) / binCount;
+
+            for (int i = 0; i < binCount; i++)
+            {
+                var bMin = min + i * binSize;
+                var bMax = min + (i + 1) * binSize;
+                var count = values.Count(v => v >= min && v <= max && v >= bMin && (i == binCount - 1 ? v <= bMax : v < bMax));
+                bins.Add(new HistogramBin
+                {
+                    Min = bMin,
+                    Max = bMax,
+                    Count = count,
+                    Label = $"{Math.Round(bMin)}-{Math.Round(bMax)}"
+                });
+            }
+            return bins;
+        }
+
         public async Task<CorpFilterOptions> GetCorporationFilterOptionsAsync()
         {
             if (Cache.TryGetValue(OptionsCacheKey, out CorpFilterOptions cached))

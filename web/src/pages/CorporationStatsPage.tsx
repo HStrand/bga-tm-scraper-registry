@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useCookieState } from '@/hooks/useCookieState';
 import { useParams } from 'react-router-dom';
-import { CorporationPlayerStatsRow, CorporationStats, CorporationFilters, HistogramBin } from '@/types/corporation';
+import type { CorporationStats, CorporationFilters } from '@/types/corporation';
 import { CorporationHeader } from '@/components/CorporationHeader';
 import { FiltersPanel } from '@/components/FiltersPanel';
 import { EloHistogram } from '@/components/charts/EloHistogram';
@@ -9,18 +9,38 @@ import { PositionsBar } from '@/components/charts/PositionsBar';
 import { GameDetailsTable } from '@/components/GameDetailsTable';
 import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/BackButton';
-import { api } from '@/lib/api';
+import {
+  getCorporationDetailOptions,
+  getCorporationDetailSummary,
+  getCorporationGames,
+  type CorporationDetailOptions,
+} from '@/lib/corporationDetails';
 
+/**
+ * Refactored to server-side filtering:
+ * - Loads small options payload for the selected corporation
+ * - Fetches compact summary (aggregates + histogram bins) when filters change
+ * - Only fetches game rows when switching to "Table View" (and with a cap)
+ */
 export function CorporationStatsPage() {
   const { name } = useParams<{ name: string }>();
-  const [data, setData] = useState<CorporationPlayerStatsRow[]>([]);
+  const [options, setOptions] = useState<CorporationDetailOptions | null>(null);
+  const [summary, setSummary] = useState<CorporationStats & {
+    eloHistogramBins: { min: number; max: number; count: number; label: string }[];
+    eloChangeHistogramBins: { min: number; max: number; count: number; label: string }[];
+  } | null>(null);
+
+  const [games, setGames] = useState<import('@/types/corporation').CorporationPlayerStatsRow[]>([]);
+  const [gamesTotal, setGamesTotal] = useState<number>(0);
+
   const [loading, setLoading] = useState(true);
+  const [loadingGames, setLoadingGames] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
 
   // Initialize filters with all options selected (persisted per page via cookie)
   const [filters, setFilters, , meta] = useCookieState<CorporationFilters>(
-    'tm_filters_corporation_details_v1',
+    'tm_filters_corporation_details_v2', // bump cookie key because behavior changed
     {
       playerCounts: [],
       maps: [],
@@ -35,32 +55,22 @@ export function CorporationStatsPage() {
   // Decode the corporation name from the URL parameter
   const corporationName = useMemo(() => (name ? decodeURIComponent(name) : ''), [name]);
 
-  // Fetch data
+  // Load options first (small payload)
   useEffect(() => {
-    if (!name) return;
-
-    const fetchData = async () => {
+    if (!corporationName) return;
+    let cancelled = false;
+    (async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        // Fetch corporation stats from the new API
-        const response = await api.get<CorporationPlayerStatsRow[]>(`/api/corporations/${encodeURIComponent(corporationName)}/playerstats`);
-        const responseData: CorporationPlayerStatsRow[] = response.data;
-        setData(responseData);
+        const opts = await getCorporationDetailOptions(corporationName);
+        if (cancelled) return;
+        setOptions(opts);
 
-        // Initialize filters with all available options
-        const playerCounts = [...new Set(responseData.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!);
-        const maps = [...new Set(responseData.map(row => row.map).filter(Boolean))].sort() as string[];
-        const gameModes = [...new Set(responseData.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-        const gameSpeeds = [...new Set(responseData.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
-
+        // Initialize defaults once if no stored filters exist
         setFilters(prev => {
-          // If we already loaded a stored value, don't override with defaults
           if (meta.hasStoredValue) return prev;
-
-          // Apply defaults only if previous filters were effectively empty (fresh load)
-          if (
+          const isEmpty =
             prev.playerCounts.length === 0 &&
             prev.maps.length === 0 &&
             prev.gameModes.length === 0 &&
@@ -70,13 +80,16 @@ export function CorporationStatsPage() {
             prev.draftOn === undefined &&
             !prev.playerName &&
             prev.eloMin === undefined &&
-            prev.eloMax === undefined
-          ) {
+            prev.eloMax === undefined &&
+            prev.generationsMin === undefined &&
+            prev.generationsMax === undefined;
+
+          if (isEmpty) {
             return {
-              playerCounts: playerCounts as number[],
-              maps,
-              gameModes,
-              gameSpeeds,
+              playerCounts: (opts.playerCounts ?? []) as number[],
+              maps: opts.maps ?? [],
+              gameModes: opts.gameModes ?? [],
+              gameSpeeds: opts.gameSpeeds ?? [],
               preludeOn: undefined,
               coloniesOn: undefined,
               draftOn: undefined,
@@ -85,222 +98,79 @@ export function CorporationStatsPage() {
           return prev;
         });
       } catch (err) {
-        console.error('Error fetching corporation stats:', err);
-        setError('Failed to load corporation statistics. Please try again.');
+        console.error('Error fetching corporation options:', err);
+        if (!cancelled) setError('Failed to load corporation options. Please try again.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    };
+    })();
+    return () => { cancelled = true; };
+  }, [corporationName]);
 
-    fetchData();
-  }, [name, corporationName]);
+  // Fetch compact summary whenever filters change
+  useEffect(() => {
+    if (!corporationName || !options) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const s = await getCorporationDetailSummary(corporationName, filters);
+        if (!cancelled) setSummary(s);
+      } catch (err) {
+        console.error('Error fetching corporation summary:', err);
+        if (!cancelled) setError('Failed to load corporation summary. Please try again.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [corporationName, options, filters]);
+
+  // Fetch game rows only when switching to table view
+  useEffect(() => {
+    if (viewMode !== 'table' || !corporationName) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadingGames(true);
+        setError(null);
+        // Fetch a capped number of rows to avoid large payloads; the table paginates locally.
+        const res = await getCorporationGames(corporationName, filters, 500, 0);
+        if (!cancelled) {
+          setGames(res.rows);
+          setGamesTotal(res.total);
+        }
+      } catch (err) {
+        console.error('Error fetching corporation games:', err);
+        if (!cancelled) setError('Failed to load games. Please try again.');
+      } finally {
+        if (!cancelled) setLoadingGames(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [viewMode, corporationName, filters]);
 
   // Get available options for filters
-  const availablePlayerCounts = useMemo(() => {
-    return [...new Set(data.map(row => row.playerCount).filter(Boolean))].sort((a, b) => a! - b!) as number[];
-  }, [data]);
+  const availablePlayerCounts = useMemo(() => options?.playerCounts ?? [], [options]);
+  const availableMaps = useMemo(() => options?.maps ?? [], [options]);
+  const availableGameModes = useMemo(() => options?.gameModes ?? [], [options]);
+  const availableGameSpeeds = useMemo(() => options?.gameSpeeds ?? [], [options]);
+  const availablePlayerNames = useMemo(() => [] as string[], []);
 
-  const availableMaps = useMemo(() => {
-    return [...new Set(data.map(row => row.map).filter(Boolean))].sort() as string[];
-  }, [data]);
+  const eloRange = useMemo(() => ({
+    min: options?.eloRange.min ?? 0,
+    max: options?.eloRange.max ?? 0,
+  }), [options]);
 
-  const availableGameModes = useMemo(() => {
-    return [...new Set(data.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-  }, [data]);
-
-  const availableGameSpeeds = useMemo(() => {
-    return [...new Set(data.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
-  }, [data]);
-
-  const availablePlayerNames = useMemo(() => {
-    return [...new Set(data.map(row => row.playerName).filter(Boolean))].sort() as string[];
-  }, [data]);
-
-  const eloRange = useMemo(() => {
-    const elos = data.map(row => row.elo).filter(Boolean) as number[];
-    return {
-      min: Math.min(...elos) || 0,
-      max: Math.max(...elos) || 2000,
-    };
-  }, [data]);
-
-  const generationsRange = useMemo(() => {
-    const gens = data.map(row => row.generations).filter(Boolean) as number[];
-    return {
-      min: Math.min(...gens) || 0,
-      max: Math.max(...gens) || 20,
-    };
-  }, [data]);
-
-  // Filter data based on current filters
-  const filteredData = useMemo(() => {
-    return data.filter(row => {
-      // Elo range filter - exclude N/A elo when min/max elo filters are applied
-      if (filters.eloMin && (!row.elo || row.elo < filters.eloMin)) return false;
-      if (filters.eloMax && (!row.elo || row.elo > filters.eloMax)) return false;
-
-      // Player name filter
-      if (filters.playerName && row.playerName !== filters.playerName) return false;
-
-      // Player count filter
-      if (row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
-
-      // Map filter
-      if (row.map && !filters.maps.includes(row.map)) return false;
-
-      // Game mode filter
-      if (row.gameMode && !filters.gameModes.includes(row.gameMode)) return false;
-
-      // Game speed filter
-      if (row.gameSpeed && !filters.gameSpeeds.includes(row.gameSpeed)) return false;
-
-      // Expansion filters
-      if (filters.preludeOn !== undefined && row.preludeOn !== filters.preludeOn) return false;
-      if (filters.coloniesOn !== undefined && row.coloniesOn !== filters.coloniesOn) return false;
-      if (filters.draftOn !== undefined && row.draftOn !== filters.draftOn) return false;
-
-      // Generations filter
-      if (filters.generationsMin !== undefined && (row.generations === undefined || row.generations < filters.generationsMin)) return false;
-      if (filters.generationsMax !== undefined && (row.generations === undefined || row.generations > filters.generationsMax)) return false;
-
-      return true;
-    });
-  }, [data, filters]);
-
-  // Compute statistics
-  const stats = useMemo((): CorporationStats => {
-    const validData = filteredData.filter(row => row.finalScore != null);
-    const totalGames = validData.length;
-
-    if (totalGames === 0) {
-      return {
-        totalGames: 0,
-        winRate: 0,
-        avgElo: 0,
-        avgEloChange: 0,
-        avgFinalScore: 0,
-        avgTr: 0,
-        avgCardPoints: 0,
-        avgGreeneryPoints: 0,
-        avgCityPoints: 0,
-        avgMilestonePoints: 0,
-        avgAwardPoints: 0,
-        avgDuration: 0,
-        avgGenerations: 0,
-        positionsCount: {},
-        playerCountDistribution: {},
-      };
-    }
-
-    const wins = validData.filter(row => row.position === 1).length;
-    const winRate = wins / totalGames;
-
-    const avgElo = validData.reduce((sum, row) => sum + (row.elo || 0), 0) / totalGames;
-    const avgEloChange = validData.reduce((sum, row) => sum + (row.eloChange || 0), 0) / totalGames;
-    const avgFinalScore = validData.reduce((sum, row) => sum + (row.finalScore || 0), 0) / totalGames;
-    const avgTr = validData.reduce((sum, row) => sum + (row.finalTr || 0), 0) / totalGames;
-    const avgCardPoints = validData.reduce((sum, row) => sum + (row.cardPoints || 0), 0) / totalGames;
-    const avgGreeneryPoints = validData.reduce((sum, row) => sum + (row.greeneryPoints || 0), 0) / totalGames;
-    const avgCityPoints = validData.reduce((sum, row) => sum + (row.cityPoints || 0), 0) / totalGames;
-    const avgMilestonePoints = validData.reduce((sum, row) => sum + (row.milestonePoints || 0), 0) / totalGames;
-    const avgAwardPoints = validData.reduce((sum, row) => sum + (row.awardPoints || 0), 0) / totalGames;
-    const avgDuration = validData.reduce((sum, row) => sum + (row.durationMinutes || 0), 0) / totalGames;
-    const avgGenerations = validData.reduce((sum, row) => sum + (row.generations || 0), 0) / totalGames;
-
-    // Position distribution
-    const positionsCount = validData.reduce((acc, row) => {
-      if (row.position) {
-        acc[row.position] = (acc[row.position] || 0) + 1;
-      }
-      return acc;
-    }, {} as Record<number, number>);
-
-    // Player count distribution
-    const playerCountDistribution = validData.reduce((acc, row) => {
-      if (row.playerCount) {
-        acc[row.playerCount] = (acc[row.playerCount] || 0) + 1;
-      }
-      return acc;
-    }, {} as Record<number, number>);
-
-    return {
-      totalGames,
-      winRate,
-      avgElo,
-      avgEloChange,
-      avgFinalScore,
-      avgTr,
-      avgCardPoints,
-      avgGreeneryPoints,
-      avgCityPoints,
-      avgMilestonePoints,
-      avgAwardPoints,
-      avgDuration,
-      avgGenerations,
-      positionsCount,
-      playerCountDistribution,
-    };
-  }, [filteredData]);
-
-  // Compute histogram data for Elo
-  const eloHistogramData = useMemo((): HistogramBin[] => {
-    const elos = filteredData.map(row => row.elo).filter(Boolean) as number[];
-    if (elos.length === 0) return [];
-
-    const min = Math.min(...elos);
-    const max = Math.max(...elos);
-    const binCount = Math.min(12, Math.max(5, Math.ceil(elos.length / 20))); // Dynamic bin count
-    const binSize = (max - min) / binCount;
-
-    const bins: HistogramBin[] = [];
-    for (let i = 0; i < binCount; i++) {
-      const binMin = min + i * binSize;
-      const binMax = i === binCount - 1 ? max : min + (i + 1) * binSize;
-      const count = elos.filter(elo => elo >= binMin && elo < binMax).length;
-      
-      bins.push({
-        min: binMin,
-        max: binMax,
-        count,
-        label: `${Math.round(binMin)}-${Math.round(binMax)}`,
-      });
-    }
-
-    return bins;
-  }, [filteredData]);
-
-  // Compute histogram data for Elo Change
-  const eloChangeHistogramData = useMemo((): HistogramBin[] => {
-    const eloChanges = filteredData.map(row => row.eloChange).filter(Boolean) as number[];
-    if (eloChanges.length === 0) return [];
-
-    // Fixed range from -20 to 20 with 20 bins
-    const min = -20;
-    const max = 20;
-    const binCount = 20;
-    const binSize = (max - min) / binCount;
-
-    const bins: HistogramBin[] = [];
-    for (let i = 0; i < binCount; i++) {
-      const binMin = min + i * binSize;
-      const binMax = min + (i + 1) * binSize;
-      // Filter elo changes to only include those within our range, then count those in this bin
-      const count = eloChanges.filter(change => change >= min && change <= max && change >= binMin && change < binMax).length;
-      
-      bins.push({
-        min: binMin,
-        max: binMax,
-        count,
-        label: `${Math.round(binMin)}-${Math.round(binMax)}`,
-      });
-    }
-
-    return bins;
-  }, [filteredData]);
+  const generationsRange = useMemo(() => ({
+    min: options?.generationsRange.min ?? 0,
+    max: options?.generationsRange.max ?? 0,
+  }), [options]);
 
   const handleFiltersChange = useCallback((newFilters: CorporationFilters) => {
     setFilters(newFilters);
-  }, []);
+  }, [setFilters]);
 
   if (!name) {
     return (
@@ -338,6 +208,24 @@ export function CorporationStatsPage() {
     );
   }
 
+  const headerStats: CorporationStats = summary ?? {
+    totalGames: 0,
+    winRate: 0,
+    avgElo: 0,
+    avgEloChange: 0,
+    avgFinalScore: 0,
+    avgTr: 0,
+    avgCardPoints: 0,
+    avgGreeneryPoints: 0,
+    avgCityPoints: 0,
+    avgMilestonePoints: 0,
+    avgAwardPoints: 0,
+    avgDuration: 0,
+    avgGenerations: 0,
+    positionsCount: {},
+    playerCountDistribution: {},
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -346,7 +234,7 @@ export function CorporationStatsPage() {
           <BackButton fallbackPath="/corporations" />
         </div>
         <div className="mb-8">
-          <CorporationHeader corporationName={corporationName} stats={stats} isLoading={loading} />
+          <CorporationHeader corporationName={corporationName} stats={headerStats} isLoading={loading} />
         </div>
 
         {/* Main content */}
@@ -354,7 +242,7 @@ export function CorporationStatsPage() {
           {/* Filters sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              {!loading && (
+              {!loading && options && (
                 <FiltersPanel
                   filters={filters}
                   onFiltersChange={handleFiltersChange}
@@ -370,7 +258,7 @@ export function CorporationStatsPage() {
             </div>
           </div>
 
-          {/* Charts area */}
+          {/* Charts/Table area */}
           <div className="lg:col-span-3">
             {loading ? (
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -408,13 +296,13 @@ export function CorporationStatsPage() {
                   <>
                     {/* Charts grid */}
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                      <EloHistogram data={eloHistogramData} />
-                      <PositionsBar data={stats.positionsCount} />
+                      <EloHistogram data={summary?.eloHistogramBins ?? []} />
+                      <PositionsBar data={headerStats.positionsCount} />
                     </div>
-                    {/* Elo change distribution - featured full width */}
+                    {/* Elo change distribution */}
                     <div className="w-full">
                       <EloHistogram
-                        data={eloChangeHistogramData}
+                        data={summary?.eloChangeHistogramBins ?? []}
                         title="Elo Change Distribution"
                         useRedGreenColors={true}
                         heightClass="h-72 md:h-80"
@@ -423,7 +311,23 @@ export function CorporationStatsPage() {
                   </>
                 ) : (
                   <div className="w-full">
-                    <GameDetailsTable data={filteredData} />
+                    {loadingGames ? (
+                      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+                        <div className="h-6 w-48 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-4"></div>
+                        <div className="space-y-3">
+                          {Array.from({ length: 10 }).map((_, i) => (
+                            <div key={i} className="h-12 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <GameDetailsTable data={games} />
+                    )}
+                    {gamesTotal > games.length && (
+                      <div className="text-xs text-slate-500 mt-2">
+                        Showing first {games.length.toLocaleString()} of {gamesTotal.toLocaleString()} games (refine filters to narrow results)
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
