@@ -335,6 +335,18 @@ namespace BgaTmScraperRegistry.Services
             return bins;
         }
 
+        private static void NormalizeCorporationNames(List<CorporationPlayerStatsRow> list)
+        {
+            if (list == null) return;
+            foreach (var r in list)
+            {
+                if (!string.IsNullOrWhiteSpace(r.Corporation) && r.Corporation.Equals("Allied Bank", StringComparison.OrdinalIgnoreCase))
+                {
+                    r.Corporation = "Allied Banks";
+                }
+            }
+        }
+
         public async Task<CorpFilterOptions> GetCorporationFilterOptionsAsync()
         {
             if (Cache.TryGetValue(OptionsCacheKey, out CorpFilterOptions cached))
@@ -556,6 +568,7 @@ namespace BgaTmScraperRegistry.Services
             var blobList = await TryReadFromBlobAsync();
             if (blobList != null && blobList.Count > 0)
             {
+                NormalizeCorporationNames(blobList);
                 Cache.Set(
                     AllCorporationStatsCacheKey,
                     blobList,
@@ -565,6 +578,8 @@ namespace BgaTmScraperRegistry.Services
             }
 
             var list = await ComputeFromDbAsync();
+
+            NormalizeCorporationNames(list);
 
             // Memory cache for 24h
             Cache.Set(
@@ -582,6 +597,8 @@ namespace BgaTmScraperRegistry.Services
         public async Task RefreshAllCorporationStatsCacheAsync()
         {
             var list = await ComputeFromDbAsync();
+
+            NormalizeCorporationNames(list);
 
             Cache.Set(
                 AllCorporationStatsCacheKey,

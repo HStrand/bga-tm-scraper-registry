@@ -2,23 +2,28 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useCookieState } from '@/hooks/useCookieState';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { PreludeStatsRow, PreludeOverviewRow, PreludeFilters } from '@/types/prelude';
+import { PreludeOverviewRow } from '@/types/prelude';
+import { FiltersPanel } from '@/components/FiltersPanel';
 import { Button } from '@/components/ui/button';
-import { getAllPreludeStatsCached, clearAllPreludeStatsCache } from '@/lib/preludeCache';
-import { getPreludeImage, getPreludePlaceholderImage, slugToPreludeName, preludeNameToSlug } from '@/lib/prelude';
+import { getPreludeRankings, getPreludeFilterOptions } from '@/lib/preludeCache';
+import type { PreludeFilterOptions } from '@/lib/preludeCache';
+import type { CorporationFilters } from '@/types/corporation';
+import { getPreludeImage, getPreludePlaceholderImage } from '@/lib/prelude';
 
 type SortField = keyof PreludeOverviewRow;
 type SortDirection = 'asc' | 'desc' | null;
 
 export function PreludesOverviewPage() {
   const navigate = useNavigate();
-  const [data, setData] = useState<PreludeStatsRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>('winRate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [overviewRows, setOverviewRows] = useState<PreludeOverviewRow[]>([]);
+  const [options, setOptions] = useState<PreludeFilterOptions | null>(null);
 
   // Hover preview tooltip state
   const [hoveredPrelude, setHoveredPrelude] = useState<{ slug: string; imageSrc: string; name: string } | null>(null);
@@ -27,14 +32,28 @@ export function PreludesOverviewPage() {
   const desiredMidYRef = useRef(0);
   const triggerRectRef = useRef<DOMRect | null>(null);
 
-  // Filters (persisted per page via cookie)
-  const [filters, setFilters] = useCookieState<PreludeFilters>(
+  // Initialize filters with all options selected (persisted per page via cookie)
+  const [filters, setFilters, , meta] = useCookieState<CorporationFilters>(
     'tm_filters_preludes_overview_v1',
     {
-      timesPlayedMin: undefined,
-      searchTerm: '',
+      playerCounts: [],
+      maps: [],
+      gameModes: [],
+      gameSpeeds: [],
+      preludeOn: undefined,
+      coloniesOn: undefined,
+      draftOn: undefined,
     }
   );
+
+  // Normalize filters to ensure array fields are always defined (cookie may hold older schema)
+  const normalizedFilters: CorporationFilters = useMemo(() => ({
+    ...filters,
+    playerCounts: filters.playerCounts ?? [],
+    maps: filters.maps ?? [],
+    gameModes: filters.gameModes ?? [],
+    gameSpeeds: filters.gameSpeeds ?? [],
+  }), [filters]);
 
   // Recalculate tooltip position with clamping and flipping
   const updateTooltipPosition = useCallback(() => {
@@ -55,7 +74,6 @@ export function PreludesOverviewPage() {
       const trigger = triggerRectRef.current;
 
       const spaceRight = viewportW - (trigger.right + 16) - margin;
-      const spaceLeft = (trigger.left - 16) - margin;
       const needsShrink = tipRect.width > (viewportW - 2 * margin);
 
       if (!needsShrink) {
@@ -80,42 +98,124 @@ export function PreludesOverviewPage() {
     setTooltipPos({ top: clampedTop, left });
   }, [tooltipPos.left]);
 
-  // Fetch data
+  // Fetch options and initialize defaults similar to corporations page
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
+        setIsInitialLoad(true);
         setError(null);
-        const response = await getAllPreludeStatsCached();
-        setData(response);
+
+        if (meta.hasStoredValue) {
+          // Use stored filters; load options in background for sidebar
+          getPreludeFilterOptions()
+            .then(setOptions)
+            .catch(err => console.error('Error fetching prelude options:', err));
+          // isInitialLoad will flip when rankings arrive
+        } else {
+          // Load options first to establish sensible defaults
+          const opts = await getPreludeFilterOptions();
+          setOptions(opts);
+
+          const playerCounts = opts.playerCounts;
+          const maps = opts.maps;
+          const gameModes = opts.gameModes;
+          const gameSpeeds = opts.gameSpeeds;
+
+          setFilters(prev => {
+            // Apply defaults only if previous filters were effectively empty (fresh load)
+            if (
+              prev.playerCounts.length === 0 &&
+              prev.maps.length === 0 &&
+              prev.gameModes.length === 0 &&
+              prev.gameSpeeds.length === 0 &&
+              prev.preludeOn === undefined &&
+              prev.coloniesOn === undefined &&
+              prev.draftOn === undefined &&
+              !prev.playerName &&
+              prev.eloMin === undefined &&
+              prev.eloMax === undefined &&
+              prev.timesPlayedMin === undefined &&
+              prev.timesPlayedMax === undefined
+            ) {
+              return {
+                playerCounts: playerCounts as number[],
+                maps,
+                gameModes,
+                gameSpeeds,
+                preludeOn: undefined,
+                coloniesOn: undefined,
+                draftOn: undefined,
+              };
+            }
+            return prev;
+          });
+
+          setIsInitialLoad(false);
+        }
       } catch (err) {
-        console.error('Error fetching prelude stats:', err);
+        console.error('Error preparing preludes overview:', err);
         setError('Failed to load prelude statistics. Please try again.');
-      } finally {
-        setLoading(false);
+        setIsInitialLoad(false);
       }
     };
 
     fetchData();
   }, []);
 
-  // Convert API data to overview rows
-  const preludeOverview = useMemo((): PreludeOverviewRow[] => {
-    return data.map(row => ({
-      prelude: preludeNameToSlug(row.card),
-      name: row.card,
-      totalGames: row.timesPlayed,
-      winRate: row.winRate,
-      avgElo: row.avgElo,
-      avgEloChange: row.avgEloChange,
-    }));
-  }, [data]);
+  // Fetch server-side aggregated rankings whenever filters change
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        setIsRefreshing(true);
+        setError(null);
+        const rows = await getPreludeRankings(filters);
+        if (!cancelled) {
+          setOverviewRows(rows);
+          setIsInitialLoad(false);
+        }
+      } catch (err) {
+        console.error('Error fetching prelude rankings:', err);
+        if (!cancelled) setError('Failed to load prelude rankings. Please try again.');
+      } finally {
+        if (!cancelled) setIsRefreshing(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [filters]);
 
-  // Calculate times played range from data
+  // Get available options for filters
+  const availablePlayerCounts = useMemo(() => options?.playerCounts ?? [], [options]);
+  const availableMaps = useMemo(() => options?.maps ?? [], [options]);
+  const availableGameModes = useMemo(() => options?.gameModes ?? [], [options]);
+  const availableGameSpeeds = useMemo(() => options?.gameSpeeds ?? [], [options]);
+  const availablePlayerNames = useMemo(() => {
+    return [] as string[]; // optional: add server-side player search later
+  }, []);
+  const availableCorporations = useMemo(() => options?.corporations ?? [], [options]);
+
+  const eloRange = useMemo(() => {
+    return {
+      min: options?.eloRange.min ?? 0,
+      max: options?.eloRange.max ?? 0,
+    };
+  }, [options]);
+
+  const generationsRange = useMemo(() => {
+    return {
+      min: options?.generationsRange.min ?? 0,
+      max: options?.generationsRange.max ?? 0,
+    };
+  }, [options]);
+
+  // Server-side filtering: rankings are fetched from the API when filters change
+  const preludeOverview: PreludeOverviewRow[] = useMemo(() => overviewRows, [overviewRows]);
+
+  // Calculate times played range from aggregated data
   const timesPlayedRange = useMemo(() => {
     if (preludeOverview.length === 0) return { min: 0, max: 0 };
-    
-    const counts = preludeOverview.map(prelude => prelude.totalGames);
+    const counts = preludeOverview.map(p => p.totalGames);
     return {
       min: Math.min(...counts),
       max: Math.max(...counts),
@@ -127,8 +227,7 @@ export function PreludesOverviewPage() {
     if (!hoveredPrelude) return;
 
     const handler = () => updateTooltipPosition();
-    // Initial position adjustment after mount
-    handler();
+    handler(); // Initial position adjustment after mount
 
     window.addEventListener('resize', handler);
     window.addEventListener('scroll', handler, true);
@@ -138,20 +237,16 @@ export function PreludesOverviewPage() {
     };
   }, [hoveredPrelude, updateTooltipPosition]);
 
-  // Apply filters and sort data
+  // Apply times played filter and sort data
   const sortedData = useMemo(() => {
-    // First apply filters
+    // First apply times played filter
     let filteredOverview = preludeOverview;
-    
-    if (filters.timesPlayedMin) {
-      filteredOverview = filteredOverview.filter(prelude => prelude.totalGames >= filters.timesPlayedMin!);
-    }
-    
-    if (filters.searchTerm) {
-      const searchLower = filters.searchTerm.toLowerCase();
-      filteredOverview = filteredOverview.filter(prelude => 
-        prelude.name.toLowerCase().includes(searchLower)
-      );
+    if (filters.timesPlayedMin || filters.timesPlayedMax) {
+      filteredOverview = preludeOverview.filter(prelude => {
+        if (filters.timesPlayedMin && prelude.totalGames < filters.timesPlayedMin) return false;
+        if (filters.timesPlayedMax && prelude.totalGames > filters.timesPlayedMax) return false;
+        return true;
+      });
     }
 
     // Then sort
@@ -178,7 +273,7 @@ export function PreludesOverviewPage() {
       if (aStr > bStr) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [preludeOverview, sortField, sortDirection, filters]);
+  }, [preludeOverview, sortField, sortDirection, filters.timesPlayedMin, filters.timesPlayedMax]);
 
   // Paginate the sorted data
   const paginatedData = useMemo(() => {
@@ -220,19 +315,21 @@ export function PreludesOverviewPage() {
 
   const handleRefresh = async () => {
     try {
-      setLoading(true);
+      setIsRefreshing(true);
       setError(null);
-      const response = await getAllPreludeStatsCached(true); // Force refresh
-      setData(response);
+      const opts = await getPreludeFilterOptions(true); // Force refresh options
+      setOptions(opts);
+      const rows = await getPreludeRankings(filters); // Refresh rankings
+      setOverviewRows(rows);
     } catch (err) {
       console.error('Error refreshing prelude stats:', err);
       setError('Failed to refresh prelude statistics. Please try again.');
     } finally {
-      setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
-  const handleFiltersChange = useCallback((newFilters: PreludeFilters) => {
+  const handleFiltersChange = useCallback((newFilters: CorporationFilters) => {
     setFilters(newFilters);
     setCurrentPage(1); // Reset to first page when filters change
   }, []);
@@ -303,7 +400,7 @@ export function PreludesOverviewPage() {
                 Compare prelude performance and click on a prelude to view detailed information
               </p>
             </div>
-            <Button onClick={handleRefresh} variant="outline" disabled={loading}>
+            <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing || isInitialLoad}>
               Refresh Data
             </Button>
           </div>
@@ -314,55 +411,28 @@ export function PreludesOverviewPage() {
           {/* Filters sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              {!loading && (
-                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
-                    Filters
-                  </h3>
-                  
-                  {/* Min times played filter */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Min Times Played
-                    </label>
-                    <input
-                      type="number"
-                      min={timesPlayedRange.min}
-                      max={timesPlayedRange.max}
-                      value={filters.timesPlayedMin || ''}
-                      onChange={(e) => handleFiltersChange({
-                        ...filters,
-                        timesPlayedMin: e.target.value ? parseInt(e.target.value) : undefined
-                      })}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                      placeholder={`${timesPlayedRange.min} - ${timesPlayedRange.max}`}
-                    />
-                  </div>
-
-                  {/* Search filter */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Search Preludes
-                    </label>
-                    <input
-                      type="text"
-                      value={filters.searchTerm || ''}
-                      onChange={(e) => handleFiltersChange({
-                        ...filters,
-                        searchTerm: e.target.value
-                      })}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                      placeholder="Search by prelude name..."
-                    />
-                  </div>
-                </div>
+              {!isInitialLoad && options && (
+                <FiltersPanel
+                  filters={normalizedFilters}
+                  onFiltersChange={handleFiltersChange}
+                  availablePlayerCounts={availablePlayerCounts}
+                  availableMaps={availableMaps}
+                  availableGameModes={availableGameModes}
+                  availableGameSpeeds={availableGameSpeeds}
+                  availablePlayerNames={availablePlayerNames}
+                  availableCorporations={availableCorporations}
+                  eloRange={eloRange}
+                  generationsRange={generationsRange}
+                  timesPlayedRange={timesPlayedRange}
+                  timesPlayedLabel="Times Kept"
+                />
               )}
             </div>
           </div>
 
           {/* Table area */}
           <div className="lg:col-span-3">
-            {loading ? (
+            {isInitialLoad ? (
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
                 <div className="h-6 w-48 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-4"></div>
                 <div className="space-y-3">
@@ -384,6 +454,7 @@ export function PreludesOverviewPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
+                      {isRefreshing && <span className="text-sm text-slate-500">Updating…</span>}
                       <span className="text-sm text-slate-600 dark:text-slate-400">Rows per page:</span>
                       <select
                         value={pageSize}
@@ -425,7 +496,7 @@ export function PreludesOverviewPage() {
                           className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"
                           onClick={() => handleSort('totalGames')}
                         >
-                          Times Played {getSortIcon('totalGames')}
+                          Times Kept {getSortIcon('totalGames')}
                         </th>
                         <th 
                           className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors"

@@ -489,6 +489,16 @@ ORDER BY AvgEloChange DESC;";
                 .ToList();
 
             _logger.LogInformation($"Filtered to {preludeStats.Count} prelude stats");
+
+            // Normalize specific prelude name(s) after fetching (data cleanup)
+            foreach (var c in preludeStats)
+            {
+                if (!string.IsNullOrWhiteSpace(c.Card) && c.Card.Equals("Allied Bank", StringComparison.OrdinalIgnoreCase))
+                {
+                    c.Card = "Allied Banks";
+                }
+            }
+
             return preludeStats;
         }
     }
