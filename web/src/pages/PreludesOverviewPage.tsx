@@ -334,9 +334,9 @@ export function PreludesOverviewPage() {
     setCurrentPage(1); // Reset to first page when filters change
   }, []);
 
-  const handleRowClick = (preludeName: string) => {
-    navigate(`/prelude/${encodeURIComponent(preludeName)}`);
-  };
+  const handleRowClick = useCallback((row: PreludeOverviewRow) => {
+    navigate(`/prelude/${encodeURIComponent(row.name)}`, { state: { overviewRow: row } });
+  }, []);
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return '↕️';
@@ -513,7 +513,7 @@ export function PreludesOverviewPage() {
                         return (
                           <tr 
                             key={row.prelude}
-                            onClick={() => handleRowClick(row.name)}
+                            onClick={() => handleRowClick(row)}
                             className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
                           >
                             <td className="px-4 py-3 text-sm">

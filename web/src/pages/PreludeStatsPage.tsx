@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useCookieState } from '@/hooks/useCookieState';
-import { useParams } from 'react-router-dom';
-import { PreludePlayerStatsRow, PreludeStats, PreludeDetailFilters, CorporationPerformance, HistogramBin } from '@/types/prelude';
+import { useParams, useLocation } from 'react-router-dom';
+import { PreludePlayerStatsRow, PreludeStats, PreludeDetailFilters, CorporationPerformance, HistogramBin, PreludeOverviewRow } from '@/types/prelude';
 import { PreludeHeader } from '@/components/PreludeHeader';
 import { PreludeFiltersPanel } from '@/components/PreludeFiltersPanel';
 import { EloHistogram } from '@/components/charts/EloHistogram';
@@ -9,12 +9,18 @@ import { DivergingBarChart } from '@/components/charts/DivergingBarChart';
 import { GameDetailsTable } from '@/components/GameDetailsTable';
 import { Button } from '@/components/ui/button';
 import { slugToPreludeName } from '@/lib/prelude';
-import { getPreludePlayerStats } from '@/lib/preludeCache';
+import { getPreludeDetailOptions, getPreludeDetailSummary, getPreludePlayerRows, type PreludeDetailOptions, type PreludeDetailSummary } from '@/lib/preludeDetails';
 import { BackButton } from '@/components/BackButton';
 
 export function PreludeStatsPage() {
   const { name } = useParams<{ name: string }>();
+  const location = useLocation() as { state?: { overviewRow?: PreludeOverviewRow } };
+  const overviewRow = location.state?.overviewRow;
+  const [options, setOptions] = useState<PreludeDetailOptions | null>(null);
+  const [summary, setSummary] = useState<PreludeDetailSummary | null>(null);
   const [data, setData] = useState<PreludePlayerStatsRow[]>([]);
+  const [rowsTotal, setRowsTotal] = useState(0);
+  const [loadingRows, setLoadingRows] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
@@ -37,30 +43,31 @@ export function PreludeStatsPage() {
   // Decode the prelude name from the URL parameter
   const preludeName = useMemo(() => (name ? decodeURIComponent(name) : ''), [name]);
 
-  // Fetch data
+  // Use overview row from navigation state (if present) to prime header instantly
+  const primedStats: PreludeStats | null = useMemo(() => {
+    if (!overviewRow) return null;
+    return {
+      totalGames: overviewRow.totalGames ?? 0,
+      winRate: overviewRow.winRate ?? 0, // already fraction 0..1
+      avgElo: overviewRow.avgElo ?? 0,
+      avgEloChange: overviewRow.avgEloChange ?? 0,
+    };
+  }, [overviewRow]);
+
+  // Load options first (small payload)
   useEffect(() => {
     if (!name) return;
-
-    const fetchData = async () => {
+    let cancelled = false;
+    (async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await getPreludePlayerStats(preludeName);
-        setData(response);
-
-        // Initialize filters with all available options
-        const maps = [...new Set(response.map(row => row.map).filter(Boolean))].sort() as string[];
-        const gameModes = [...new Set(response.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-        const gameSpeeds = [...new Set(response.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
-        const corporations = [...new Set(response.map(row => row.corporation).filter(Boolean))].sort() as string[];
-        const playerCounts = [...new Set(response.map(row => row.playerCount).filter((c): c is number => !!c))].sort((a, b) => a - b) as number[];
-
+        const opts = await getPreludeDetailOptions(preludeName);
+        if (cancelled) return;
+        setOptions(opts);
         setFilters(prev => {
-          // If we already loaded a stored value, don't override with defaults
           if (meta.hasStoredValue) return prev;
-
-          // Apply defaults only if previous filters were effectively empty (fresh load)
-          if (
+          const isEmpty =
             prev.maps.length === 0 &&
             prev.gameModes.length === 0 &&
             prev.gameSpeeds.length === 0 &&
@@ -71,14 +78,14 @@ export function PreludeStatsPage() {
             prev.draftOn === undefined &&
             !prev.playerName &&
             prev.eloMin === undefined &&
-            prev.eloMax === undefined
-          ) {
+            prev.eloMax === undefined;
+          if (isEmpty) {
             return {
-              maps,
-              gameModes,
-              gameSpeeds,
-              playerCounts,
-              corporations,
+              maps: opts.maps ?? [],
+              gameModes: opts.gameModes ?? [],
+              gameSpeeds: opts.gameSpeeds ?? [],
+              playerCounts: (opts.playerCounts ?? []) as number[],
+              corporations: opts.corporations ?? [],
               preludeOn: undefined,
               coloniesOn: undefined,
               draftOn: undefined,
@@ -87,196 +94,115 @@ export function PreludeStatsPage() {
           return prev;
         });
       } catch (err) {
-        console.error('Error fetching prelude stats:', err);
-        setError('Failed to load prelude statistics. Please try again.');
+        console.error('Error fetching prelude options:', err);
+        if (!cancelled) setError('Failed to load prelude options. Please try again.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    };
-
-    fetchData();
+    })();
+    return () => { cancelled = true; };
   }, [name, preludeName]);
 
+  // Fetch compact summary whenever filters change
+  useEffect(() => {
+    if (!preludeName || !options) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const s = await getPreludeDetailSummary(preludeName, filters);
+        if (!cancelled) setSummary(s);
+      } catch (err) {
+        console.error('Error fetching prelude summary:', err);
+        if (!cancelled) setError('Failed to load prelude summary. Please try again.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [preludeName, options, filters]);
+
+  // Fetch player rows only when switching to table view
+  useEffect(() => {
+    if (viewMode !== 'table' || !preludeName) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadingRows(true);
+        setError(null);
+        const res = await getPreludePlayerRows(preludeName, filters, 500, 0);
+        if (!cancelled) {
+          setData(res.rows);
+          setRowsTotal(res.total);
+        }
+      } catch (err) {
+        console.error('Error fetching prelude rows:', err);
+        if (!cancelled) setError('Failed to load games. Please try again.');
+      } finally {
+        if (!cancelled) setLoadingRows(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [viewMode, preludeName, filters]);
+
   // Get available options for filters
-  const availablePlayerCounts = useMemo(() => {
-    return [...new Set(data.map(row => row.playerCount).filter((c): c is number => !!c))].sort((a, b) => a - b);
-  }, [data]);
+  const availablePlayerCounts = useMemo(() => options?.playerCounts ?? [], [options]);
 
-  const availableMaps = useMemo(() => {
-    return [...new Set(data.map(row => row.map).filter(Boolean))].sort() as string[];
-  }, [data]);
+  const availableMaps = useMemo(() => options?.maps ?? [], [options]);
 
-  const availableGameModes = useMemo(() => {
-    return [...new Set(data.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-  }, [data]);
+  const availableGameModes = useMemo(() => options?.gameModes ?? [], [options]);
 
-  const availableGameSpeeds = useMemo(() => {
-    return [...new Set(data.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
-  }, [data]);
+  const availableGameSpeeds = useMemo(() => options?.gameSpeeds ?? [], [options]);
 
-  const availableCorporations = useMemo(() => {
-    return [...new Set(data.map(row => row.corporation).filter(Boolean))].sort() as string[];
-  }, [data]);
+  const availableCorporations = useMemo(() => options?.corporations ?? [], [options]);
 
   const availablePlayerNames = useMemo(() => {
-    return [...new Set(data.map(row => row.playerName).filter(Boolean))].sort() as string[];
-  }, [data]);
+    return [] as string[];
+  }, []);
 
-  const eloRange = useMemo(() => {
-    const elos = data.map(row => row.elo).filter(Boolean) as number[];
-    return {
-      min: Math.min(...elos) || 0,
-      max: Math.max(...elos) || 2000,
-    };
-  }, [data]);
+  const eloRange = useMemo(() => ({
+    min: options?.eloRange.min ?? 0,
+    max: options?.eloRange.max ?? 0,
+  }), [options]);
 
   // Filter data based on current filters
-  const filteredData = useMemo(() => {
-    return data.filter(row => {
-      // Elo range filter
-      if (filters.eloMin && (!row.elo || row.elo < filters.eloMin)) return false;
-      if (filters.eloMax && (!row.elo || row.elo > filters.eloMax)) return false;
-
-      // Player name filter
-      if (filters.playerName && row.playerName !== filters.playerName) return false;
-
-      // Map filter
-      if (row.map && !filters.maps.includes(row.map)) return false;
-
-      // Game mode filter
-      if (row.gameMode && !filters.gameModes.includes(row.gameMode)) return false;
-
-      // Game speed filter
-      if (row.gameSpeed && !filters.gameSpeeds.includes(row.gameSpeed)) return false;
-
-      // Player count filter
-      if (row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
-
-      // Corporation filter
-      if (row.corporation && !filters.corporations.includes(row.corporation)) return false;
-
-      // Expansion filters
-      if (filters.preludeOn !== undefined && row.preludeOn !== filters.preludeOn) return false;
-      if (filters.coloniesOn !== undefined && row.coloniesOn !== filters.coloniesOn) return false;
-      if (filters.draftOn !== undefined && row.draftOn !== filters.draftOn) return false;
-
-      return true;
-    });
-  }, [data, filters]);
+  const filteredData = useMemo(() => data, [data]);
 
   // Compute statistics
   const stats = useMemo((): PreludeStats => {
-    const validData = filteredData.filter(row => row.position != null);
-    const totalGames = validData.length;
-
-    if (totalGames === 0) {
+    if (summary) {
       return {
-        totalGames: 0,
-        winRate: 0,
-        avgElo: 0,
-        avgEloChange: 0,
+        totalGames: summary.totalGames,
+        winRate: summary.winRate,
+        avgElo: summary.avgElo,
+        avgEloChange: summary.avgEloChange,
       };
     }
-
-    const wins = validData.filter(row => row.position === 1).length;
-    const winRate = wins / totalGames;
-
-    const avgElo = validData.reduce((sum, row) => sum + (row.elo || 0), 0) / totalGames;
-    const avgEloChange = validData.reduce((sum, row) => sum + (row.eloChange || 0), 0) / totalGames;
-
     return {
-      totalGames,
-      winRate,
-      avgElo,
-      avgEloChange,
+      totalGames: 0,
+      winRate: 0,
+      avgElo: 0,
+      avgEloChange: 0,
     };
-  }, [filteredData]);
+  }, [summary]);
+
+  // Prefer primed stats from overview while loading (for instant header), fall back to computed stats
+  const headerStats: PreludeStats = useMemo(() => {
+    if (primedStats && (loading || data.length === 0)) return primedStats;
+    return stats;
+  }, [primedStats, loading, data.length, stats]);
 
   // Compute histogram data for Elo
-  const eloHistogramData = useMemo((): HistogramBin[] => {
-    const elos = filteredData.map(row => row.elo).filter(Boolean) as number[];
-    if (elos.length === 0) return [];
-
-    const min = Math.min(...elos);
-    const max = Math.max(...elos);
-    const binCount = Math.min(12, Math.max(5, Math.ceil(elos.length / 20)));
-    const binSize = (max - min) / binCount;
-
-    const bins: HistogramBin[] = [];
-    for (let i = 0; i < binCount; i++) {
-      const binMin = min + i * binSize;
-      const binMax = i === binCount - 1 ? max : min + (i + 1) * binSize;
-      const count = elos.filter(elo => elo >= binMin && elo < binMax).length;
-      
-      bins.push({
-        min: binMin,
-        max: binMax,
-        count,
-        label: `${Math.round(binMin)}-${Math.round(binMax)}`,
-      });
-    }
-
-    return bins;
-  }, [filteredData]);
+  const eloHistogramData = useMemo((): HistogramBin[] => summary?.eloHistogramBins ?? [], [summary]);
 
   // Compute histogram data for Elo Change
-  const eloChangeHistogramData = useMemo((): HistogramBin[] => {
-    const eloChanges = filteredData.map(row => row.eloChange).filter(Boolean) as number[];
-    if (eloChanges.length === 0) return [];
-
-    const min = -20;
-    const max = 20;
-    const binCount = 20;
-    const binSize = (max - min) / binCount;
-
-    const bins: HistogramBin[] = [];
-    for (let i = 0; i < binCount; i++) {
-      const binMin = min + i * binSize;
-      const binMax = min + (i + 1) * binSize;
-      const count = eloChanges.filter(change => change >= min && change <= max && change >= binMin && change < binMax).length;
-      
-      bins.push({
-        min: binMin,
-        max: binMax,
-        count,
-        label: `${Math.round(binMin)}-${Math.round(binMax)}`,
-      });
-    }
-
-    return bins;
-  }, [filteredData]);
+  const eloChangeHistogramData = useMemo((): HistogramBin[] => summary?.eloChangeHistogramBins ?? [], [summary]);
 
   // Compute corporation performance data
   const corporationPerformanceData = useMemo((): CorporationPerformance[] => {
-    const corporationMap = new Map<string, { wins: number; totalGames: number; eloChangeSum: number }>();
-
-    filteredData.forEach(row => {
-      if (!row.corporation || row.position == null) return;
-      
-      const existing = corporationMap.get(row.corporation) || { wins: 0, totalGames: 0, eloChangeSum: 0 };
-      existing.totalGames++;
-      if (row.position === 1) existing.wins++;
-      existing.eloChangeSum += row.eloChange || 0;
-      
-      corporationMap.set(row.corporation, existing);
-    });
-
-    const result: CorporationPerformance[] = [];
-    corporationMap.forEach((value, corporation) => {
-      // Only include corporations with at least 3 games for statistical relevance
-      if (value.totalGames >= 3) {
-        result.push({
-          corporation,
-          gamesPlayed: value.totalGames,
-          wins: value.wins,
-          winRate: value.wins / value.totalGames,
-          avgEloChange: value.eloChangeSum / value.totalGames,
-        });
-      }
-    });
-
-    return result.sort((a, b) => b.gamesPlayed - a.gamesPlayed);
-  }, [filteredData]);
+    return summary?.corporationPerformance ?? [];
+  }, [summary]);
 
   // Prepare data for diverging bar charts
   const shortCorpName = (name: string): string => {
@@ -353,7 +279,7 @@ export function PreludeStatsPage() {
           <BackButton fallbackPath="/preludes" />
         </div>
         <div className="mb-8">
-          <PreludeHeader preludeName={preludeName} stats={stats} isLoading={loading} />
+          <PreludeHeader preludeName={preludeName} stats={headerStats} isLoading={!primedStats && loading} />
         </div>
 
         {/* Main content */}
@@ -475,7 +401,7 @@ export function PreludeStatsPage() {
                       </div>
                     </div>
                   ) : (
-                    <GameDetailsTable data={filteredData} />
+                    <GameDetailsTable data={data} />
                   )}
                 </div>
               </div>
