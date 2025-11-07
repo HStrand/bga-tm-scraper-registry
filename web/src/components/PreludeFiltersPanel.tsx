@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { PreludeDetailFilters } from '@/types/prelude';
 import { Button } from '@/components/ui/button';
+import { getPlayerNameSuggestions } from '@/lib/players';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 interface PreludeFiltersPanelProps {
   filters: PreludeDetailFilters;
@@ -28,11 +30,16 @@ export function PreludeFiltersPanel({
   const [localFilters, setLocalFilters] = useState(filters);
   const [gameSpeedDropdownOpen, setGameSpeedDropdownOpen] = useState(false);
   const gameSpeedDropdownRef = useRef<HTMLDivElement>(null);
-  const [corporationDropdownOpen, setCorporationDropdownOpen] = useState(false);
-  const corporationDropdownRef = useRef<HTMLDivElement>(null);
+  const [corporationSearchOpen, setCorporationSearchOpen] = useState(false);
+  const [corporationSearchQuery, setCorporationSearchQuery] = useState('');
+  const [selectedCorporationIndex, setSelectedCorporationIndex] = useState(-1);
+  const corporationSearchRef = useRef<HTMLDivElement>(null);
   const [playerSearchOpen, setPlayerSearchOpen] = useState(false);
   const [playerSearchQuery, setPlayerSearchQuery] = useState('');
+  const debouncedPlayerQuery = useDebouncedValue(playerSearchQuery, 300);
   const [selectedPlayerIndex, setSelectedPlayerIndex] = useState(-1);
+  const [suggestedPlayerNames, setSuggestedPlayerNames] = useState<string[]>([]);
+  const [loadingPlayerNames, setLoadingPlayerNames] = useState(false);
   const playerSearchRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
@@ -41,8 +48,8 @@ export function PreludeFiltersPanel({
       if (gameSpeedDropdownRef.current && !gameSpeedDropdownRef.current.contains(event.target as Node)) {
         setGameSpeedDropdownOpen(false);
       }
-      if (corporationDropdownRef.current && !corporationDropdownRef.current.contains(event.target as Node)) {
-        setCorporationDropdownOpen(false);
+      if (corporationSearchRef.current && !corporationSearchRef.current.contains(event.target as Node)) {
+        setCorporationSearchOpen(false);
       }
       if (playerSearchRef.current && !playerSearchRef.current.contains(event.target as Node)) {
         setPlayerSearchOpen(false);
@@ -64,6 +71,29 @@ export function PreludeFiltersPanel({
     return () => clearTimeout(timer);
   }, [localFilters, onFiltersChange]);
 
+  // Live player name suggestions from backend
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const q = debouncedPlayerQuery.trim();
+      if (q.length < 2) {
+        if (!cancelled) setSuggestedPlayerNames([]);
+        return;
+      }
+      try {
+        setLoadingPlayerNames(true);
+        const names = await getPlayerNameSuggestions(q, 10);
+        if (!cancelled) setSuggestedPlayerNames(names);
+      } catch {
+        if (!cancelled) setSuggestedPlayerNames([]);
+      } finally {
+        if (!cancelled) setLoadingPlayerNames(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [debouncedPlayerQuery]);
+
   const updateFilters = (updates: Partial<PreludeDetailFilters>) => {
     setLocalFilters(prev => ({ ...prev, ...updates }));
   };
@@ -75,6 +105,7 @@ export function PreludeFiltersPanel({
       gameSpeeds: availableGameSpeeds,
       playerCounts: availablePlayerCounts,
       corporations: availableCorporations,
+      corporation: undefined,
       preludeOn: undefined,
       coloniesOn: undefined,
       draftOn: undefined,
@@ -117,10 +148,10 @@ export function PreludeFiltersPanel({
     updateFilters({ corporations: newCorporations });
   };
 
-  // Get filtered player names for keyboard navigation
-  const filteredPlayerNames = availablePlayerNames
-    .filter(name => name.toLowerCase().includes(playerSearchQuery.toLowerCase()))
-    .slice(0, 10);
+  // Suggested player names (server-backed; fall back to provided list if any)
+  const filteredPlayerNames = (suggestedPlayerNames.length > 0 ? suggestedPlayerNames : availablePlayerNames
+  ).filter(name => name.toLowerCase().includes(playerSearchQuery.toLowerCase()))
+   .slice(0, 10);
 
   const selectPlayer = (playerName: string) => {
     updateFilters({ playerName });
@@ -155,6 +186,50 @@ export function PreludeFiltersPanel({
         e.preventDefault();
         setPlayerSearchOpen(false);
         setSelectedPlayerIndex(-1);
+        break;
+    }
+  };
+
+  // Corporation text search (single select)
+  const filteredCorporationNames = (availableCorporations ?? [])
+    .filter(name => name.toLowerCase().includes((corporationSearchQuery ?? '').toLowerCase()))
+    .slice(0, 10);
+
+  const selectCorporation = (corporationName: string) => {
+    updateFilters({ corporation: corporationName });
+    setCorporationSearchQuery(corporationName);
+    setCorporationSearchOpen(false);
+    setSelectedCorporationIndex(-1);
+  };
+
+  const handleCorporationSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (!corporationSearchOpen || filteredCorporationNames.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedCorporationIndex(prev => 
+          prev < filteredCorporationNames.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedCorporationIndex(prev => 
+          prev > 0 ? prev - 1 : filteredCorporationNames.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedCorporationIndex >= 0 && selectedCorporationIndex < filteredCorporationNames.length) {
+          selectCorporation(filteredCorporationNames[selectedCorporationIndex]);
+        } else if ((corporationSearchQuery ?? '').trim().length > 0) {
+          selectCorporation(corporationSearchQuery.trim());
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setCorporationSearchOpen(false);
+        setSelectedCorporationIndex(-1);
         break;
     }
   };
@@ -243,7 +318,12 @@ export function PreludeFiltersPanel({
           {playerSearchOpen && playerSearchQuery.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-zinc-300 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-auto">
               <div className="p-2">
-                {filteredPlayerNames.map((playerName, index) => (
+                {loadingPlayerNames && (
+                  <div className="p-2 text-sm text-slate-500 dark:text-slate-400">
+                    Searching...
+                  </div>
+                )}
+                {!loadingPlayerNames && filteredPlayerNames.map((playerName, index) => (
                   <div
                     key={playerName}
                     onClick={() => selectPlayer(playerName)}
@@ -256,7 +336,7 @@ export function PreludeFiltersPanel({
                     {playerName}
                   </div>
                 ))}
-                {filteredPlayerNames.length === 0 && (
+                {!loadingPlayerNames && filteredPlayerNames.length === 0 && (
                   <div className="p-2 text-sm text-slate-500 dark:text-slate-400">
                     No players found
                   </div>
@@ -402,69 +482,76 @@ export function PreludeFiltersPanel({
         </div>
       </div>
 
-      {/* Corporations */}
-      <div className="space-y-3" ref={corporationDropdownRef}>
-        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-          Corporations
-        </label>
-        <div className="relative">
-          <button
-            onClick={() => setCorporationDropdownOpen(!corporationDropdownOpen)}
-            className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent text-left flex items-center justify-between"
-          >
-            <span>
-              {localFilters.corporations.length === availableCorporations.length 
-                ? 'All Corporations' 
-                : localFilters.corporations.length === 0 
-                  ? 'No corporations selected'
-                  : `${localFilters.corporations.length} selected`
-              }
-            </span>
-            <svg className={`w-4 h-4 transition-transform ${corporationDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          
-          {corporationDropdownOpen && (
-            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-zinc-300 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-auto">
-              <div className="p-2">
-                <div className="flex items-center space-x-2 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded cursor-pointer">
-                  <input
-                    type="checkbox"
-                    id="select-all-corporations"
-                    checked={localFilters.corporations.length === availableCorporations.length}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({ corporations: [...availableCorporations] });
-                      } else {
-                        updateFilters({ corporations: [] });
-                      }
-                    }}
-                    className="w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                  />
-                  <label htmlFor="select-all-corporations" className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
-                    (Select All)
-                  </label>
+      {/* Corporation (text search) */}
+      {availableCorporations && availableCorporations.length > 0 && (
+        <div className="space-y-3" ref={corporationSearchRef}>
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Corporation
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search for a corporation..."
+              value={corporationSearchQuery}
+              onChange={(e) => {
+                const v = e.target.value;
+                setCorporationSearchQuery(v);
+                setCorporationSearchOpen(v.length > 0);
+                setSelectedCorporationIndex(-1);
+                // Apply free-text immediately so backend substring filter updates charts/header
+                updateFilters({ corporation: v.trim() ? v : undefined });
+              }}
+              onFocus={() => setCorporationSearchOpen(corporationSearchQuery.length > 0)}
+              onKeyDown={handleCorporationSearchKeyDown}
+              className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            />
+            {localFilters.corporation && (
+              <button
+                onClick={() => {
+                  updateFilters({ corporation: undefined });
+                  setCorporationSearchQuery('');
+                  setCorporationSearchOpen(false);
+                }}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+
+            {corporationSearchOpen && corporationSearchQuery.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-zinc-300 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-auto">
+                <div className="p-2">
+                  {filteredCorporationNames.map((corporationName, index) => (
+                    <div
+                      key={corporationName}
+                      onClick={() => selectCorporation(corporationName)}
+                      className={`p-2 rounded cursor-pointer text-sm transition-colors ${
+                        index === selectedCorporationIndex
+                          ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100'
+                          : 'text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {corporationName}
+                    </div>
+                  ))}
+                  {filteredCorporationNames.length === 0 && (
+                    <div className="p-2 text-sm text-slate-500 dark:text-slate-400">
+                      No corporations found
+                    </div>
+                  )}
                 </div>
-                {availableCorporations.map(corporation => (
-                  <div key={corporation} className="flex items-center space-x-2 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded cursor-pointer">
-                    <input
-                      type="checkbox"
-                      id={`corporation-${corporation}`}
-                      checked={localFilters.corporations.includes(corporation)}
-                      onChange={() => toggleCorporation(corporation)}
-                      className="w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <label htmlFor={`corporation-${corporation}`} className="text-sm text-slate-900 dark:text-slate-100 cursor-pointer">
-                      {corporation}
-                    </label>
-                  </div>
-                ))}
               </div>
+            )}
+          </div>
+          {localFilters.corporation && (
+            <div className="text-xs text-slate-600 dark:text-slate-400">
+              Filtering by: <span className="font-medium text-amber-600 dark:text-amber-400">{localFilters.corporation}</span>
             </div>
           )}
         </div>
-      </div>
+      )}
 
       {/* Expansion Toggles */}
       <div className="space-y-3">

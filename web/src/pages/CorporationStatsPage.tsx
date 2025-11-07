@@ -15,6 +15,7 @@ import {
   getCorporationGames,
   type CorporationDetailOptions,
 } from '@/lib/corporationDetails';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 /**
  * Refactored to server-side filtering:
@@ -37,6 +38,8 @@ export function CorporationStatsPage() {
   const [loadingGames, setLoadingGames] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Initialize filters with all options selected (persisted per page via cookie)
   const [filters, setFilters, , meta] = useCookieState<CorporationFilters>(
@@ -51,6 +54,7 @@ export function CorporationStatsPage() {
       draftOn: undefined,
     }
   );
+  const debouncedFilters = useDebouncedValue(filters, 400);
 
   // Decode the corporation name from the URL parameter
   const corporationName = useMemo(() => (name ? decodeURIComponent(name) : ''), [name]);
@@ -113,19 +117,22 @@ export function CorporationStatsPage() {
     let cancelled = false;
     (async () => {
       try {
-        setLoading(true);
+        setIsRefreshing(true);
         setError(null);
-        const s = await getCorporationDetailSummary(corporationName, filters);
-        if (!cancelled) setSummary(s);
+        const s = await getCorporationDetailSummary(corporationName, debouncedFilters);
+        if (!cancelled) {
+          setSummary(s);
+          setIsInitialLoad(false);
+        }
       } catch (err) {
         console.error('Error fetching corporation summary:', err);
         if (!cancelled) setError('Failed to load corporation summary. Please try again.');
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setIsRefreshing(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [corporationName, options, filters]);
+  }, [corporationName, options, debouncedFilters]);
 
   // Fetch game rows only when switching to table view
   useEffect(() => {
@@ -136,7 +143,7 @@ export function CorporationStatsPage() {
         setLoadingGames(true);
         setError(null);
         // Fetch a capped number of rows to avoid large payloads; the table paginates locally.
-        const res = await getCorporationGames(corporationName, filters, 500, 0);
+        const res = await getCorporationGames(corporationName, debouncedFilters, 500, 0);
         if (!cancelled) {
           setGames(res.rows);
           setGamesTotal(res.total);
@@ -149,7 +156,7 @@ export function CorporationStatsPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [viewMode, corporationName, filters]);
+  }, [viewMode, corporationName, debouncedFilters]);
 
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => options?.playerCounts ?? [], [options]);
@@ -234,7 +241,7 @@ export function CorporationStatsPage() {
           <BackButton fallbackPath="/corporations" />
         </div>
         <div className="mb-8">
-          <CorporationHeader corporationName={corporationName} stats={headerStats} isLoading={loading} />
+          <CorporationHeader corporationName={corporationName} stats={headerStats} isLoading={isInitialLoad} />
         </div>
 
         {/* Main content */}
@@ -260,7 +267,7 @@ export function CorporationStatsPage() {
 
           {/* Charts/Table area */}
           <div className="lg:col-span-3">
-            {loading ? (
+            {isInitialLoad ? (
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">

@@ -33,6 +33,7 @@ function buildQuery(filters: PreludeDetailFilters): string {
   if (filters.preludeOn !== undefined) params.set('preludeOn', String(filters.preludeOn));
   if (filters.coloniesOn !== undefined) params.set('coloniesOn', String(filters.coloniesOn));
   if (filters.draftOn !== undefined) params.set('draftOn', String(filters.draftOn));
+  if (filters.corporation) params.set('corporation', filters.corporation);
 
   pushCsv('playerCounts', filters.playerCounts);
   pushCsv('maps', filters.maps);

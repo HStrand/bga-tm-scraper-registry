@@ -68,6 +68,8 @@ namespace BgaTmScraperRegistry.Functions
                         q = q.Where(r => r.PlayerCount.HasValue && filter.PlayerCounts.Contains(r.PlayerCount.Value));
                     if (filter.Corporations != null && filter.Corporations.Length > 0)
                         q = q.Where(r => !string.IsNullOrEmpty(r.Corporation) && filter.Corporations.Contains(r.Corporation));
+                    if (!string.IsNullOrWhiteSpace(filter.Corporation))
+                        q = q.Where(r => !string.IsNullOrEmpty(r.Corporation) && string.Equals(r.Corporation, filter.Corporation, StringComparison.OrdinalIgnoreCase));
                     if (filter.EloMin.HasValue)
                         q = q.Where(r => r.Elo.HasValue && r.Elo.Value > 0 && r.Elo.Value >= filter.EloMin.Value);
                     if (filter.EloMax.HasValue)
@@ -101,6 +103,7 @@ namespace BgaTmScraperRegistry.Functions
             public string[] Speeds { get; set; }
             public int[] PlayerCounts { get; set; }
             public string[] Corporations { get; set; }
+            public string Corporation { get; set; }
             public int? EloMin { get; set; }
             public int? EloMax { get; set; }
             public string PlayerName { get; set; }
@@ -170,6 +173,7 @@ namespace BgaTmScraperRegistry.Functions
             var speeds = CollectValues(req, "speeds", "speed", "gameSpeeds", "gameSpeed").ToArray();
             var playerCounts = ParseIntArray(CollectValues(req, "playerCounts", "playerCount"));
             var corporations = CollectValues(req, "corporations", "corp").ToArray();
+            var corpName = First(req, "corporation");
 
             return new DetailFilter
             {
@@ -178,6 +182,7 @@ namespace BgaTmScraperRegistry.Functions
                 Speeds = speeds.Length > 0 ? speeds : null,
                 PlayerCounts = playerCounts.Length > 0 ? playerCounts : null,
                 Corporations = corporations.Length > 0 ? corporations : null,
+                Corporation = string.IsNullOrWhiteSpace(corpName) ? null : corpName,
                 PreludeOn = ParseBool(First(req, "preludeOn", "prelude")),
                 ColoniesOn = ParseBool(First(req, "coloniesOn", "colonies")),
                 DraftOn = ParseBool(First(req, "draftOn", "draft")),

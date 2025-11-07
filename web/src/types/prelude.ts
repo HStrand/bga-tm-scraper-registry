@@ -32,6 +32,12 @@ export interface PreludeDetailFilters {
   gameSpeeds: string[];
   playerCounts: number[];
   corporations: string[];
+  /**
+   * Optional single corporation search (text field). If provided, the backend uses this
+   * param for exact name match (case-insensitive). `corporations` array can remain as the
+   * full set of options for UI defaults.
+   */
+  corporation?: string;
   preludeOn?: boolean;
   coloniesOn?: boolean;
   draftOn?: boolean;

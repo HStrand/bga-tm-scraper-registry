@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { slugToPreludeName } from '@/lib/prelude';
 import { getPreludeDetailOptions, getPreludeDetailSummary, getPreludePlayerRows, type PreludeDetailOptions, type PreludeDetailSummary } from '@/lib/preludeDetails';
 import { BackButton } from '@/components/BackButton';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 export function PreludeStatsPage() {
   const { name } = useParams<{ name: string }>();
@@ -24,6 +25,8 @@ export function PreludeStatsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Initialize filters with all options selected (persisted per page via cookie)
   const [filters, setFilters, , meta] = useCookieState<PreludeDetailFilters>(
@@ -39,6 +42,7 @@ export function PreludeStatsPage() {
       draftOn: undefined,
     }
   );
+  const debouncedFilters = useDebouncedValue(filters, 400);
 
   // Decode the prelude name from the URL parameter
   const preludeName = useMemo(() => (name ? decodeURIComponent(name) : ''), [name]);
@@ -109,19 +113,22 @@ export function PreludeStatsPage() {
     let cancelled = false;
     (async () => {
       try {
-        setLoading(true);
+        setIsRefreshing(true);
         setError(null);
-        const s = await getPreludeDetailSummary(preludeName, filters);
-        if (!cancelled) setSummary(s);
+        const s = await getPreludeDetailSummary(preludeName, debouncedFilters);
+        if (!cancelled) {
+          setSummary(s);
+          setIsInitialLoad(false);
+        }
       } catch (err) {
         console.error('Error fetching prelude summary:', err);
         if (!cancelled) setError('Failed to load prelude summary. Please try again.');
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setIsRefreshing(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [preludeName, options, filters]);
+  }, [preludeName, options, debouncedFilters]);
 
   // Fetch player rows only when switching to table view
   useEffect(() => {
@@ -131,7 +138,7 @@ export function PreludeStatsPage() {
       try {
         setLoadingRows(true);
         setError(null);
-        const res = await getPreludePlayerRows(preludeName, filters, 500, 0);
+        const res = await getPreludePlayerRows(preludeName, debouncedFilters, 500, 0);
         if (!cancelled) {
           setData(res.rows);
           setRowsTotal(res.total);
@@ -144,7 +151,7 @@ export function PreludeStatsPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [viewMode, preludeName, filters]);
+  }, [viewMode, preludeName, debouncedFilters]);
 
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => options?.playerCounts ?? [], [options]);
@@ -189,9 +196,9 @@ export function PreludeStatsPage() {
 
   // Prefer primed stats from overview while loading (for instant header), fall back to computed stats
   const headerStats: PreludeStats = useMemo(() => {
-    if (primedStats && (loading || data.length === 0)) return primedStats;
+    if (primedStats && isInitialLoad) return primedStats;
     return stats;
-  }, [primedStats, loading, data.length, stats]);
+  }, [primedStats, isInitialLoad, stats]);
 
   // Compute histogram data for Elo
   const eloHistogramData = useMemo((): HistogramBin[] => summary?.eloHistogramBins ?? [], [summary]);
@@ -279,7 +286,7 @@ export function PreludeStatsPage() {
           <BackButton fallbackPath="/preludes" />
         </div>
         <div className="mb-8">
-          <PreludeHeader preludeName={preludeName} stats={headerStats} isLoading={!primedStats && loading} />
+          <PreludeHeader preludeName={preludeName} stats={headerStats} isLoading={!primedStats && isInitialLoad} />
         </div>
 
         {/* Main content */}
@@ -287,7 +294,7 @@ export function PreludeStatsPage() {
           {/* Filters sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              {loading ? (
+              {isInitialLoad ? (
                 <div className="bg-white/90 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl border border-zinc-200 dark:border-slate-700 p-6 shadow-sm">
                   <div className="animate-pulse space-y-5">
                     <div className="flex items-center justify-between">
@@ -345,7 +352,7 @@ export function PreludeStatsPage() {
 
           {/* Charts area */}
           <div className="lg:col-span-3">
-            {loading ? (
+            {isInitialLoad ? (
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
