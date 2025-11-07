@@ -69,7 +69,12 @@ namespace BgaTmScraperRegistry.Functions
                     if (filter.Corporations != null && filter.Corporations.Length > 0)
                         q = q.Where(r => !string.IsNullOrEmpty(r.Corporation) && filter.Corporations.Contains(r.Corporation));
                     if (!string.IsNullOrWhiteSpace(filter.Corporation))
-                        q = q.Where(r => !string.IsNullOrEmpty(r.Corporation) && string.Equals(r.Corporation, filter.Corporation, StringComparison.OrdinalIgnoreCase));
+                    {
+                        var corpNeedle = filter.Corporation.Trim();
+                        q = q.Where(r =>
+                            !string.IsNullOrWhiteSpace(r.Corporation) &&
+                            r.Corporation.Trim().IndexOf(corpNeedle, StringComparison.OrdinalIgnoreCase) >= 0);
+                    }
                     if (filter.EloMin.HasValue)
                         q = q.Where(r => r.Elo.HasValue && r.Elo.Value > 0 && r.Elo.Value >= filter.EloMin.Value);
                     if (filter.EloMax.HasValue)
