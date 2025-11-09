@@ -16,61 +16,35 @@ namespace BgaTmScraperRegistry
     {
         private const string Query = @"
 WITH g1 AS (
-    SELECT
-        g.TableId,
-        g.GameMode,
-        g.GameSpeed,
-        g.Map,
-        g.PreludeOn,
-        g.ColoniesOn,
-        g.CorporateEraOn,
-        g.DraftOn,
-        g.BeginnersCorporationsOn,
-        ROW_NUMBER() OVER (PARTITION BY g.TableId ORDER BY g.Id) AS rn
-    FROM Games g
+  SELECT g.TableId, g.VersionId, g.ParsedDateTime, g.GameMode, g.GameSpeed, g.Map, g.PreludeOn, g.ColoniesOn,
+         g.CorporateEraOn, g.DraftOn, g.BeginnersCorporationsOn,
+         ROW_NUMBER() OVER (PARTITION BY g.TableId ORDER BY g.Id) AS rn
+  FROM Games g
 ),
 gp1 AS (
-    SELECT
-        gp.*,
-        ROW_NUMBER() OVER (
-            PARTITION BY gp.TableId, gp.PlayerId
-            ORDER BY 
-                CASE WHEN gp.PlayerPerspective = gp.PlayerId THEN 0 ELSE 1 END,
-                gp.Position,
-                gp.GameId
-        ) AS rn
-    FROM GamePlayers gp
+  SELECT gp.*,
+         ROW_NUMBER() OVER (
+           PARTITION BY gp.TableId, gp.PlayerId
+           ORDER BY CASE WHEN gp.PlayerPerspective = gp.PlayerId THEN 0 ELSE 1 END,
+                    gp.Position, gp.GameId
+         ) AS rn
+  FROM GamePlayers gp
 )
 SELECT 
-    gp.TableId,
-    gp.PlayerId,
-    p.Name AS PlayerName,
-    g.GameMode,
-    g.GameSpeed,
-    g.Map,
-    g.PreludeOn,
-    g.ColoniesOn,
-    g.CorporateEraOn,
-    g.DraftOn,
-    g.BeginnersCorporationsOn,
-    gs.PlayerCount,
-    gs.DurationMinutes,
-    gs.Generations,
-    gp.Elo,
-    gp.EloChange,
-    gp.ArenaPoints,
-    gp.ArenaPointsChange,
-    gp.Position,
-    gs.Conceded
-FROM g1 g
-INNER JOIN gp1 gp
-    ON gp.TableId = g.TableId
-   AND gp.rn = 1
-INNER JOIN Players p
-    ON p.PlayerId = gp.PlayerId
-INNER JOIN GameStats gs
-    ON gs.TableId = g.TableId
-WHERE g.rn = 1
+  gp.TableId, g.VersionId, g.ParsedDateTime, gp.PlayerId, p.Name AS PlayerName,
+  g.GameMode, g.GameSpeed, g.Map, g.PreludeOn, g.ColoniesOn,
+  g.CorporateEraOn, g.DraftOn, g.BeginnersCorporationsOn,
+  gs.PlayerCount, gs.DurationMinutes, gs.Generations,
+  gp.Elo, gp.EloChange, gp.ArenaPoints, gp.ArenaPointsChange,
+  gp.Position, gs.Conceded
+FROM gp1 gp
+LEFT JOIN g1 g
+  ON g.TableId = gp.TableId AND g.rn = 1
+LEFT JOIN Players p
+  ON p.PlayerId = gp.PlayerId
+LEFT JOIN GameStats gs
+  ON gs.TableId = gp.TableId
+WHERE gp.rn = 1
 ORDER BY gp.TableId, gp.PlayerId;";
 
         [FunctionName(nameof(GetGamesCsv))]
@@ -97,6 +71,8 @@ ORDER BY gp.TableId, gp.PlayerId;";
                 // header
                 sb.AppendLine(string.Join(",",
                     Csv("TableId"),
+                    Csv("VersionId"),
+                    Csv("ParsedDateTime"),
                     Csv("PlayerId"),
                     Csv("PlayerName"),
                     Csv("GameMode"),
@@ -126,8 +102,18 @@ ORDER BY gp.TableId, gp.PlayerId;";
                         return v is IFormattable f ? f.ToString(null, CultureInfo.InvariantCulture) : v.ToString();
                     }
 
+                    string Iso(object v)
+                    {
+                        if (v == null) return "";
+                        if (v is DateTime dt) return dt.Kind == DateTimeKind.Unspecified ? dt.ToString("s") : dt.ToUniversalTime().ToString("s");
+                        if (v is DateTimeOffset dto) return dto.ToUniversalTime().ToString("s");
+                        return ToStr(v);
+                    }
+
                     sb.AppendLine(string.Join(",",
                         Csv(ToStr(r.TableId)),
+                        Csv(ToStr(r.VersionId)),
+                        Csv(Iso(r.ParsedDateTime)),
                         Csv(ToStr(r.PlayerId)),
                         Csv(ToStr(r.PlayerName)),
                         Csv(ToStr(r.GameMode)),
