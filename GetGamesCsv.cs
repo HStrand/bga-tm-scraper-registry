@@ -29,6 +29,10 @@ gp1 AS (
                     gp.Position, gp.GameId
          ) AS rn
   FROM GamePlayers gp
+),
+gps1 AS (
+  SELECT gps.*
+  FROM GamePlayerStats gps
 )
 SELECT 
   gp.TableId, g.VersionId, g.ParsedDateTime, gp.PlayerId, p.Name AS PlayerName,
@@ -36,7 +40,8 @@ SELECT
   g.CorporateEraOn, g.DraftOn, g.BeginnersCorporationsOn,
   gs.PlayerCount, gs.DurationMinutes, gs.Generations,
   gp.Elo, gp.EloChange, gp.ArenaPoints, gp.ArenaPointsChange,
-  gp.Position, gs.Conceded
+  gp.Position, gs.Conceded,
+  gps.FinalScore
 FROM gp1 gp
 LEFT JOIN g1 g
   ON g.TableId = gp.TableId AND g.rn = 1
@@ -44,6 +49,8 @@ LEFT JOIN Players p
   ON p.PlayerId = gp.PlayerId
 LEFT JOIN GameStats gs
   ON gs.TableId = gp.TableId
+LEFT JOIN GamePlayerStats gps
+	ON gps.TableId = gp.TableId AND gps.PlayerId = gp.PlayerId
 WHERE gp.rn = 1
 ORDER BY gp.TableId, gp.PlayerId;";
 
@@ -91,7 +98,8 @@ ORDER BY gp.TableId, gp.PlayerId;";
                     Csv("ArenaPoints"),
                     Csv("ArenaPointsChange"),
                     Csv("Position"),
-                    Csv("Conceded")));
+                    Csv("Conceded"),
+                    Csv("FinalScore")));
 
                 foreach (var r in rows)
                 {
@@ -132,7 +140,8 @@ ORDER BY gp.TableId, gp.PlayerId;";
                         Csv(ToStr(r.ArenaPoints)),
                         Csv(ToStr(r.ArenaPointsChange)),
                         Csv(ToStr(r.Position)),
-                        Csv(Bool(r.Conceded))
+                        Csv(Bool(r.Conceded)),
+                        Csv(ToStr(r.FinalScore))
                     ));
                 }
 
