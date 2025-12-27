@@ -38,7 +38,6 @@ namespace BgaTmScraperRegistry.Services
             var gameCards = parser.ParseGameCards(gameLogData);
             var cityLocations = parser.ParseGameCityLocations(gameLogData);
             var greeneryLocations = parser.ParseGameGreeneryLocations(gameLogData);
-            //var trackerChanges = parser.ParseGamePlayerTrackerChanges(gameLogData); // Not used and very heavy query
 
             _logger.LogInformation($"Upserting GameStats for TableId {gameStats.TableId}: Generations={gameStats.Generations}, DurationMinutes={gameStats.DurationMinutes}");
 
@@ -48,7 +47,8 @@ namespace BgaTmScraperRegistry.Services
             using var transaction = connection.BeginTransaction();
             try
             {
-                await UpsertGameStatsAsync(connection, transaction, gameStats);
+				await UpdateGameMapIfRandomAsync(connection, transaction, gameStats.TableId, gameLogData.Map);
+				await UpsertGameStatsAsync(connection, transaction, gameStats);
                 await UpsertGamePlayerStatsAsync(connection, transaction, playerStats);
                 await UpsertStartingHandCorporationsAsync(connection, transaction, startingHandCorporations);
                 await UpsertStartingHandPreludesAsync(connection, transaction, startingHandPreludes);
@@ -58,8 +58,8 @@ namespace BgaTmScraperRegistry.Services
                 await UpsertParameterChangesAsync(connection, transaction, parameterChanges);
                 await UpsertGameCardsAsync(connection, transaction, gameCards);
                 await UpsertGameCityLocationsAsync(connection, transaction, cityLocations);
-                await UpsertGameGreeneryLocationsAsync(connection, transaction, greeneryLocations);
-                //await UpsertGamePlayerTrackerChangesAsync(connection, transaction, trackerChanges); // Not used and very heavy query
+                await UpsertGameGreeneryLocationsAsync(connection, transaction, greeneryLocations);                
+                
                 transaction.Commit();
                 
                 _logger.LogInformation($"Successfully upserted GameStats for TableId {gameStats.TableId}");
@@ -552,6 +552,31 @@ namespace BgaTmScraperRegistry.Services
             await connection.ExecuteAsync(insertFromStage, transaction: transaction, commandTimeout: 600); // 10 minutes
 
             await connection.ExecuteAsync("DROP TABLE #TrackerStage;", transaction: transaction, commandTimeout: 600); // 10 minutes
+        }
+
+        private async Task UpdateGameMapIfRandomAsync(SqlConnection connection, SqlTransaction transaction, int tableId, string newMap)
+        {
+            if (string.IsNullOrEmpty(newMap) || string.Equals(newMap, "Random", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+				// Update the Games table Map field only if it was previously 'Random' or NULL
+				var updateQuery = @"
+                UPDATE Games 
+                SET Map = @NewMap 
+                WHERE TableId = @TableId 
+                  AND (Map = 'Random' OR Map IS NULL)";
+
+            var rowsAffected = await connection.ExecuteAsync(
+                updateQuery,
+                new { TableId = tableId, NewMap = newMap },
+                transaction,
+                commandTimeout: 180);
+
+            if (rowsAffected > 0)
+            {
+                _logger.LogInformation($"Updated Games.Map from 'Random' to '{newMap}' for TableId {tableId}");
+            }
         }
     }
 }

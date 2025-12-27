@@ -465,12 +465,13 @@ namespace BgaTmScraperRegistry.Services
                     WHERE g.ScrapedAt IS NULL 
                     AND (g.AssignedTo IS NULL OR g.AssignedAt < DATEADD(hour, -24, GETUTCDATE()))
                     ORDER BY CASE g.Map
-                        WHEN 'Hellas' THEN 1
+                        WHEN 'Random' THEN 1
                         WHEN 'Vastitas Borealis' THEN 2
                         WHEN 'Elysium' THEN 3
-                        WHEN 'Tharsis' THEN 4
-                        WHEN 'Amazonis Planitia' THEN 5
-                        ELSE 6
+                        WHEN 'Hellas' THEN 4
+                        WHEN 'Tharsis' THEN 5
+                        WHEN 'Amazonis Planitia' THEN 6
+                        ELSE 7
                         END;";
 
                 var games = await connection.QueryAsync<GameAssignmentDetails>(
