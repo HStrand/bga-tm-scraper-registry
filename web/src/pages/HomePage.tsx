@@ -350,7 +350,7 @@ export default function HomePage() {
               value={playersAnim.toLocaleString()}
             />
             <BigStat
-              title="Avgerage Elo in scraped games"
+              title="Average Elo in scraped games"
               icon={<BarChart3 className="w-5 h-5" />}
               value={
                 stats.averageEloInScrapedGames != null
