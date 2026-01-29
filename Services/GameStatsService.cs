@@ -560,8 +560,12 @@ namespace BgaTmScraperRegistry.Services
             {
                 return;
             }
-				// Update the Games table Map field only if it was previously 'Random' or NULL
-				var updateQuery = @"
+
+            // Normalize the map name to English
+            var normalizedMap = MapNameNormalizer.NormalizeMapName(newMap, _logger);
+
+            // Update the Games table Map field only if it was previously 'Random' or NULL
+            var updateQuery = @"
                 UPDATE Games 
                 SET Map = @NewMap 
                 WHERE TableId = @TableId 
@@ -569,13 +573,13 @@ namespace BgaTmScraperRegistry.Services
 
             var rowsAffected = await connection.ExecuteAsync(
                 updateQuery,
-                new { TableId = tableId, NewMap = newMap },
+                new { TableId = tableId, NewMap = normalizedMap },
                 transaction,
                 commandTimeout: 180);
 
             if (rowsAffected > 0)
             {
-                _logger.LogInformation($"Updated Games.Map from 'Random' to '{newMap}' for TableId {tableId}");
+                _logger.LogInformation($"Updated Games.Map from 'Random' to '{normalizedMap}' for TableId {tableId}");
             }
         }
     }

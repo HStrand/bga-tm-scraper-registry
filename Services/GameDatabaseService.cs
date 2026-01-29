@@ -897,5 +897,52 @@ namespace BgaTmScraperRegistry.Services
                 return results.ToList();
             }
         }
+
+        public async Task<List<MissingStatsItem>> GetGamesWithRandomMapAsync(int? top = null)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var query = @"
+                SELECT TableId, PlayerPerspective AS PlayerId
+                FROM Games
+                WHERE Map = 'Random' AND ScrapedAt IS NOT NULL";
+
+            if (top.HasValue && top.Value > 0)
+            {
+                var topQuery = query + " ORDER BY TableId OFFSET 0 ROWS FETCH NEXT @Top ROWS ONLY";
+                var topResults = await connection.QueryAsync<MissingStatsItem>(topQuery, new { Top = top.Value });
+                return topResults.ToList();
+            }
+            else
+            {
+                var results = await connection.QueryAsync<MissingStatsItem>(query);
+                return results.ToList();
+            }
+        }
+
+        public async Task<bool> UpdateGameMapAsync(int tableId, int playerPerspective, string map)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var mapTruncated = ValidateAndTruncateString(map, 255, $"Game TableId {tableId} Map");
+
+            var query = @"
+                UPDATE Games 
+                SET Map = @map
+                WHERE TableId = @tableId AND PlayerPerspective = @playerPerspective";
+            
+            var rowsAffected = await connection.ExecuteAsync(query, new 
+            { 
+                tableId, 
+                playerPerspective, 
+                map = mapTruncated
+            });
+            
+            _logger.LogInformation($"Updated {rowsAffected} game record(s) Map field for TableId {tableId}, PlayerPerspective {playerPerspective}");
+            
+            return rowsAffected > 0;
+        }
     }
 }
