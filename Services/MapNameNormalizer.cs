@@ -18,18 +18,32 @@ namespace BgaTmScraperRegistry.Services
             // Russian
             { "Ваститас Бореалис", "Vastitas Borealis" },
             { "Элизий", "Elysium" },
+            { "Тарсис", "Tharsis" },
+            { "Эллада", "Hellas" },
             
             // Chinese
             { "埃律西昂", "Elysium" },
             { "希臘", "Hellas" },
             { "北方荒原", "Vastitas Borealis" },
             { "塔爾西斯", "Tharsis" },
+
+            // Chinese - simplified
+            { "希腊", "Hellas" },
+			{ "北地废土", "Vastitas Borealis" },
+            { "极乐世界", "Elysium" },
+            { "塔尔西斯", "Tharsis" },
             
             // Japanese
             { "エリジウム", "Elysium" },
             { "タルシス", "Tharsis" },
             { "ボレアリス荒野", "Vastitas Borealis" },
-            { "ヘラス", "Hellas" }
+            { "ヘラス", "Hellas" },
+
+            // Korean
+            { "보레알리스 대평야", "Vastitas Borealis" },
+            { "엘리시움", "Elysium" },
+            { "타르시스", "Tharsis" },
+            { "헬라스", "Hellas" }
         };
 
         /// <summary>
