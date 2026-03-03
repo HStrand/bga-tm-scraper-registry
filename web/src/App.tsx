@@ -11,6 +11,8 @@ import { PreludeStatsPage } from "@/pages/PreludeStatsPage";
 import { MilestonesOverviewPage } from "@/pages/MilestonesOverviewPage";
 import { AwardsOverviewPage } from "@/pages/AwardsOverviewPage";
 import { LeaderboardsPage } from "@/pages/LeaderboardsPage";
+import { StartingHandOverviewPage } from "@/pages/StartingHandOverviewPage";
+import { StartingHandStatsPage } from "@/pages/StartingHandStatsPage";
 
 export default function App() {
   return (
@@ -22,6 +24,8 @@ export default function App() {
           <Route path="/corporations/:name" element={<CorporationStatsPage />} />
           <Route path="/cards" element={<ProjectCardsOverviewPage />} />
           <Route path="/cards/:name" element={<ProjectCardStatsPage />} />
+          <Route path="/startinghands" element={<StartingHandOverviewPage />} />
+          <Route path="/startinghands/:name" element={<StartingHandStatsPage />} />
           <Route path="/preludes" element={<PreludesOverviewPage />} />
           <Route path="/prelude/:name" element={<PreludeStatsPage />} />
           <Route path="/milestones" element={<MilestonesOverviewPage />} />
