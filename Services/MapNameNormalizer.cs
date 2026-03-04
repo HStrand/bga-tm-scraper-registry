@@ -43,8 +43,11 @@ namespace BgaTmScraperRegistry.Services
             { "보레알리스 대평야", "Vastitas Borealis" },
             { "엘리시움", "Elysium" },
             { "타르시스", "Tharsis" },
-            { "헬라스", "Hellas" }
-        };
+            { "헬라스", "Hellas" },
+
+
+            { "Elizjum", "Elysium" },
+		};
 
         /// <summary>
         /// Normalizes a map name to its standard English equivalent.
