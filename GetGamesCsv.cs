@@ -20,21 +20,8 @@ WITH g1 AS (
          g.CorporateEraOn, g.DraftOn, g.BeginnersCorporationsOn,
          ROW_NUMBER() OVER (PARTITION BY g.TableId ORDER BY g.Id) AS rn
   FROM Games g
-),
-gp1 AS (
-  SELECT gp.*,
-         ROW_NUMBER() OVER (
-           PARTITION BY gp.TableId, gp.PlayerId
-           ORDER BY CASE WHEN gp.PlayerPerspective = gp.PlayerId THEN 0 ELSE 1 END,
-                    gp.Position, gp.GameId
-         ) AS rn
-  FROM GamePlayers gp
-),
-gps1 AS (
-  SELECT gps.*
-  FROM GamePlayerStats gps
 )
-SELECT 
+SELECT
   gp.TableId, g.VersionId, g.ParsedDateTime, gp.PlayerId, p.Name AS PlayerName,
   g.GameMode, g.GameSpeed, g.Map, g.PreludeOn, g.ColoniesOn,
   g.CorporateEraOn, g.DraftOn, g.BeginnersCorporationsOn,
@@ -42,7 +29,7 @@ SELECT
   gp.Elo, gp.EloChange, gp.ArenaPoints, gp.ArenaPointsChange,
   gp.Position, gs.Conceded,
   gps.FinalScore
-FROM gp1 gp
+FROM GamePlayers_Canonical gp
 LEFT JOIN g1 g
   ON g.TableId = gp.TableId AND g.rn = 1
 LEFT JOIN Players p
@@ -51,7 +38,6 @@ LEFT JOIN GameStats gs
   ON gs.TableId = gp.TableId
 LEFT JOIN GamePlayerStats gps
 	ON gps.TableId = gp.TableId AND gps.PlayerId = gp.PlayerId
-WHERE gp.rn = 1
 ORDER BY gp.TableId, gp.PlayerId;";
 
         [FunctionName(nameof(GetGamesCsv))]

@@ -133,14 +133,10 @@ namespace BgaTmScraperRegistry.Services
 ),
 best_gp AS (
     SELECT gp.TableId, gp.PlayerId,
-           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position,
-           rn = ROW_NUMBER() OVER (
-               PARTITION BY gp.TableId, gp.PlayerId
-               ORDER BY gp.GameId DESC
-           )
-    FROM GamePlayers gp WITH (NOLOCK)
+           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position
+    FROM GamePlayers_Canonical gp WITH (NOLOCK)
 )
-SELECT 
+SELECT
     shp.TableId,
     shp.PlayerId,
     shp.Prelude,
@@ -163,7 +159,7 @@ JOIN best_g g
 JOIN GameStats gs WITH (NOLOCK)
   ON gs.TableId = shp.TableId
 JOIN best_gp gp
-  ON gp.TableId = shp.TableId AND gp.PlayerId = shp.PlayerId AND gp.rn = 1
+  ON gp.TableId = shp.TableId AND gp.PlayerId = shp.PlayerId
 JOIN GamePlayerStats gps WITH (NOLOCK)
   ON gps.TableId = shp.TableId AND gps.PlayerId = shp.PlayerId
 WHERE shp.Kept = 1

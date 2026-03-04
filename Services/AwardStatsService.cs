@@ -289,12 +289,8 @@ WITH best_g AS (
 ),
 best_gp AS (
     SELECT gp.TableId, gp.PlayerId,
-           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position,
-           rn = ROW_NUMBER() OVER (
-               PARTITION BY gp.TableId, gp.PlayerId
-               ORDER BY gp.GameId DESC                -- pick latest row per player in game
-           )
-    FROM GamePlayers gp
+           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position
+    FROM GamePlayers_Canonical gp
 ),
 best_gps AS (
     SELECT gps.TableId, gps.PlayerId, gps.Corporation,
@@ -340,7 +336,6 @@ JOIN best_g g
 JOIN best_gp gp
   ON gp.TableId = gpa.TableId
  AND gp.PlayerId = gpa.PlayerId
- AND gp.rn = 1
 JOIN best_gps gps
   ON gps.TableId = gpa.TableId
  AND gps.PlayerId = gpa.PlayerId

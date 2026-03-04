@@ -1126,6 +1126,12 @@ namespace BgaTmScraperRegistry.Services
 
             GameCard GetOrCreateForPlayer(int playerId, string cardName)
             {
+                // Strip known spurious prefixes from card names
+                if (cardName.StartsWith("a card ", StringComparison.OrdinalIgnoreCase))
+                    cardName = cardName.Substring(7);
+                else if (cardName.StartsWith("card ", StringComparison.OrdinalIgnoreCase))
+                    cardName = cardName.Substring(5);
+
                 var key = Key(playerId, cardName);
                 if (!results.TryGetValue(key, out var gc))
                 {

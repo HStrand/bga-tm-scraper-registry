@@ -140,23 +140,7 @@ namespace BgaTmScraperRegistry.Services
         private async Task<List<CardBasicStatsRow>> ComputeAllCardStatsFromDbAsync()
         {
             var sql = @"
-;WITH gp_dedup AS (
-  SELECT
-    gp.TableId, gp.PlayerId,
-    gp.Position, gp.Elo, gp.EloChange,
-    ROW_NUMBER() OVER (
-      PARTITION BY gp.TableId, gp.PlayerId
-      ORDER BY CASE WHEN gp.PlayerPerspective = gp.PlayerId THEN 0 ELSE 1 END,
-               gp.GameId DESC
-    ) AS rn
-  FROM GamePlayers gp WITH (NOLOCK)
-),
-gp1 AS (
-  SELECT TableId, PlayerId, Position, Elo, EloChange
-  FROM gp_dedup
-  WHERE rn = 1
-),
-g_dedup AS (
+;WITH g_dedup AS (
   SELECT
     g.TableId,
     ROW_NUMBER() OVER (
@@ -165,15 +149,15 @@ g_dedup AS (
     ) AS rn
   FROM Games g WITH (NOLOCK)
 )
-SELECT 
+SELECT
     gc.Card,
     COUNT(*) AS TimesPlayed,
-    ROUND(AVG(CASE WHEN gp1.Position = 1 THEN 1.0 ELSE 0.0 END), 3) AS WinRate,
-    ROUND(AVG(CAST(gp1.Elo AS float)), 2) AS AvgElo,
-    ROUND(AVG(CAST(gp1.EloChange AS float)), 2) AS AvgEloChange
+    ROUND(AVG(CASE WHEN gp.Position = 1 THEN 1.0 ELSE 0.0 END), 3) AS WinRate,
+    ROUND(AVG(CAST(gp.Elo AS float)), 2) AS AvgElo,
+    ROUND(AVG(CAST(gp.EloChange AS float)), 2) AS AvgEloChange
 FROM GameCards gc WITH (NOLOCK)
-JOIN gp1
-  ON gp1.TableId = gc.TableId AND gp1.PlayerId = gc.PlayerId
+JOIN GamePlayers_Canonical gp WITH (NOLOCK)
+  ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
 JOIN (SELECT TableId FROM g_dedup WHERE rn = 1) g
   ON g.TableId = gc.TableId
 JOIN GameStats gs WITH (NOLOCK)
@@ -269,23 +253,7 @@ ORDER BY AvgEloChange DESC;";
         private async Task<List<CardBasicStatsRow>> ComputeAllCardOptionStatsFromDbAsync()
         {
             var sql = @"
-;WITH gp_dedup AS (
-  SELECT
-    gp.TableId, gp.PlayerId,
-    gp.Position, gp.Elo, gp.EloChange,
-    ROW_NUMBER() OVER (
-      PARTITION BY gp.TableId, gp.PlayerId
-      ORDER BY CASE WHEN gp.PlayerPerspective = gp.PlayerId THEN 0 ELSE 1 END,
-               gp.GameId DESC
-    ) AS rn
-  FROM GamePlayers gp WITH (NOLOCK)
-),
-gp1 AS (
-  SELECT TableId, PlayerId, Position, Elo, EloChange
-  FROM gp_dedup
-  WHERE rn = 1
-),
-g_dedup AS (
+;WITH g_dedup AS (
   SELECT
     g.TableId,
     ROW_NUMBER() OVER (
@@ -294,15 +262,15 @@ g_dedup AS (
     ) AS rn
   FROM Games g WITH (NOLOCK)
 )
-SELECT 
+SELECT
     gc.Card,
     COUNT(*) AS TimesPlayed,
-    ROUND(AVG(CASE WHEN gp1.Position = 1 THEN 1.0 ELSE 0.0 END), 3) AS WinRate,
-    ROUND(AVG(CAST(gp1.Elo AS float)), 2) AS AvgElo,
-    ROUND(AVG(CAST(gp1.EloChange AS float)), 2) AS AvgEloChange
+    ROUND(AVG(CASE WHEN gp.Position = 1 THEN 1.0 ELSE 0.0 END), 3) AS WinRate,
+    ROUND(AVG(CAST(gp.Elo AS float)), 2) AS AvgElo,
+    ROUND(AVG(CAST(gp.EloChange AS float)), 2) AS AvgEloChange
 FROM GameCards gc WITH (NOLOCK)
-JOIN gp1
-  ON gp1.TableId = gc.TableId AND gp1.PlayerId = gc.PlayerId
+JOIN GamePlayers_Canonical gp WITH (NOLOCK)
+  ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
 JOIN (SELECT TableId FROM g_dedup WHERE rn = 1) g
   ON g.TableId = gc.TableId
 JOIN GameStats gs WITH (NOLOCK)
@@ -314,7 +282,7 @@ ORDER BY AvgEloChange DESC;";
             using var conn = new SqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            var rows = await conn.QueryAsync<CardBasicStatsRow>(sql, commandTimeout: 300); // 5 minutes
+            var rows = await conn.QueryAsync<CardBasicStatsRow>(sql, commandTimeout: 540); // 9 minutes
 
             rows = rows.Where(c => !
             new List<string>

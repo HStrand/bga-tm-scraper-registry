@@ -77,16 +77,11 @@ WITH keys AS (
   WHERE gc.Card = @CardName
     AND gc.PlayedGen IS NOT NULL
 ),
-best_gp AS (  -- choose one GamePlayers row per (TableId, PlayerId)
+best_gp AS (  -- choose one GamePlayers_Canonical row per (TableId, PlayerId)
   SELECT
     gp.TableId, gp.PlayerId,
-    gp.PlayerName, gp.Elo, gp.EloChange, gp.Position,
-    rn = ROW_NUMBER() OVER (
-      PARTITION BY gp.TableId, gp.PlayerId
-      ORDER BY CASE WHEN gp.PlayerPerspective = gp.PlayerId THEN 0 ELSE 1 END,
-               gp.GameId DESC
-    )
-  FROM GamePlayers gp WITH (NOLOCK)
+    gp.PlayerName, gp.Elo, gp.EloChange, gp.Position
+  FROM GamePlayers_Canonical gp WITH (NOLOCK)
   JOIN keys k ON k.TableId = gp.TableId AND k.PlayerId = gp.PlayerId
 ),
 best_g AS (    -- choose one Games row per TableId
@@ -109,7 +104,7 @@ SELECT
   gps.Corporation,
   gs.PlayerCount
 FROM GameCards gc WITH (NOLOCK)
-JOIN (SELECT * FROM best_gp WHERE rn = 1) gp
+JOIN best_gp gp
   ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
 JOIN (SELECT * FROM best_g  WHERE rn = 1) g
   ON g.TableId = gc.TableId

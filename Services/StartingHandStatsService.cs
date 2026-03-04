@@ -101,9 +101,8 @@ AllPlayers AS
         gp.PlayerId,
         CONVERT(float, gp.EloChange) AS EloChange
     FROM best_g g
-    JOIN dbo.GamePlayers gp
+    JOIN dbo.GamePlayers_Canonical gp
       ON gp.TableId = g.TableId
-     AND gp.GameId  = g.GameId
     JOIN dbo.GameStats gs
       ON gs.TableId = g.TableId
     WHERE

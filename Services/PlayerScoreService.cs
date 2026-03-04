@@ -262,14 +262,12 @@ namespace BgaTmScraperRegistry.Services
                   GROUP BY gps.TableId, gps.PlayerId
                 ),
                 BestPlayers AS (
-                  -- Deduplicate GamePlayers if needed
                   SELECT
                       gp.TableId,
                       gp.PlayerId,
-                      PlayerName = MAX(gp.PlayerName),
-                      Elo        = MAX(gp.Elo)
-                  FROM dbo.GamePlayers AS gp
-                  GROUP BY gp.TableId, gp.PlayerId
+                      gp.PlayerName,
+                      gp.Elo
+                  FROM dbo.GamePlayers_Canonical AS gp
                 ),
                 OneGame AS (
                   -- Pick exactly one Games row per TableId to avoid multiplying by PlayerPerspective

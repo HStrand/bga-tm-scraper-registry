@@ -144,7 +144,27 @@ namespace BgaTmScraperRegistry.Services
                 USING @GamePlayerData AS source ON target.GameId = source.GameId AND target.PlayerId = source.PlayerId
                 WHEN NOT MATCHED THEN
                     INSERT (GameId, TableId, PlayerPerspective, PlayerId, PlayerName, Elo, EloChange, ArenaPoints, ArenaPointsChange, Position)
-                    VALUES (source.GameId, source.TableId, source.PlayerPerspective, source.PlayerId, source.PlayerName, source.Elo, source.EloChange, source.ArenaPoints, source.ArenaPointsChange, source.Position);";
+                    VALUES (source.GameId, source.TableId, source.PlayerPerspective, source.PlayerId, source.PlayerName, source.Elo, source.EloChange, source.ArenaPoints, source.ArenaPointsChange, source.Position);
+
+                ;WITH deduped AS (
+                    SELECT *, ROW_NUMBER() OVER (
+                        PARTITION BY TableId, PlayerId
+                        ORDER BY CASE WHEN PlayerPerspective = PlayerId THEN 0 ELSE 1 END
+                    ) AS rn
+                    FROM @GamePlayerData
+                )
+                MERGE GamePlayers_Canonical AS target
+                USING (SELECT GameId, TableId, PlayerId, PlayerName, Elo, EloChange,
+                              ArenaPoints, ArenaPointsChange, Position
+                       FROM deduped WHERE rn = 1) AS source
+                ON target.TableId = source.TableId AND target.PlayerId = source.PlayerId
+                WHEN NOT MATCHED THEN
+                    INSERT (GameId, TableId, PlayerId, PlayerName, Elo, EloChange, ArenaPoints, ArenaPointsChange, Position)
+                    VALUES (source.GameId, source.TableId, source.PlayerId, source.PlayerName, source.Elo, source.EloChange, source.ArenaPoints, source.ArenaPointsChange, source.Position)
+                WHEN MATCHED THEN
+                    UPDATE SET GameId = source.GameId, PlayerName = source.PlayerName, Elo = source.Elo,
+                               EloChange = source.EloChange, ArenaPoints = source.ArenaPoints,
+                               ArenaPointsChange = source.ArenaPointsChange, Position = source.Position;";
 
             await connection.ExecuteAsync(
                 mergeQuery,
@@ -510,9 +530,8 @@ namespace BgaTmScraperRegistry.Services
                 var gamePlayerPerspectives = gameList.Select(g => g.PlayerPerspective).ToList();
 
                 var playersQuery = @"
-                    SELECT 
+                    SELECT
                         gp.TableId,
-                        gp.PlayerPerspective,
                         gp.PlayerId,
                         gp.PlayerName,
                         gp.Elo,
@@ -520,19 +539,18 @@ namespace BgaTmScraperRegistry.Services
                         gp.ArenaPoints,
                         gp.ArenaPointsChange,
                         gp.Position
-                    FROM GamePlayers gp
-                    WHERE gp.TableId IN @tableIds 
-                    AND gp.PlayerPerspective IN @playerPerspectives
-                    ORDER BY gp.TableId, gp.PlayerPerspective, gp.Position";
+                    FROM GamePlayers_Canonical gp
+                    WHERE gp.TableId IN @tableIds
+                    ORDER BY gp.TableId, gp.Position";
 
                 var allPlayers = await connection.QueryAsync<GamePlayerInfoWithKeys>(
                     playersQuery,
-                    new { tableIds = gameTableIds, playerPerspectives = gamePlayerPerspectives },
+                    new { tableIds = gameTableIds },
                     transaction);
 
-                // Group players by game and assign to the corresponding games
+                // Group players by TableId and assign to the corresponding games
                 var playersByGame = allPlayers
-                    .GroupBy(p => new { p.TableId, p.PlayerPerspective })
+                    .GroupBy(p => p.TableId)
                     .ToDictionary(
                         g => g.Key,
                         g => g.Select(p => new GamePlayerInfo
@@ -550,8 +568,7 @@ namespace BgaTmScraperRegistry.Services
                 // Assign players to their respective games
                 foreach (var game in gameList)
                 {
-                    var key = new { TableId = game.TableId, PlayerPerspective = game.PlayerPerspective };
-                    if (playersByGame.TryGetValue(key, out var players))
+                    if (playersByGame.TryGetValue(game.TableId, out var players))
                     {
                         game.Players = players;
                     }
@@ -612,9 +629,9 @@ namespace BgaTmScraperRegistry.Services
 
             // Get average Elo in scraped games
             var averageEloQuery = @"
-                SELECT AVG(CAST(gp.Elo AS FLOAT)) 
-                FROM GamePlayers gp
-                INNER JOIN Games g ON gp.GameId = g.Id
+                SELECT AVG(CAST(gp.Elo AS FLOAT))
+                FROM GamePlayers_Canonical gp
+                INNER JOIN Games g ON gp.TableId = g.TableId
                 WHERE g.ScrapedAt IS NOT NULL";
             var averageEloDouble = await connection.QuerySingleOrDefaultAsync<double?>(averageEloQuery);
             var averageElo = averageEloDouble.HasValue ? (int?)Math.Round(averageEloDouble.Value) : null;
@@ -625,8 +642,8 @@ namespace BgaTmScraperRegistry.Services
                     SELECT gp.Elo,
                            ROW_NUMBER() OVER (ORDER BY gp.Elo) as RowNum,
                            COUNT(*) OVER() as TotalCount
-                    FROM GamePlayers gp
-                    INNER JOIN Games g ON gp.GameId = g.Id
+                    FROM GamePlayers_Canonical gp
+                    INNER JOIN Games g ON gp.TableId = g.TableId
                     WHERE g.ScrapedAt IS NOT NULL
                 ),
                 MedianValues AS (
@@ -668,9 +685,9 @@ namespace BgaTmScraperRegistry.Services
 
             // Get average Elo in scraped games
             var averageEloQuery = @"
-                SELECT AVG(CAST(gp.Elo AS FLOAT)) 
-                FROM GamePlayers gp
-                INNER JOIN Games g ON gp.GameId = g.Id
+                SELECT AVG(CAST(gp.Elo AS FLOAT))
+                FROM GamePlayers_Canonical gp
+                INNER JOIN Games g ON gp.TableId = g.TableId
                 WHERE g.ScrapedAt IS NOT NULL";
             var averageEloDouble = await connection.QuerySingleOrDefaultAsync<double?>(averageEloQuery);
             var averageElo = averageEloDouble.HasValue ? (int?)Math.Round(averageEloDouble.Value) : null;

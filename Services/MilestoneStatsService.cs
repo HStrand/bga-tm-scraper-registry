@@ -89,8 +89,8 @@ namespace BgaTmScraperRegistry.Services
 
             var query = @"
                 ;WITH PlayerTharsisTables AS (          -- all perspectives, de-duped
-  SELECT DISTINCT gp.PlayerId, gp.PlayerName, gp.TableId
-  FROM dbo.GamePlayers gp
+  SELECT gp.PlayerId, gp.PlayerName, gp.TableId
+  FROM dbo.GamePlayers_Canonical gp
   JOIN dbo.Games g
     ON g.TableId = gp.TableId
   WHERE g.Map = N'Tharsis'
@@ -276,15 +276,11 @@ WITH best_g AS (
 ),
 best_gp AS (
     SELECT gp.TableId, gp.PlayerId,
-           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position,
-           rn = ROW_NUMBER() OVER (
-               PARTITION BY gp.TableId, gp.PlayerId
-               ORDER BY gp.GameId DESC                -- pick latest row per player in game
-           )
-    FROM GamePlayers gp
+           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position
+    FROM GamePlayers_Canonical gp
 ),
 milestone_claims AS (
-    SELECT 
+    SELECT
         gm.Milestone,
         COUNT(*) as TimesClaimed,
         AVG(CAST(CASE WHEN gp.Position = 1 THEN 1.0 ELSE 0.0 END AS float)) as WinRate,
@@ -293,7 +289,7 @@ milestone_claims AS (
         AVG(CAST(ISNULL(gp.Elo, 0) AS float)) as AvgElo
     FROM GameMilestones gm
     JOIN best_g g ON g.TableId = gm.TableId AND g.rn = 1
-    JOIN best_gp gp ON gp.TableId = gm.TableId AND gp.PlayerId = gm.ClaimedBy AND gp.rn = 1
+    JOIN best_gp gp ON gp.TableId = gm.TableId AND gp.PlayerId = gm.ClaimedBy
     WHERE gm.Milestone IS NOT NULL AND gm.Milestone <> ''
     GROUP BY gm.Milestone
 )
@@ -653,12 +649,8 @@ WITH best_g AS (
 ),
 best_gp AS (
     SELECT gp.TableId, gp.PlayerId,
-           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position,
-           rn = ROW_NUMBER() OVER (
-               PARTITION BY gp.TableId, gp.PlayerId
-               ORDER BY gp.GameId DESC                -- pick latest row per player in game
-           )
-    FROM GamePlayers gp
+           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position
+    FROM GamePlayers_Canonical gp
 )
 SELECT
     gm.TableId,
@@ -670,7 +662,7 @@ SELECT
     g.GameSpeed,
     gs.PlayerCount,
     gs.DurationMinutes,
-    gs.Generations,    
+    gs.Generations,
     gm.Milestone,
     gm.ClaimedGen,
     gp.PlayerId,
@@ -685,7 +677,6 @@ JOIN best_g g
 JOIN best_gp gp
   ON gp.TableId = gm.TableId
  AND gp.PlayerId = gm.ClaimedBy
- AND gp.rn = 1
 JOIN GamePlayerStats gps
   ON gps.TableId = gm.TableId
  AND gps.PlayerId = gm.ClaimedBy

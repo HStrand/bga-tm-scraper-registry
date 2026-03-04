@@ -89,7 +89,7 @@ namespace BgaTmScraperRegistry.Services
                       gp.PlayerId,
                       p.Name AS PlayerName,
                       TharsisGames = COUNT(DISTINCT gp.TableId)
-                  FROM dbo.GamePlayers AS gp
+                  FROM dbo.GamePlayers_Canonical AS gp
                   JOIN dbo.Games       AS g ON g.TableId = gp.TableId
                   LEFT JOIN dbo.Players AS p ON p.PlayerId = gp.PlayerId
                   WHERE g.Map = N'Tharsis'

@@ -624,12 +624,8 @@ WITH best_g AS (
 ),
 best_gp AS (
     SELECT gp.TableId, gp.PlayerId,
-           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position,
-           rn = ROW_NUMBER() OVER (
-               PARTITION BY gp.TableId, gp.PlayerId
-               ORDER BY gp.GameId DESC                -- pick latest row per player in game
-           )
-    FROM GamePlayers gp
+           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position
+    FROM GamePlayers_Canonical gp
 )
 SELECT
     gs.TableId,
@@ -641,7 +637,7 @@ SELECT
     g.GameSpeed,
     gs.PlayerCount,
     gs.DurationMinutes,
-    gs.Generations,    
+    gs.Generations,
     gps.FinalScore,
     gps.FinalTr,
     gps.GreeneryPoints,
@@ -663,7 +659,6 @@ JOIN best_g g
 JOIN best_gp gp
   ON gp.TableId = gps.TableId
  AND gp.PlayerId = gps.PlayerId
- AND gp.rn = 1
 WHERE gps.Corporation <> 'Unknown'
 ORDER BY gs.TableId DESC;";
 
