@@ -140,31 +140,20 @@ namespace BgaTmScraperRegistry.Services
         private async Task<List<CardBasicStatsRow>> ComputeAllCardStatsFromDbAsync()
         {
             var sql = @"
-;WITH g_dedup AS (
-  SELECT
-    g.TableId,
-    ROW_NUMBER() OVER (
-      PARTITION BY g.TableId
-      ORDER BY g.IndexedAt DESC, g.Id DESC
-    ) AS rn
-  FROM Games g WITH (NOLOCK)
-)
 SELECT
     gc.Card,
-    COUNT(*) AS TimesPlayed,
+    COUNT_BIG(*) AS TimesPlayed,
     ROUND(AVG(CASE WHEN gp.Position = 1 THEN 1.0 ELSE 0.0 END), 3) AS WinRate,
     ROUND(AVG(CAST(gp.Elo AS float)), 2) AS AvgElo,
     ROUND(AVG(CAST(gp.EloChange AS float)), 2) AS AvgEloChange
-FROM GameCards gc WITH (NOLOCK)
-JOIN GamePlayers_Canonical gp WITH (NOLOCK)
-  ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
-JOIN (SELECT TableId FROM g_dedup WHERE rn = 1) g
-  ON g.TableId = gc.TableId
-JOIN GameStats gs WITH (NOLOCK)
-  ON gs.TableId = gc.TableId
-WHERE gc.PlayedGen IS NOT NULL
-GROUP BY gc.Card
-ORDER BY AvgEloChange DESC;";
+FROM dbo.GameCards gc WITH (NOLOCK)
+JOIN dbo.GamePlayers_Canonical gp WITH (NOLOCK)
+  ON gp.TableId  = gc.TableId
+ AND gp.PlayerId = gc.PlayerId
+WHERE
+    gc.PlayedGen IS NOT NULL
+GROUP BY
+    gc.Card";
 
             using var conn = new SqlConnection(_connectionString);
             await conn.OpenAsync();
@@ -253,31 +242,20 @@ ORDER BY AvgEloChange DESC;";
         private async Task<List<CardBasicStatsRow>> ComputeAllCardOptionStatsFromDbAsync()
         {
             var sql = @"
-;WITH g_dedup AS (
-  SELECT
-    g.TableId,
-    ROW_NUMBER() OVER (
-      PARTITION BY g.TableId
-      ORDER BY g.IndexedAt DESC, g.Id DESC
-    ) AS rn
-  FROM Games g WITH (NOLOCK)
-)
 SELECT
     gc.Card,
-    COUNT(*) AS TimesPlayed,
+    COUNT_BIG(*) AS TimesPlayed,
     ROUND(AVG(CASE WHEN gp.Position = 1 THEN 1.0 ELSE 0.0 END), 3) AS WinRate,
     ROUND(AVG(CAST(gp.Elo AS float)), 2) AS AvgElo,
     ROUND(AVG(CAST(gp.EloChange AS float)), 2) AS AvgEloChange
-FROM GameCards gc WITH (NOLOCK)
-JOIN GamePlayers_Canonical gp WITH (NOLOCK)
-  ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
-JOIN (SELECT TableId FROM g_dedup WHERE rn = 1) g
-  ON g.TableId = gc.TableId
-JOIN GameStats gs WITH (NOLOCK)
-  ON gs.TableId = gc.TableId
-WHERE gc.DrawnGen IS NOT NULL
-GROUP BY gc.Card
-ORDER BY AvgEloChange DESC;";
+FROM dbo.GameCards gc WITH (NOLOCK)
+JOIN dbo.GamePlayers_Canonical gp WITH (NOLOCK)
+  ON gp.TableId  = gc.TableId
+ AND gp.PlayerId = gc.PlayerId
+WHERE
+    gc.DrawnGen IS NOT NULL
+GROUP BY
+    gc.Card";
 
             using var conn = new SqlConnection(_connectionString);
             await conn.OpenAsync();
