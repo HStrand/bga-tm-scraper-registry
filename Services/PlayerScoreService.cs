@@ -269,38 +269,25 @@ namespace BgaTmScraperRegistry.Services
                       gp.Elo
                   FROM dbo.GamePlayers_Canonical AS gp
                 ),
-                OneGame AS (
-                  -- Pick exactly one Games row per TableId to avoid multiplying by PlayerPerspective
-                  SELECT
-                      g.TableId,
-                      g.Map,
-                      g.ColoniesOn,
-                      g.GameMode,
-                      g.GameSpeed,
-                      g.PreludeOn,
-                      g.DraftOn,
-                      rn = ROW_NUMBER() OVER (PARTITION BY g.TableId ORDER BY g.PlayerPerspective)
-                  FROM dbo.Games AS g
-                )
                 SELECT
                     bs.TableId,
                     bs.PlayerId,
                     COALESCE(p.Name, bp.PlayerName) AS PlayerName,
                     bp.Elo,
                     bs.Corporation,
-                    og.Map,
-                    og.ColoniesOn,
-                    og.GameMode,
-                    og.GameSpeed,
-                    og.PreludeOn,
-                    og.DraftOn,
+                    g.Map,
+                    g.ColoniesOn,
+                    g.GameMode,
+                    g.GameSpeed,
+                    g.PreludeOn,
+                    g.DraftOn,
                     gs.Generations,
                     gs.PlayerCount,
                     bs.FinalScore
                 FROM BestStats bs
                 LEFT JOIN BestPlayers bp ON bp.TableId = bs.TableId AND bp.PlayerId = bs.PlayerId
                 LEFT JOIN dbo.Players  p ON p.PlayerId = bs.PlayerId
-                JOIN OneGame og ON og.TableId = bs.TableId AND og.rn = 1
+                JOIN dbo.Games_Canonical g ON g.TableId = bs.TableId
                 LEFT JOIN dbo.GameStats gs ON gs.TableId = bs.TableId";
 
             var results = await connection.QueryAsync<PlayerScore>(query, commandTimeout: 300); // 5 minutes

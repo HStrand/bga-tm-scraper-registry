@@ -67,33 +67,6 @@ namespace BgaTmScraperRegistry.Functions
                 }
 
                 var sql = @"
--- Keys limited to players who actually played the card and have a known corp
-WITH keys AS (
-  SELECT DISTINCT gc.TableId, gc.PlayerId
-  FROM GameCards gc WITH (NOLOCK)
-  JOIN GamePlayerStats gps WITH (NOLOCK)
-    ON gps.TableId = gc.TableId AND gps.PlayerId = gc.PlayerId
-   AND gps.Corporation <> 'Unknown'
-  WHERE gc.Card = @CardName
-    AND gc.PlayedGen IS NOT NULL
-),
-best_gp AS (  -- choose one GamePlayers_Canonical row per (TableId, PlayerId)
-  SELECT
-    gp.TableId, gp.PlayerId,
-    gp.PlayerName, gp.Elo, gp.EloChange, gp.Position
-  FROM GamePlayers_Canonical gp WITH (NOLOCK)
-  JOIN keys k ON k.TableId = gp.TableId AND k.PlayerId = gp.PlayerId
-),
-best_g AS (    -- choose one Games row per TableId
-  SELECT
-    g.TableId, g.Map, g.GameMode, g.GameSpeed, g.PreludeOn, g.ColoniesOn, g.DraftOn,
-    rn = ROW_NUMBER() OVER (
-      PARTITION BY g.TableId
-      ORDER BY g.IndexedAt DESC, g.Id DESC
-    )
-  FROM Games g WITH (NOLOCK)
-  JOIN (SELECT DISTINCT TableId FROM keys) t ON t.TableId = g.TableId
-)
 SELECT
   gc.TableId,
   gc.PlayerId,
@@ -104,9 +77,9 @@ SELECT
   gps.Corporation,
   gs.PlayerCount
 FROM GameCards gc WITH (NOLOCK)
-JOIN best_gp gp
+JOIN GamePlayers_Canonical gp WITH (NOLOCK)
   ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
-JOIN (SELECT * FROM best_g  WHERE rn = 1) g
+JOIN Games_Canonical g WITH (NOLOCK)
   ON g.TableId = gc.TableId
 JOIN GamePlayerStats gps WITH (NOLOCK)
   ON gps.TableId = gc.TableId AND gps.PlayerId = gc.PlayerId

@@ -613,20 +613,6 @@ namespace BgaTmScraperRegistry.Services
         private async Task<List<CorporationPlayerStatsRow>> ComputeFromDbAsync()
         {
             var sql = @"
-WITH best_g AS (
-    SELECT g.TableId, g.Map, g.PreludeOn, g.ColoniesOn, g.DraftOn,
-           g.GameMode, g.GameSpeed,
-           rn = ROW_NUMBER() OVER (
-               PARTITION BY g.TableId
-               ORDER BY g.IndexedAt DESC, g.Id DESC   -- pick the most recent row per game
-           )
-    FROM Games g
-),
-best_gp AS (
-    SELECT gp.TableId, gp.PlayerId,
-           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position
-    FROM GamePlayers_Canonical gp
-)
 SELECT
     gs.TableId,
     g.Map,
@@ -654,9 +640,9 @@ SELECT
 FROM GamePlayerStats gps
 JOIN GameStats gs
   ON gs.TableId = gps.TableId
-JOIN best_g g
-  ON g.TableId = gps.TableId AND g.rn = 1
-JOIN best_gp gp
+JOIN Games_Canonical g
+  ON g.TableId = gps.TableId
+JOIN GamePlayers_Canonical gp
   ON gp.TableId = gps.TableId
  AND gp.PlayerId = gps.PlayerId
 WHERE gps.Corporation <> 'Unknown'

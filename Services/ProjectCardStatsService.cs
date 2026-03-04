@@ -78,32 +78,6 @@ namespace BgaTmScraperRegistry.Services
         private async Task<List<ProjectCardPlayerStatsRow>> QueryCardPlayerStatsFromDbAsync(string cardName)
         {
             var sql = @"
--- 1) Keys you need (only once per player/table)
-WITH keys AS (
-  SELECT DISTINCT gc.TableId, gc.PlayerId
-  FROM GameCards gc WITH (NOLOCK)
-  WHERE gc.Card = @CardName AND gc.PlayedGen IS NOT NULL
-)
-
--- 2) Pick one row from GamePlayers_Canonical and Games for each key
-, best_gp AS (
-  SELECT k.TableId, k.PlayerId,
-         gp.PlayerName, gp.Elo, gp.EloChange, gp.Position
-  FROM keys k
-  JOIN GamePlayers_Canonical gp WITH (NOLOCK)
-    ON gp.TableId = k.TableId AND gp.PlayerId = k.PlayerId
-)
-, best_g AS (
-  -- choose a canonical row per TableId (fast & player-agnostic)
-  SELECT g.TableId, g.Map, g.GameMode, g.GameSpeed, g.PreludeOn, g.ColoniesOn, g.DraftOn,
-         ROW_NUMBER() OVER (
-           PARTITION BY g.TableId
-           ORDER BY g.IndexedAt DESC, g.Id DESC
-         ) AS rn
-  FROM (SELECT DISTINCT TableId FROM keys) t
-  JOIN Games g WITH (NOLOCK) ON g.TableId = t.TableId
-)
-
 SELECT
     gc.TableId,
     gc.PlayerId,
@@ -113,9 +87,9 @@ SELECT
     gp.PlayerName, gp.Elo, gp.EloChange, gp.Position,
     gs.PlayerCount
 FROM GameCards gc WITH (NOLOCK)
-JOIN best_gp gp
+JOIN GamePlayers_Canonical gp WITH (NOLOCK)
   ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
-JOIN (SELECT * FROM best_g  WHERE rn = 1) g
+JOIN Games_Canonical g WITH (NOLOCK)
   ON g.TableId = gc.TableId
 JOIN GameStats gs WITH (NOLOCK)
   ON gs.TableId = gc.TableId

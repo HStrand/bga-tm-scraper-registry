@@ -110,7 +110,7 @@ namespace BgaTmScraperRegistry.Services
                 MERGE Games AS target
                 USING @GameData AS source ON target.TableId = source.TableId AND target.PlayerPerspective = source.PlayerPerspective
                 WHEN MATCHED THEN
-                    UPDATE SET 
+                    UPDATE SET
                         VersionId = source.VersionId,
                         GameMode = source.GameMode,
                         IndexedAt = source.IndexedAt,
@@ -125,7 +125,28 @@ namespace BgaTmScraperRegistry.Services
                 WHEN NOT MATCHED THEN
                     INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, IndexedBy, ScrapedAt, AssignedTo, AssignedAt, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn, GameSpeed)
                     VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.IndexedBy, source.ScrapedAt, source.AssignedTo, source.AssignedAt, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn, source.GameSpeed)
-                OUTPUT INSERTED.Id, INSERTED.TableId, INSERTED.PlayerPerspective;";
+                OUTPUT INSERTED.Id, INSERTED.TableId, INSERTED.PlayerPerspective;
+
+                ;WITH deduped_games AS (
+                    SELECT *, ROW_NUMBER() OVER (
+                        PARTITION BY TableId
+                        ORDER BY (SELECT NULL)
+                    ) AS rn
+                    FROM @GameData
+                )
+                MERGE Games_Canonical AS target
+                USING (SELECT TableId, GameMode, Map, PreludeOn, ColoniesOn, CorporateEraOn,
+                              DraftOn, BeginnersCorporationsOn, GameSpeed
+                       FROM deduped_games WHERE rn = 1) AS source
+                ON target.TableId = source.TableId
+                WHEN NOT MATCHED THEN
+                    INSERT (TableId, GameMode, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn, GameSpeed)
+                    VALUES (source.TableId, source.GameMode, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn, source.GameSpeed)
+                WHEN MATCHED THEN
+                    UPDATE SET GameMode = source.GameMode, Map = source.Map, PreludeOn = source.PreludeOn,
+                               ColoniesOn = source.ColoniesOn, CorporateEraOn = source.CorporateEraOn,
+                               DraftOn = source.DraftOn, BeginnersCorporationsOn = source.BeginnersCorporationsOn,
+                               GameSpeed = source.GameSpeed;";
 
             var results = await connection.QueryAsync<GameIdMapping>(
                 mergeQuery,
@@ -360,7 +381,22 @@ namespace BgaTmScraperRegistry.Services
                     INSERT (TableId, PlayerPerspective, VersionId, RawDateTime, ParsedDateTime, GameMode, IndexedAt, IndexedBy, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn, GameSpeed)
                     VALUES (source.TableId, source.PlayerPerspective, source.VersionId, source.RawDateTime, source.ParsedDateTime, source.GameMode, source.IndexedAt, source.IndexedBy, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn, source.GameSpeed);
 
-                SELECT Id FROM Games 
+                MERGE Games_Canonical AS target
+                USING (SELECT @TableId AS TableId, @GameMode AS GameMode, @Map AS Map,
+                              @PreludeOn AS PreludeOn, @ColoniesOn AS ColoniesOn, @CorporateEraOn AS CorporateEraOn,
+                              @DraftOn AS DraftOn, @BeginnersCorporationsOn AS BeginnersCorporationsOn,
+                              @GameSpeed AS GameSpeed) AS source
+                ON target.TableId = source.TableId
+                WHEN NOT MATCHED THEN
+                    INSERT (TableId, GameMode, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn, GameSpeed)
+                    VALUES (source.TableId, source.GameMode, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn, source.GameSpeed)
+                WHEN MATCHED THEN
+                    UPDATE SET GameMode = source.GameMode, Map = source.Map, PreludeOn = source.PreludeOn,
+                               ColoniesOn = source.ColoniesOn, CorporateEraOn = source.CorporateEraOn,
+                               DraftOn = source.DraftOn, BeginnersCorporationsOn = source.BeginnersCorporationsOn,
+                               GameSpeed = source.GameSpeed;
+
+                SELECT Id FROM Games
                 WHERE TableId = @TableId AND PlayerPerspective = @PlayerPerspective;";
 
             var result = await connection.QuerySingleAsync<int>(

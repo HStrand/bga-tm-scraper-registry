@@ -79,34 +79,21 @@ namespace BgaTmScraperRegistry.Services
         private async Task<List<StartingHandStatsRow>> ComputeStartingHandStatsFromDbAsync()
         {
             var sql = @"
-WITH best_g AS
-(
-    SELECT
-        g.TableId,
-        g.Id AS GameId,
-        rn = ROW_NUMBER() OVER (
-            PARTITION BY g.TableId
-            ORDER BY g.IndexedAt DESC, g.Id DESC
-        )
-    FROM dbo.Games g
-    WHERE
-        g.ColoniesOn = 0
-        AND g.DraftOn = 1
-        AND g.GameMode <> 'Friendly mode'
-),
-AllPlayers AS
+WITH AllPlayers AS
 (
     SELECT
         gp.TableId,
         gp.PlayerId,
         CONVERT(float, gp.EloChange) AS EloChange
-    FROM best_g g
+    FROM dbo.Games_Canonical g
     JOIN dbo.GamePlayers_Canonical gp
       ON gp.TableId = g.TableId
     JOIN dbo.GameStats gs
       ON gs.TableId = g.TableId
     WHERE
-        g.rn = 1
+        g.ColoniesOn = 0
+        AND g.DraftOn = 1
+        AND g.GameMode <> 'Friendly mode'
         AND gs.PlayerCount = 2
 ),
 CardOffers AS

@@ -265,21 +265,7 @@ WHERE tg.TharsisGames >= 30;
         private async Task<List<MilestoneStats>> ComputeAllMilestoneStatsFromDbAsync()
         {
             var sql = @"
-WITH best_g AS (
-    SELECT g.TableId, g.Map, g.PreludeOn, g.ColoniesOn, g.DraftOn,
-           g.GameMode, g.GameSpeed,
-           rn = ROW_NUMBER() OVER (
-               PARTITION BY g.TableId
-               ORDER BY g.IndexedAt DESC, g.Id DESC   -- pick the most recent row per game
-           )
-    FROM Games g
-),
-best_gp AS (
-    SELECT gp.TableId, gp.PlayerId,
-           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position
-    FROM GamePlayers_Canonical gp
-),
-milestone_claims AS (
+WITH milestone_claims AS (
     SELECT
         gm.Milestone,
         COUNT(*) as TimesClaimed,
@@ -288,8 +274,8 @@ milestone_claims AS (
         AVG(CAST(gm.ClaimedGen AS float)) as AvgGenClaimed,
         AVG(CAST(ISNULL(gp.Elo, 0) AS float)) as AvgElo
     FROM GameMilestones gm
-    JOIN best_g g ON g.TableId = gm.TableId AND g.rn = 1
-    JOIN best_gp gp ON gp.TableId = gm.TableId AND gp.PlayerId = gm.ClaimedBy
+    JOIN Games_Canonical g ON g.TableId = gm.TableId
+    JOIN GamePlayers_Canonical gp ON gp.TableId = gm.TableId AND gp.PlayerId = gm.ClaimedBy
     WHERE gm.Milestone IS NOT NULL AND gm.Milestone <> ''
     GROUP BY gm.Milestone
 )
@@ -638,20 +624,6 @@ ORDER BY WinRate DESC;";
         private async Task<List<MilestoneClaimRow>> ComputeMilestoneClaimRowsFromDbAsync()
         {
             var sql = @"
-WITH best_g AS (
-    SELECT g.TableId, g.Map, g.PreludeOn, g.ColoniesOn, g.DraftOn,
-           g.GameMode, g.GameSpeed,
-           rn = ROW_NUMBER() OVER (
-               PARTITION BY g.TableId
-               ORDER BY g.IndexedAt DESC, g.Id DESC   -- pick the most recent row per game
-           )
-    FROM Games g
-),
-best_gp AS (
-    SELECT gp.TableId, gp.PlayerId,
-           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position
-    FROM GamePlayers_Canonical gp
-)
 SELECT
     gm.TableId,
     g.Map,
@@ -672,9 +644,9 @@ SELECT
     gp.Position,
     gps.Corporation
 FROM GameMilestones gm
-JOIN best_g g
-  ON g.TableId = gm.TableId AND g.rn = 1
-JOIN best_gp gp
+JOIN Games_Canonical g
+  ON g.TableId = gm.TableId
+JOIN GamePlayers_Canonical gp
   ON gp.TableId = gm.TableId
  AND gp.PlayerId = gm.ClaimedBy
 JOIN GamePlayerStats gps

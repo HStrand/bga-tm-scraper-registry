@@ -122,20 +122,6 @@ namespace BgaTmScraperRegistry.Services
 
             // Deduplicate Games and GamePlayers the same way as in CorporationStatsService
             var sql = @"
-;WITH best_g AS (
-    SELECT g.TableId, g.Map, g.PreludeOn, g.ColoniesOn, g.DraftOn,
-           g.GameMode, g.GameSpeed,
-           rn = ROW_NUMBER() OVER (
-               PARTITION BY g.TableId
-               ORDER BY g.IndexedAt DESC, g.Id DESC
-           )
-    FROM Games g WITH (NOLOCK)
-),
-best_gp AS (
-    SELECT gp.TableId, gp.PlayerId,
-           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position
-    FROM GamePlayers_Canonical gp WITH (NOLOCK)
-)
 SELECT
     shp.TableId,
     shp.PlayerId,
@@ -154,11 +140,11 @@ SELECT
     gp.EloChange,
     gp.Position
 FROM StartingHandPreludes shp WITH (NOLOCK)
-JOIN best_g g
-  ON g.TableId = shp.TableId AND g.rn = 1
+JOIN Games_Canonical g WITH (NOLOCK)
+  ON g.TableId = shp.TableId
 JOIN GameStats gs WITH (NOLOCK)
   ON gs.TableId = shp.TableId
-JOIN best_gp gp
+JOIN GamePlayers_Canonical gp WITH (NOLOCK)
   ON gp.TableId = shp.TableId AND gp.PlayerId = shp.PlayerId
 JOIN GamePlayerStats gps WITH (NOLOCK)
   ON gps.TableId = shp.TableId AND gps.PlayerId = shp.PlayerId

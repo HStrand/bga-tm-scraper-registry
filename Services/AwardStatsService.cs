@@ -278,21 +278,7 @@ namespace BgaTmScraperRegistry.Services
         private async Task<List<AwardRow>> ComputeAwardRowsFromDbAsync()
         {
             var sql = @"
-WITH best_g AS (
-    SELECT g.TableId, g.Map, g.PreludeOn, g.ColoniesOn, g.DraftOn,
-           g.GameMode, g.GameSpeed,
-           rn = ROW_NUMBER() OVER (
-               PARTITION BY g.TableId
-               ORDER BY g.IndexedAt DESC, g.Id DESC   -- pick the most recent row per game
-           )
-    FROM Games g
-),
-best_gp AS (
-    SELECT gp.TableId, gp.PlayerId,
-           gp.PlayerName, gp.Elo, gp.EloChange, gp.Position
-    FROM GamePlayers_Canonical gp
-),
-best_gps AS (
+WITH best_gps AS (
     SELECT gps.TableId, gps.PlayerId, gps.Corporation,
            rn = ROW_NUMBER() OVER (
                PARTITION BY gps.TableId, gps.PlayerId
@@ -331,9 +317,9 @@ SELECT
     gpa.PlayerPlace,
     gps.Corporation
 FROM best_gpa gpa
-JOIN best_g g
-  ON g.TableId = gpa.TableId AND g.rn = 1
-JOIN best_gp gp
+JOIN Games_Canonical g
+  ON g.TableId = gpa.TableId
+JOIN GamePlayers_Canonical gp
   ON gp.TableId = gpa.TableId
  AND gp.PlayerId = gpa.PlayerId
 JOIN best_gps gps
