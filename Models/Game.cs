@@ -54,5 +54,6 @@ namespace BgaTmScraperRegistry.Models
 
         public bool? BeginnersCorporationsOn { get; set; }
         public string GameSpeed { get; set; }
+        public bool ReplayDeleted { get; set; }
     }
 }

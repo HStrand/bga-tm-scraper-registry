@@ -470,7 +470,24 @@ namespace BgaTmScraperRegistry.Services
             });
             
             _logger.LogInformation($"Updated {rowsAffected} game record(s) for TableId {tableId}, PlayerPerspective {playerPerspective}");
-            
+
+            return rowsAffected > 0;
+        }
+
+        public async Task<bool> MarkGameAsDeletedAsync(int tableId, int playerPerspective, string reason)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var query = @"
+                UPDATE Games
+                SET ReplayDeleted = 1
+                WHERE TableId = @tableId AND PlayerPerspective = @playerPerspective";
+
+            var rowsAffected = await connection.ExecuteAsync(query, new { tableId, playerPerspective });
+
+            _logger.LogInformation($"Marked {rowsAffected} game record(s) as deleted for TableId {tableId}, PlayerPerspective {playerPerspective}, reason: {reason}");
+
             return rowsAffected > 0;
         }
 
@@ -480,9 +497,10 @@ namespace BgaTmScraperRegistry.Services
             await connection.OpenAsync();
 
             var query = @"
-                SELECT COUNT(1) 
-                FROM Games 
-                WHERE ScrapedAt IS NULL 
+                SELECT COUNT(1)
+                FROM Games
+                WHERE ScrapedAt IS NULL
+                AND (ReplayDeleted IS NULL OR ReplayDeleted = 0)
                 AND (AssignedTo IS NULL OR AssignedAt < DATEADD(hour, -24, GETUTCDATE()))";
 
             var count = await connection.QuerySingleAsync<int>(query);
@@ -518,7 +536,8 @@ namespace BgaTmScraperRegistry.Services
                         p.Name as PlayerName
                     FROM Games g
                     INNER JOIN Players p ON g.PlayerPerspective = p.PlayerId
-                    WHERE g.ScrapedAt IS NULL 
+                    WHERE g.ScrapedAt IS NULL
+                    AND (g.ReplayDeleted IS NULL OR g.ReplayDeleted = 0)
                     AND (g.AssignedTo IS NULL OR g.AssignedAt < DATEADD(hour, -24, GETUTCDATE()))
                     ORDER BY CASE g.Map
                         WHEN 'Random' THEN 1
@@ -551,7 +570,8 @@ namespace BgaTmScraperRegistry.Services
                     UPDATE Games 
                     SET AssignedTo = @assignedTo, AssignedAt = GETUTCDATE()
                     WHERE TableId IN @gameIds 
-                    AND ScrapedAt IS NULL 
+                    AND ScrapedAt IS NULL
+                    AND (ReplayDeleted IS NULL OR ReplayDeleted = 0)
                     AND (AssignedTo IS NULL OR AssignedAt < DATEADD(hour, -24, GETUTCDATE()))";
 
                 var updatedRows = await connection.ExecuteAsync(
