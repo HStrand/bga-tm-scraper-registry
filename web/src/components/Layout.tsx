@@ -31,10 +31,10 @@ interface NavLinkItem {
 const navItems: NavLinkItem[] = [
   { to: "/", label: "Home", icon: Home },
   { to: "/corporations", label: "Corporations", icon: Building2 },
+  { to: "/preludes", label: "Preludes", icon: ChevronLeft },
   { to: "/cards", label: "Project Cards", icon: Layers },
   { to: "/startinghands", label: "Starting Hand", icon: WalletCards },
   { to: "/combinations", label: "Combinations", icon: Combine },
-  { to: "/preludes", label: "Preludes", icon: ChevronLeft },
   { to: "/milestones", label: "Milestones", icon: Flag },
   { to: "/awards", label: "Awards", icon: Award },
   { to: "/leaderboards", label: "Leaderboards", icon: Trophy },

@@ -39,6 +39,108 @@ function getItemPlaceholder(kind: ItemKind): string {
   }
 }
 
+function AutocompleteInput({ value, onChange, placeholder, items, kind }: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder: string;
+  items: string[];
+  kind: ItemKind;
+}) {
+  const [focused, setFocused] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState(-1);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  const suggestions = useMemo(() => {
+    if (!value) return [];
+    const lower = value.toLowerCase();
+    return items.filter(n => n.toLowerCase().includes(lower)).slice(0, 20);
+  }, [value, items]);
+
+  const showDropdown = focused && value.length > 0 && suggestions.length > 0;
+
+  useEffect(() => { setHighlightIndex(-1); }, [value]);
+
+  useEffect(() => {
+    if (highlightIndex >= 0 && listRef.current) {
+      const el = listRef.current.children[highlightIndex] as HTMLElement;
+      el?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [highlightIndex]);
+
+  const select = (name: string) => {
+    onChange(name);
+    setFocused(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showDropdown) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightIndex(i => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightIndex(i => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter' && highlightIndex >= 0) {
+      e.preventDefault();
+      select(suggestions[highlightIndex]);
+    } else if (e.key === 'Escape') {
+      setFocused(false);
+    }
+  };
+
+  return (
+    <div className="relative" ref={wrapperRef}>
+      <input
+        type="text"
+        value={value}
+        onChange={e => { onChange(e.target.value); setFocused(true); }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setTimeout(() => setFocused(false), 150)}
+        onKeyDown={handleKeyDown}
+        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+        placeholder={placeholder}
+      />
+      {value && (
+        <button
+          type="button"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-sm"
+          onMouseDown={e => { e.preventDefault(); onChange(''); setFocused(true); }}
+          aria-label="Clear"
+        >
+          &times;
+        </button>
+      )}
+      {showDropdown && (
+        <ul
+          ref={listRef}
+          className="absolute z-40 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg"
+        >
+          {suggestions.map((name, i) => (
+            <li
+              key={name}
+              onMouseDown={e => { e.preventDefault(); select(name); }}
+              className={`flex items-center gap-2.5 px-3 py-1.5 cursor-pointer text-sm ${
+                i === highlightIndex
+                  ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100'
+                  : 'text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+              }`}
+            >
+              <img
+                src={getItemImage(name, kind)}
+                alt=""
+                className="w-6 h-6 rounded object-cover flex-shrink-0"
+                onError={e => { (e.target as HTMLImageElement).src = getItemPlaceholder(kind); }}
+              />
+              <span className="truncate">{name}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 type SortField = 'name1' | 'name2' | 'gameCount' | 'avgEloChange' | 'winRate' | 'lift1' | 'lift2' | 'eloLift';
 type SortDirection = 'asc' | 'desc' | null;
 
@@ -169,6 +271,16 @@ export function CombinationsPage() {
       cards: toMap(baselines.cards),
       corporations: toMap(baselines.corporations),
       preludes: toMap(baselines.preludes),
+    };
+  }, [baselines]);
+
+  // Build sorted name lists per kind for autocomplete
+  const namesByKind = useMemo(() => {
+    if (!baselines) return { corp: [] as string[], prelude: [] as string[], card: [] as string[] };
+    return {
+      corp: baselines.corporations.map(r => r.name).sort(),
+      prelude: baselines.preludes.map(r => r.name).sort(),
+      card: baselines.cards.map(r => r.name).sort(),
     };
   }, [baselines]);
 
@@ -324,7 +436,7 @@ export function CombinationsPage() {
 
   const showHeaderTooltip = (text: string) => (e: React.MouseEvent) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setHeaderTooltip({ text, x: rect.left + rect.width / 2, y: rect.bottom + 8 });
+    setHeaderTooltip({ text, x: rect.left + rect.width / 2, y: rect.top - 8 });
   };
   const hideHeaderTooltip = () => setHeaderTooltip(null);
 
@@ -404,12 +516,12 @@ export function CombinationsPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     {tabConfig.slot1Label}
                   </label>
-                  <input
-                    type="text"
+                  <AutocompleteInput
                     value={search1}
-                    onChange={e => setSearch1(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    onChange={setSearch1}
                     placeholder={`Search ${tabConfig.slot1Label.toLowerCase()}...`}
+                    items={namesByKind[tabConfig.slot1Kind]}
+                    kind={tabConfig.slot1Kind}
                   />
                 </div>
 
@@ -417,12 +529,12 @@ export function CombinationsPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     {tabConfig.slot2Label}
                   </label>
-                  <input
-                    type="text"
+                  <AutocompleteInput
                     value={search2}
-                    onChange={e => setSearch2(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    onChange={setSearch2}
                     placeholder={`Search ${tabConfig.slot2Label.toLowerCase()}...`}
+                    items={namesByKind[tabConfig.slot2Kind]}
+                    kind={tabConfig.slot2Kind}
                   />
                 </div>
               </div>
@@ -679,14 +791,14 @@ export function CombinationsPage() {
                 {headerTooltip && createPortal(
                   <div
                     className="fixed z-50 pointer-events-none"
-                    style={{ top: headerTooltip.y, left: headerTooltip.x, transform: 'translateX(-50%)' }}
+                    style={{ bottom: `calc(100vh - ${headerTooltip.y}px)`, left: headerTooltip.x, transform: 'translateX(-50%)' }}
                   >
                     <div className="relative max-w-xs">
-                      {/* Arrow */}
-                      <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-slate-800 dark:bg-slate-700 ring-1 ring-black/5" />
                       <div className="bg-slate-800 dark:bg-slate-700 text-white text-xs leading-relaxed rounded-lg px-3.5 py-2.5 shadow-xl ring-1 ring-black/10">
                         {headerTooltip.text}
                       </div>
+                      {/* Arrow */}
+                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-slate-800 dark:bg-slate-700 ring-1 ring-black/5" />
                     </div>
                   </div>,
                   document.body
