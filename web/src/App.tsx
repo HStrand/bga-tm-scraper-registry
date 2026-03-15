@@ -13,6 +13,7 @@ import { AwardsOverviewPage } from "@/pages/AwardsOverviewPage";
 import { LeaderboardsPage } from "@/pages/LeaderboardsPage";
 import { StartingHandOverviewPage } from "@/pages/StartingHandOverviewPage";
 import { StartingHandStatsPage } from "@/pages/StartingHandStatsPage";
+import { CombinationsPage } from "@/pages/CombinationsPage";
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/startinghands/:name" element={<StartingHandStatsPage />} />
           <Route path="/preludes" element={<PreludesOverviewPage />} />
           <Route path="/prelude/:name" element={<PreludeStatsPage />} />
+          <Route path="/combinations" element={<CombinationsPage />} />
           <Route path="/milestones" element={<MilestonesOverviewPage />} />
           <Route path="/awards" element={<AwardsOverviewPage />} />
           <Route path="/leaderboards" element={<LeaderboardsPage />} />

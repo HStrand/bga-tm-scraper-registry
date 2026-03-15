@@ -890,45 +890,24 @@ namespace BgaTmScraperRegistry.Services
             return game;
         }
 
-        public async Task<List<MissingStatsItem>> GetGamesMissingStatsAsync(int? top = null)
+        public async Task<List<MissingStatsItem>> GetGamesMissingStatsAsync(int? top = null, int? playerId = null)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            // Use a CTE to perform the EXCEPT and allow ordering / TOP
-            var cteQuery = @"
-                WITH Missing AS (
-                    SELECT DISTINCT TableId, PlayerPerspective AS PlayerId
-                    FROM Games
-                    WHERE ScrapedAt IS NOT NULL
-                    EXCEPT
-                    SELECT DISTINCT TableId, PlayerId
-                    FROM GameCards
-                )
-                SELECT TableId, PlayerId
-                FROM Missing;";
+            var topClause = top.HasValue && top.Value > 0 ? "TOP(@Top)" : "";
+            var playerFilter = playerId.HasValue ? "AND g.PlayerPerspective = @playerId" : "";
 
-            if (top.HasValue && top.Value > 0)
-            {
-                var topQuery = @"
-                    WITH Missing AS (
-                        SELECT DISTINCT TableId, PlayerPerspective AS PlayerId
-                        FROM Games
-                        WHERE ScrapedAt IS NOT NULL
-                        EXCEPT
-                        SELECT DISTINCT TableId, PlayerId
-                        FROM GameCards
-                    )
-                    SELECT TOP(@Top) TableId, PlayerId
-                    FROM Missing;";
-                var topResults = await connection.QueryAsync<MissingStatsItem>(topQuery, new { Top = top.Value });
-                return topResults.ToList();
-            }
-            else
-            {
-                var results = await connection.QueryAsync<MissingStatsItem>(cteQuery);
-                return results.ToList();
-            }
+            var query = $@"
+                SELECT {topClause} g.TableId, g.PlayerPerspective AS PlayerId
+                FROM Games g
+                LEFT JOIN GameStats gs ON gs.TableId = g.TableId
+                WHERE g.ScrapedAt IS NOT NULL
+                AND gs.TableId IS NULL
+                {playerFilter}";
+
+            var results = await connection.QueryAsync<MissingStatsItem>(query, new { Top = top ?? 0, playerId = playerId ?? 0 });
+            return results.ToList();
         }
 
         public async Task<List<MissingOpponentCardsItem>> GetGamesMissingOpponentCardsAsync(int? top = null)

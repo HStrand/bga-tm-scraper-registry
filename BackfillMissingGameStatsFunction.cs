@@ -76,7 +76,7 @@ namespace BgaTmScraperRegistry
                 }
                 else
                 {
-                    worklist = await dbService.GetGamesMissingStatsAsync(top);
+                    worklist = await dbService.GetGamesMissingStatsAsync(top, specificPlayerId);
                 }
 
                 var summary = new
