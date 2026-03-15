@@ -351,6 +351,9 @@ export function CombinationsPage() {
               <p className="text-slate-600 dark:text-slate-400">
                 Discover how pairs of starting-hand items perform together vs their individual baselines
               </p>
+              <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">
+                Based on 2-player ranked games with Prelude and Draft on, Colonies off
+              </p>
             </div>
             <Button onClick={handleRefresh} variant="outline" disabled={loading}>
               Refresh Data

@@ -288,6 +288,9 @@ export function StartingHandOverviewPage() {
               <p className="text-slate-600 dark:text-slate-400">
                 Compare starting hand draft decisions and click on a card to view detailed information
               </p>
+              <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">
+                Based on 2-player ranked games with Prelude and Draft on, Colonies off
+              </p>
             </div>
             <Button onClick={handleRefresh} variant="outline" disabled={loading}>
               Refresh Data
