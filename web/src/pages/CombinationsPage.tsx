@@ -67,7 +67,17 @@ export function CombinationsPage() {
   const [minGames, setMinGames] = useState<number | undefined>(undefined);
 
   // Hover preview tooltip state
-  const [hoveredItem, setHoveredItem] = useState<{ name: string; imageSrc: string } | null>(null);
+  const [hoveredItem, setHoveredItem] = useState<{
+    name: string;
+    imageSrc: string;
+    kind: ItemKind;
+    baselineElo: number | null;
+    baselineWr: number | null;
+    baselineGames: number | null;
+  } | null>(null);
+
+  // Column header tooltip state
+  const [headerTooltip, setHeaderTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const desiredMidYRef = useRef(0);
@@ -312,6 +322,12 @@ export function CombinationsPage() {
 
   const thClass = "px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/50 transition-colors";
 
+  const showHeaderTooltip = (text: string) => (e: React.MouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setHeaderTooltip({ text, x: rect.left + rect.width / 2, y: rect.bottom + 8 });
+  };
+  const hideHeaderTooltip = () => setHeaderTooltip(null);
+
   if (error) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
@@ -470,13 +486,19 @@ export function CombinationsPage() {
                         <th className={thClass} onClick={() => handleSort('winRate')}>
                           Win Rate {getSortIcon('winRate')}
                         </th>
-                        <th className={thClass} onClick={() => handleSort('lift1')} title={`Combo Avg Elo minus ${tabConfig.slot1Label}'s baseline Elo. How much better (or worse) the combo performs compared to ${tabConfig.slot1Label} alone.`}>
+                        <th className={thClass} onClick={() => handleSort('lift1')}
+                          onMouseEnter={showHeaderTooltip(`Combo Avg Elo minus ${tabConfig.slot1Label}'s baseline Elo. Shows how much better (or worse) the combo performs compared to ${tabConfig.slot1Label} alone.`)}
+                          onMouseLeave={hideHeaderTooltip}>
                           Lift vs {tabConfig.slot1Label} {getSortIcon('lift1')}
                         </th>
-                        <th className={thClass} onClick={() => handleSort('lift2')} title={`Combo Avg Elo minus ${tabConfig.slot2Label}'s baseline Elo. How much better (or worse) the combo performs compared to ${tabConfig.slot2Label} alone.`}>
+                        <th className={thClass} onClick={() => handleSort('lift2')}
+                          onMouseEnter={showHeaderTooltip(`Combo Avg Elo minus ${tabConfig.slot2Label}'s baseline Elo. Shows how much better (or worse) the combo performs compared to ${tabConfig.slot2Label} alone.`)}
+                          onMouseLeave={hideHeaderTooltip}>
                           Lift vs {tabConfig.slot2Label} {getSortIcon('lift2')}
                         </th>
-                        <th className={thClass} onClick={() => handleSort('eloLift')} title="Combo Avg Elo minus the sum of both items' baseline Elos. Positive means the pair has synergy beyond what each item contributes individually.">
+                        <th className={thClass} onClick={() => handleSort('eloLift')}
+                          onMouseEnter={showHeaderTooltip('Combo Avg Elo minus the sum of both items\' baseline Elos. Positive means the pair has synergy beyond what each contributes individually.')}
+                          onMouseLeave={hideHeaderTooltip}>
                           Total Lift {getSortIcon('eloLift')}
                         </th>
                       </tr>
@@ -495,7 +517,11 @@ export function CombinationsPage() {
                                 desiredMidYRef.current = rect.top + rect.height / 2;
                                 triggerRectRef.current = rect;
                                 const imgSrc = getItemImage(row.name1, tabConfig.slot1Kind);
-                                setHoveredItem({ name: row.name1, imageSrc: imgSrc });
+                                const bl = getBaseline(row.name1, 1);
+                                setHoveredItem({
+                                  name: row.name1, imageSrc: imgSrc, kind: tabConfig.slot1Kind,
+                                  baselineElo: bl?.avgEloChange ?? null, baselineWr: bl?.winRate ?? null, baselineGames: bl?.gameCount ?? null,
+                                });
                                 setTooltipPos({ left: rect.right + 16, top: desiredMidYRef.current });
                               }}
                               onMouseLeave={() => setHoveredItem(null)}
@@ -520,7 +546,11 @@ export function CombinationsPage() {
                                 desiredMidYRef.current = rect.top + rect.height / 2;
                                 triggerRectRef.current = rect;
                                 const imgSrc = getItemImage(row.name2, tabConfig.slot2Kind);
-                                setHoveredItem({ name: row.name2, imageSrc: imgSrc });
+                                const bl = getBaseline(row.name2, 2);
+                                setHoveredItem({
+                                  name: row.name2, imageSrc: imgSrc, kind: tabConfig.slot2Kind,
+                                  baselineElo: bl?.avgEloChange ?? null, baselineWr: bl?.winRate ?? null, baselineGames: bl?.gameCount ?? null,
+                                });
                                 setTooltipPos({ left: rect.right + 16, top: desiredMidYRef.current });
                               }}
                               onMouseLeave={() => setHoveredItem(null)}
@@ -568,15 +598,91 @@ export function CombinationsPage() {
                     className="fixed z-50 pointer-events-none"
                     style={{ top: tooltipPos.top, left: tooltipPos.left, maxWidth: 'calc(100vw - 32px)' }}
                   >
-                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-2">
-                      <img
-                        src={hoveredItem.imageSrc}
-                        alt={hoveredItem.name}
-                        className="rounded max-w-full max-h-[80vh] h-auto w-auto"
-                        onLoad={updateTooltipPosition}
-                      />
-                      <div className="text-center mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {hoveredItem.name}
+                    <div className="w-72 rounded-2xl overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.25)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)] ring-1 ring-black/10 dark:ring-white/10">
+                      {/* Image section */}
+                      <div className="relative bg-slate-900">
+                        <img
+                          src={hoveredItem.imageSrc}
+                          alt={hoveredItem.name}
+                          className="w-full h-auto block"
+                          onLoad={updateTooltipPosition}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+                        {/* Type badge */}
+                        <div className="absolute top-2.5 left-2.5">
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm ${
+                            hoveredItem.kind === 'corp'
+                              ? 'bg-amber-500/20 text-amber-200 ring-1 ring-amber-400/30'
+                              : hoveredItem.kind === 'prelude'
+                                ? 'bg-violet-500/20 text-violet-200 ring-1 ring-violet-400/30'
+                                : 'bg-sky-500/20 text-sky-200 ring-1 ring-sky-400/30'
+                          }`}>
+                            {hoveredItem.kind === 'corp' ? 'Corporation' : hoveredItem.kind === 'prelude' ? 'Prelude' : 'Project Card'}
+                          </span>
+                        </div>
+                        {/* Name overlay */}
+                        <div className="absolute bottom-0 inset-x-0 px-3.5 pb-3 pt-8">
+                          <div className="text-white text-base font-bold leading-tight drop-shadow-md">{hoveredItem.name}</div>
+                        </div>
+                      </div>
+
+                      {/* Stats section */}
+                      <div className={`grid grid-cols-3 divide-x ${
+                        hoveredItem.kind === 'corp'
+                          ? 'bg-amber-50 dark:bg-amber-950/40 divide-amber-200/50 dark:divide-amber-800/30'
+                          : hoveredItem.kind === 'prelude'
+                            ? 'bg-violet-50 dark:bg-violet-950/40 divide-violet-200/50 dark:divide-violet-800/30'
+                            : 'bg-sky-50 dark:bg-sky-950/40 divide-sky-200/50 dark:divide-sky-800/30'
+                      }`}>
+                        {[
+                          {
+                            label: 'Avg Elo',
+                            value: hoveredItem.baselineElo != null
+                              ? `${hoveredItem.baselineElo > 0 ? '+' : ''}${hoveredItem.baselineElo.toFixed(2)}`
+                              : 'N/A',
+                            color: hoveredItem.baselineElo != null && hoveredItem.baselineElo > 0
+                              ? 'text-green-600 dark:text-green-400'
+                              : hoveredItem.baselineElo != null && hoveredItem.baselineElo < 0
+                                ? 'text-red-500 dark:text-red-400'
+                                : 'text-slate-400',
+                          },
+                          {
+                            label: 'Win Rate',
+                            value: hoveredItem.baselineWr != null
+                              ? `${(hoveredItem.baselineWr * 100).toFixed(1)}%`
+                              : 'N/A',
+                            color: 'text-slate-800 dark:text-slate-100',
+                          },
+                          {
+                            label: 'Games',
+                            value: hoveredItem.baselineGames != null
+                              ? hoveredItem.baselineGames.toLocaleString()
+                              : 'N/A',
+                            color: 'text-slate-800 dark:text-slate-100',
+                          },
+                        ].map(stat => (
+                          <div key={stat.label} className="py-2.5 px-2 text-center">
+                            <div className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold mb-0.5">{stat.label}</div>
+                            <div className={`text-sm font-bold ${stat.color}`}>{stat.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                )}
+
+                {/* Column header tooltip */}
+                {headerTooltip && createPortal(
+                  <div
+                    className="fixed z-50 pointer-events-none"
+                    style={{ top: headerTooltip.y, left: headerTooltip.x, transform: 'translateX(-50%)' }}
+                  >
+                    <div className="relative max-w-xs">
+                      {/* Arrow */}
+                      <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-slate-800 dark:bg-slate-700 ring-1 ring-black/5" />
+                      <div className="bg-slate-800 dark:bg-slate-700 text-white text-xs leading-relaxed rounded-lg px-3.5 py-2.5 shadow-xl ring-1 ring-black/10">
+                        {headerTooltip.text}
                       </div>
                     </div>
                   </div>,
