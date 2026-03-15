@@ -1,7 +1,11 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useCookieState } from '@/hooks/useCookieState';
 import { Button } from '@/components/ui/button';
 import { getCombinationBaselinesCached, getCombinationCombosCached } from '@/lib/combinationCache';
+import { getCardImage, getCardPlaceholderImage, cardNameToSlug } from '@/lib/card';
+import { getCorpImage, getPlaceholderImage as getCorpPlaceholderImage, nameToSlug as corpNameToSlug } from '@/lib/corp';
+import { getPreludeImage, getPreludePlaceholderImage } from '@/lib/prelude';
 import {
   CombinationBaselines,
   CombinationBaselineRow,
@@ -9,13 +13,31 @@ import {
   ComboType,
 } from '@/types/combination';
 
-const COMBO_TYPES: { value: ComboType; label: string; slot1Label: string; slot2Label: string }[] = [
-  { value: 'corp-prelude', label: 'Corp + Prelude', slot1Label: 'Corporation', slot2Label: 'Prelude' },
-  { value: 'corp-card', label: 'Corp + Card', slot1Label: 'Corporation', slot2Label: 'Card' },
-  { value: 'prelude-prelude', label: 'Prelude + Prelude', slot1Label: 'Prelude 1', slot2Label: 'Prelude 2' },
-  { value: 'prelude-card', label: 'Prelude + Card', slot1Label: 'Prelude', slot2Label: 'Card' },
-  { value: 'card-card', label: 'Card + Card', slot1Label: 'Card 1', slot2Label: 'Card 2' },
+type ItemKind = 'corp' | 'prelude' | 'card';
+
+const COMBO_TYPES: { value: ComboType; label: string; slot1Label: string; slot2Label: string; slot1Kind: ItemKind; slot2Kind: ItemKind }[] = [
+  { value: 'corp-prelude', label: 'Corp + Prelude', slot1Label: 'Corporation', slot2Label: 'Prelude', slot1Kind: 'corp', slot2Kind: 'prelude' },
+  { value: 'corp-card', label: 'Corp + Card', slot1Label: 'Corporation', slot2Label: 'Card', slot1Kind: 'corp', slot2Kind: 'card' },
+  { value: 'prelude-prelude', label: 'Prelude + Prelude', slot1Label: 'Prelude 1', slot2Label: 'Prelude 2', slot1Kind: 'prelude', slot2Kind: 'prelude' },
+  { value: 'prelude-card', label: 'Prelude + Card', slot1Label: 'Prelude', slot2Label: 'Card', slot1Kind: 'prelude', slot2Kind: 'card' },
+  { value: 'card-card', label: 'Card + Card', slot1Label: 'Card 1', slot2Label: 'Card 2', slot1Kind: 'card', slot2Kind: 'card' },
 ];
+
+function getItemImage(name: string, kind: ItemKind): string {
+  switch (kind) {
+    case 'corp': return getCorpImage(corpNameToSlug(name)) || getCorpPlaceholderImage();
+    case 'prelude': return getPreludeImage(name) || getPreludePlaceholderImage();
+    case 'card': return getCardImage(name) || getCardPlaceholderImage();
+  }
+}
+
+function getItemPlaceholder(kind: ItemKind): string {
+  switch (kind) {
+    case 'corp': return getCorpPlaceholderImage();
+    case 'prelude': return getPreludePlaceholderImage();
+    case 'card': return getCardPlaceholderImage();
+  }
+}
 
 type SortField = 'name1' | 'name2' | 'gameCount' | 'avgEloChange' | 'winRate' | 'lift1' | 'lift2' | 'eloLift';
 type SortDirection = 'asc' | 'desc' | null;
@@ -44,7 +66,59 @@ export function CombinationsPage() {
   const [search2, setSearch2] = useState('');
   const [minGames, setMinGames] = useState<number | undefined>(undefined);
 
+  // Hover preview tooltip state
+  const [hoveredItem, setHoveredItem] = useState<{ name: string; imageSrc: string } | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const desiredMidYRef = useRef(0);
+  const triggerRectRef = useRef<DOMRect | null>(null);
+
   const tabConfig = COMBO_TYPES.find(t => t.value === activeTab)!;
+
+  const updateTooltipPosition = useCallback(() => {
+    if (!tooltipRef.current) return;
+    const margin = 8;
+    const tipRect = tooltipRef.current.getBoundingClientRect();
+    const viewportH = window.innerHeight;
+    const viewportW = window.innerWidth;
+
+    const desiredTop = desiredMidYRef.current - tipRect.height / 2;
+    const clampedTop = Math.max(margin, Math.min(desiredTop, viewportH - tipRect.height - margin));
+
+    let left = tooltipPos.left;
+    if (triggerRectRef.current) {
+      const trigger = triggerRectRef.current;
+      const spaceRight = viewportW - (trigger.right + 16) - margin;
+      const needsShrink = tipRect.width > (viewportW - 2 * margin);
+      if (!needsShrink) {
+        if (tipRect.width <= spaceRight) {
+          left = trigger.right + 16;
+        } else {
+          const leftCandidate = trigger.left - tipRect.width - 16;
+          left = Math.max(margin, Math.min(leftCandidate, viewportW - tipRect.width - margin));
+        }
+      } else {
+        left = margin;
+      }
+    } else {
+      const maxLeft = Math.max(margin, viewportW - tipRect.width - margin);
+      left = Math.max(margin, Math.min(left, maxLeft));
+    }
+
+    setTooltipPos({ top: clampedTop, left });
+  }, [tooltipPos.left]);
+
+  useEffect(() => {
+    if (!hoveredItem) return;
+    const handler = () => updateTooltipPosition();
+    handler();
+    window.addEventListener('resize', handler);
+    window.addEventListener('scroll', handler, true);
+    return () => {
+      window.removeEventListener('resize', handler);
+      window.removeEventListener('scroll', handler, true);
+    };
+  }, [hoveredItem, updateTooltipPosition]);
 
   // Fetch baselines on mount
   useEffect(() => {
@@ -414,12 +488,54 @@ export function CombinationsPage() {
                           className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                         >
                           <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">
-                            {row.name1}{' '}
-                            <span className="text-xs text-slate-500 dark:text-slate-400">{formatBaselineElo(row.baseline1Elo)}</span>
+                            <div
+                              className="flex items-center gap-2"
+                              onMouseEnter={e => {
+                                const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                                desiredMidYRef.current = rect.top + rect.height / 2;
+                                triggerRectRef.current = rect;
+                                const imgSrc = getItemImage(row.name1, tabConfig.slot1Kind);
+                                setHoveredItem({ name: row.name1, imageSrc: imgSrc });
+                                setTooltipPos({ left: rect.right + 16, top: desiredMidYRef.current });
+                              }}
+                              onMouseLeave={() => setHoveredItem(null)}
+                            >
+                              <img
+                                src={getItemImage(row.name1, tabConfig.slot1Kind)}
+                                alt={row.name1}
+                                className="w-8 h-8 rounded object-cover flex-shrink-0"
+                                onError={e => { (e.target as HTMLImageElement).src = getItemPlaceholder(tabConfig.slot1Kind); }}
+                              />
+                              <span>
+                                {row.name1}{' '}
+                                <span className="text-xs text-slate-500 dark:text-slate-400">{formatBaselineElo(row.baseline1Elo)}</span>
+                              </span>
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">
-                            {row.name2}{' '}
-                            <span className="text-xs text-slate-500 dark:text-slate-400">{formatBaselineElo(row.baseline2Elo)}</span>
+                            <div
+                              className="flex items-center gap-2"
+                              onMouseEnter={e => {
+                                const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                                desiredMidYRef.current = rect.top + rect.height / 2;
+                                triggerRectRef.current = rect;
+                                const imgSrc = getItemImage(row.name2, tabConfig.slot2Kind);
+                                setHoveredItem({ name: row.name2, imageSrc: imgSrc });
+                                setTooltipPos({ left: rect.right + 16, top: desiredMidYRef.current });
+                              }}
+                              onMouseLeave={() => setHoveredItem(null)}
+                            >
+                              <img
+                                src={getItemImage(row.name2, tabConfig.slot2Kind)}
+                                alt={row.name2}
+                                className="w-8 h-8 rounded object-cover flex-shrink-0"
+                                onError={e => { (e.target as HTMLImageElement).src = getItemPlaceholder(tabConfig.slot2Kind); }}
+                              />
+                              <span>
+                                {row.name2}{' '}
+                                <span className="text-xs text-slate-500 dark:text-slate-400">{formatBaselineElo(row.baseline2Elo)}</span>
+                              </span>
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                             {row.gameCount.toLocaleString()}
@@ -444,6 +560,28 @@ export function CombinationsPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Hover image tooltip */}
+                {hoveredItem && createPortal(
+                  <div
+                    ref={tooltipRef}
+                    className="fixed z-50 pointer-events-none"
+                    style={{ top: tooltipPos.top, left: tooltipPos.left, maxWidth: 'calc(100vw - 32px)' }}
+                  >
+                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-2">
+                      <img
+                        src={hoveredItem.imageSrc}
+                        alt={hoveredItem.name}
+                        className="rounded max-w-full max-h-[80vh] h-auto w-auto"
+                        onLoad={updateTooltipPosition}
+                      />
+                      <div className="text-center mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">
+                        {hoveredItem.name}
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                )}
 
                 {/* Pagination */}
                 {totalPages > 1 && (
