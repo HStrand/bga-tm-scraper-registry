@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { useCookieState } from '@/hooks/useCookieState';
 import { Button } from '@/components/ui/button';
 import { getCombinationBaselinesCached, getCombinationCombosCached } from '@/lib/combinationCache';
@@ -648,7 +649,9 @@ export function CombinationsPage() {
                                 onError={e => { (e.target as HTMLImageElement).src = getItemPlaceholder(tabConfig.slot1Kind); }}
                               />
                               <span>
-                                {row.name1}{' '}
+                                <Link to={`/combinations/${tabConfig.slot1Kind}/${encodeURIComponent(row.name1)}`} className="hover:underline" onClick={e => e.stopPropagation()}>
+                                  {row.name1}
+                                </Link>{' '}
                                 <span className="text-xs text-slate-500 dark:text-slate-400">{formatBaselineElo(row.baseline1Elo)}</span>
                               </span>
                             </div>
@@ -677,7 +680,9 @@ export function CombinationsPage() {
                                 onError={e => { (e.target as HTMLImageElement).src = getItemPlaceholder(tabConfig.slot2Kind); }}
                               />
                               <span>
-                                {row.name2}{' '}
+                                <Link to={`/combinations/${tabConfig.slot2Kind}/${encodeURIComponent(row.name2)}`} className="hover:underline" onClick={e => e.stopPropagation()}>
+                                  {row.name2}
+                                </Link>{' '}
                                 <span className="text-xs text-slate-500 dark:text-slate-400">{formatBaselineElo(row.baseline2Elo)}</span>
                               </span>
                             </div>
