@@ -10,6 +10,7 @@ import {
   Trophy,
   Flag,
   Award,
+  Map,
   X,
   Menu,
   ChevronLeft,
@@ -38,6 +39,7 @@ const navItems: NavLinkItem[] = [
   { to: "/milestones", label: "Milestones", icon: Flag },
   { to: "/awards", label: "Awards", icon: Award },
   { to: "/leaderboards", label: "Leaderboards", icon: Trophy },
+  { to: "/maps/elysium", label: "Maps", icon: Map },
 ];
 
 function usePersistentExpanded(key = "sidebarExpanded", defaultValue = true) {
