@@ -188,7 +188,8 @@ export function MapPage() {
   const [tileType, setTileType] = useState<TileType>('city');
   const [allOverviews, setAllOverviews] = useState<Record<string, TilePlacementStat[]>>({});
   const [allByGen, setAllByGen] = useState<Record<string, TilePlacementByGen[]>>({});
-  const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hoveredHex, setHoveredHex] = useState<HexTile | null>(null);
   const [selectedHex, setSelectedHex] = useState<HexTile | null>(null);
@@ -196,7 +197,7 @@ export function MapPage() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setLoading(true);
+    setRefreshing(true);
     setError(null);
     setSelectedHex(null);
     Promise.all([
@@ -211,7 +212,7 @@ export function MapPage() {
         console.error('Error fetching tile stats:', err);
         setError('Failed to load placement data.');
       })
-      .finally(() => setLoading(false));
+      .finally(() => { setRefreshing(false); setInitialLoad(false); });
   }, [tileType]);
 
   const stats = useMemo(() => allOverviews[currentMap.dbName] ?? [], [allOverviews, currentMap]);
@@ -316,7 +317,7 @@ export function MapPage() {
         Heat map of {labels.singular} placements by popularity. Brighter = more placements. Hover for details, click for charts.
       </p>
 
-      {loading && (
+      {initialLoad && (
         <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 py-8">
           <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
           Loading {labels.singular} placement data...
@@ -331,7 +332,7 @@ export function MapPage() {
 
       <div
         ref={containerRef}
-        className="relative inline-block select-none"
+        className={`relative inline-block select-none transition-opacity ${refreshing && !initialLoad ? 'opacity-60' : ''}`}
         onMouseMove={handleMouseMove}
       >
         <img
@@ -411,7 +412,7 @@ export function MapPage() {
         )}
       </div>
 
-      {!loading && stats.length > 0 && (
+      {!initialLoad && stats.length > 0 && (
         <div className="mt-4 flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
           <span>Placements:</span>
           <span>Few</span>
