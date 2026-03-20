@@ -2,9 +2,8 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { X } from 'lucide-react';
-import { ELYSIUM_HEXES, GRID, IMAGE_WIDTH, IMAGE_HEIGHT, hexCenter, hexPoints, type HexTile } from '@/data/elysiumHexes';
-import { getTilePlacementStats, getTilePlacementByGen, type TilePlacementStat, type TilePlacementByGen, type TileType } from '@/lib/cityStats';
-import elysiumImage from '/assets/elysium.png';
+import { ALL_MAPS, hexCenter, hexPoints, type MapDefinition, type HexTile } from '@/data/mapHexes';
+import { getAllTilePlacementStats, getAllTilePlacementByGen, type TilePlacementStat, type TilePlacementByGen, type TileType } from '@/lib/cityStats';
 import cityTileImage from '/assets/city tile.png';
 import greeneryTileImage from '/assets/greenery tile.png';
 
@@ -36,6 +35,7 @@ interface HexDetailDialogProps {
 function HexDetailDialog({ hex, tileType, overviewStat, genData, onClose }: HexDetailDialogProps) {
   const title = hex.name ?? `Hex ${hex.col},${hex.row}`;
   const labels = TILE_LABELS[tileType];
+  const [maxGen, setMaxGen] = useState(12);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -43,11 +43,14 @@ function HexDetailDialog({ hex, tileType, overviewStat, genData, onClose }: HexD
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const chartData = genData.map(d => ({
+  const allChartData = genData.map(d => ({
     gen: d.placedGen ?? 0,
     avgEloGain: d.avgEloChange,
     count: d.gameCount,
   }));
+
+  const maxAvailableGen = allChartData.length > 0 ? Math.max(...allChartData.map(d => d.gen)) : 12;
+  const chartData = allChartData.filter(d => d.gen <= maxGen);
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center" onClick={onClose}>
@@ -87,6 +90,19 @@ function HexDetailDialog({ hex, tileType, overviewStat, genData, onClose }: HexD
 
               {genData.length > 0 && (
                 <>
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm text-slate-600 dark:text-slate-400">Max generation:</label>
+                    <input
+                      type="range"
+                      min={1}
+                      max={maxAvailableGen}
+                      value={maxGen}
+                      onChange={e => setMaxGen(Number(e.target.value))}
+                      className="w-40 accent-blue-500"
+                    />
+                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 w-6 text-center">{maxGen}</span>
+                  </div>
+
                   <div>
                     <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-3">Game Count by Generation</h3>
                     <div className="h-56">
@@ -168,9 +184,10 @@ function HexDetailDialog({ hex, tileType, overviewStat, genData, onClose }: HexD
 }
 
 export function MapPage() {
+  const [currentMap, setCurrentMap] = useState<MapDefinition>(ALL_MAPS[0]);
   const [tileType, setTileType] = useState<TileType>('city');
-  const [stats, setStats] = useState<TilePlacementStat[]>([]);
-  const [byGenData, setByGenData] = useState<TilePlacementByGen[]>([]);
+  const [allOverviews, setAllOverviews] = useState<Record<string, TilePlacementStat[]>>({});
+  const [allByGen, setAllByGen] = useState<Record<string, TilePlacementByGen[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hoveredHex, setHoveredHex] = useState<HexTile | null>(null);
@@ -183,12 +200,12 @@ export function MapPage() {
     setError(null);
     setSelectedHex(null);
     Promise.all([
-      getTilePlacementStats('Elysium', tileType),
-      getTilePlacementByGen('Elysium', tileType),
+      getAllTilePlacementStats(tileType),
+      getAllTilePlacementByGen(tileType),
     ])
-      .then(([overview, byGen]) => {
-        setStats(overview);
-        setByGenData(byGen);
+      .then(([overviews, byGen]) => {
+        setAllOverviews(overviews);
+        setAllByGen(byGen);
       })
       .catch(err => {
         console.error('Error fetching tile stats:', err);
@@ -196,6 +213,9 @@ export function MapPage() {
       })
       .finally(() => setLoading(false));
   }, [tileType]);
+
+  const stats = useMemo(() => allOverviews[currentMap.dbName] ?? [], [allOverviews, currentMap]);
+  const byGenData = useMemo(() => allByGen[currentMap.dbName] ?? [], [allByGen, currentMap]);
 
   const labels = TILE_LABELS[tileType];
 
@@ -241,35 +261,55 @@ export function MapPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-4 mb-2">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-          Elysium — Tile Placement Map
-        </h1>
-      </div>
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+        Tile Placement Map
+      </h1>
 
-      <div className="flex items-center gap-2 mb-4">
-        <button
-          onClick={() => setTileType('city')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-            tileType === 'city'
-              ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 ring-1 ring-amber-300'
-              : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
-          }`}
-        >
-          <img src={cityTileImage} alt="City" className="w-6 h-6" />
-          Cities
-        </button>
-        <button
-          onClick={() => setTileType('greenery')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-            tileType === 'greenery'
-              ? 'border-green-400 bg-green-50 dark:bg-green-900/30 text-green-900 dark:text-green-100 ring-1 ring-green-300'
-              : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
-          }`}
-        >
-          <img src={greeneryTileImage} alt="Greenery" className="w-6 h-6" />
-          Greeneries
-        </button>
+      <div className="flex flex-wrap items-center gap-4 mb-4">
+        {/* Map selector */}
+        <div className="flex items-center gap-2">
+          {ALL_MAPS.map(m => (
+            <button
+              key={m.dbName}
+              onClick={() => { setCurrentMap(m); setSelectedHex(null); }}
+              className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+                currentMap === m
+                  ? 'border-slate-900 dark:border-slate-100 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
+                  : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
+            >
+              {m.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="w-px h-6 bg-slate-300 dark:bg-slate-600" />
+
+        {/* Tile type selector */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setTileType('city')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+              tileType === 'city'
+                ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 ring-1 ring-amber-300'
+                : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+            }`}
+          >
+            <img src={cityTileImage} alt="City" className="w-6 h-6" />
+            Cities
+          </button>
+          <button
+            onClick={() => setTileType('greenery')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+              tileType === 'greenery'
+                ? 'border-green-400 bg-green-50 dark:bg-green-900/30 text-green-900 dark:text-green-100 ring-1 ring-green-300'
+                : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+            }`}
+          >
+            <img src={greeneryTileImage} alt="Greenery" className="w-6 h-6" />
+            Greeneries
+          </button>
+        </div>
       </div>
 
       <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
@@ -295,22 +335,22 @@ export function MapPage() {
         onMouseMove={handleMouseMove}
       >
         <img
-          src={elysiumImage}
-          alt="Elysium board"
-          width={IMAGE_WIDTH}
-          height={IMAGE_HEIGHT}
+          src={currentMap.image}
+          alt={`${currentMap.name} board`}
+          width={currentMap.imageWidth}
+          height={currentMap.imageHeight}
           className="block max-w-full h-auto"
           draggable={false}
         />
         <svg
-          viewBox={`0 0 ${IMAGE_WIDTH} ${IMAGE_HEIGHT}`}
+          viewBox={`0 0 ${currentMap.imageWidth} ${currentMap.imageHeight}`}
           className="absolute top-0 left-0 w-full h-full"
           style={{ pointerEvents: 'none' }}
         >
-          {ELYSIUM_HEXES.map(hex => {
-            const { cx, cy } = hexCenter(hex.col, hex.row);
+          {currentMap.hexes.map(hex => {
+            const { cx, cy } = hexCenter(currentMap.grid, hex.col, hex.row);
             const stat = statsByLocation.get(hex.dbKey);
-            const points = hexPoints(cx, cy, GRID.hexRadius);
+            const points = hexPoints(cx, cy, currentMap.grid.hexRadius);
 
             let fill = 'transparent';
             if (stat && maxCount > 0) {

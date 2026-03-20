@@ -36,10 +36,10 @@ const navItems: NavLinkItem[] = [
   { to: "/cards", label: "Project Cards", icon: Layers },
   { to: "/startinghands", label: "Starting Hand", icon: WalletCards },
   { to: "/combinations", label: "Combinations", icon: Combine },
+  { to: "/maps/elysium", label: "Maps", icon: Map },
   { to: "/milestones", label: "Milestones", icon: Flag },
   { to: "/awards", label: "Awards", icon: Award },
   { to: "/leaderboards", label: "Leaderboards", icon: Trophy },
-  { to: "/maps/elysium", label: "Maps", icon: Map },
 ];
 
 function usePersistentExpanded(key = "sidebarExpanded", defaultValue = true) {

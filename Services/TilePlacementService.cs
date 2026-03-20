@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Data.SqlClient;
@@ -11,72 +14,112 @@ namespace BgaTmScraperRegistry.Services
         private readonly string _connectionString;
         private readonly ILogger _logger;
 
+        private static readonly Regex HexCoordsRegex = new Regex(
+            @"(\d+)\s*,\s*(\d+)", RegexOptions.Compiled);
+
         public TilePlacementService(string connectionString, ILogger logger)
         {
             _connectionString = connectionString;
             _logger = logger;
         }
 
-        public async Task<IEnumerable<TilePlacementOverview>> GetOverviewAsync(string map, TileType tileType)
+        private static string NormalizeLocation(string raw)
         {
-            var (table, column) = GetTableAndColumn(tileType);
-
-            var sql = $@"
-                SELECT
-                    LTRIM(RTRIM(t.{column})) AS TileLocation,
-                    COUNT(*) AS GameCount,
-                    ISNULL(AVG(CAST(gp.EloChange AS float)), 0) AS AvgEloChange
-                FROM {table} t
-                JOIN Games_Canonical g
-                    ON g.TableId = t.TableId
-                JOIN GamePlayers_Canonical gp
-                    ON gp.TableId = t.TableId
-                    AND gp.PlayerId = t.PlayerId
-                WHERE
-                    g.Map = @Map
-                    AND LTRIM(RTRIM(t.{column})) NOT IN ('Ganymede Colony', 'Phobos Space Haven', 'Hex')
-                    AND LEFT(LTRIM(t.{column}), 4) <> 'tile'
-                GROUP BY
-                    LTRIM(RTRIM(t.{column}))
-                ORDER BY
-                    AvgEloChange DESC";
-
-            using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-            return await connection.QueryAsync<TilePlacementOverview>(sql, new { Map = map });
+            var trimmed = raw.Trim();
+            if (trimmed.IndexOf("Hex", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                var m = HexCoordsRegex.Match(trimmed);
+                if (m.Success)
+                    return $"Hex {m.Groups[1].Value},{m.Groups[2].Value}";
+            }
+            return trimmed;
         }
 
-        public async Task<IEnumerable<TilePlacementByGen>> GetByGenAsync(string map, TileType tileType)
+        private static readonly HashSet<string> ExcludedLocations = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Ganymede Colony", "Phobos Space Haven", "Hex", ""
+        };
+
+        private static bool ShouldInclude(string location)
+        {
+            return !ExcludedLocations.Contains(location)
+                && !location.StartsWith("tile", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public async Task<Dictionary<string, List<TilePlacementOverview>>> GetAllOverviewsAsync(TileType tileType)
         {
             var (table, column) = GetTableAndColumn(tileType);
 
             var sql = $@"
                 SELECT
+                    g.Map,
                     LTRIM(RTRIM(t.{column})) AS TileLocation,
-                    t.PlacedGen,
-                    COUNT(*) AS GameCount,
-                    ISNULL(AVG(CAST(gp.EloChange AS float)), 0) AS AvgEloChange
+                    gp.EloChange
                 FROM {table} t
-                JOIN Games_Canonical g
-                    ON g.TableId = t.TableId
-                JOIN GamePlayers_Canonical gp
-                    ON gp.TableId = t.TableId
-                    AND gp.PlayerId = t.PlayerId
-                WHERE
-                    g.Map = @Map
-                    AND LTRIM(RTRIM(t.{column})) NOT IN ('Ganymede Colony', 'Phobos Space Haven', 'Hex')
-                    AND LEFT(LTRIM(t.{column}), 4) <> 'tile'
-                    AND t.PlacedGen IS NOT NULL
-                GROUP BY
-                    LTRIM(RTRIM(t.{column})),
-                    t.PlacedGen
-                ORDER BY
-                    LTRIM(RTRIM(t.{column})),
-                    t.PlacedGen";
+                JOIN Games_Canonical g ON g.TableId = t.TableId
+                JOIN GamePlayers_Canonical gp ON gp.TableId = t.TableId AND gp.PlayerId = t.PlayerId";
 
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
-            return await connection.QueryAsync<TilePlacementByGen>(sql, new { Map = map });
+            var rows = await connection.QueryAsync<RawRowWithMap>(sql);
+
+            return rows
+                .Where(r => !string.IsNullOrEmpty(r.Map))
+                .Select(r => new { r.Map, Location = NormalizeLocation(r.TileLocation), r.EloChange })
+                .Where(r => ShouldInclude(r.Location))
+                .GroupBy(r => r.Map)
+                .ToDictionary(
+                    mg => mg.Key,
+                    mg => mg
+                        .GroupBy(r => r.Location)
+                        .Select(g => new TilePlacementOverview
+                        {
+                            TileLocation = g.Key,
+                            GameCount = g.Count(),
+                            AvgEloChange = g.Average(r => r.EloChange ?? 0),
+                        })
+                        .OrderByDescending(r => r.AvgEloChange)
+                        .ToList());
+        }
+
+        public async Task<Dictionary<string, List<TilePlacementByGen>>> GetAllByGenAsync(TileType tileType)
+        {
+            var (table, column) = GetTableAndColumn(tileType);
+
+            var sql = $@"
+                SELECT
+                    g.Map,
+                    LTRIM(RTRIM(t.{column})) AS TileLocation,
+                    t.PlacedGen,
+                    gp.EloChange
+                FROM {table} t
+                JOIN Games_Canonical g ON g.TableId = t.TableId
+                JOIN GamePlayers_Canonical gp ON gp.TableId = t.TableId AND gp.PlayerId = t.PlayerId
+                WHERE t.PlacedGen IS NOT NULL";
+
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+            var rows = await connection.QueryAsync<RawRowWithMapAndGen>(sql);
+
+            return rows
+                .Where(r => !string.IsNullOrEmpty(r.Map))
+                .Select(r => new { r.Map, Location = NormalizeLocation(r.TileLocation), r.PlacedGen, r.EloChange })
+                .Where(r => ShouldInclude(r.Location))
+                .GroupBy(r => r.Map)
+                .ToDictionary(
+                    mg => mg.Key,
+                    mg => mg
+                        .GroupBy(r => new { r.Location, r.PlacedGen })
+                        .Select(g => new TilePlacementByGen
+                        {
+                            TileLocation = g.Key.Location,
+                            PlacedGen = g.Key.PlacedGen,
+                            GameCount = g.Count(),
+                            AvgEloChange = g.Average(r => r.EloChange ?? 0),
+                        })
+                        .OrderBy(r => r.TileLocation)
+                        .ThenBy(r => r.PlacedGen)
+                        .ToList());
         }
 
         private static (string table, string column) GetTableAndColumn(TileType tileType) => tileType switch
@@ -85,6 +128,21 @@ namespace BgaTmScraperRegistry.Services
             TileType.Greenery => ("GameGreeneryLocations", "GreeneryLocation"),
             _ => ("GameCityLocations", "CityLocation"),
         };
+
+        private class RawRowWithMap
+        {
+            public string Map { get; set; }
+            public string TileLocation { get; set; }
+            public double? EloChange { get; set; }
+        }
+
+        private class RawRowWithMapAndGen
+        {
+            public string Map { get; set; }
+            public string TileLocation { get; set; }
+            public int? PlacedGen { get; set; }
+            public double? EloChange { get; set; }
+        }
 
         public enum TileType
         {

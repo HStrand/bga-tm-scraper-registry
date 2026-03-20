@@ -14,29 +14,29 @@ namespace BgaTmScraperRegistry.Functions
     {
         [FunctionName("GetCityPlacementOverview")]
         public static Task<IActionResult> CityOverview(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "maps/{mapName}/city-stats")] HttpRequest req,
-            string mapName, ILogger log)
-            => RunOverview(mapName, TileType.City, log);
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tile-stats/city/overview")] HttpRequest req,
+            ILogger log)
+            => RunOverview(TileType.City, log);
 
         [FunctionName("GetCityPlacementByGen")]
         public static Task<IActionResult> CityByGen(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "maps/{mapName}/city-stats/by-gen")] HttpRequest req,
-            string mapName, ILogger log)
-            => RunByGen(mapName, TileType.City, log);
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tile-stats/city/by-gen")] HttpRequest req,
+            ILogger log)
+            => RunByGen(TileType.City, log);
 
         [FunctionName("GetGreeneryPlacementOverview")]
         public static Task<IActionResult> GreeneryOverview(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "maps/{mapName}/greenery-stats")] HttpRequest req,
-            string mapName, ILogger log)
-            => RunOverview(mapName, TileType.Greenery, log);
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tile-stats/greenery/overview")] HttpRequest req,
+            ILogger log)
+            => RunOverview(TileType.Greenery, log);
 
         [FunctionName("GetGreeneryPlacementByGen")]
         public static Task<IActionResult> GreeneryByGen(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "maps/{mapName}/greenery-stats/by-gen")] HttpRequest req,
-            string mapName, ILogger log)
-            => RunByGen(mapName, TileType.Greenery, log);
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tile-stats/greenery/by-gen")] HttpRequest req,
+            ILogger log)
+            => RunByGen(TileType.Greenery, log);
 
-        private static async Task<IActionResult> RunOverview(string mapName, TileType tileType, ILogger log)
+        private static async Task<IActionResult> RunOverview(TileType tileType, ILogger log)
         {
             try
             {
@@ -48,17 +48,17 @@ namespace BgaTmScraperRegistry.Functions
                 }
 
                 var service = new TilePlacementService(connectionString, log);
-                var results = await service.GetOverviewAsync(mapName, tileType);
+                var results = await service.GetAllOverviewsAsync(tileType);
                 return new OkObjectResult(results);
             }
             catch (Exception ex)
             {
-                log.LogError(ex, "Error getting {tileType} placement overview for map {mapName}", tileType, mapName);
+                log.LogError(ex, "Error getting {tileType} placement overview", tileType);
                 return new StatusCodeResult(500);
             }
         }
 
-        private static async Task<IActionResult> RunByGen(string mapName, TileType tileType, ILogger log)
+        private static async Task<IActionResult> RunByGen(TileType tileType, ILogger log)
         {
             try
             {
@@ -70,12 +70,12 @@ namespace BgaTmScraperRegistry.Functions
                 }
 
                 var service = new TilePlacementService(connectionString, log);
-                var results = await service.GetByGenAsync(mapName, tileType);
+                var results = await service.GetAllByGenAsync(tileType);
                 return new OkObjectResult(results);
             }
             catch (Exception ex)
             {
-                log.LogError(ex, "Error getting {tileType} placement by-gen stats for map {mapName}", tileType, mapName);
+                log.LogError(ex, "Error getting {tileType} placement by-gen stats", tileType);
                 return new StatusCodeResult(500);
             }
         }

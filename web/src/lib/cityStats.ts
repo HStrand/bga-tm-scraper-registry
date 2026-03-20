@@ -15,17 +15,14 @@ export interface TilePlacementByGen {
 
 export type TileType = 'city' | 'greenery';
 
-function statsPath(mapName: string, tileType: TileType): string {
-  const slug = tileType === 'city' ? 'city-stats' : 'greenery-stats';
-  return `/api/maps/${encodeURIComponent(mapName)}/${slug}`;
+// Returns { [mapName]: TilePlacementStat[] }
+export async function getAllTilePlacementStats(tileType: TileType): Promise<Record<string, TilePlacementStat[]>> {
+  const res = await api.get<Record<string, TilePlacementStat[]>>(`/api/tile-stats/${tileType}/overview`);
+  return res.data ?? {};
 }
 
-export async function getTilePlacementStats(mapName: string, tileType: TileType): Promise<TilePlacementStat[]> {
-  const res = await api.get<TilePlacementStat[]>(statsPath(mapName, tileType));
-  return res.data ?? [];
-}
-
-export async function getTilePlacementByGen(mapName: string, tileType: TileType): Promise<TilePlacementByGen[]> {
-  const res = await api.get<TilePlacementByGen[]>(`${statsPath(mapName, tileType)}/by-gen`);
-  return res.data ?? [];
+// Returns { [mapName]: TilePlacementByGen[] }
+export async function getAllTilePlacementByGen(tileType: TileType): Promise<Record<string, TilePlacementByGen[]>> {
+  const res = await api.get<Record<string, TilePlacementByGen[]>>(`/api/tile-stats/${tileType}/by-gen`);
+  return res.data ?? {};
 }
