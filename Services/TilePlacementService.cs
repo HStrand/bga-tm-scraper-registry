@@ -1,16 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Data.SqlClient;
+using Azure.Storage.Blobs;
 using Dapper;
 
 namespace BgaTmScraperRegistry.Services
 {
     public class TilePlacementService
     {
+        private static readonly MemoryCache Cache = new MemoryCache(new MemoryCacheOptions());
+        private const string CacheContainerName = "cache";
+
         private readonly string _connectionString;
         private readonly ILogger _logger;
 
@@ -46,7 +52,81 @@ namespace BgaTmScraperRegistry.Services
                 && !location.StartsWith("tile", StringComparison.OrdinalIgnoreCase);
         }
 
+        // ── Cache keys & blob names ──────────────────────────
+
+        private static string OverviewCacheKey(TileType t) => $"TilePlacement:Overview:{t}:v1";
+        private static string ByGenCacheKey(TileType t) => $"TilePlacement:ByGen:{t}:v1";
+        private static string OverviewBlobName(TileType t) => $"tile-placement-overview-{t.ToString().ToLowerInvariant()}-v1.json";
+        private static string ByGenBlobName(TileType t) => $"tile-placement-bygen-{t.ToString().ToLowerInvariant()}-v1.json";
+
+        // ── Public API (cached) ──────────────────────────────
+
         public async Task<Dictionary<string, List<TilePlacementOverview>>> GetAllOverviewsAsync(TileType tileType)
+        {
+            var cacheKey = OverviewCacheKey(tileType);
+            if (Cache.TryGetValue(cacheKey, out Dictionary<string, List<TilePlacementOverview>> cached))
+            {
+                _logger.LogInformation("Returning {type} overview from memory cache", tileType);
+                return cached;
+            }
+
+            var blobData = await TryReadFromBlobAsync<Dictionary<string, List<TilePlacementOverview>>>(OverviewBlobName(tileType));
+            if (blobData != null)
+            {
+                Cache.Set(cacheKey, blobData, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+                _logger.LogInformation("Loaded {type} overview from blob cache", tileType);
+                return blobData;
+            }
+
+            var result = await ComputeAllOverviewsAsync(tileType);
+            Cache.Set(cacheKey, result, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+            await TryWriteToBlobAsync(OverviewBlobName(tileType), result);
+            _logger.LogInformation("Computed and cached {type} overview", tileType);
+            return result;
+        }
+
+        public async Task<Dictionary<string, List<TilePlacementByGen>>> GetAllByGenAsync(TileType tileType)
+        {
+            var cacheKey = ByGenCacheKey(tileType);
+            if (Cache.TryGetValue(cacheKey, out Dictionary<string, List<TilePlacementByGen>> cached))
+            {
+                _logger.LogInformation("Returning {type} by-gen from memory cache", tileType);
+                return cached;
+            }
+
+            var blobData = await TryReadFromBlobAsync<Dictionary<string, List<TilePlacementByGen>>>(ByGenBlobName(tileType));
+            if (blobData != null)
+            {
+                Cache.Set(cacheKey, blobData, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+                _logger.LogInformation("Loaded {type} by-gen from blob cache", tileType);
+                return blobData;
+            }
+
+            var result = await ComputeAllByGenAsync(tileType);
+            Cache.Set(cacheKey, result, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+            await TryWriteToBlobAsync(ByGenBlobName(tileType), result);
+            _logger.LogInformation("Computed and cached {type} by-gen", tileType);
+            return result;
+        }
+
+        // ── Refresh (called by timer trigger) ────────────────
+
+        public async Task RefreshCacheAsync(TileType tileType)
+        {
+            var overview = await ComputeAllOverviewsAsync(tileType);
+            Cache.Set(OverviewCacheKey(tileType), overview, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+            await TryWriteToBlobAsync(OverviewBlobName(tileType), overview);
+
+            var byGen = await ComputeAllByGenAsync(tileType);
+            Cache.Set(ByGenCacheKey(tileType), byGen, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+            await TryWriteToBlobAsync(ByGenBlobName(tileType), byGen);
+
+            _logger.LogInformation("Refreshed {type} tile placement cache (overview + by-gen)", tileType);
+        }
+
+        // ── Compute from DB ──────────────────────────────────
+
+        private async Task<Dictionary<string, List<TilePlacementOverview>>> ComputeAllOverviewsAsync(TileType tileType)
         {
             var (table, column) = GetTableAndColumn(tileType);
 
@@ -61,7 +141,7 @@ namespace BgaTmScraperRegistry.Services
 
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
-            var rows = await connection.QueryAsync<RawRowWithMap>(sql);
+            var rows = await connection.QueryAsync<RawRowWithMap>(sql, commandTimeout: 300);
 
             return rows
                 .Where(r => !string.IsNullOrEmpty(r.Map))
@@ -82,7 +162,7 @@ namespace BgaTmScraperRegistry.Services
                         .ToList());
         }
 
-        public async Task<Dictionary<string, List<TilePlacementByGen>>> GetAllByGenAsync(TileType tileType)
+        private async Task<Dictionary<string, List<TilePlacementByGen>>> ComputeAllByGenAsync(TileType tileType)
         {
             var (table, column) = GetTableAndColumn(tileType);
 
@@ -99,7 +179,7 @@ namespace BgaTmScraperRegistry.Services
 
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
-            var rows = await connection.QueryAsync<RawRowWithMapAndGen>(sql);
+            var rows = await connection.QueryAsync<RawRowWithMapAndGen>(sql, commandTimeout: 300);
 
             return rows
                 .Where(r => !string.IsNullOrEmpty(r.Map))
@@ -121,6 +201,59 @@ namespace BgaTmScraperRegistry.Services
                         .ThenBy(r => r.PlacedGen)
                         .ToList());
         }
+
+        // ── Blob helpers ─────────────────────────────────────
+
+        private async Task<T> TryReadFromBlobAsync<T>(string blobName) where T : class
+        {
+            try
+            {
+                var blobConn = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
+                if (string.IsNullOrWhiteSpace(blobConn)) return null;
+
+                var service = new BlobServiceClient(blobConn);
+                var container = service.GetBlobContainerClient(CacheContainerName);
+                var blob = container.GetBlobClient(blobName);
+
+                var exists = await blob.ExistsAsync();
+                if (!exists.Value) return null;
+
+                var download = await blob.DownloadContentAsync();
+                var json = download.Value.Content.ToString();
+                return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to read {blob} from blob cache", blobName);
+                return null;
+            }
+        }
+
+        private async Task TryWriteToBlobAsync<T>(string blobName, T data)
+        {
+            try
+            {
+                var blobConn = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
+                if (string.IsNullOrWhiteSpace(blobConn)) return;
+
+                var service = new BlobServiceClient(blobConn);
+                var container = service.GetBlobContainerClient(CacheContainerName);
+                await container.CreateIfNotExistsAsync();
+                var blob = container.GetBlobClient(blobName);
+
+                var json = JsonSerializer.Serialize(data);
+                using var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+                await blob.UploadAsync(stream, overwrite: true);
+
+                _logger.LogInformation("Wrote {blob} to blob cache", blobName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to write {blob} to blob cache", blobName);
+            }
+        }
+
+        // ── Helpers & types ──────────────────────────────────
 
         private static (string table, string column) GetTableAndColumn(TileType tileType) => tileType switch
         {
