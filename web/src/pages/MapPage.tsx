@@ -295,7 +295,7 @@ export function MapPage() {
                 : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
           >
-            <img src={cityTileImage} alt="City" className="w-6 h-6" />
+            <img src={cityTileImage} alt="City" className="w-12 h-12" />
             Cities
           </button>
           <button
@@ -306,7 +306,7 @@ export function MapPage() {
                 : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
           >
-            <img src={greeneryTileImage} alt="Greenery" className="w-6 h-6" />
+            <img src={greeneryTileImage} alt="Greenery" className="w-12 h-12" />
             Greeneries
           </button>
         </div>
