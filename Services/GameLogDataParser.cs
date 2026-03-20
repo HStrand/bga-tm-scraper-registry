@@ -869,7 +869,8 @@ namespace BgaTmScraperRegistry.Services
                     if (string.IsNullOrWhiteSpace(desc)) continue;
 
                     if (desc.IndexOf("places City", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        desc.IndexOf("places tile City", StringComparison.OrdinalIgnoreCase) >= 0)
+                        desc.IndexOf("places tile City", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        desc.IndexOf("places Capital", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         // Direct substring match
                         if (desc.IndexOf(cityLocation, StringComparison.OrdinalIgnoreCase) >= 0)
@@ -1066,7 +1067,8 @@ namespace BgaTmScraperRegistry.Services
                     if (string.IsNullOrWhiteSpace(desc)) continue;
 
                     if (desc.IndexOf("places Forest", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        desc.IndexOf("places tile Forest", StringComparison.OrdinalIgnoreCase) >= 0)
+                        desc.IndexOf("places tile Forest", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        desc.IndexOf("places Greenery", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         if (desc.IndexOf(greeneryLocation, StringComparison.OrdinalIgnoreCase) >= 0)
                             return gen.Value;
