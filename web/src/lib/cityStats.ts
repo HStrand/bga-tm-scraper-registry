@@ -1,24 +1,31 @@
 import { api } from '@/lib/api';
 
-export interface CityPlacementStat {
-  cityLocation: string;
+export interface TilePlacementStat {
+  tileLocation: string;
   gameCount: number;
   avgEloChange: number;
 }
 
-export interface CityPlacementByGen {
-  cityLocation: string;
+export interface TilePlacementByGen {
+  tileLocation: string;
   placedGen: number | null;
   gameCount: number;
   avgEloChange: number;
 }
 
-export async function getCityPlacementStats(mapName: string): Promise<CityPlacementStat[]> {
-  const res = await api.get<CityPlacementStat[]>(`/api/maps/${encodeURIComponent(mapName)}/city-stats`);
+export type TileType = 'city' | 'greenery';
+
+function statsPath(mapName: string, tileType: TileType): string {
+  const slug = tileType === 'city' ? 'city-stats' : 'greenery-stats';
+  return `/api/maps/${encodeURIComponent(mapName)}/${slug}`;
+}
+
+export async function getTilePlacementStats(mapName: string, tileType: TileType): Promise<TilePlacementStat[]> {
+  const res = await api.get<TilePlacementStat[]>(statsPath(mapName, tileType));
   return res.data ?? [];
 }
 
-export async function getCityPlacementByGen(mapName: string): Promise<CityPlacementByGen[]> {
-  const res = await api.get<CityPlacementByGen[]>(`/api/maps/${encodeURIComponent(mapName)}/city-stats/by-gen`);
+export async function getTilePlacementByGen(mapName: string, tileType: TileType): Promise<TilePlacementByGen[]> {
+  const res = await api.get<TilePlacementByGen[]>(`${statsPath(mapName, tileType)}/by-gen`);
   return res.data ?? [];
 }

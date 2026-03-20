@@ -3,8 +3,10 @@ import { createPortal } from 'react-dom';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { X } from 'lucide-react';
 import { ELYSIUM_HEXES, GRID, IMAGE_WIDTH, IMAGE_HEIGHT, hexCenter, hexPoints, type HexTile } from '@/data/elysiumHexes';
-import { getCityPlacementStats, getCityPlacementByGen, type CityPlacementStat, type CityPlacementByGen } from '@/lib/cityStats';
+import { getTilePlacementStats, getTilePlacementByGen, type TilePlacementStat, type TilePlacementByGen, type TileType } from '@/lib/cityStats';
 import elysiumImage from '/assets/elysium.png';
+import cityTileImage from '/assets/city tile.png';
+import greeneryTileImage from '/assets/greenery tile.png';
 
 function heatColor(t: number): string {
   if (t === 0) return 'transparent';
@@ -18,15 +20,22 @@ function formatElo(val: number): string {
   return `${sign}${val.toFixed(2)}`;
 }
 
+const TILE_LABELS: Record<TileType, { singular: string; plural: string }> = {
+  city: { singular: 'city', plural: 'Cities' },
+  greenery: { singular: 'greenery', plural: 'Greeneries' },
+};
+
 interface HexDetailDialogProps {
   hex: HexTile;
-  overviewStat: CityPlacementStat | undefined;
-  genData: CityPlacementByGen[];
+  tileType: TileType;
+  overviewStat: TilePlacementStat | undefined;
+  genData: TilePlacementByGen[];
   onClose: () => void;
 }
 
-function HexDetailDialog({ hex, overviewStat, genData, onClose }: HexDetailDialogProps) {
+function HexDetailDialog({ hex, tileType, overviewStat, genData, onClose }: HexDetailDialogProps) {
   const title = hex.name ?? `Hex ${hex.col},${hex.row}`;
+  const labels = TILE_LABELS[tileType];
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -65,7 +74,7 @@ function HexDetailDialog({ hex, overviewStat, genData, onClose }: HexDetailDialo
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
-                  <div className="text-sm text-slate-500 dark:text-slate-400">Total cities placed</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">Total {labels.plural.toLowerCase()} placed</div>
                   <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{overviewStat.gameCount.toLocaleString()}</div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
@@ -93,7 +102,7 @@ function HexDetailDialog({ hex, overviewStat, genData, onClose }: HexDetailDialo
                               return (
                                 <div style={{ backgroundColor: 'rgb(30 41 59)', border: '1px solid rgb(51 65 85)', borderRadius: '8px', color: 'white', padding: '8px 12px', fontSize: 13 }}>
                                   <div style={{ fontWeight: 600, marginBottom: 4 }}>Generation {label}</div>
-                                  <div>Cities placed: <strong>{d.count.toLocaleString()}</strong></div>
+                                  <div>{labels.plural} placed: <strong>{d.count.toLocaleString()}</strong></div>
                                   <div>Avg Elo gain: <strong style={{ color: d.avgEloGain >= 0 ? '#4ade80' : '#f87171' }}>{formatElo(d.avgEloGain)}</strong></div>
                                 </div>
                               );
@@ -126,7 +135,7 @@ function HexDetailDialog({ hex, overviewStat, genData, onClose }: HexDetailDialo
                                 <div style={{ backgroundColor: 'rgb(30 41 59)', border: '1px solid rgb(51 65 85)', borderRadius: '8px', color: 'white', padding: '8px 12px', fontSize: 13 }}>
                                   <div style={{ fontWeight: 600, marginBottom: 4 }}>Generation {label}</div>
                                   <div>Avg Elo gain: <strong style={{ color: d.avgEloGain >= 0 ? '#4ade80' : '#f87171' }}>{formatElo(d.avgEloGain)}</strong></div>
-                                  <div>Cities placed: <strong>{d.count.toLocaleString()}</strong></div>
+                                  <div>{labels.plural} placed: <strong>{d.count.toLocaleString()}</strong></div>
                                 </div>
                               );
                             }}
@@ -148,7 +157,7 @@ function HexDetailDialog({ hex, overviewStat, genData, onClose }: HexDetailDialo
             </>
           ) : (
             <div className="text-slate-500 dark:text-slate-400 italic py-8 text-center">
-              No city placement data for this tile.
+              No {labels.singular} placement data for this tile.
             </div>
           )}
         </div>
@@ -159,8 +168,9 @@ function HexDetailDialog({ hex, overviewStat, genData, onClose }: HexDetailDialo
 }
 
 export function MapPage() {
-  const [stats, setStats] = useState<CityPlacementStat[]>([]);
-  const [byGenData, setByGenData] = useState<CityPlacementByGen[]>([]);
+  const [tileType, setTileType] = useState<TileType>('city');
+  const [stats, setStats] = useState<TilePlacementStat[]>([]);
+  const [byGenData, setByGenData] = useState<TilePlacementByGen[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hoveredHex, setHoveredHex] = useState<HexTile | null>(null);
@@ -169,33 +179,38 @@ export function MapPage() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
+    setSelectedHex(null);
     Promise.all([
-      getCityPlacementStats('Elysium'),
-      getCityPlacementByGen('Elysium'),
+      getTilePlacementStats('Elysium', tileType),
+      getTilePlacementByGen('Elysium', tileType),
     ])
       .then(([overview, byGen]) => {
         setStats(overview);
         setByGenData(byGen);
       })
       .catch(err => {
-        console.error('Error fetching city stats:', err);
-        setError('Failed to load city placement data.');
+        console.error('Error fetching tile stats:', err);
+        setError('Failed to load placement data.');
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [tileType]);
+
+  const labels = TILE_LABELS[tileType];
 
   const statsByLocation = useMemo(() => {
-    const map = new Map<string, CityPlacementStat>();
+    const map = new Map<string, TilePlacementStat>();
     for (const s of stats) {
-      map.set(s.cityLocation.trim(), s);
+      map.set(s.tileLocation.trim(), s);
     }
     return map;
   }, [stats]);
 
   const byGenByLocation = useMemo(() => {
-    const map = new Map<string, CityPlacementByGen[]>();
+    const map = new Map<string, TilePlacementByGen[]>();
     for (const s of byGenData) {
-      const key = s.cityLocation.trim();
+      const key = s.tileLocation.trim();
       const arr = map.get(key) ?? [];
       arr.push(s);
       map.set(key, arr);
@@ -226,17 +241,45 @@ export function MapPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-        Elysium — City Placement Map
-      </h1>
+      <div className="flex items-center gap-4 mb-2">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+          Elysium — Tile Placement Map
+        </h1>
+      </div>
+
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => setTileType('city')}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+            tileType === 'city'
+              ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 ring-1 ring-amber-300'
+              : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+          }`}
+        >
+          <img src={cityTileImage} alt="City" className="w-6 h-6" />
+          Cities
+        </button>
+        <button
+          onClick={() => setTileType('greenery')}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+            tileType === 'greenery'
+              ? 'border-green-400 bg-green-50 dark:bg-green-900/30 text-green-900 dark:text-green-100 ring-1 ring-green-300'
+              : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+          }`}
+        >
+          <img src={greeneryTileImage} alt="Greenery" className="w-6 h-6" />
+          Greeneries
+        </button>
+      </div>
+
       <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-        Heat map of city placements by popularity. Brighter = more placements. Hover for details, click for charts.
+        Heat map of {labels.singular} placements by popularity. Brighter = more placements. Hover for details, click for charts.
       </p>
 
       {loading && (
         <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 py-8">
           <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-          Loading city placement data...
+          Loading {labels.singular} placement data...
         </div>
       )}
 
@@ -309,7 +352,7 @@ export function MapPage() {
               {hoveredStat ? (
                 <>
                   <div className="flex justify-between gap-4">
-                    <span className="text-slate-300">Cities placed:</span>
+                    <span className="text-slate-300">{labels.plural} placed:</span>
                     <span className="font-semibold">{hoveredStat.gameCount}</span>
                   </div>
                   <div className="flex justify-between gap-4">
@@ -320,7 +363,7 @@ export function MapPage() {
                   </div>
                 </>
               ) : (
-                <div className="text-slate-400 italic">No city placement data</div>
+                <div className="text-slate-400 italic">No {labels.singular} placement data</div>
               )}
             </div>
           </div>,
@@ -342,6 +385,7 @@ export function MapPage() {
       {selectedHex && (
         <HexDetailDialog
           hex={selectedHex}
+          tileType={tileType}
           overviewStat={statsByLocation.get(selectedHex.dbKey)}
           genData={byGenByLocation.get(selectedHex.dbKey) ?? []}
           onClose={() => setSelectedHex(null)}
