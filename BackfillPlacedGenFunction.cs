@@ -80,7 +80,12 @@ namespace BgaTmScraperRegistry
                         var playerPerspective = item.PlayerPerspective.ToString();
                         var tableId = item.TableId.ToString();
 
-                        if (!await blobService.BlobExistsAsync(playerPerspective, tableId))
+                        string json;
+                        try
+                        {
+                            json = await blobService.GetBlobContentAsync(playerPerspective, tableId);
+                        }
+                        catch
                         {
                             missingBlob++;
                             log.LogWarning("({p}/{total}) TableId={tableId} Player={player} — blob not found",
@@ -88,7 +93,6 @@ namespace BgaTmScraperRegistry
                             continue;
                         }
 
-                        var json = await blobService.GetBlobContentAsync(playerPerspective, tableId);
                         var gameLogData = JsonConvert.DeserializeObject<GameLogData>(json);
                         if (gameLogData == null)
                         {
@@ -180,33 +184,37 @@ namespace BgaTmScraperRegistry
             List<GameCityLocation> cities,
             List<GameGreeneryLocation> greeneries)
         {
+            var cityUpdates = cities.Where(c => c.PlacedGen.HasValue).ToList();
+            var greeneryUpdates = greeneries.Where(g => g.PlacedGen.HasValue).ToList();
+
+            if (cityUpdates.Count == 0 && greeneryUpdates.Count == 0)
+                return 0;
+
             using var connection = new SqlConnection(connectionString);
             await connection.OpenAsync();
 
             int totalUpdated = 0;
 
-            // Update city PlacedGen where currently NULL
-            foreach (var city in cities.Where(c => c.PlacedGen.HasValue))
+            if (cityUpdates.Count > 0)
             {
                 var rows = await connection.ExecuteAsync(@"
                     UPDATE GameCityLocations
                     SET PlacedGen = @PlacedGen, UpdatedAt = @UpdatedAt
                     WHERE TableId = @TableId AND PlayerId = @PlayerId AND CityLocation = @CityLocation
                       AND PlacedGen IS NULL",
-                    new { city.TableId, city.PlayerId, city.CityLocation, city.PlacedGen, UpdatedAt = DateTime.UtcNow },
+                    cityUpdates.Select(c => new { c.TableId, c.PlayerId, c.CityLocation, c.PlacedGen, UpdatedAt = DateTime.UtcNow }),
                     commandTimeout: 60);
                 totalUpdated += rows;
             }
 
-            // Update greenery PlacedGen where currently NULL
-            foreach (var g in greeneries.Where(g => g.PlacedGen.HasValue))
+            if (greeneryUpdates.Count > 0)
             {
                 var rows = await connection.ExecuteAsync(@"
                     UPDATE GameGreeneryLocations
                     SET PlacedGen = @PlacedGen, UpdatedAt = @UpdatedAt
                     WHERE TableId = @TableId AND PlayerId = @PlayerId AND GreeneryLocation = @GreeneryLocation
                       AND PlacedGen IS NULL",
-                    new { g.TableId, g.PlayerId, g.GreeneryLocation, g.PlacedGen, UpdatedAt = DateTime.UtcNow },
+                    greeneryUpdates.Select(g => new { g.TableId, g.PlayerId, g.GreeneryLocation, g.PlacedGen, UpdatedAt = DateTime.UtcNow }),
                     commandTimeout: 60);
                 totalUpdated += rows;
             }
