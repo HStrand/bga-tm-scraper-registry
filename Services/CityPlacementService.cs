@@ -34,6 +34,7 @@ namespace BgaTmScraperRegistry.Services
                     g.Map = @Map
                     AND LTRIM(RTRIM(gcl.CityLocation)) NOT IN ('Ganymede Colony', 'Phobos Space Haven', 'Hex')
                     AND LEFT(LTRIM(gcl.CityLocation), 4) <> 'tile'
+                    AND gcl.PlacedGen IS NOT NULL
                 GROUP BY
                     LTRIM(RTRIM(gcl.CityLocation))
                 ORDER BY
@@ -62,6 +63,7 @@ namespace BgaTmScraperRegistry.Services
                     g.Map = @Map
                     AND LTRIM(RTRIM(gcl.CityLocation)) NOT IN ('Ganymede Colony', 'Phobos Space Haven', 'Hex')
                     AND LEFT(LTRIM(gcl.CityLocation), 4) <> 'tile'
+                    AND gcl.PlacedGen IS NOT NULL
                 GROUP BY
                     LTRIM(RTRIM(gcl.CityLocation)),
                     gcl.PlacedGen

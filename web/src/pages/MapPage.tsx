@@ -1,15 +1,14 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
+import { X } from 'lucide-react';
 import { ELYSIUM_HEXES, GRID, IMAGE_WIDTH, IMAGE_HEIGHT, hexCenter, hexPoints, type HexTile } from '@/data/elysiumHexes';
-import { getCityPlacementStats, type CityPlacementStat } from '@/lib/cityStats';
+import { getCityPlacementStats, getCityPlacementByGen, type CityPlacementStat, type CityPlacementByGen } from '@/lib/cityStats';
 import elysiumImage from '/assets/elysium.png';
 
 function heatColor(t: number): string {
-  // t is 0..1 where 0 = fewest placements, 1 = most placements
-  // Transparent -> Yellow -> Orange -> Red
   if (t === 0) return 'transparent';
   const alpha = 0.15 + t * 0.55;
-  // Interpolate hue from 60 (yellow) to 0 (red)
   const hue = 60 * (1 - t);
   return `hsla(${hue}, 90%, 50%, ${alpha})`;
 }
@@ -19,17 +18,165 @@ function formatElo(val: number): string {
   return `${sign}${val.toFixed(2)}`;
 }
 
+interface HexDetailDialogProps {
+  hex: HexTile;
+  overviewStat: CityPlacementStat | undefined;
+  genData: CityPlacementByGen[];
+  onClose: () => void;
+}
+
+function HexDetailDialog({ hex, overviewStat, genData, onClose }: HexDetailDialogProps) {
+  const title = hex.name ?? `Hex ${hex.col},${hex.row}`;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const chartData = genData.map(d => ({
+    gen: d.placedGen ?? 0,
+    avgEloGain: d.avgEloChange,
+    count: d.gameCount,
+  }));
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50" />
+      <div
+        className="relative bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{title}</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Coordinates: {hex.col},{hex.row}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="px-6 py-4 space-y-6">
+          {overviewStat ? (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                  <div className="text-sm text-slate-500 dark:text-slate-400">Total cities placed</div>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{overviewStat.gameCount.toLocaleString()}</div>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                  <div className="text-sm text-slate-500 dark:text-slate-400">Avg Elo gain</div>
+                  <div className={`text-2xl font-bold ${overviewStat.avgEloChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {formatElo(overviewStat.avgEloChange)}
+                  </div>
+                </div>
+              </div>
+
+              {genData.length > 0 && (
+                <>
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-3">Game Count by Generation</h3>
+                    <div className="h-56">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
+                          <XAxis dataKey="gen" tick={{ fontSize: 12 }} label={{ value: 'Generation', position: 'insideBottom', offset: -2, fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} />
+                          <Tooltip
+                            content={({ active, payload, label }) => {
+                              if (!active || !payload?.length) return null;
+                              const d = payload[0].payload;
+                              return (
+                                <div style={{ backgroundColor: 'rgb(30 41 59)', border: '1px solid rgb(51 65 85)', borderRadius: '8px', color: 'white', padding: '8px 12px', fontSize: 13 }}>
+                                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Generation {label}</div>
+                                  <div>Cities placed: <strong>{d.count.toLocaleString()}</strong></div>
+                                  <div>Avg Elo gain: <strong style={{ color: d.avgEloGain >= 0 ? '#4ade80' : '#f87171' }}>{formatElo(d.avgEloGain)}</strong></div>
+                                </div>
+                              );
+                            }}
+                          />
+                          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                            {chartData.map((_, i) => (
+                              <Cell key={i} fill="#3b82f6" fillOpacity={0.8} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-3">Avg Elo Gain by Generation</h3>
+                    <div className="h-56">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
+                          <XAxis dataKey="gen" tick={{ fontSize: 12 }} label={{ value: 'Generation', position: 'insideBottom', offset: -2, fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => v >= 0 ? `+${v.toFixed(1)}` : v.toFixed(1)} />
+                          <ReferenceLine y={0} stroke="#64748b" strokeDasharray="3 3" />
+                          <Tooltip
+                            content={({ active, payload, label }) => {
+                              if (!active || !payload?.length) return null;
+                              const d = payload[0].payload;
+                              return (
+                                <div style={{ backgroundColor: 'rgb(30 41 59)', border: '1px solid rgb(51 65 85)', borderRadius: '8px', color: 'white', padding: '8px 12px', fontSize: 13 }}>
+                                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Generation {label}</div>
+                                  <div>Avg Elo gain: <strong style={{ color: d.avgEloGain >= 0 ? '#4ade80' : '#f87171' }}>{formatElo(d.avgEloGain)}</strong></div>
+                                  <div>Cities placed: <strong>{d.count.toLocaleString()}</strong></div>
+                                </div>
+                              );
+                            }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="avgEloGain"
+                            stroke="#22c55e"
+                            strokeWidth={2}
+                            dot={{ r: 4, fill: '#22c55e', strokeWidth: 0 }}
+                            activeDot={{ r: 6, fill: '#22c55e', strokeWidth: 2, stroke: '#fff' }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <div className="text-slate-500 dark:text-slate-400 italic py-8 text-center">
+              No city placement data for this tile.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 export function MapPage() {
   const [stats, setStats] = useState<CityPlacementStat[]>([]);
+  const [byGenData, setByGenData] = useState<CityPlacementByGen[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hoveredHex, setHoveredHex] = useState<HexTile | null>(null);
+  const [selectedHex, setSelectedHex] = useState<HexTile | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    getCityPlacementStats('Elysium')
-      .then(setStats)
+    Promise.all([
+      getCityPlacementStats('Elysium'),
+      getCityPlacementByGen('Elysium'),
+    ])
+      .then(([overview, byGen]) => {
+        setStats(overview);
+        setByGenData(byGen);
+      })
       .catch(err => {
         console.error('Error fetching city stats:', err);
         setError('Failed to load city placement data.');
@@ -45,20 +192,35 @@ export function MapPage() {
     return map;
   }, [stats]);
 
-  const { minElo, maxElo, maxCount } = useMemo(() => {
-    if (stats.length === 0) return { minElo: 0, maxElo: 0, maxCount: 0 };
-    let min = Infinity, max = -Infinity, mc = 0;
+  const byGenByLocation = useMemo(() => {
+    const map = new Map<string, CityPlacementByGen[]>();
+    for (const s of byGenData) {
+      const key = s.cityLocation.trim();
+      const arr = map.get(key) ?? [];
+      arr.push(s);
+      map.set(key, arr);
+    }
+    return map;
+  }, [byGenData]);
+
+  const { maxCount } = useMemo(() => {
+    if (stats.length === 0) return { maxCount: 0 };
+    let mc = 0;
     for (const s of stats) {
-      if (s.avgEloChange < min) min = s.avgEloChange;
-      if (s.avgEloChange > max) max = s.avgEloChange;
       if (s.gameCount > mc) mc = s.gameCount;
     }
-    return { minElo: min, maxElo: max, maxCount: mc };
+    return { maxCount: mc };
   }, [stats]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     setTooltipPos({ x: e.clientX, y: e.clientY });
   };
+
+  const handleHexClick = useCallback((hex: HexTile) => {
+    if (statsByLocation.has(hex.dbKey)) {
+      setSelectedHex(hex);
+    }
+  }, [statsByLocation]);
 
   const hoveredStat = hoveredHex ? statsByLocation.get(hoveredHex.dbKey) : null;
 
@@ -68,7 +230,7 @@ export function MapPage() {
         Elysium — City Placement Map
       </h1>
       <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-        Heat map of city placements by popularity. Brighter = more placements. Hover for details.
+        Heat map of city placements by popularity. Brighter = more placements. Hover for details, click for charts.
       </p>
 
       {loading && (
@@ -123,12 +285,13 @@ export function MapPage() {
                 style={{ pointerEvents: 'all', cursor: stat ? 'pointer' : 'default' }}
                 onMouseEnter={() => setHoveredHex(hex)}
                 onMouseLeave={() => setHoveredHex(null)}
+                onClick={() => handleHexClick(hex)}
               />
             );
           })}
         </svg>
 
-        {hoveredHex && createPortal(
+        {hoveredHex && !selectedHex && createPortal(
           <div
             className="fixed z-[9999] pointer-events-none"
             style={{
@@ -174,6 +337,15 @@ export function MapPage() {
           }} />
           <span>Many ({maxCount})</span>
         </div>
+      )}
+
+      {selectedHex && (
+        <HexDetailDialog
+          hex={selectedHex}
+          overviewStat={statsByLocation.get(selectedHex.dbKey)}
+          genData={byGenByLocation.get(selectedHex.dbKey) ?? []}
+          onClose={() => setSelectedHex(null)}
+        />
       )}
     </div>
   );
