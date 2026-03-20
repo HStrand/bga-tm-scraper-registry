@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Data.SqlClient;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using Dapper;
 
 namespace BgaTmScraperRegistry.Services
@@ -20,6 +23,8 @@ namespace BgaTmScraperRegistry.Services
 
         private const string AllPreludePlayerRowsCacheKey = "AllPreludePlayerRows:v2";
         private const string OptionsCacheKey = "PreludeFilterOptions:v1";
+        private const string CacheContainerName = "cache";
+        private const string BlobName = "prelude-player-stats.json";
 
         private readonly string _connectionString;
         private readonly ILogger _logger;
@@ -120,7 +125,52 @@ namespace BgaTmScraperRegistry.Services
                 return cached;
             }
 
-            // Deduplicate Games and GamePlayers the same way as in CorporationStatsService
+            // Try cross-instance blob cache
+            var blobList = await TryReadFromBlobAsync();
+            if (blobList != null && blobList.Count > 0)
+            {
+                NormalizePreludeNames(blobList);
+                Cache.Set(
+                    AllPreludePlayerRowsCacheKey,
+                    blobList,
+                    new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+                _logger.LogInformation("Loaded {count} prelude player rows from blob cache", blobList.Count);
+                return blobList;
+            }
+
+            var list = await ComputeFromDbAsync();
+
+            NormalizePreludeNames(list);
+
+            Cache.Set(
+                AllPreludePlayerRowsCacheKey,
+                list,
+                new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+
+            await TryWriteToBlobAsync(list);
+
+            _logger.LogInformation("Retrieved and cached {count} prelude player rows", list.Count);
+            return list;
+        }
+
+        public async Task RefreshAllPreludeStatsCacheAsync()
+        {
+            var list = await ComputeFromDbAsync();
+
+            NormalizePreludeNames(list);
+
+            Cache.Set(
+                AllPreludePlayerRowsCacheKey,
+                list,
+                new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
+
+            await TryWriteToBlobAsync(list);
+
+            _logger.LogInformation("Refreshed prelude stats cache with {count} rows", list.Count);
+        }
+
+        private async Task<List<PreludePlayerRow>> ComputeFromDbAsync()
+        {
             var sql = @"
 SELECT
     shp.TableId,
@@ -155,17 +205,7 @@ ORDER BY shp.TableId DESC;";
             await conn.OpenAsync();
 
             var rows = await conn.QueryAsync<PreludePlayerRow>(sql, commandTimeout: 600);
-            var list = rows.ToList();
-
-            NormalizePreludeNames(list);
-
-            Cache.Set(
-                AllPreludePlayerRowsCacheKey,
-                list,
-                new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
-
-            _logger.LogInformation("Retrieved and cached {count} prelude player rows", list.Count);
-            return list;
+            return rows.ToList();
         }
 
         private static void NormalizePreludeNames(List<PreludePlayerRow> list)
@@ -335,6 +375,60 @@ ORDER BY shp.TableId DESC;";
 
             _logger.LogInformation("Computed and cached {count} prelude rankings for key {key}", grouped.Count, cacheKey);
             return grouped;
+        }
+
+        // ── Blob helpers ─────────────────────────────────────
+
+        private async Task<List<PreludePlayerRow>> TryReadFromBlobAsync()
+        {
+            try
+            {
+                var blobConn = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
+                if (string.IsNullOrWhiteSpace(blobConn)) return null;
+
+                var service = new BlobServiceClient(blobConn);
+                var container = service.GetBlobContainerClient(CacheContainerName);
+                var blob = container.GetBlobClient(BlobName);
+
+                var exists = await blob.ExistsAsync();
+                if (!exists.Value) return null;
+
+                var download = await blob.DownloadContentAsync();
+                var json = download.Value.Content.ToString();
+                return JsonSerializer.Deserialize<List<PreludePlayerRow>>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to read prelude stats from blob cache");
+                return null;
+            }
+        }
+
+        private async Task TryWriteToBlobAsync(List<PreludePlayerRow> list)
+        {
+            try
+            {
+                var blobConn = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
+                if (string.IsNullOrWhiteSpace(blobConn)) return;
+
+                var service = new BlobServiceClient(blobConn);
+                var container = service.GetBlobContainerClient(CacheContainerName);
+                await container.CreateIfNotExistsAsync();
+                var blob = container.GetBlobClient(BlobName);
+
+                var json = JsonSerializer.Serialize(list);
+                using var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+
+                await blob.UploadAsync(stream, overwrite: true);
+                await blob.SetHttpHeadersAsync(new BlobHttpHeaders { ContentType = "application/json" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to write prelude stats to blob cache");
+            }
         }
     }
 }

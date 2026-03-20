@@ -16,8 +16,6 @@ namespace BgaTmScraperRegistry.Services
     {
         private static readonly MemoryCache Cache = new MemoryCache(new MemoryCacheOptions());
         private const string AllCardStatsCacheKey = "AllCardStats:v2";
-        private const string CorporationNamesCacheKey = "CorporationNames:v1";
-        private const string PreludeNamesCacheKey = "PreludeNames:v1";
         private const string CacheContainerName = "cache";
         private const string CardStatsBlobName = "card-stats.json";
         private const string AllCardOptionStatsCacheKey = "AllCardOptionStats:v1";
@@ -342,56 +340,81 @@ GROUP BY
             }
         }
 
-        public async Task<HashSet<string>> GetPreludeNamesAsync()
+        private static readonly HashSet<string> PreludeNames = new(StringComparer.OrdinalIgnoreCase)
         {
-            if (Cache.TryGetValue(PreludeNamesCacheKey, out HashSet<string> cached))
-            {
-                _logger.LogInformation($"Returning {cached.Count} prelude names from cache");
-                return cached;
-            }
+            "Acquired Space Agency",
+            "Allied Bank",
+            "Allied Banks",
+            "Aquifer Turbines",
+            "Biofuels",
+            "Biolabs",
+            "Biosphere Support",
+            "Business Empire",
+            "Dome Farming",
+            "Donation",
+            "Early Settlement",
+            "Eccentric Sponsor",
+            "Ecology Experts",
+            "Excentric Sponsor",
+            "Experimental Forest",
+            "Galilean Mining",
+            "Great Aquifer",
+            "Huge Asteroid",
+            "Io Research Outpost",
+            "Loan",
+            "Martian Industries",
+            "Metal-Rich Asteroid",
+            "Metals Company",
+            "Mining Operations",
+            "Mohole",
+            "Mohole Excavation",
+            "Nitrogen Shipment",
+            "Orbital Construction Yard",
+            "Polar Industries",
+            "Power Generation",
+            "Research Network",
+            "Self-Sufficient Settlement",
+            "Smelting Plant",
+            "Society Support",
+            "Supplier",
+            "Supply Drop",
+            "UNMI Contractor",
+        };
 
-            var sql = "SELECT DISTINCT Prelude FROM StartingHandPreludes";
-
-            using var conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
-
-            var preludeNames = await conn.QueryAsync<string>(sql);
-            var preludeSet = new HashSet<string>(preludeNames, StringComparer.OrdinalIgnoreCase);
-
-            // Cache for 24 hours
-            Cache.Set(
-                PreludeNamesCacheKey,
-                preludeSet,
-                new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
-
-            _logger.LogInformation($"Retrieved and cached {preludeSet.Count} prelude names");
-            return preludeSet;
+        public Task<HashSet<string>> GetPreludeNamesAsync()
+        {
+            return Task.FromResult(PreludeNames);
         }
 
-        public async Task<HashSet<string>> GetCorporationNamesAsync()
+        private static readonly HashSet<string> CorporationNames = new(StringComparer.OrdinalIgnoreCase)
         {
-            if (Cache.TryGetValue(CorporationNamesCacheKey, out HashSet<string> cached))
-            {
-                _logger.LogInformation($"Returning {cached.Count} corporation names from cache");
-                return cached;
-            }
+            "Aridor",
+            "Arklight",
+            "Cheung Shing Mars",
+            "CrediCor",
+            "Ecoline",
+            "Helion",
+            "Interplanetary Cinematics",
+            "Inventrix",
+            "Mining Guild",
+            "PhoboLog",
+            "Point Luna",
+            "Polyphemos",
+            "Poseidon",
+            "Robinson Industries",
+            "Saturn Systems",
+            "Stormcraft",
+            "Teractor",
+            "Tharsis Republic",
+            "ThorGate",
+            "United Nations Mars Initiative",
+            "Valley Trust",
+            "Vitor",
+        };
 
-            var sql = "SELECT DISTINCT Corporation FROM StartingHandCorporations";
-
-            using var conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
-
-            var corporationNames = await conn.QueryAsync<string>(sql);
-            var corporationSet = new HashSet<string>(corporationNames, StringComparer.OrdinalIgnoreCase);
-
-            // Cache for 24 hours
-            Cache.Set(
-                CorporationNamesCacheKey,
-                corporationSet,
-                new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) });
-
-            _logger.LogInformation($"Retrieved and cached {corporationSet.Count} prelude names");
-            return corporationSet;
+        public Task<HashSet<string>> GetCorporationNamesAsync()
+        {
+            return Task.FromResult(CorporationNames);
         }
 
         public async Task<List<CardBasicStatsRow>> GetProjectCardStatsAsync()
