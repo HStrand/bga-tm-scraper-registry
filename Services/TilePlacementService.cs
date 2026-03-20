@@ -243,7 +243,10 @@ namespace BgaTmScraperRegistry.Services
 
                 var json = JsonSerializer.Serialize(data);
                 using var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
-                await blob.UploadAsync(stream, overwrite: true);
+                await blob.UploadAsync(stream, new Azure.Storage.Blobs.Models.BlobUploadOptions
+                {
+                    HttpHeaders = new Azure.Storage.Blobs.Models.BlobHttpHeaders { ContentType = "application/json" },
+                });
 
                 _logger.LogInformation("Wrote {blob} to blob cache", blobName);
             }
