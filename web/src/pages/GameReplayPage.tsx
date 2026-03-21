@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
 import { fetchGameLog, extractTilePlacement, assignPlayerColors } from '@/lib/gameLog';
@@ -15,8 +15,6 @@ export function GameReplayPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [tableauPlayerId, setTableauPlayerId] = useState<string | null>(null);
-  const animatingRef = useRef(false);
-  const animFrameRef = useRef<number>(0);
 
   // --- data fetching ---
   useEffect(() => {
@@ -78,31 +76,11 @@ export function GameReplayPage() {
     return map;
   }, [gameLog, currentStep]);
 
-  // --- animation ---
-  useEffect(() => {
-    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
-  }, []);
-
-  const animateTo = useCallback((target: number) => {
-    if (!gameLog || animatingRef.current) return;
-    const clamped = Math.max(0, Math.min(target, gameLog.moves.length - 1));
-    if (clamped === currentStep) return;
-
-    animatingRef.current = true;
-    const direction = clamped > currentStep ? 1 : -1;
-    let step = currentStep;
-
-    const tick = () => {
-      step += direction;
-      setCurrentStep(step);
-      if (step !== clamped) {
-        animFrameRef.current = requestAnimationFrame(tick);
-      } else {
-        animatingRef.current = false;
-      }
-    };
-    animFrameRef.current = requestAnimationFrame(tick);
-  }, [gameLog, currentStep]);
+  // --- jump ---
+  const jumpTo = useCallback((target: number) => {
+    if (!gameLog) return;
+    setCurrentStep(Math.max(0, Math.min(target, gameLog.moves.length - 1)));
+  }, [gameLog]);
 
   // --- keyboard ---
   useEffect(() => {
@@ -202,10 +180,10 @@ export function GameReplayPage() {
         currentStep={currentStep}
         totalMoves={gameLog.moves.length}
         gameState={gameState}
-        isAnimating={animatingRef.current}
+        isAnimating={false}
         onPrev={() => setCurrentStep(s => s - 1)}
         onNext={() => setCurrentStep(s => s + 1)}
-        onJump={animateTo}
+        onJump={jumpTo}
       />
 
       {tableauPlayerId && gameLog.players[tableauPlayerId] && (
