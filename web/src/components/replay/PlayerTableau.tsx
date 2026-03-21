@@ -7,11 +7,28 @@ interface PlayerTableauProps {
   playerName: string;
   corporation: string;
   color: string;
-  cards: string[];
+  played: string[];
+  hand: string[];
   onClose: () => void;
 }
 
-export function PlayerTableau({ playerName, corporation, color, cards, onClose }: PlayerTableauProps) {
+function CardGrid({ cards }: { cards: string[] }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      {cards.map((card, i) => {
+        const img = getCardImage(card) ?? getCardPlaceholderImage();
+        return (
+          <div key={`${card}-${i}`} className="space-y-1">
+            <img src={img} alt={card} className="w-full rounded-lg shadow" />
+            <p className="text-xs text-center text-slate-600 dark:text-slate-400 truncate">{card}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function PlayerTableau({ playerName, corporation, color, played, hand, onClose }: PlayerTableauProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -30,7 +47,9 @@ export function PlayerTableau({ playerName, corporation, color, cards, onClose }
             <span className="inline-block w-4 h-4 rounded-full" style={{ backgroundColor: color }} />
             <div>
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{playerName}</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{corporation} &middot; {cards.length} card{cards.length !== 1 ? 's' : ''} played</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {corporation} &middot; {played.length} played &middot; {hand.length} in hand
+              </p>
             </div>
           </div>
           <button
@@ -41,26 +60,26 @@ export function PlayerTableau({ playerName, corporation, color, cards, onClose }
           </button>
         </div>
 
-        <div className="px-6 py-4">
-          {cards.length === 0 ? (
-            <p className="text-slate-500 dark:text-slate-400 italic text-center py-8">No cards played yet.</p>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {cards.map((card, i) => {
-                const img = getCardImage(card) ?? getCardPlaceholderImage();
-                return (
-                  <div key={`${card}-${i}`} className="space-y-1">
-                    <img
-                      src={img}
-                      alt={card}
-                      className="w-full rounded-lg shadow"
-                    />
-                    <p className="text-xs text-center text-slate-600 dark:text-slate-400 truncate">{card}</p>
-                  </div>
-                );
-              })}
+        <div className="px-6 py-4 space-y-6">
+          {hand.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
+                Hand ({hand.length})
+              </h3>
+              <CardGrid cards={hand} />
             </div>
           )}
+
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
+              Played ({played.length})
+            </h3>
+            {played.length === 0 ? (
+              <p className="text-slate-500 dark:text-slate-400 italic text-center py-4">No cards played yet.</p>
+            ) : (
+              <CardGrid cards={played} />
+            )}
+          </div>
         </div>
       </div>
     </div>,

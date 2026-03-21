@@ -42,6 +42,23 @@ export function extractTilePlacement(move: GameLogMove): TilePlacement | null {
   return null;
 }
 
+// Named tiles that are real special locations (not just region labels on regular hexes).
+// Locations not in this set fall back to "Hex col,row" using their coordinates.
+const KNOWN_NAMED_TILES = new Set([
+  // Tharsis
+  'Tharsis Tholus', 'Ascraeus Mons', 'Pavonis Mons', 'Arsia Mons', 'Noctis City',
+  // Hellas
+  'South Pole',
+  // Elysium
+  'Hecatus Tholus', 'Elysium Mons', 'Olympus Mons',
+  // Vastitas Borealis
+  'Hecates Tholus', 'Alba Mons', 'Viking 2', 'Uranius Tholus', 'Viking 1',
+  // Amazonis Planitia
+  'Viking',
+  // Off-map
+  'Phobos Space Haven', 'Ganymede Colony',
+]);
+
 export function parseTileLocationToDbKey(tileLocation: string): string {
   // "Tharsis Hex 4,1 (4,1)" → "Hex 4,1"
   // "Hex 5,8 (5,8)" → "Hex 5,8"
@@ -51,10 +68,15 @@ export function parseTileLocationToDbKey(tileLocation: string): string {
   }
 
   // "Noctis City (3,5)" → "Noctis City"
-  // "Phobos Space Haven (0,2)" → "Phobos Space Haven"
-  const namedMatch = tileLocation.match(/^(.+?)\s*\(\d+,\d+\)$/);
+  // "Argyre Planitia (2,7)" → "Hex 2,7" (not a special tile, just a region label)
+  const namedMatch = tileLocation.match(/^(.+?)\s*\((\d+,\d+)\)$/);
   if (namedMatch) {
-    return namedMatch[1].trim();
+    const name = namedMatch[1].trim();
+    if (KNOWN_NAMED_TILES.has(name)) {
+      return name;
+    }
+    // Region label on a regular hex — use coordinates
+    return `Hex ${namedMatch[2]}`;
   }
 
   return tileLocation;

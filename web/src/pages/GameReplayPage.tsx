@@ -61,16 +61,47 @@ export function GameReplayPage() {
     return Array.from(placedTiles.values()).filter(t => !hexKeys.has(t.dbKey));
   }, [placedTiles, mapDefinition]);
 
+  const generationBoundaries = useMemo(() => {
+    if (!gameLog) return new Map<number, { start: number; end: number }>();
+    const map = new Map<number, { start: number; end: number }>();
+    for (let i = 0; i < gameLog.moves.length; i++) {
+      const gen = gameLog.moves[i]?.game_state?.generation;
+      if (gen == null) continue;
+      const entry = map.get(gen);
+      if (!entry) {
+        map.set(gen, { start: i, end: i });
+      } else {
+        entry.end = i;
+      }
+    }
+    return map;
+  }, [gameLog]);
+
   const playerTableaux = useMemo(() => {
-    if (!gameLog) return new Map<string, string[]>();
-    const map = new Map<string, string[]>();
+    if (!gameLog) return new Map<string, { played: string[]; hand: string[] }>();
+    const map = new Map<string, { played: string[]; hand: string[] }>();
     for (const id of Object.keys(gameLog.players)) {
-      map.set(id, []);
+      map.set(id, { played: [], hand: [] });
     }
     for (let i = 0; i <= currentStep; i++) {
       const move = gameLog.moves[i];
+      // Cards drawn or kept go into hand
+      if (move?.cards_kept) {
+        for (const [pid, cards] of Object.entries(move.cards_kept)) {
+          const entry = map.get(pid);
+          if (entry) {
+            for (const card of cards) entry.hand.push(card);
+          }
+        }
+      }
+      // Card played moves from hand to played
       if (move?.card_played) {
-        map.get(move.player_id)?.push(move.card_played);
+        const entry = map.get(move.player_id);
+        if (entry) {
+          const handIdx = entry.hand.indexOf(move.card_played);
+          if (handIdx !== -1) entry.hand.splice(handIdx, 1);
+          entry.played.push(move.card_played);
+        }
       }
     }
     return map;
@@ -124,7 +155,8 @@ export function GameReplayPage() {
         <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
           {gameLog.game_date && <span>{gameLog.game_date}</span>}
           {Object.entries(gameLog.players).map(([id, p]) => {
-            const cardCount = playerTableaux.get(id)?.length ?? 0;
+            const t = playerTableaux.get(id);
+            const cardCount = (t?.played.length ?? 0) + (t?.hand.length ?? 0);
             return (
               <button
                 key={id}
@@ -184,6 +216,7 @@ export function GameReplayPage() {
         onPrev={() => setCurrentStep(s => s - 1)}
         onNext={() => setCurrentStep(s => s + 1)}
         onJump={jumpTo}
+        generationBoundaries={generationBoundaries}
       />
 
       {tableauPlayerId && gameLog.players[tableauPlayerId] && (
@@ -191,7 +224,8 @@ export function GameReplayPage() {
           playerName={gameLog.players[tableauPlayerId].player_name}
           corporation={gameLog.players[tableauPlayerId].corporation}
           color={playerColors[tableauPlayerId]}
-          cards={playerTableaux.get(tableauPlayerId) ?? []}
+          played={playerTableaux.get(tableauPlayerId)?.played ?? []}
+          hand={playerTableaux.get(tableauPlayerId)?.hand ?? []}
           onClose={() => setTableauPlayerId(null)}
         />
       )}

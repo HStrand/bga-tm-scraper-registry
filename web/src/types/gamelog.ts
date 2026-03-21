@@ -27,8 +27,10 @@ export interface GameLogMove {
   description: string;
   card_played?: string;
   card_cost?: number | null;
+  card_drafted?: string;
   tile_placed?: string;
   tile_location?: string;
+  cards_kept?: Record<string, string[]>;
   game_state?: GameState;
 }
 
