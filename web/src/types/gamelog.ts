@@ -31,6 +31,8 @@ export interface GameLogMove {
   tile_placed?: string;
   tile_location?: string;
   cards_kept?: Record<string, string[]>;
+  cards_sold?: string[] | null;
+  hand?: string[] | null;
   game_state?: GameState;
 }
 
@@ -39,6 +41,8 @@ export interface GameState {
   temperature: number | null;
   oxygen: number | null;
   oceans: number | null;
+  draw_pile?: number | null;
+  discard_pile?: number | null;
   player_vp?: Record<string, PlayerVictoryPoints>;
 }
 

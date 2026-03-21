@@ -29,6 +29,8 @@ export function MovePanel({ move, gameState, playerColors }: MovePanelProps) {
           <Badge label="Temp" value={gameState.temperature != null ? `${gameState.temperature}\u00B0C` : null} />
           <Badge label="O2" value={gameState.oxygen != null ? `${gameState.oxygen}%` : null} />
           <Badge label="Oceans" value={gameState.oceans != null ? `${gameState.oceans}/9` : null} />
+          <Badge label="Draw" value={gameState.draw_pile} />
+          <Badge label="Discard" value={gameState.discard_pile} />
         </div>
       )}
 

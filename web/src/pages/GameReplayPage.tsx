@@ -78,29 +78,32 @@ export function GameReplayPage() {
   }, [gameLog]);
 
   const playerTableaux = useMemo(() => {
-    if (!gameLog) return new Map<string, { played: string[]; hand: string[] }>();
-    const map = new Map<string, { played: string[]; hand: string[] }>();
+    if (!gameLog) return new Map<string, { played: string[]; hand: string[]; sold: string[] }>();
+    const map = new Map<string, { played: string[]; hand: string[]; sold: string[] }>();
     for (const id of Object.keys(gameLog.players)) {
-      map.set(id, { played: [], hand: [] });
+      map.set(id, { played: [], hand: [], sold: [] });
     }
     for (let i = 0; i <= currentStep; i++) {
       const move = gameLog.moves[i];
-      // Cards drawn or kept go into hand
-      if (move?.cards_kept) {
-        for (const [pid, cards] of Object.entries(move.cards_kept)) {
-          const entry = map.get(pid);
-          if (entry) {
-            for (const card of cards) entry.hand.push(card);
-          }
-        }
+      // Use the hand snapshot when available
+      if (move?.hand) {
+        const entry = map.get(move.player_id);
+        if (entry) entry.hand = [...move.hand];
       }
-      // Card played moves from hand to played
+      // Track played cards
       if (move?.card_played) {
         const entry = map.get(move.player_id);
         if (entry) {
           const handIdx = entry.hand.indexOf(move.card_played);
           if (handIdx !== -1) entry.hand.splice(handIdx, 1);
           entry.played.push(move.card_played);
+        }
+      }
+      // Track sold cards
+      if (move?.cards_sold) {
+        const entry = map.get(move.player_id);
+        if (entry) {
+          for (const card of move.cards_sold) entry.sold.push(card);
         }
       }
     }
@@ -226,6 +229,7 @@ export function GameReplayPage() {
           color={playerColors[tableauPlayerId]}
           played={playerTableaux.get(tableauPlayerId)?.played ?? []}
           hand={playerTableaux.get(tableauPlayerId)?.hand ?? []}
+          sold={playerTableaux.get(tableauPlayerId)?.sold ?? []}
           onClose={() => setTableauPlayerId(null)}
         />
       )}

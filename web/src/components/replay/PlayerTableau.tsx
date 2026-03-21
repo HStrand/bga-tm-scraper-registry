@@ -9,6 +9,7 @@ interface PlayerTableauProps {
   color: string;
   played: string[];
   hand: string[];
+  sold: string[];
   onClose: () => void;
 }
 
@@ -28,7 +29,7 @@ function CardGrid({ cards }: { cards: string[] }) {
   );
 }
 
-export function PlayerTableau({ playerName, corporation, color, played, hand, onClose }: PlayerTableauProps) {
+export function PlayerTableau({ playerName, corporation, color, played, hand, sold, onClose }: PlayerTableauProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -49,6 +50,7 @@ export function PlayerTableau({ playerName, corporation, color, played, hand, on
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{playerName}</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 {corporation} &middot; {played.length} played &middot; {hand.length} in hand
+                {sold.length > 0 && <> &middot; {sold.length} sold</>}
               </p>
             </div>
           </div>
@@ -80,6 +82,15 @@ export function PlayerTableau({ playerName, corporation, color, played, hand, on
               <CardGrid cards={played} />
             )}
           </div>
+
+          {sold.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
+                Sold ({sold.length})
+              </h3>
+              <CardGrid cards={sold} />
+            </div>
+          )}
         </div>
       </div>
     </div>,
