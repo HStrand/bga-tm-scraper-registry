@@ -1,3 +1,4 @@
+import { Layers } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { GameLogMove, GameState } from '@/types/gamelog';
 
@@ -14,26 +15,94 @@ interface MovePanelProps {
   move: GameLogMove | undefined;
   gameState: GameState | undefined;
   playerColors: Record<string, string>;
+  playerNames: Record<string, string>;
+  playerCorporations: Record<string, string>;
+  onOpenTableau?: (playerId: string) => void;
 }
 
-export function MovePanel({ move, gameState, playerColors }: MovePanelProps) {
+export function MovePanel({ move, gameState, playerColors, playerNames, playerCorporations, onOpenTableau }: MovePanelProps) {
   const cardImage = move?.card_played
     ? getCardImage(move.card_played) ?? getCardPlaceholderImage()
     : null;
 
   return (
-    <div className="lg:w-80 space-y-4">
+    <div className="space-y-3">
+      {/* Global parameters */}
       {gameState && (
-        <div className="flex flex-wrap gap-2">
-          <Badge label="Gen" value={gameState.generation} />
-          <Badge label="Temp" value={gameState.temperature != null ? `${gameState.temperature}\u00B0C` : null} />
-          <Badge label="O2" value={gameState.oxygen != null ? `${gameState.oxygen}%` : null} />
-          <Badge label="Oceans" value={gameState.oceans != null ? `${gameState.oceans}/9` : null} />
-          <Badge label="Draw" value={gameState.draw_pile} />
-          <Badge label="Discard" value={gameState.discard_pile} />
+        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+          <div className="flex flex-wrap gap-2">
+            <Badge label="Gen" value={gameState.generation} />
+            <Badge label="Temp" value={gameState.temperature != null ? `${gameState.temperature}\u00B0C` : null} />
+            <Badge label="O2" value={gameState.oxygen != null ? `${gameState.oxygen}%` : null} />
+            <Badge label="Oceans" value={gameState.oceans != null ? `${gameState.oceans}/9` : null} />
+            <Badge label="Draw" value={gameState.draw_pile} />
+            <Badge label="Discard" value={gameState.discard_pile} />
+          </div>
         </div>
       )}
 
+      {/* Player scoreboards */}
+      {gameState?.player_vp && Object.keys(gameState.player_vp).length > 0 &&
+        Object.entries(gameState.player_vp).map(([pid, vp]) => {
+          const d = vp.total_details;
+          return (
+            <div
+              key={pid}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden"
+            >
+              <div
+                className="flex items-center justify-between px-3 py-2"
+                style={{ backgroundColor: `${playerColors[pid]}18` }}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: playerColors[pid] }} />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-slate-900 dark:text-slate-100 truncate">
+                        {playerNames[pid] ?? pid}
+                      </span>
+                      {onOpenTableau && (
+                        <button
+                          onClick={() => onOpenTableau(pid)}
+                          className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex-shrink-0"
+                          title="View cards"
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    {playerCorporations[pid] && (
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 -mt-0.5">{playerCorporations[pid]}</div>
+                    )}
+                  </div>
+                </div>
+                <span className="text-lg font-bold text-slate-800 dark:text-slate-200">
+                  {vp.total ?? '?'} <span className="text-xs font-medium text-slate-500 dark:text-slate-400">VP</span>
+                </span>
+              </div>
+              {d && (
+                <div className="grid grid-cols-3 gap-px bg-slate-200 dark:bg-slate-700 border-t border-slate-200 dark:border-slate-700">
+                  {([
+                    ['TR', d.tr],
+                    ['Awards', d.awards],
+                    ['Miles', d.milestones],
+                    ['Cities', d.cities],
+                    ['Green', d.greeneries],
+                    ['Cards', d.cards],
+                  ] as const).map(([label, val]) => (
+                    <div key={label} className="bg-white dark:bg-slate-800 px-2 py-1.5 text-center">
+                      <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{val ?? 0}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })
+      }
+
+      {/* Current move */}
       {move && (
         <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2 mb-2">
@@ -41,7 +110,7 @@ export function MovePanel({ move, gameState, playerColors }: MovePanelProps) {
               className="inline-block w-3 h-3 rounded-full"
               style={{ backgroundColor: playerColors[move.player_id] }}
             />
-            <span className="font-semibold text-slate-900 dark:text-slate-100">
+            <span className="font-bold text-slate-900 dark:text-slate-100">
               {move.player_name}
             </span>
             <span className="text-xs text-slate-400">{move.action_type}</span>

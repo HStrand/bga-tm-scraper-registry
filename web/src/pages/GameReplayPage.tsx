@@ -38,6 +38,20 @@ export function GameReplayPage() {
     [gameLog],
   );
 
+  const playerNames = useMemo(
+    () => gameLog
+      ? Object.fromEntries(Object.entries(gameLog.players).map(([id, p]) => [id, p.player_name]))
+      : {},
+    [gameLog],
+  );
+
+  const playerCorporations = useMemo(
+    () => gameLog
+      ? Object.fromEntries(Object.entries(gameLog.players).map(([id, p]) => [id, p.corporation]))
+      : {},
+    [gameLog],
+  );
+
   const placedTiles = useMemo(() => {
     if (!gameLog) return new Map<string, PlacedTile>();
     const map = new Map<string, PlacedTile>();
@@ -157,22 +171,7 @@ export function GameReplayPage() {
         </h1>
         <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
           {gameLog.game_date && <span>{gameLog.game_date}</span>}
-          {Object.entries(gameLog.players).map(([id, p]) => {
-            const t = playerTableaux.get(id);
-            const cardCount = (t?.played.length ?? 0) + (t?.hand.length ?? 0);
-            return (
-              <button
-                key={id}
-                onClick={() => setTableauPlayerId(id)}
-                className="flex items-center gap-1.5 hover:underline"
-              >
-                <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: playerColors[id] }} />
-                {p.player_name} ({p.corporation})
-                <span className="text-xs bg-slate-200 dark:bg-slate-700 rounded-full px-1.5 py-0.5">{cardCount}</span>
-              </button>
-            );
-          })}
-          {gameLog.winner && (
+          {gameLog.winner && currentStep === gameLog.moves.length - 1 && (
             <span className="font-medium text-amber-600 dark:text-amber-400">Winner: {gameLog.winner}</span>
           )}
         </div>
@@ -206,21 +205,23 @@ export function GameReplayPage() {
               ))}
             </div>
           )}
+
+          <ReplayControls
+            currentStep={currentStep}
+            totalMoves={gameLog.moves.length}
+            gameState={gameState}
+            isAnimating={false}
+            onPrev={() => setCurrentStep(s => s - 1)}
+            onNext={() => setCurrentStep(s => s + 1)}
+            onJump={jumpTo}
+            generationBoundaries={generationBoundaries}
+          />
         </div>
 
-        <MovePanel move={currentMove} gameState={gameState} playerColors={playerColors} />
+        <div className="lg:w-80 lg:self-start lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto flex-shrink-0">
+          <MovePanel move={currentMove} gameState={gameState} playerColors={playerColors} playerNames={playerNames} playerCorporations={playerCorporations} onOpenTableau={setTableauPlayerId} />
+        </div>
       </div>
-
-      <ReplayControls
-        currentStep={currentStep}
-        totalMoves={gameLog.moves.length}
-        gameState={gameState}
-        isAnimating={false}
-        onPrev={() => setCurrentStep(s => s - 1)}
-        onNext={() => setCurrentStep(s => s + 1)}
-        onJump={jumpTo}
-        generationBoundaries={generationBoundaries}
-      />
 
       {tableauPlayerId && gameLog.players[tableauPlayerId] && (
         <PlayerTableau
