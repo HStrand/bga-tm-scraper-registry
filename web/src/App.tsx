@@ -16,6 +16,7 @@ import { StartingHandStatsPage } from "@/pages/StartingHandStatsPage";
 import { CombinationsPage } from "@/pages/CombinationsPage";
 import { CombinationDetailPage } from "@/pages/CombinationDetailPage";
 import { MapPage } from "@/pages/MapPage";
+import { GameReplayPage } from "@/pages/GameReplayPage";
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/awards" element={<AwardsOverviewPage />} />
           <Route path="/leaderboards" element={<LeaderboardsPage />} />
           <Route path="/maps/elysium" element={<MapPage />} />
+          <Route path="/replay/:tableId/:playerId" element={<GameReplayPage />} />
         </Routes>
       </Layout>
     </Router>
