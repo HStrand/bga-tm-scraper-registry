@@ -91,11 +91,23 @@ export function GameReplayPage() {
     return map;
   }, [gameLog]);
 
+  // Build a set of prelude card names per player for separation
+  const playerPreludeNames = useMemo(() => {
+    if (!gameLog) return new Map<string, Set<string>>();
+    const map = new Map<string, Set<string>>();
+    for (const [id, p] of Object.entries(gameLog.players)) {
+      const preludes = p.starting_hand?.preludes;
+      map.set(id, preludes ? new Set(preludes) : new Set());
+    }
+    return map;
+  }, [gameLog]);
+
   const playerTableaux = useMemo(() => {
-    if (!gameLog) return new Map<string, { played: string[]; hand: string[]; sold: string[]; cardResources: Record<string, number> }>();
-    const map = new Map<string, { played: string[]; hand: string[]; sold: string[]; cardResources: Record<string, number> }>();
-    for (const id of Object.keys(gameLog.players)) {
-      map.set(id, { played: [], hand: [], sold: [], cardResources: {} });
+    if (!gameLog) return new Map<string, { headquarters: string[]; played: string[]; hand: string[]; sold: string[]; cardResources: Record<string, number> }>();
+    const map = new Map<string, { headquarters: string[]; played: string[]; hand: string[]; sold: string[]; cardResources: Record<string, number> }>();
+    for (const [id, p] of Object.entries(gameLog.players)) {
+      // Corporation is always first in headquarters
+      map.set(id, { headquarters: [p.corporation], played: [], hand: [], sold: [], cardResources: {} });
     }
     for (let i = 0; i <= currentStep; i++) {
       const move = gameLog.moves[i];
@@ -104,13 +116,18 @@ export function GameReplayPage() {
         const entry = map.get(move.player_id);
         if (entry) entry.hand = [...move.hand];
       }
-      // Track played cards
+      // Track played cards — separate preludes into headquarters
       if (move?.card_played) {
         const entry = map.get(move.player_id);
         if (entry) {
           const handIdx = entry.hand.indexOf(move.card_played);
           if (handIdx !== -1) entry.hand.splice(handIdx, 1);
-          entry.played.push(move.card_played);
+          const preludeNames = playerPreludeNames.get(move.player_id);
+          if (preludeNames?.has(move.card_played)) {
+            entry.headquarters.push(move.card_played);
+          } else {
+            entry.played.push(move.card_played);
+          }
         }
       }
       // Track sold cards
@@ -139,7 +156,7 @@ export function GameReplayPage() {
       }
     }
     return map;
-  }, [gameLog, currentStep]);
+  }, [gameLog, currentStep, playerPreludeNames]);
 
   // --- jump ---
   const jumpTo = useCallback((target: number) => {
@@ -245,6 +262,7 @@ export function GameReplayPage() {
           playerName={gameLog.players[tableauPlayerId].player_name}
           corporation={gameLog.players[tableauPlayerId].corporation}
           color={playerColors[tableauPlayerId]}
+          headquarters={playerTableaux.get(tableauPlayerId)?.headquarters ?? []}
           played={playerTableaux.get(tableauPlayerId)?.played ?? []}
           hand={playerTableaux.get(tableauPlayerId)?.hand ?? []}
           sold={playerTableaux.get(tableauPlayerId)?.sold ?? []}

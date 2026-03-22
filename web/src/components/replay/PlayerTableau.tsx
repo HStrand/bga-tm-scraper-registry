@@ -7,6 +7,7 @@ interface PlayerTableauProps {
   playerName: string;
   corporation: string;
   color: string;
+  headquarters: string[];
   played: string[];
   hand: string[];
   sold: string[];
@@ -239,7 +240,7 @@ function CardSection({ cards, title, color, cardResources, defaultViewMode = 'gr
 
 // --- Main component ---
 
-export function PlayerTableau({ playerName, corporation, color, played, hand, sold, cardResources, onClose }: PlayerTableauProps) {
+export function PlayerTableau({ playerName, corporation, color, headquarters, played, hand, sold, cardResources, onClose }: PlayerTableauProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -275,11 +276,12 @@ export function PlayerTableau({ playerName, corporation, color, played, hand, so
 
         {/* Body */}
         <div className="overflow-y-auto px-5 py-4 space-y-5">
-          <CardSection cards={hand} title="Hand" color={color} />
-          <CardSection cards={played} title="Played" color={color} cardResources={cardResources} />
-          <CardSection cards={sold} title="Sold" color={color} />
+          <CardSection cards={headquarters} title="Headquarters" color={color} defaultViewMode="grid" />
+          <CardSection cards={hand} title="Hand" color={color} defaultViewMode="grid" />
+          <CardSection cards={played} title="Played" color={color} cardResources={cardResources} defaultViewMode="stack" />
+          <CardSection cards={sold} title="Sold" color={color} defaultViewMode="hidden" />
 
-          {played.length === 0 && hand.length === 0 && sold.length === 0 && (
+          {headquarters.length === 0 && played.length === 0 && hand.length === 0 && sold.length === 0 && (
             <p className="text-slate-500 dark:text-slate-400 italic text-center py-8">No cards yet.</p>
           )}
         </div>

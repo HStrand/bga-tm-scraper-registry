@@ -16,6 +16,11 @@ export interface GameLogPlayer {
   corporation: string;
   final_vp: number | null;
   cards_played: string[];
+  starting_hand?: {
+    corporations?: string[] | null;
+    preludes?: string[] | null;
+    project_cards?: string[] | null;
+  };
 }
 
 export interface GameLogMove {
