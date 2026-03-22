@@ -92,10 +92,10 @@ export function GameReplayPage() {
   }, [gameLog]);
 
   const playerTableaux = useMemo(() => {
-    if (!gameLog) return new Map<string, { played: string[]; hand: string[]; sold: string[] }>();
-    const map = new Map<string, { played: string[]; hand: string[]; sold: string[] }>();
+    if (!gameLog) return new Map<string, { played: string[]; hand: string[]; sold: string[]; cardResources: Record<string, number> }>();
+    const map = new Map<string, { played: string[]; hand: string[]; sold: string[]; cardResources: Record<string, number> }>();
     for (const id of Object.keys(gameLog.players)) {
-      map.set(id, { played: [], hand: [], sold: [] });
+      map.set(id, { played: [], hand: [], sold: [], cardResources: {} });
     }
     for (let i = 0; i <= currentStep; i++) {
       const move = gameLog.moves[i];
@@ -118,6 +118,23 @@ export function GameReplayPage() {
         const entry = map.get(move.player_id);
         if (entry) {
           for (const card of move.cards_sold) entry.sold.push(card);
+        }
+      }
+      // Extract card resources from game_state.player_vp.details.card_resources
+      const playerVp = move?.game_state?.player_vp;
+      if (playerVp) {
+        for (const [pid, vp] of Object.entries(playerVp)) {
+          const cr = vp.details?.card_resources;
+          if (cr) {
+            const entry = map.get(pid);
+            if (entry) {
+              const resources: Record<string, number> = {};
+              for (const [cardName, res] of Object.entries(cr)) {
+                resources[cardName] = res.count;
+              }
+              entry.cardResources = resources;
+            }
+          }
         }
       }
     }
@@ -231,6 +248,7 @@ export function GameReplayPage() {
           played={playerTableaux.get(tableauPlayerId)?.played ?? []}
           hand={playerTableaux.get(tableauPlayerId)?.hand ?? []}
           sold={playerTableaux.get(tableauPlayerId)?.sold ?? []}
+          cardResources={playerTableaux.get(tableauPlayerId)?.cardResources ?? {}}
           onClose={() => setTableauPlayerId(null)}
         />
       )}

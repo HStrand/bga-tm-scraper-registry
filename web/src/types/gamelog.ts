@@ -46,6 +46,11 @@ export interface GameState {
   player_vp?: Record<string, PlayerVictoryPoints>;
 }
 
+export interface CardResource {
+  type: string;
+  count: number;
+}
+
 export interface PlayerVictoryPoints {
   total: number | null;
   total_details?: {
@@ -55,5 +60,9 @@ export interface PlayerVictoryPoints {
     cities?: number | null;
     greeneries?: number | null;
     cards?: number | null;
+  };
+  details?: {
+    card_resources?: Record<string, CardResource>;
+    [key: string]: unknown;
   };
 }

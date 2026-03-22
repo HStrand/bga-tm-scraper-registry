@@ -10,12 +10,13 @@ interface PlayerTableauProps {
   played: string[];
   hand: string[];
   sold: string[];
+  cardResources: Record<string, number>;
   onClose: () => void;
 }
 
 type ViewMode = 'stack' | 'grid';
 
-function CardStack({ cards, label }: { cards: string[]; label: string }) {
+function CardStack({ cards, label, cardResources }: { cards: string[]; label: string; cardResources?: Record<string, number> }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   if (cards.length === 0) return null;
@@ -46,11 +47,18 @@ function CardStack({ cards, label }: { cards: string[]; label: string }) {
               onMouseEnter={() => setHoveredIdx(i)}
               onMouseLeave={() => setHoveredIdx(null)}
             >
-              <img
-                src={img}
-                alt={card}
-                className={`w-36 rounded shadow-sm transition-transform duration-150 ${isHovered ? 'scale-125 shadow-lg' : ''}`}
-              />
+              <div className="relative inline-block">
+                <img
+                  src={img}
+                  alt={card}
+                  className={`w-36 rounded shadow-sm transition-transform duration-150 ${isHovered ? 'scale-125 shadow-lg' : ''}`}
+                />
+                {cardResources?.[card] != null && cardResources[card] > 0 && (
+                  <span className="absolute top-1 right-1 bg-amber-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow">
+                    {cardResources[card]}
+                  </span>
+                )}
+              </div>
             </div>
           );
         })}
@@ -59,19 +67,29 @@ function CardStack({ cards, label }: { cards: string[]; label: string }) {
   );
 }
 
-function CardGrid({ cards }: { cards: string[] }) {
+function CardGrid({ cards, cardResources }: { cards: string[]; cardResources?: Record<string, number> }) {
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
       {cards.map((card, i) => {
         const img = getCardImage(card) ?? getCardPlaceholderImage();
+        const res = cardResources?.[card];
         return (
           <div key={`${card}-${i}`} className="group relative">
-            <img
-              src={img}
-              alt={card}
-              className="w-full rounded shadow-sm group-hover:scale-110 group-hover:shadow-lg group-hover:z-10 relative transition-transform duration-150"
-            />
-            <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 truncate mt-0.5">{card}</p>
+            <div className="relative">
+              <img
+                src={img}
+                alt={card}
+                className="w-full rounded shadow-sm group-hover:scale-110 group-hover:shadow-lg group-hover:z-10 relative transition-transform duration-150"
+              />
+              {res != null && res > 0 && (
+                <span className="absolute top-1 right-1 bg-amber-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow">
+                  {res}
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 truncate mt-0.5">
+              {card}{res != null && res > 0 ? ` (${res})` : ''}
+            </p>
           </div>
         );
       })}
@@ -79,7 +97,7 @@ function CardGrid({ cards }: { cards: string[] }) {
   );
 }
 
-function CardSection({ cards, title, color, viewMode }: { cards: string[]; title: string; color: string; viewMode: ViewMode }) {
+function CardSection({ cards, title, color, viewMode, cardResources }: { cards: string[]; title: string; color: string; viewMode: ViewMode; cardResources?: Record<string, number> }) {
   if (cards.length === 0) return null;
 
   return (
@@ -92,16 +110,16 @@ function CardSection({ cards, title, color, viewMode }: { cards: string[]; title
         <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
       </div>
       {viewMode === 'stack' ? (
-        <CardStack cards={cards} label={title} />
+        <CardStack cards={cards} label={title} cardResources={cardResources} />
       ) : (
-        <CardGrid cards={cards} />
+        <CardGrid cards={cards} cardResources={cardResources} />
       )}
     </div>
   );
 }
 
-export function PlayerTableau({ playerName, corporation, color, played, hand, sold, onClose }: PlayerTableauProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('stack');
+export function PlayerTableau({ playerName, corporation, color, played, hand, sold, cardResources, onClose }: PlayerTableauProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -161,7 +179,7 @@ export function PlayerTableau({ playerName, corporation, color, played, hand, so
         {/* Body */}
         <div className="overflow-y-auto px-5 py-4 space-y-5">
           <CardSection cards={hand} title="Hand" color={color} viewMode={viewMode} />
-          <CardSection cards={played} title="Played" color={color} viewMode={viewMode} />
+          <CardSection cards={played} title="Played" color={color} viewMode={viewMode} cardResources={cardResources} />
           <CardSection cards={sold} title="Sold" color={color} viewMode={viewMode} />
 
           {played.length === 0 && hand.length === 0 && sold.length === 0 && (
