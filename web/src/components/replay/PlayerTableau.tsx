@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Grid3X3, Layers } from 'lucide-react';
+import { X, Grid3X3, Layers, List, EyeOff } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 
 interface PlayerTableauProps {
@@ -14,62 +14,90 @@ interface PlayerTableauProps {
   onClose: () => void;
 }
 
-type ViewMode = 'stack' | 'grid';
+type ViewMode = 'grid' | 'stack' | 'synthetic' | 'hidden';
 
-function CardStack({ cards, label, cardResources }: { cards: string[]; label: string; cardResources?: Record<string, number> }) {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+// --- View components ---
+
+function CardStack({ cards, label, cardResources, cardSize }: { cards: string[]; label: string; cardResources?: Record<string, number>; cardSize: number }) {
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   if (cards.length === 0) return null;
 
-  // Show ~40px per card in the stack, full card for the last one
-  const CARD_OFFSET = 44;
+  const cardWidth = cardSize;
+  const cardOffset = Math.round(cardWidth * 0.22);
+  const cardHeight = Math.round(cardWidth * 1.4);
+  // Split cards into columns, ~10-12 cards per column depending on size
+  const cardsPerCol = Math.max(4, Math.round(400 / cardOffset));
+  const columns: string[][] = [];
+  for (let i = 0; i < cards.length; i += cardsPerCol) {
+    columns.push(cards.slice(i, i + cardsPerCol));
+  }
 
   return (
-    <div>
-      <div
-        className="relative"
-        style={{ height: `${CARD_OFFSET * (cards.length - 1) + 200}px` }}
-      >
-        {cards.map((card, i) => {
-          const img = getCardImage(card) ?? getCardPlaceholderImage();
-          const isHovered = hoveredIdx === i;
-          const isAfterHovered = hoveredIdx !== null && i > hoveredIdx;
-          const top = CARD_OFFSET * i + (isAfterHovered ? 80 : 0);
+    <div className="flex gap-4 flex-wrap">
+      {columns.map((col, colIdx) => (
+        <div
+          key={colIdx}
+          className="relative flex-shrink-0"
+          style={{
+            width: `${cardWidth}px`,
+            height: `${cardOffset * (col.length - 1) + cardHeight}px`,
+          }}
+        >
+          {col.map((card, i) => {
+            const globalIdx = colIdx * cardsPerCol + i;
+            const hoverKey = `${label}-${globalIdx}`;
+            const img = getCardImage(card) ?? getCardPlaceholderImage();
+            const isHovered = hoveredKey === hoverKey;
+            const hoveredInCol = hoveredKey?.startsWith(`${label}-`)
+              ? parseInt(hoveredKey.split('-').pop()!, 10)
+              : null;
+            const hoveredColIdx = hoveredInCol !== null ? Math.floor(hoveredInCol / cardsPerCol) : -1;
+            const hoveredLocalIdx = hoveredInCol !== null ? hoveredInCol % cardsPerCol : -1;
+            const isAfterHovered = hoveredColIdx === colIdx && i > hoveredLocalIdx;
+            const top = cardOffset * i + (isAfterHovered ? cardHeight * 0.45 : 0);
 
-          return (
-            <div
-              key={`${label}-${card}-${i}`}
-              className="absolute left-0 right-0 transition-all duration-150 ease-out"
-              style={{
-                top: `${top}px`,
-                zIndex: isHovered ? 100 : i,
-              }}
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx(null)}
-            >
-              <div className="relative inline-block">
-                <img
-                  src={img}
-                  alt={card}
-                  className={`w-36 rounded shadow-sm transition-transform duration-150 ${isHovered ? 'scale-125 shadow-lg' : ''}`}
-                />
-                {cardResources?.[card] != null && cardResources[card] > 0 && (
-                  <span className="absolute top-1 right-1 bg-amber-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow">
-                    {cardResources[card]}
-                  </span>
-                )}
+            return (
+              <div
+                key={`${label}-${card}-${globalIdx}`}
+                className="absolute left-0 transition-all duration-150 ease-out"
+                style={{
+                  top: `${top}px`,
+                  zIndex: isHovered ? 100 : i,
+                  width: `${cardWidth}px`,
+                }}
+                onMouseEnter={() => setHoveredKey(hoverKey)}
+                onMouseLeave={() => setHoveredKey(null)}
+              >
+                <div className="relative inline-block">
+                  <img
+                    src={img}
+                    alt={card}
+                    className={`rounded shadow-sm transition-transform duration-150 ${isHovered ? 'scale-[1.15] shadow-lg' : ''}`}
+                    style={{ width: `${cardWidth}px` }}
+                  />
+                  {cardResources?.[card] != null && cardResources[card] > 0 && (
+                    <span className="absolute top-1 right-1 bg-amber-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow">
+                      {cardResources[card]}
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }
 
-function CardGrid({ cards, cardResources }: { cards: string[]; cardResources?: Record<string, number> }) {
+function CardGrid({ cards, cardResources, cardSize }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number }) {
+  // cardSize directly controls the min width of each grid item
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
+    <div
+      className="grid gap-3"
+      style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${cardSize}px, 1fr))` }}
+    >
       {cards.map((card, i) => {
         const img = getCardImage(card) ?? getCardPlaceholderImage();
         const res = cardResources?.[card];
@@ -97,39 +125,126 @@ function CardGrid({ cards, cardResources }: { cards: string[]; cardResources?: R
   );
 }
 
-function CardSection({ cards, title, color, viewMode, cardResources }: { cards: string[]; title: string; color: string; viewMode: ViewMode; cardResources?: Record<string, number> }) {
+function CardSynthetic({ cards, cardResources, cardSize }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number }) {
+  // Scale controls card box width
+  const boxWidth = Math.max(120, cardSize * 1.3);
+
+  return (
+    <div
+      className="grid gap-2"
+      style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${boxWidth}px, 1fr))` }}
+    >
+      {cards.map((card, i) => {
+        const res = cardResources?.[card];
+        return (
+          <div
+            key={`${card}-${i}`}
+            className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-750 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="bg-slate-100 dark:bg-slate-700 px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-600">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide leading-tight line-clamp-2">
+                {card}
+              </span>
+            </div>
+            {res != null && res > 0 && (
+              <div className="px-2.5 py-1.5 flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center bg-amber-500 text-white text-[11px] font-bold rounded-full w-5 h-5 shadow-sm">
+                  {res}
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">resources</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// --- Section component with independent controls ---
+
+function CardSection({ cards, title, color, cardResources, defaultViewMode = 'grid' }: {
+  cards: string[];
+  title: string;
+  color: string;
+  cardResources?: Record<string, number>;
+  defaultViewMode?: ViewMode;
+}) {
+  const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
+  const [cardSize, setCardSize] = useState(130);
+
   if (cards.length === 0) return null;
+
+  const btnClass = "p-1 rounded transition-colors";
+  const activeClass = "bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200";
+  const inactiveClass = "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300";
+
+  const viewButtons: { mode: ViewMode; icon: typeof Grid3X3; tip: string }[] = [
+    { mode: 'grid', icon: Grid3X3, tip: 'Grid' },
+    { mode: 'stack', icon: Layers, tip: 'Stack' },
+    { mode: 'synthetic', icon: List, tip: 'List' },
+    { mode: 'hidden', icon: EyeOff, tip: 'Hide' },
+  ];
 
   return (
     <div>
+      {/* Section header with controls */}
       <div className="flex items-center gap-2 mb-2">
         <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex-shrink-0">
           {title} <span style={{ color }} className="font-bold">{cards.length}</span>
         </h3>
+
+        {/* View mode buttons */}
+        <div className="flex items-center bg-slate-100 dark:bg-slate-700/50 rounded-md p-0.5 gap-0.5 flex-shrink-0">
+          {viewButtons.map(({ mode, icon: Icon, tip }) => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={`${btnClass} ${viewMode === mode ? activeClass : inactiveClass}`}
+              title={tip}
+            >
+              <Icon className="w-3.5 h-3.5" />
+            </button>
+          ))}
+        </div>
+
+        {/* Size slider (hidden when view is hidden) */}
+        {viewMode !== 'hidden' && (
+          <input
+            type="range"
+            min={70}
+            max={200}
+            value={cardSize}
+            onChange={e => setCardSize(Number(e.target.value))}
+            className="w-20 h-1 accent-slate-400 flex-shrink-0"
+            title="Card size"
+          />
+        )}
+
         <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
       </div>
-      {viewMode === 'stack' ? (
-        <CardStack cards={cards} label={title} cardResources={cardResources} />
+
+      {/* Card content */}
+      {viewMode === 'hidden' ? null : viewMode === 'stack' ? (
+        <CardStack cards={cards} label={title} cardResources={cardResources} cardSize={cardSize} />
+      ) : viewMode === 'synthetic' ? (
+        <CardSynthetic cards={cards} cardResources={cardResources} cardSize={cardSize} />
       ) : (
-        <CardGrid cards={cards} cardResources={cardResources} />
+        <CardGrid cards={cards} cardResources={cardResources} cardSize={cardSize} />
       )}
     </div>
   );
 }
 
-export function PlayerTableau({ playerName, corporation, color, played, hand, sold, cardResources, onClose }: PlayerTableauProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+// --- Main component ---
 
+export function PlayerTableau({ playerName, corporation, color, played, hand, sold, cardResources, onClose }: PlayerTableauProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
-
-  const toggleBtn = "p-1.5 rounded-md transition-colors";
-  const activeBtn = "bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200";
-  const inactiveBtn = "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300";
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center" onClick={onClose}>
@@ -150,37 +265,19 @@ export function PlayerTableau({ playerName, corporation, color, played, hand, so
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1 ml-3">
-            <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5 mr-2">
-              <button
-                onClick={() => setViewMode('stack')}
-                className={`${toggleBtn} ${viewMode === 'stack' ? activeBtn : inactiveBtn}`}
-                title="Stack view"
-              >
-                <Layers className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`${toggleBtn} ${viewMode === 'grid' ? activeBtn : inactiveBtn}`}
-                title="Grid view"
-              >
-                <Grid3X3 className="w-4 h-4" />
-              </button>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 ml-3"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Body */}
         <div className="overflow-y-auto px-5 py-4 space-y-5">
-          <CardSection cards={hand} title="Hand" color={color} viewMode={viewMode} />
-          <CardSection cards={played} title="Played" color={color} viewMode={viewMode} cardResources={cardResources} />
-          <CardSection cards={sold} title="Sold" color={color} viewMode={viewMode} />
+          <CardSection cards={hand} title="Hand" color={color} />
+          <CardSection cards={played} title="Played" color={color} cardResources={cardResources} />
+          <CardSection cards={sold} title="Sold" color={color} />
 
           {played.length === 0 && hand.length === 0 && sold.length === 0 && (
             <p className="text-slate-500 dark:text-slate-400 italic text-center py-8">No cards yet.</p>
