@@ -54,10 +54,10 @@ namespace BgaTmScraperRegistry.Services
 
         // ── Cache keys & blob names ──────────────────────────
 
-        private static string OverviewCacheKey(TileType t) => $"TilePlacement:Overview:{t}:v1";
-        private static string ByGenCacheKey(TileType t) => $"TilePlacement:ByGen:{t}:v1";
-        private static string OverviewBlobName(TileType t) => $"tile-placement-overview-{t.ToString().ToLowerInvariant()}-v1.json";
-        private static string ByGenBlobName(TileType t) => $"tile-placement-bygen-{t.ToString().ToLowerInvariant()}-v1.json";
+        private static string OverviewCacheKey(TileType t) => $"TilePlacement:Overview:{t}:v2";
+        private static string ByGenCacheKey(TileType t) => $"TilePlacement:ByGen:{t}:v2";
+        private static string OverviewBlobName(TileType t) => $"tile-placement-overview-{t.ToString().ToLowerInvariant()}-v2.json";
+        private static string ByGenBlobName(TileType t) => $"tile-placement-bygen-{t.ToString().ToLowerInvariant()}-v2.json";
 
         // ── Public API (cached) ──────────────────────────────
 
@@ -130,11 +130,13 @@ namespace BgaTmScraperRegistry.Services
         {
             var (table, column) = GetTableAndColumn(tileType);
 
+            var pointsColumn = tileType == TileType.City ? "t.Points" : "NULL AS Points";
             var sql = $@"
                 SELECT
                     g.Map,
                     LTRIM(RTRIM(t.{column})) AS TileLocation,
-                    gp.EloChange
+                    gp.EloChange,
+                    {pointsColumn}
                 FROM {table} t
                 JOIN Games_Canonical g ON g.TableId = t.TableId
                 JOIN GamePlayers_Canonical gp ON gp.TableId = t.TableId AND gp.PlayerId = t.PlayerId";
@@ -145,7 +147,7 @@ namespace BgaTmScraperRegistry.Services
 
             return rows
                 .Where(r => !string.IsNullOrEmpty(r.Map))
-                .Select(r => new { r.Map, Location = NormalizeLocation(r.TileLocation), r.EloChange })
+                .Select(r => new { r.Map, Location = NormalizeLocation(r.TileLocation), r.EloChange, r.Points })
                 .Where(r => ShouldInclude(r.Location))
                 .GroupBy(r => r.Map)
                 .ToDictionary(
@@ -157,6 +159,7 @@ namespace BgaTmScraperRegistry.Services
                             TileLocation = g.Key,
                             GameCount = g.Count(),
                             AvgEloChange = g.Average(r => r.EloChange ?? 0),
+                            AvgPoints = g.Average(r => r.Points ?? 0),
                         })
                         .OrderByDescending(r => r.AvgEloChange)
                         .ToList());
@@ -166,12 +169,14 @@ namespace BgaTmScraperRegistry.Services
         {
             var (table, column) = GetTableAndColumn(tileType);
 
+            var pointsColumn = tileType == TileType.City ? "t.Points" : "NULL AS Points";
             var sql = $@"
                 SELECT
                     g.Map,
                     LTRIM(RTRIM(t.{column})) AS TileLocation,
                     t.PlacedGen,
-                    gp.EloChange
+                    gp.EloChange,
+                    {pointsColumn}
                 FROM {table} t
                 JOIN Games_Canonical g ON g.TableId = t.TableId
                 JOIN GamePlayers_Canonical gp ON gp.TableId = t.TableId AND gp.PlayerId = t.PlayerId
@@ -183,7 +188,7 @@ namespace BgaTmScraperRegistry.Services
 
             return rows
                 .Where(r => !string.IsNullOrEmpty(r.Map))
-                .Select(r => new { r.Map, Location = NormalizeLocation(r.TileLocation), r.PlacedGen, r.EloChange })
+                .Select(r => new { r.Map, Location = NormalizeLocation(r.TileLocation), r.PlacedGen, r.EloChange, r.Points })
                 .Where(r => ShouldInclude(r.Location))
                 .GroupBy(r => r.Map)
                 .ToDictionary(
@@ -196,6 +201,7 @@ namespace BgaTmScraperRegistry.Services
                             PlacedGen = g.Key.PlacedGen,
                             GameCount = g.Count(),
                             AvgEloChange = g.Average(r => r.EloChange ?? 0),
+                            AvgPoints = g.Average(r => r.Points ?? 0),
                         })
                         .OrderBy(r => r.TileLocation)
                         .ThenBy(r => r.PlacedGen)
@@ -270,6 +276,7 @@ namespace BgaTmScraperRegistry.Services
             public string Map { get; set; }
             public string TileLocation { get; set; }
             public double? EloChange { get; set; }
+            public int? Points { get; set; }
         }
 
         private class RawRowWithMapAndGen
@@ -278,6 +285,7 @@ namespace BgaTmScraperRegistry.Services
             public string TileLocation { get; set; }
             public int? PlacedGen { get; set; }
             public double? EloChange { get; set; }
+            public int? Points { get; set; }
         }
 
         public enum TileType
@@ -291,6 +299,7 @@ namespace BgaTmScraperRegistry.Services
             public string TileLocation { get; set; }
             public int GameCount { get; set; }
             public double AvgEloChange { get; set; }
+            public double AvgPoints { get; set; }
         }
 
         public class TilePlacementByGen
@@ -299,6 +308,7 @@ namespace BgaTmScraperRegistry.Services
             public int? PlacedGen { get; set; }
             public int GameCount { get; set; }
             public double AvgEloChange { get; set; }
+            public double AvgPoints { get; set; }
         }
     }
 }

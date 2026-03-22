@@ -4,6 +4,7 @@ export interface TilePlacementStat {
   tileLocation: string;
   gameCount: number;
   avgEloChange: number;
+  avgPoints: number;
 }
 
 export interface TilePlacementByGen {
@@ -11,6 +12,7 @@ export interface TilePlacementByGen {
   placedGen: number | null;
   gameCount: number;
   avgEloChange: number;
+  avgPoints: number;
 }
 
 export type TileType = 'city' | 'greenery';

@@ -46,6 +46,7 @@ function HexDetailDialog({ hex, tileType, overviewStat, genData, onClose }: HexD
   const allChartData = genData.map(d => ({
     gen: d.placedGen ?? 0,
     avgEloGain: d.avgEloChange,
+    avgPoints: d.avgPoints,
     count: d.gameCount,
   }));
 
@@ -75,7 +76,7 @@ function HexDetailDialog({ hex, tileType, overviewStat, genData, onClose }: HexD
         <div className="px-6 py-4 space-y-6">
           {overviewStat ? (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid gap-4 ${tileType === 'city' ? 'grid-cols-3' : 'grid-cols-2'}`}>
                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
                   <div className="text-sm text-slate-500 dark:text-slate-400">Total {labels.plural.toLowerCase()} placed</div>
                   <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{overviewStat.gameCount.toLocaleString()}</div>
@@ -86,6 +87,12 @@ function HexDetailDialog({ hex, tileType, overviewStat, genData, onClose }: HexD
                     {formatElo(overviewStat.avgEloChange)}
                   </div>
                 </div>
+                {tileType === 'city' && (
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                    <div className="text-sm text-slate-500 dark:text-slate-400">Avg Points</div>
+                    <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{overviewStat.avgPoints.toFixed(1)}</div>
+                  </div>
+                )}
               </div>
 
               {genData.length > 0 && (
@@ -168,6 +175,42 @@ function HexDetailDialog({ hex, tileType, overviewStat, genData, onClose }: HexD
                       </ResponsiveContainer>
                     </div>
                   </div>
+
+                  {tileType === 'city' && (
+                    <div>
+                      <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-3">Avg Points by Generation</h3>
+                      <div className="h-56">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
+                            <XAxis dataKey="gen" tick={{ fontSize: 12 }} label={{ value: 'Generation', position: 'insideBottom', offset: -2, fontSize: 12 }} />
+                            <YAxis tick={{ fontSize: 12 }} />
+                            <Tooltip
+                              content={({ active, payload, label }) => {
+                                if (!active || !payload?.length) return null;
+                                const d = payload[0].payload;
+                                return (
+                                  <div style={{ backgroundColor: 'rgb(30 41 59)', border: '1px solid rgb(51 65 85)', borderRadius: '8px', color: 'white', padding: '8px 12px', fontSize: 13 }}>
+                                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Generation {label}</div>
+                                    <div>Avg Points: <strong style={{ color: '#f59e0b' }}>{d.avgPoints.toFixed(1)}</strong></div>
+                                    <div>{labels.plural} placed: <strong>{d.count.toLocaleString()}</strong></div>
+                                  </div>
+                                );
+                              }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="avgPoints"
+                              stroke="#f59e0b"
+                              strokeWidth={2}
+                              dot={{ r: 4, fill: '#f59e0b', strokeWidth: 0 }}
+                              activeDot={{ r: 6, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </>
@@ -402,6 +445,12 @@ export function MapPage() {
                       {formatElo(hoveredStat.avgEloChange)}
                     </span>
                   </div>
+                  {tileType === 'city' && (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-300">Avg Points:</span>
+                      <span className="font-semibold text-amber-400">{hoveredStat.avgPoints.toFixed(1)}</span>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="text-slate-400 italic">No {labels.singular} placement data</div>

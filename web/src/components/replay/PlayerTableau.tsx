@@ -21,13 +21,13 @@ function CardStack({ cards, label }: { cards: string[]; label: string }) {
   if (cards.length === 0) return null;
 
   // Show ~40px per card in the stack, full card for the last one
-  const CARD_OFFSET = 38;
+  const CARD_OFFSET = 44;
 
   return (
     <div>
       <div
         className="relative"
-        style={{ height: `${CARD_OFFSET * (cards.length - 1) + 160}px` }}
+        style={{ height: `${CARD_OFFSET * (cards.length - 1) + 200}px` }}
       >
         {cards.map((card, i) => {
           const img = getCardImage(card) ?? getCardPlaceholderImage();
@@ -49,7 +49,7 @@ function CardStack({ cards, label }: { cards: string[]; label: string }) {
               <img
                 src={img}
                 alt={card}
-                className={`w-28 rounded shadow-sm transition-transform duration-150 ${isHovered ? 'scale-125 shadow-lg' : ''}`}
+                className={`w-36 rounded shadow-sm transition-transform duration-150 ${isHovered ? 'scale-125 shadow-lg' : ''}`}
               />
             </div>
           );
@@ -61,7 +61,7 @@ function CardStack({ cards, label }: { cards: string[]; label: string }) {
 
 function CardGrid({ cards }: { cards: string[] }) {
   return (
-    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
       {cards.map((card, i) => {
         const img = getCardImage(card) ?? getCardPlaceholderImage();
         return (
@@ -117,7 +117,7 @@ export function PlayerTableau({ playerName, corporation, color, played, hand, so
     <div className="fixed inset-0 z-[9999] flex items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-3xl max-h-[90vh] overflow-hidden mx-4 flex flex-col"
+        className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-6xl max-h-[90vh] overflow-hidden mx-4 flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
