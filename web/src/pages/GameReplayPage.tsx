@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
-import { fetchGameLog, extractTilePlacement, assignPlayerColors } from '@/lib/gameLog';
+import { fetchGameLog, extractTilePlacement, parseTileLocationToDbKey, assignPlayerColors } from '@/lib/gameLog';
 import { ReplayMap, type PlacedTile } from '@/components/replay/ReplayMap';
 import { MovePanel } from '@/components/replay/MovePanel';
 import { ReplayControls } from '@/components/replay/ReplayControls';
@@ -34,7 +34,7 @@ export function GameReplayPage() {
   );
 
   const playerColors = useMemo(
-    () => gameLog ? assignPlayerColors(Object.keys(gameLog.players)) : {},
+    () => gameLog ? assignPlayerColors(Object.keys(gameLog.players), gameLog.players) : {},
     [gameLog],
   );
 
@@ -64,6 +64,22 @@ export function GameReplayPage() {
           playerId: gameLog.moves[i].player_id,
           moveIndex: i,
         });
+      }
+      // Merge special tiles from game_state
+      const specialTiles = gameLog.moves[i]?.game_state?.special_tiles;
+      if (specialTiles) {
+        for (const [pid, tiles] of Object.entries(specialTiles)) {
+          for (const [tileName, location] of Object.entries(tiles)) {
+            const dbKey = parseTileLocationToDbKey(location);
+            if (!map.has(dbKey)) {
+              map.set(dbKey, { dbKey, tileType: tileName, playerId: pid, moveIndex: i });
+            } else {
+              // Update existing tile with special type info
+              const existing = map.get(dbKey)!;
+              existing.tileType = tileName;
+            }
+          }
+        }
       }
     }
     return map;

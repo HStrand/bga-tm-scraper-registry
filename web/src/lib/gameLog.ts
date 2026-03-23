@@ -90,10 +90,10 @@ const PLAYER_COLORS = [
   '#8b5cf6', // violet
 ];
 
-export function assignPlayerColors(playerIds: string[]): Record<string, string> {
+export function assignPlayerColors(playerIds: string[], playerData?: Record<string, { color?: string }>): Record<string, string> {
   const colors: Record<string, string> = {};
   playerIds.forEach((id, i) => {
-    colors[id] = PLAYER_COLORS[i % PLAYER_COLORS.length];
+    colors[id] = playerData?.[id]?.color ?? PLAYER_COLORS[i % PLAYER_COLORS.length];
   });
   return colors;
 }

@@ -1,17 +1,24 @@
-import { useState } from 'react';
-import { Layers, ChevronDown, ChevronUp } from 'lucide-react';
+import { Layers } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { GameLogMove, GameState } from '@/types/gamelog';
 
 // --- Icon loading ---
 const resourceIcons = import.meta.glob('../../../assets/resources/*.png', { eager: true }) as Record<string, { default: string }>;
 const tagIcons = import.meta.glob('../../../assets/tags/*.png', { eager: true }) as Record<string, { default: string }>;
+const tileIcons = import.meta.glob('../../../assets/tiles/*.png', { eager: true }) as Record<string, { default: string }>;
+const cubeIcons = import.meta.glob('../../../assets/cubes/*.png', { eager: true }) as Record<string, { default: string }>;
 
 function getIcon(icons: Record<string, { default: string }>, name: string): string | undefined {
   const entry = Object.entries(icons).find(([key]) =>
     key.replace(/^.*[\\/]/, '').toLowerCase() === `${name}.png`
   );
   return entry?.[1].default;
+}
+
+function getCubeImage(hexColor: string): string | undefined {
+  // hexColor like "#ff0000" -> "ff0000"
+  const slug = hexColor.replace('#', '').toLowerCase();
+  return getIcon(cubeIcons, slug);
 }
 
 // --- Resource/production/tag definitions ---
@@ -24,17 +31,28 @@ const RESOURCES = [
   { key: 'Heat', prodKey: 'Heat Production', icon: 'heat', label: 'Heat' },
 ];
 
-const TAGS = [
-  { key: 'Building tag', icon: 'building' },
-  { key: 'Space tag', icon: 'space' },
-  { key: 'Science tag', icon: 'science' },
-  { key: 'Plant tag', icon: 'plant' },
-  { key: 'Animal tag', icon: 'animal' },
-  { key: 'Microbe tag', icon: 'microbe' },
-  { key: 'Earth tag', icon: 'earth' },
-  { key: 'Jovian tag', icon: 'jovian' },
-  { key: 'Energy tag', icon: 'power' },
-  { key: 'Event tag', icon: 'event' },
+const TAG_ROWS = [
+  [
+    { key: 'Building tag', icon: 'building' },
+    { key: 'Space tag', icon: 'space' },
+    { key: 'Science tag', icon: 'science' },
+    { key: 'Energy tag', icon: 'power' },
+    { key: 'Earth tag', icon: 'earth' },
+    { key: 'Jovian tag', icon: 'jovian' },
+  ],
+  [
+    { key: 'City tag', icon: 'city' },
+    { key: 'Plant tag', icon: 'plant' },
+    { key: 'Microbe tag', icon: 'microbe' },
+    { key: 'Animal tag', icon: 'animal' },
+    { key: 'Wild tag', icon: 'wild' },
+    { key: 'Event tag', icon: 'event' },
+  ],
+  [
+    { key: 'City', icon: 'city tile', iconSource: 'tile' as const, label: 'Cities' },
+    { key: 'Forest', icon: 'greenery tile', iconSource: 'tile' as const, label: 'Greeneries' },
+    { key: 'Land', icon: 'ocean tile', iconSource: 'tile' as const, label: 'Tiles' },
+  ],
 ];
 
 function Badge({ label, value }: { label: string; value: string | number | null | undefined }) {
@@ -65,48 +83,36 @@ function TrackerCell({ icon, value, subValue, title }: { icon?: string; value: n
 }
 
 function PlayerTrackers({ trackers }: { trackers: Record<string, number> }) {
-  const [expanded, setExpanded] = useState(false);
-
   return (
-    <div className="border-t border-slate-200 dark:border-slate-700">
-      <button
-        onClick={() => setExpanded(v => !v)}
-        className="w-full flex items-center justify-center gap-1 py-1 text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-      >
-        {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-        {expanded ? 'Hide' : 'Resources & Tags'}
-      </button>
-      {expanded && (
-        <div className="px-2 pb-2 space-y-2">
-          {/* Resources + Production */}
-          <div className="flex justify-between gap-1">
-            {RESOURCES.map(r => (
+    <div className="border-t border-slate-200 dark:border-slate-700 px-2 py-2 space-y-2">
+      {/* Resources + Production */}
+      <div className="flex justify-between gap-1">
+        {RESOURCES.map(r => (
+          <TrackerCell
+            key={r.key}
+            icon={getIcon(resourceIcons, r.icon)}
+            value={trackers[r.key] ?? 0}
+            subValue={trackers[r.prodKey] ?? 0}
+            title={`${r.label}: ${trackers[r.key] ?? 0} (prod: ${trackers[r.prodKey] ?? 0})`}
+          />
+        ))}
+      </div>
+      {/* Tags & Tiles */}
+      {TAG_ROWS.map((row, ri) => (
+        <div key={ri} className="flex justify-center gap-2">
+          {row.map(t => {
+            const icons = 'iconSource' in t && t.iconSource === 'tile' ? tileIcons : tagIcons;
+            return (
               <TrackerCell
-                key={r.key}
-                icon={getIcon(resourceIcons, r.icon)}
-                value={trackers[r.key] ?? 0}
-                subValue={trackers[r.prodKey] ?? 0}
-                title={`${r.label}: ${trackers[r.key] ?? 0} (prod: ${trackers[r.prodKey] ?? 0})`}
+                key={t.key}
+                icon={getIcon(icons, t.icon)}
+                value={trackers[t.key] ?? 0}
+                title={`${'label' in t ? t.label : t.key}: ${trackers[t.key] ?? 0}`}
               />
-            ))}
-          </div>
-          {/* Tags */}
-          <div className="flex flex-wrap justify-center gap-2">
-            {TAGS.map(t => {
-              const val = trackers[t.key] ?? 0;
-              if (val === 0) return null;
-              return (
-                <TrackerCell
-                  key={t.key}
-                  icon={getIcon(tagIcons, t.icon)}
-                  value={val}
-                  title={`${t.key}: ${val}`}
-                />
-              );
-            })}
-          </div>
+            );
+          })}
         </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -155,7 +161,11 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
                 style={{ backgroundColor: `${playerColors[pid]}18` }}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: playerColors[pid] }} />
+                  {getCubeImage(playerColors[pid]) ? (
+                    <img src={getCubeImage(playerColors[pid])!} alt="" className="w-6 h-6 flex-shrink-0" />
+                  ) : (
+                    <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: playerColors[pid] }} />
+                  )}
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold text-slate-900 dark:text-slate-100 truncate">
@@ -209,10 +219,11 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
       {move && (
         <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2 mb-2">
-            <span
-              className="inline-block w-3 h-3 rounded-full"
-              style={{ backgroundColor: playerColors[move.player_id] }}
-            />
+            {getCubeImage(playerColors[move.player_id]) ? (
+              <img src={getCubeImage(playerColors[move.player_id])!} alt="" className="w-6 h-6 flex-shrink-0" />
+            ) : (
+              <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: playerColors[move.player_id] }} />
+            )}
             <span className="font-bold text-slate-900 dark:text-slate-100">
               {move.player_name}
             </span>

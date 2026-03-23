@@ -3,6 +3,26 @@ import cityTileImage from '/assets/tiles/city tile.png';
 import greeneryTileImage from '/assets/tiles/greenery tile.png';
 import oceanTileImage from '/assets/tiles/ocean tile.png';
 
+const specialTileImages = import.meta.glob('../../../assets/tiles/*.png', { eager: true }) as Record<string, { default: string }>;
+const cubeImages = import.meta.glob('../../../assets/cubes/*.png', { eager: true }) as Record<string, { default: string }>;
+
+function getSpecialTileImage(tileType: string): string | undefined {
+  const slug = tileType.toLowerCase();
+  const entry = Object.entries(specialTileImages).find(([key]) => {
+    const base = key.replace(/^.*[\\/]/, '').toLowerCase().replace('.png', '');
+    return base === slug;
+  });
+  return entry?.[1].default;
+}
+
+function getCubeImage(hexColor: string): string | undefined {
+  const slug = hexColor.replace('#', '').toLowerCase();
+  const entry = Object.entries(cubeImages).find(([key]) =>
+    key.replace(/^.*[\\/]/, '').toLowerCase() === `${slug}.png`
+  );
+  return entry?.[1].default;
+}
+
 export interface PlacedTile {
   dbKey: string;
   tileType: string;
@@ -56,10 +76,13 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
           const isCity = tileNorm === 'city';
           const isGreenery = tileNorm === 'greenery' || tileNorm === 'forest';
 
-          const tileImg = isCity ? cityTileImage : isGreenery ? greeneryTileImage : isOcean ? oceanTileImage : null;
+          const tileImg = isCity ? cityTileImage
+            : isGreenery ? greeneryTileImage
+            : isOcean ? oceanTileImage
+            : getSpecialTileImage(tile.tileType) ?? null;
 
           const color = playerColors[tile.playerId] ?? '#888';
-          const cubeSize = tileSize * 0.25;
+          const cubeSize = tileSize * 0.4;
 
           const imgSize = isOcean ? tileSize * 1.4 : tileSize;
 
@@ -81,17 +104,27 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
                   strokeWidth={1}
                 />
               )}
-              {/* Player color cube in center (not on oceans) */}
-              {!isOcean && <rect
-                x={cx - cubeSize / 2}
-                y={cy - cubeSize / 2}
-                width={cubeSize}
-                height={cubeSize}
-                rx={2}
-                fill={color}
-                stroke="#fff"
-                strokeWidth={1}
-              />}
+              {/* Player cube in center (not on oceans) */}
+              {!isOcean && (getCubeImage(color) ? (
+                <image
+                  href={getCubeImage(color)!}
+                  x={cx - cubeSize / 2}
+                  y={cy - cubeSize / 2}
+                  width={cubeSize}
+                  height={cubeSize}
+                />
+              ) : (
+                <rect
+                  x={cx - cubeSize / 2}
+                  y={cy - cubeSize / 2}
+                  width={cubeSize}
+                  height={cubeSize}
+                  rx={2}
+                  fill={color}
+                  stroke="#fff"
+                  strokeWidth={1}
+                />
+              ))}
             </g>
           );
         })}

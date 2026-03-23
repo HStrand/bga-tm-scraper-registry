@@ -16,6 +16,7 @@ export interface GameLogPlayer {
   corporation: string;
   final_vp: number | null;
   cards_played: string[];
+  color?: string;
   starting_hand?: {
     corporations?: string[] | null;
     preludes?: string[] | null;
@@ -50,6 +51,7 @@ export interface GameState {
   discard_pile?: number | null;
   player_vp?: Record<string, PlayerVictoryPoints>;
   player_trackers?: Record<string, Record<string, number>>;
+  special_tiles?: Record<string, Record<string, string>>;
 }
 
 export interface CardResource {
