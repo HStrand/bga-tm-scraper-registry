@@ -5,6 +5,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Data.SqlClient;
 using BgaTmScraperRegistry.Services;
 
 namespace BgaTmScraperRegistry.Functions
@@ -13,8 +14,7 @@ namespace BgaTmScraperRegistry.Functions
     {
         [FunctionName("GetGameLog")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "game-log/{playerId}/{tableId}")] HttpRequest req,
-            string playerId,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "game-log/{tableId}")] HttpRequest req,
             string tableId,
             ILogger log)
         {
@@ -25,6 +25,30 @@ namespace BgaTmScraperRegistry.Functions
                 {
                     log.LogError("AzureWebJobsStorage environment variable is not set");
                     return new StatusCodeResult(500);
+                }
+
+                var sqlConnectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
+                if (string.IsNullOrEmpty(sqlConnectionString))
+                {
+                    log.LogError("SqlConnectionString environment variable is not set");
+                    return new StatusCodeResult(500);
+                }
+
+                // Look up the player perspective for this table
+                string playerId;
+                using (var conn = new SqlConnection(sqlConnectionString))
+                {
+                    await conn.OpenAsync();
+                    using var cmd = new SqlCommand(
+                        "SELECT TOP 1 PlayerPerspective FROM Games WHERE TableId = @tableId ORDER BY ScraperVersion DESC",
+                        conn);
+                    cmd.Parameters.AddWithValue("@tableId", tableId);
+                    var result = await cmd.ExecuteScalarAsync();
+                    if (result == null || result == DBNull.Value)
+                    {
+                        return new NotFoundResult();
+                    }
+                    playerId = result.ToString();
                 }
 
                 var blobService = new BlobStorageService(connectionString, log);
@@ -45,7 +69,7 @@ namespace BgaTmScraperRegistry.Functions
             }
             catch (Exception ex)
             {
-                log.LogError(ex, "Error getting game log for player {playerId}, table {tableId}", playerId, tableId);
+                log.LogError(ex, "Error getting game log for table {tableId}", tableId);
                 return new StatusCodeResult(500);
             }
         }

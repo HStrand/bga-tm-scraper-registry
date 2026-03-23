@@ -39,7 +39,7 @@ export default function App() {
           <Route path="/awards" element={<AwardsOverviewPage />} />
           <Route path="/leaderboards" element={<LeaderboardsPage />} />
           <Route path="/maps" element={<MapPage />} />
-          <Route path="/replay/:tableId/:playerId" element={<GameReplayPage />} />
+          <Route path="/replay/:tableId" element={<GameReplayPage />} />
           <Route path="/resources" element={<ResourcesPage />} />
         </Routes>
       </Layout>

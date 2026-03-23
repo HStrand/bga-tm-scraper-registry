@@ -7,8 +7,8 @@ export interface TilePlacement {
   dbKey: string;
 }
 
-export async function fetchGameLog(tableId: string, playerId: string): Promise<GameLog> {
-  const res = await api.get<GameLog>(`/api/game-log/${playerId}/${tableId}`);
+export async function fetchGameLog(tableId: string): Promise<GameLog> {
+  const res = await api.get<GameLog>(`/api/game-log/${tableId}`);
   return res.data;
 }
 

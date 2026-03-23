@@ -9,7 +9,7 @@ import { PlayerTableau } from '@/components/replay/PlayerTableau';
 import type { GameLog } from '@/types/gamelog';
 
 export function GameReplayPage() {
-  const { tableId, playerId } = useParams<{ tableId: string; playerId: string }>();
+  const { tableId } = useParams<{ tableId: string }>();
   const [gameLog, setGameLog] = useState<GameLog | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,14 +18,14 @@ export function GameReplayPage() {
 
   // --- data fetching ---
   useEffect(() => {
-    if (!tableId || !playerId) return;
+    if (!tableId) return;
     setLoading(true);
     setError(null);
-    fetchGameLog(tableId, playerId)
+    fetchGameLog(tableId)
       .then(data => { setGameLog(data); setCurrentStep(0); })
       .catch(() => setError('Game not found.'))
       .finally(() => setLoading(false));
-  }, [tableId, playerId]);
+  }, [tableId]);
 
   // --- derived state ---
   const mapDefinition = useMemo<MapDefinition | undefined>(
