@@ -31,7 +31,7 @@ export function getAwardImage(name: string): string | undefined {
   try {
     const slug = nameToSlug(name);
     // Import all images in assets (vite will bundle only matched ones)
-    const images = import.meta.glob('../../assets/*.png', { eager: true }) as Record<string, { default: string }>;
+    const images = import.meta.glob('../../assets/awards/*.png', { eager: true }) as Record<string, { default: string }>;
 
     // Match by basename
     const entries = Object.entries(images);

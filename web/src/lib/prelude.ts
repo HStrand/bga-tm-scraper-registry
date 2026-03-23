@@ -33,7 +33,7 @@ export function getPreludeImage(preludeName: string): string | undefined {
     const slug = preludeNameToSlug(preludeName);
     
     // Import all prelude images to find the matching one
-    const preludeImages = import.meta.glob('../../assets/p*-*.png', { eager: true }) as Record<string, { default: string }>;
+    const preludeImages = import.meta.glob('../../assets/cards/preludes/p*-*.png', { eager: true }) as Record<string, { default: string }>;
     
     // Find matching image by slug
     const entries = Object.entries(preludeImages);

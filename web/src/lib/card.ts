@@ -33,7 +33,7 @@ export function getCardImage(cardName: string): string | undefined {
     const slug = cardNameToSlug(cardName);
     
     // Import all card images to find the matching one
-    const cardImages = import.meta.glob('../../assets/*-*.png', { eager: true }) as Record<string, { default: string }>;
+    const cardImages = import.meta.glob('../../assets/cards/projects/*-*.png', { eager: true }) as Record<string, { default: string }>;
     
     // Find matching image by slug
     const entries = Object.entries(cardImages);

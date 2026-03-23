@@ -4,8 +4,8 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { X } from 'lucide-react';
 import { ALL_MAPS, hexCenter, hexPoints, type MapDefinition, type HexTile } from '@/data/mapHexes';
 import { getAllTilePlacementStats, getAllTilePlacementByGen, type TilePlacementStat, type TilePlacementByGen, type TileType } from '@/lib/cityStats';
-import cityTileImage from '/assets/city tile.png';
-import greeneryTileImage from '/assets/greenery tile.png';
+import cityTileImage from '/assets/tiles/city tile.png';
+import greeneryTileImage from '/assets/tiles/greenery tile.png';
 
 function heatColor(t: number): string {
   if (t === 0) return 'transparent';

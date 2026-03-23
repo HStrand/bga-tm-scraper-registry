@@ -71,7 +71,7 @@ function buildHexes(
 
 // ── Elysium ──────────────────────────────────────────────
 
-import elysiumImage from '/assets/elysium.png';
+import elysiumImage from '/assets/maps/elysium.png';
 
 const ELYSIUM_GRID: HexGrid = {
   originX: 120, originY: 84, colStep: 84, rowStep: 72, hexRadius: 48,
@@ -108,7 +108,7 @@ export const ELYSIUM: MapDefinition = {
 
 // ── Tharsis ──────────────────────────────────────────────
 
-import tharsisImage from '/assets/tharsis.png';
+import tharsisImage from '/assets/maps/tharsis.png';
 
 const THARSIS_GRID: HexGrid = {
   originX: 120, originY: 88, colStep: 84, rowStep: 72, hexRadius: 48,
@@ -146,7 +146,7 @@ export const THARSIS: MapDefinition = {
 
 // ── Hellas ───────────────────────────────────────────────
 
-import hellasImage from '/assets/hellas.png';
+import hellasImage from '/assets/maps/hellas.png';
 
 const HELLAS_GRID: HexGrid = {
   originX: 122, originY: 80, colStep: 84, rowStep: 73, hexRadius: 48,
@@ -180,7 +180,7 @@ export const HELLAS: MapDefinition = {
 
 // ── Vastitas Borealis ────────────────────────────────────
 
-import vastitasImage from '/assets/vastitas borealis.png';
+import vastitasImage from '/assets/maps/vastitas borealis.png';
 
 const VASTITAS_GRID: HexGrid = {
   originX: 128.5, originY: 87.5, colStep: 82.5, rowStep: 71.5, hexRadius: 47.5,
@@ -219,7 +219,7 @@ export const VASTITAS: MapDefinition = {
 
 // ── Amazonis Planitia ────────────────────────────────────
 
-import amazonisImage from '/assets/amazonis planitia.png';
+import amazonisImage from '/assets/maps/amazonis planitia.png';
 
 const AMAZONIS_GRID: HexGrid = {
   originX: 60.7, originY: 15, colStep: 87.8, rowStep: 76, hexRadius: 50.5,

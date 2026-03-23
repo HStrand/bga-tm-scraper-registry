@@ -31,7 +31,7 @@ export function getMilestoneImage(name: string): string | undefined {
   try {
     const slug = nameToSlug(name);
     // Import all milestone images
-    const milestoneImages = import.meta.glob('../../assets/*.png', { eager: true }) as Record<string, { default: string }>;
+    const milestoneImages = import.meta.glob('../../assets/milestones/*.png', { eager: true }) as Record<string, { default: string }>;
     
     // Find matching image by basename
     const entries = Object.entries(milestoneImages);

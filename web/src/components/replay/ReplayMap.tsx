@@ -1,7 +1,7 @@
 import { hexCenter, hexPoints, type MapDefinition } from '@/data/mapHexes';
-import cityTileImage from '/assets/city tile.png';
-import greeneryTileImage from '/assets/greenery tile.png';
-import oceanTileImage from '/assets/ocean tile.png';
+import cityTileImage from '/assets/tiles/city tile.png';
+import greeneryTileImage from '/assets/tiles/greenery tile.png';
+import oceanTileImage from '/assets/tiles/ocean tile.png';
 
 export interface PlacedTile {
   dbKey: string;

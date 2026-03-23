@@ -30,7 +30,7 @@ export function nameToSlug(name: string): string {
 export function getCorpImage(slug: string): string | undefined {
   try {
     // Import all corporation images (any extension) to be robust across filename quirks
-    const corpImages = import.meta.glob('../../assets/corp*-*.*', { eager: true }) as Record<string, { default: string }>;
+    const corpImages = import.meta.glob('../../assets/cards/corps/corp*-*.*', { eager: true }) as Record<string, { default: string }>;
     
     // Find matching image by basename (robust against path separators and case)
     const entries = Object.entries(corpImages);

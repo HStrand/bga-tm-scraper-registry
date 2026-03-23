@@ -30,8 +30,8 @@ import { getHighScores, getLeaderboardScoreOptions, type ScoreFilterOptions } fr
 import vpImage from '/assets/vp.png';
 import greeneryImage from '/assets/greenery.png';
 import trImage from '/assets/tr.png';
-import milestonesImage from '/assets/milestones.png';
-import awardsImage from '/assets/awards.png';
+import milestonesImage from '/assets/milestones/milestones.png';
+import awardsImage from '/assets/awards/awards.png';
 
 interface ViewConfig {
   id: LeaderboardView;
