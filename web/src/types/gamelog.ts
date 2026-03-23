@@ -49,6 +49,7 @@ export interface GameState {
   draw_pile?: number | null;
   discard_pile?: number | null;
   player_vp?: Record<string, PlayerVictoryPoints>;
+  player_trackers?: Record<string, Record<string, number>>;
 }
 
 export interface CardResource {

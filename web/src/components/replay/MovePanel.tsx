@@ -1,6 +1,41 @@
-import { Layers } from 'lucide-react';
+import { useState } from 'react';
+import { Layers, ChevronDown, ChevronUp } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { GameLogMove, GameState } from '@/types/gamelog';
+
+// --- Icon loading ---
+const resourceIcons = import.meta.glob('../../../assets/resources/*.png', { eager: true }) as Record<string, { default: string }>;
+const tagIcons = import.meta.glob('../../../assets/tags/*.png', { eager: true }) as Record<string, { default: string }>;
+
+function getIcon(icons: Record<string, { default: string }>, name: string): string | undefined {
+  const entry = Object.entries(icons).find(([key]) =>
+    key.replace(/^.*[\\/]/, '').toLowerCase() === `${name}.png`
+  );
+  return entry?.[1].default;
+}
+
+// --- Resource/production/tag definitions ---
+const RESOURCES = [
+  { key: 'M€', prodKey: 'M€ Production', icon: 'mc', label: 'MC' },
+  { key: 'Steel', prodKey: 'Steel Production', icon: 'steel', label: 'Steel' },
+  { key: 'Titanium', prodKey: 'Titanium Production', icon: 'titanium', label: 'Titan' },
+  { key: 'Plant', prodKey: 'Plant Production', icon: 'plant', label: 'Plants' },
+  { key: 'Energy', prodKey: 'Energy Production', icon: 'energy', label: 'Energy' },
+  { key: 'Heat', prodKey: 'Heat Production', icon: 'heat', label: 'Heat' },
+];
+
+const TAGS = [
+  { key: 'Building tag', icon: 'building' },
+  { key: 'Space tag', icon: 'space' },
+  { key: 'Science tag', icon: 'science' },
+  { key: 'Plant tag', icon: 'plant' },
+  { key: 'Animal tag', icon: 'animal' },
+  { key: 'Microbe tag', icon: 'microbe' },
+  { key: 'Earth tag', icon: 'earth' },
+  { key: 'Jovian tag', icon: 'jovian' },
+  { key: 'Energy tag', icon: 'power' },
+  { key: 'Event tag', icon: 'event' },
+];
 
 function Badge({ label, value }: { label: string; value: string | number | null | undefined }) {
   if (value == null) return null;
@@ -8,6 +43,71 @@ function Badge({ label, value }: { label: string; value: string | number | null 
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
       {label}: <span className="font-bold">{value}</span>
     </span>
+  );
+}
+
+function TrackerCell({ icon, value, subValue, title }: { icon?: string; value: number; subValue?: number; title: string }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5" title={title}>
+      {icon ? (
+        <img src={icon} alt={title} className="w-5 h-5 object-contain" />
+      ) : (
+        <div className="w-5 h-5 rounded-full bg-slate-300 dark:bg-slate-600" />
+      )}
+      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-none">{value}</span>
+      {subValue !== undefined && (
+        <span className={`text-[10px] font-medium leading-none ${subValue >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+          {subValue >= 0 ? `+${subValue}` : subValue}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function PlayerTrackers({ trackers }: { trackers: Record<string, number> }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="border-t border-slate-200 dark:border-slate-700">
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-center justify-center gap-1 py-1 text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+      >
+        {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+        {expanded ? 'Hide' : 'Resources & Tags'}
+      </button>
+      {expanded && (
+        <div className="px-2 pb-2 space-y-2">
+          {/* Resources + Production */}
+          <div className="flex justify-between gap-1">
+            {RESOURCES.map(r => (
+              <TrackerCell
+                key={r.key}
+                icon={getIcon(resourceIcons, r.icon)}
+                value={trackers[r.key] ?? 0}
+                subValue={trackers[r.prodKey] ?? 0}
+                title={`${r.label}: ${trackers[r.key] ?? 0} (prod: ${trackers[r.prodKey] ?? 0})`}
+              />
+            ))}
+          </div>
+          {/* Tags */}
+          <div className="flex flex-wrap justify-center gap-2">
+            {TAGS.map(t => {
+              const val = trackers[t.key] ?? 0;
+              if (val === 0) return null;
+              return (
+                <TrackerCell
+                  key={t.key}
+                  icon={getIcon(tagIcons, t.icon)}
+                  value={val}
+                  title={`${t.key}: ${val}`}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -96,6 +196,9 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
                     </div>
                   ))}
                 </div>
+              )}
+              {gameState?.player_trackers?.[pid] && (
+                <PlayerTrackers trackers={gameState.player_trackers[pid]} />
               )}
             </div>
           );
