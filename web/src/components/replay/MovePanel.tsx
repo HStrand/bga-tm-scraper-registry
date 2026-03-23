@@ -1,4 +1,3 @@
-import { Layers } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { GameLogMove, GameState } from '@/types/gamelog';
 
@@ -174,10 +173,10 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
                       {onOpenTableau && (
                         <button
                           onClick={() => onOpenTableau(pid)}
-                          className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex-shrink-0"
+                          className="rounded hover:opacity-80 transition-opacity flex-shrink-0"
                           title="View cards"
                         >
-                          <Layers className="w-3.5 h-3.5" />
+                          <img src={getCardPlaceholderImage()} alt="View cards" className="w-5 h-7 object-cover rounded-sm" />
                         </button>
                       )}
                     </div>
