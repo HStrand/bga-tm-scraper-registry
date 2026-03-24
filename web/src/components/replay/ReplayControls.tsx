@@ -146,8 +146,7 @@ export function ReplayControls({
         {sliderHover && (
           <div
             className="absolute -top-6 -translate-x-1/2 pointer-events-none text-amber-200 text-xs font-bold rounded-md px-2 py-0.5 whitespace-nowrap glow-amber"
-            style={{ background: 'linear-gradient(180deg, rgba(217,119,6,0.9), rgba(180,80,0,0.95))', boxShadow: 'inset 0 1px 0 rgba(255,220,150,0.3), 0 0 12px rgba(217,119,6,0.5), 0 4px 8px rgba(0,0,0,0.4)' }}
-            style={{ left: `${sliderHover.pct}%` }}
+            style={{ background: 'linear-gradient(180deg, rgba(217,119,6,0.9), rgba(180,80,0,0.95))', boxShadow: 'inset 0 1px 0 rgba(255,220,150,0.3), 0 0 12px rgba(217,119,6,0.5), 0 4px 8px rgba(0,0,0,0.4)', left: `${sliderHover.pct}%` }}
           >
             {sliderHover.value + 1}
           </div>

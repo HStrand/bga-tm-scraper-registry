@@ -4,8 +4,10 @@ import { useParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
 import { fetchGameLog, extractTilePlacement, parseTileLocationToDbKey, assignPlayerColors } from '@/lib/gameLog';
 import { ReplayMap, type PlacedTile } from '@/components/replay/ReplayMap';
-import { MovePanel } from '@/components/replay/MovePanel';
 import { ReplayControls } from '@/components/replay/ReplayControls';
+import { GlobalParamsBar } from '@/components/replay/GlobalParamsBar';
+import { MoveLog } from '@/components/replay/MoveLog';
+import { PlayerCard } from '@/components/replay/PlayerCard';
 import { PlayerTableau } from '@/components/replay/PlayerTableau';
 import { DiscardPileModal } from '@/components/replay/DiscardPileModal';
 import type { GameLog } from '@/types/gamelog';
@@ -18,6 +20,7 @@ export function GameReplayPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [tableauPlayerId, setTableauPlayerId] = useState<string | null>(null);
   const [showDiscardPile, setShowDiscardPile] = useState(false);
+  const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
 
   // --- data fetching ---
   useEffect(() => {
@@ -319,8 +322,38 @@ export function GameReplayPage() {
         </div>
       )}
 
-      {/* Main content */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      {/* Main content — 3 column layout */}
+      <div className="flex gap-4">
+        {/* Left: Player cards */}
+        <div className="w-[180px] flex-shrink-0 space-y-2.5">
+          {gameState?.player_vp && Object.keys(gameState.player_vp).map(pid => {
+            const tableau = playerTableaux.get(pid);
+            return (
+              <PlayerCard
+                key={pid}
+                playerId={pid}
+                playerName={playerNames[pid] ?? pid}
+                corporation={playerCorporations[pid] ?? ''}
+                color={playerColors[pid] ?? '#888'}
+                elo={playerElos?.[pid] ?? null}
+                vp={gameState.player_vp?.[pid]}
+                trackers={gameState.player_trackers?.[pid]}
+                tileCounts={playerTileCounts?.[pid]}
+                isStartingPlayer={gameState.starting_player === pid}
+                isExpanded={expandedPlayerId === pid}
+                onExpand={() => setExpandedPlayerId(pid)}
+                onCollapse={() => setExpandedPlayerId(null)}
+                headquarters={tableau?.headquarters ?? []}
+                played={tableau?.played ?? []}
+                hand={tableau?.hand ?? []}
+                sold={tableau?.sold ?? []}
+                cardResources={tableau?.cardResources ?? {}}
+              />
+            );
+          })}
+        </div>
+
+        {/* Center: Map + controls */}
         <div className="flex-1 min-w-0">
           {mapDefinition ? (
             <ReplayMap
@@ -360,8 +393,10 @@ export function GameReplayPage() {
           />
         </div>
 
-        <div className="lg:w-80 lg:self-start lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto flex-shrink-0">
-          <MovePanel move={currentMove} gameState={gameState} playerColors={playerColors} playerNames={playerNames} playerCorporations={playerCorporations} playerElos={playerElos} playerTileCounts={playerTileCounts} onOpenTableau={setTableauPlayerId} onOpenDiscardPile={() => setShowDiscardPile(true)} />
+        {/* Right: Global params + Move log */}
+        <div className="w-[280px] flex-shrink-0 space-y-3 lg:self-start lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-hidden">
+          <GlobalParamsBar gameState={gameState} onOpenDiscardPile={() => setShowDiscardPile(true)} />
+          <MoveLog move={currentMove} playerColors={playerColors} />
         </div>
       </div>
 
