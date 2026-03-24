@@ -6,6 +6,7 @@ import { ReplayMap, type PlacedTile } from '@/components/replay/ReplayMap';
 import { MovePanel } from '@/components/replay/MovePanel';
 import { ReplayControls } from '@/components/replay/ReplayControls';
 import { PlayerTableau } from '@/components/replay/PlayerTableau';
+import { DiscardPileModal } from '@/components/replay/DiscardPileModal';
 import type { GameLog } from '@/types/gamelog';
 
 export function GameReplayPage() {
@@ -15,6 +16,7 @@ export function GameReplayPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [tableauPlayerId, setTableauPlayerId] = useState<string | null>(null);
+  const [showDiscardPile, setShowDiscardPile] = useState(false);
 
   // --- data fetching ---
   useEffect(() => {
@@ -174,6 +176,17 @@ export function GameReplayPage() {
     return map;
   }, [gameLog, currentStep, playerPreludeNames]);
 
+  const discardPile = useMemo(() => {
+    if (!gameLog) return [];
+    const cards: string[] = [];
+    for (let i = 0; i <= currentStep; i++) {
+      const move = gameLog.moves[i];
+      if (move?.cards_discarded) cards.push(...move.cards_discarded);
+      if (move?.cards_sold) cards.push(...move.cards_sold);
+    }
+    return cards;
+  }, [gameLog, currentStep]);
+
   // --- jump ---
   const jumpTo = useCallback((target: number) => {
     if (!gameLog) return;
@@ -269,7 +282,7 @@ export function GameReplayPage() {
         </div>
 
         <div className="lg:w-80 lg:self-start lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto flex-shrink-0">
-          <MovePanel move={currentMove} gameState={gameState} playerColors={playerColors} playerNames={playerNames} playerCorporations={playerCorporations} onOpenTableau={setTableauPlayerId} />
+          <MovePanel move={currentMove} gameState={gameState} playerColors={playerColors} playerNames={playerNames} playerCorporations={playerCorporations} onOpenTableau={setTableauPlayerId} onOpenDiscardPile={() => setShowDiscardPile(true)} />
         </div>
       </div>
 
@@ -285,6 +298,10 @@ export function GameReplayPage() {
           cardResources={playerTableaux.get(tableauPlayerId)?.cardResources ?? {}}
           onClose={() => setTableauPlayerId(null)}
         />
+      )}
+
+      {showDiscardPile && (
+        <DiscardPileModal cards={discardPile} onClose={() => setShowDiscardPile(false)} />
       )}
     </div>
   );

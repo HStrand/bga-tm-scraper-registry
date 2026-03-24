@@ -128,9 +128,10 @@ interface MovePanelProps {
   playerNames: Record<string, string>;
   playerCorporations: Record<string, string>;
   onOpenTableau?: (playerId: string) => void;
+  onOpenDiscardPile?: () => void;
 }
 
-export function MovePanel({ move, gameState, playerColors, playerNames, playerCorporations, onOpenTableau }: MovePanelProps) {
+export function MovePanel({ move, gameState, playerColors, playerNames, playerCorporations, onOpenTableau, onOpenDiscardPile }: MovePanelProps) {
   const cardImage = move?.card_played
     ? getCardImage(move.card_played) ?? getCardPlaceholderImage()
     : null;
@@ -146,7 +147,13 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
             <Badge label="O2" value={gameState.oxygen != null ? `${gameState.oxygen}%` : null} icon={oxygenImg} hideLabel large />
             <Badge label="Oceans" value={gameState.oceans != null ? `${gameState.oceans}/9` : null} icon={oceanImg} hideLabel large />
             <Badge label="Draw" value={gameState.draw_pile ?? 0} icon={getCardPlaceholderImage()} />
-            <Badge label="Discard" value={gameState.discard_pile ?? 0} icon={getCardPlaceholderImage()} />
+            {onOpenDiscardPile ? (
+              <button onClick={onOpenDiscardPile} className="hover:opacity-80 transition-opacity">
+                <Badge label="Discard" value={gameState.discard_pile ?? 0} icon={getCardPlaceholderImage()} />
+              </button>
+            ) : (
+              <Badge label="Discard" value={gameState.discard_pile ?? 0} icon={getCardPlaceholderImage()} />
+            )}
           </div>
         </div>
       )}
