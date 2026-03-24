@@ -91,22 +91,40 @@ function getTracker(trackers: Record<string, number>, key: string, altKey?: stri
   return trackers[key] ?? (altKey ? trackers[altKey] ?? 0 : 0);
 }
 
-function ResourceCell({ icon, value, prodValue, title }: { icon?: string; value: number; prodValue: number; title: string }) {
+const RESOURCE_COLORS: Record<string, string> = {
+  'M€': '#b8860b',
+  'Steel': '#8b4513',
+  'Titanium': '#2d2d2d',
+  'Plant': '#2d6a1e',
+  'Energy': '#6b21a8',
+  'Heat': '#b91c1c',
+};
+
+function ResourceCell({ icon, value, prodValue, title, resourceKey }: { icon?: string; value: number; prodValue: number; title: string; resourceKey: string }) {
+  const bg = RESOURCE_COLORS[resourceKey] ?? '#334155';
   return (
-    <div
-      className="flex flex-col items-center w-14 py-1.5 rounded-lg"
-      style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.1) 100%)', border: '1px solid rgba(255,255,255,0.06)' }}
-      title={title}
-    >
-      {icon ? (
-        <img src={icon} alt={title} className="w-7 h-7 object-contain" />
-      ) : (
-        <div className="w-7 h-7 rounded-full bg-slate-600" />
-      )}
-      <span className="text-sm font-bold text-white leading-none mt-0.5">{value}</span>
-      <span className={`text-[11px] font-semibold leading-none mt-0.5 ${prodValue >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-        {prodValue >= 0 ? `+${prodValue}` : prodValue}
-      </span>
+    <div className="flex flex-col items-center w-14 rounded-lg overflow-hidden" title={title}>
+      {/* Icon on colored background */}
+      <div className="w-full flex items-center justify-center py-1.5" style={{ background: bg }}>
+        {icon ? (
+          <img src={icon} alt={title} className="w-7 h-7 object-contain drop-shadow-md" />
+        ) : (
+          <div className="w-7 h-7 rounded-full bg-white/20" />
+        )}
+      </div>
+      {/* Count */}
+      <div className="w-full text-center py-0.5" style={{ background: 'rgba(255,255,255,0.08)' }}>
+        <span className="text-base font-bold text-white">{value}</span>
+      </div>
+      {/* Production */}
+      <div className="w-full text-center py-0.5" style={{ background: 'rgba(0,0,0,0.2)' }}>
+        <span
+          className={`text-base font-bold ${prodValue >= 0 ? 'text-green-400' : 'text-red-400'}`}
+          style={{ textShadow: prodValue !== 0 ? (prodValue > 0 ? '0 0 6px rgba(74,222,128,0.4)' : '0 0 6px rgba(248,113,113,0.4)') : undefined }}
+        >
+          {prodValue >= 0 ? `+${prodValue}` : prodValue}
+        </span>
+      </div>
     </div>
   );
 }
@@ -136,6 +154,7 @@ export function PlayerTrackers({ trackers, tileCounts }: { trackers: Record<stri
         {RESOURCES.map(r => (
           <ResourceCell
             key={r.key}
+            resourceKey={r.key}
             icon={getIcon(resourceIcons, r.icon)}
             value={trackers[r.key] ?? 0}
             prodValue={trackers[r.prodKey] ?? 0}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { X, Pin, PinOff, Grid3X3, Layers, List, EyeOff } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { PlayerVictoryPoints } from '@/types/gamelog';
@@ -28,7 +28,7 @@ type ViewMode = 'grid' | 'stack' | 'synthetic' | 'hidden';
 
 // --- Card view components (dark-themed) ---
 
-function CardGrid({ cards, cardResources, cardSize }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number }) {
+const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number }) {
   return (
     <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${cardSize}px, 1fr))` }}>
       {cards.map((card, i) => {
@@ -48,9 +48,9 @@ function CardGrid({ cards, cardResources, cardSize }: { cards: string[]; cardRes
       })}
     </div>
   );
-}
+});
 
-function CardStack({ cards, cardResources, cardSize }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number }) {
+const CardStack = memo(function CardStack({ cards, cardResources, cardSize }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number }) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   if (cards.length === 0) return null;
 
@@ -89,9 +89,9 @@ function CardStack({ cards, cardResources, cardSize }: { cards: string[]; cardRe
       ))}
     </div>
   );
-}
+});
 
-function CardSynthetic({ cards, cardResources, cardSize }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number }) {
+const CardSynthetic = memo(function CardSynthetic({ cards, cardResources, cardSize }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number }) {
   const boxWidth = Math.max(100, cardSize * 1.2);
   return (
     <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${boxWidth}px, 1fr))` }}>
@@ -113,9 +113,9 @@ function CardSynthetic({ cards, cardResources, cardSize }: { cards: string[]; ca
       })}
     </div>
   );
-}
+});
 
-function CardSection({ cards, title, color, cardResources, defaultViewMode = 'grid' }: {
+const CardSection = memo(function CardSection({ cards, title, color, cardResources, defaultViewMode = 'grid' }: {
   cards: string[]; title: string; color: string; cardResources?: Record<string, number>; defaultViewMode?: ViewMode;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
@@ -160,9 +160,9 @@ function CardSection({ cards, title, color, cardResources, defaultViewMode = 'gr
       )}
     </div>
   );
-}
+});
 
-export function PlayerCard({
+export const PlayerCard = memo(function PlayerCard({
   playerId, playerName, corporation, color, elo, vp, trackers, tileCounts,
   isStartingPlayer, isExpanded, onExpand, onCollapse,
   headquarters, played, hand, sold, cardResources,
@@ -449,4 +449,22 @@ export function PlayerCard({
       </div>
     </div>
   );
-}
+}, (prev, next) => {
+  // Custom comparator: skip re-render if card arrays haven't changed by content
+  if (prev.isExpanded !== next.isExpanded) return false;
+  if (prev.playerId !== next.playerId) return false;
+  if (prev.vp?.total !== next.vp?.total) return false;
+  if (prev.color !== next.color) return false;
+  if (prev.isStartingPlayer !== next.isStartingPlayer) return false;
+  if (prev.elo !== next.elo) return false;
+  // Only check card arrays if expanded (they're not rendered when collapsed)
+  if (next.isExpanded) {
+    if (prev.hand.length !== next.hand.length || prev.hand.some((c, i) => c !== next.hand[i])) return false;
+    if (prev.played.length !== next.played.length || prev.played.some((c, i) => c !== next.played[i])) return false;
+    if (prev.headquarters.length !== next.headquarters.length) return false;
+    if (prev.sold.length !== next.sold.length) return false;
+    if (prev.trackers !== next.trackers) return false;
+    if (prev.tileCounts !== next.tileCounts) return false;
+  }
+  return true;
+});

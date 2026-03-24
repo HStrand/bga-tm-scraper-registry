@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Info } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
 import { fetchGameLog, extractTilePlacement, parseTileLocationToDbKey, assignPlayerColors } from '@/lib/gameLog';
 import { ReplayMap, type PlacedTile } from '@/components/replay/ReplayMap';
@@ -14,6 +14,7 @@ import type { GameLog } from '@/types/gamelog';
 
 export function GameReplayPage() {
   const { tableId } = useParams<{ tableId: string }>();
+  const [searchParams] = useSearchParams();
   const [gameLog, setGameLog] = useState<GameLog | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +56,12 @@ export function GameReplayPage() {
     setLoading(true);
     setError(null);
     fetchGameLog(tableId)
-      .then(data => { setGameLog(data); setCurrentStep(0); })
+      .then(data => {
+        setGameLog(data);
+        const moveParam = parseInt(searchParams.get('move') ?? '', 10);
+        const initial = !isNaN(moveParam) && moveParam >= 1 ? Math.min(moveParam - 1, data.moves.length - 1) : 0;
+        setCurrentStep(initial);
+      })
       .catch(() => setError('Game not found.'))
       .finally(() => setLoading(false));
   }, [tableId]);

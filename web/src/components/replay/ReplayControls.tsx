@@ -104,7 +104,7 @@ export function ReplayControls({
               Gen <span className="text-amber-400 font-semibold glow-amber">{currentGen}</span>
             </button>
             {showGenPicker && (
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 glass-panel rounded-xl py-2 shadow-xl z-50 max-h-52 overflow-y-auto min-w-[4.5rem] scrollbar-hidden">
+              <div className="glass-panel rounded-xl py-2 shadow-xl max-h-52 overflow-y-auto min-w-[4.5rem] scrollbar-hidden" style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: '0.5rem', zIndex: 50 }}>
                 {sortedGens.map(g => (
                   <button
                     key={g}
