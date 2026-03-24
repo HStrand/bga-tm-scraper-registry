@@ -265,10 +265,22 @@ export function GameReplayPage() {
       {/* Header */}
       <div className="mb-4">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">
-          Game Replay {mapDefinition ? `\u2014 ${mapDefinition.name}` : ''}
+          Table {tableId} {mapDefinition ? `\u2014 ${mapDefinition.name}` : ''}
         </h1>
-        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-slate-400">
           {gameLog.game_date && <span>{gameLog.game_date}</span>}
+          {gameLog.game_speed && <span>{gameLog.game_speed}</span>}
+          {([
+            ['Prelude', gameLog.prelude_on],
+            ['Colonies', gameLog.colonies_on],
+            ['Draft', gameLog.draft_on],
+            ['Corp Era', gameLog.corporate_era_on],
+          ] as const).map(([label, val]) => val != null && (
+            <span key={label} className="inline-flex items-center gap-1.5">
+              <span className={`inline-block w-2 h-2 rounded-full ${val ? 'bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.6)]' : 'bg-slate-300 dark:bg-slate-600'}`} />
+              <span className={val ? 'text-slate-700 dark:text-slate-300' : 'text-slate-400 dark:text-slate-500'}>{label}</span>
+            </span>
+          ))}
           {gameLog.winner && currentStep === gameLog.moves.length - 1 && (
             <span className="font-medium text-amber-600 dark:text-amber-400">Winner: {gameLog.winner}</span>
           )}

@@ -6,6 +6,12 @@ export interface GameLog {
   game_duration?: string;
   winner: string;
   generations: number | null;
+  prelude_on?: boolean | null;
+  colonies_on?: boolean | null;
+  corporate_era_on?: boolean | null;
+  draft_on?: boolean | null;
+  beginners_corporations_on?: boolean | null;
+  game_speed?: string | null;
   players: Record<string, GameLogPlayer>;
   moves: GameLogMove[];
 }
