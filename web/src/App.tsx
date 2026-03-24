@@ -24,7 +24,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/replay/:tableId" element={
-          <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+          <div className="replay-bg">
             <div className="container mx-auto px-4 py-6 max-w-7xl"><GameReplayPage /></div>
           </div>
         } />

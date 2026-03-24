@@ -256,8 +256,8 @@ export function GameReplayPage() {
   // --- render ---
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 py-8">
-        <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+      <div className="flex items-center gap-2 text-slate-400 py-8">
+        <div className="w-5 h-5 border-2 border-slate-600 border-t-amber-500 rounded-full animate-spin" />
         Loading game replay...
       </div>
     );
@@ -265,7 +265,7 @@ export function GameReplayPage() {
 
   if (error || !gameLog) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-300">
+      <div className="bg-red-900/20 border border-red-800/40 rounded-lg p-4 text-red-300">
         {error ?? 'Game not found.'}
       </div>
     );
@@ -277,13 +277,16 @@ export function GameReplayPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">
-          Table {tableId} {mapDefinition ? `\u2014 ${mapDefinition.name}` : ''}
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold text-white mb-1 tracking-tight glow-white">
+          Table {tableId}
+          {mapDefinition && (
+            <span className="text-slate-400 font-normal" style={{ textShadow: 'none' }}> &mdash; {mapDefinition.name}</span>
+          )}
         </h1>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-slate-400">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
           {gameLog.game_date && <span>{gameLog.game_date}</span>}
-          {gameLog.game_speed && <span>{gameLog.game_speed}</span>}
+          {gameLog.game_speed && <span className="text-slate-500">{gameLog.game_speed}</span>}
           {([
             ['Prelude', gameLog.prelude_on],
             ['Colonies', gameLog.colonies_on],
@@ -291,22 +294,22 @@ export function GameReplayPage() {
             ['Corp Era', gameLog.corporate_era_on],
           ] as const).map(([label, val]) => val != null && (
             <span key={label} className="inline-flex items-center gap-1.5">
-              <span className={`inline-block w-2 h-2 rounded-full ${val ? 'bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.6)]' : 'bg-slate-300 dark:bg-slate-600'}`} />
-              <span className={val ? 'text-slate-700 dark:text-slate-300' : 'text-slate-400 dark:text-slate-500'}>{label}</span>
+              <span className={`inline-block w-2 h-2 rounded-full ${val ? 'bg-green-500 glow-green' : 'bg-slate-600'}`} />
+              <span className={val ? 'text-slate-300' : 'text-slate-500'}>{label}</span>
             </span>
           ))}
           {gameLog.winner && currentStep === gameLog.moves.length - 1 && (
-            <span className="font-medium text-amber-600 dark:text-amber-400">Winner: {gameLog.winner}</span>
+            <span className="font-medium text-amber-400 glow-amber">Winner: {gameLog.winner}</span>
           )}
         </div>
       </div>
 
       {missingFeatures.length > 0 && (
-        <div className="mb-4 w-fit bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 text-sm text-amber-800 dark:text-amber-300 flex items-center gap-2">
-          <span>This replay was collected with an older version of the scraper. Some features are missing.</span>
+        <div className="mb-4 w-fit bg-amber-900/20 border border-amber-800/40 rounded-lg px-3 py-2 text-sm text-amber-300 flex items-center gap-2">
+          <span>Older scraper version. Some features are missing.</span>
           <div className="relative group flex-shrink-0">
-            <Info className="w-4 h-4 cursor-help" />
-            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 hidden group-hover:block z-50 bg-slate-800 dark:bg-slate-700 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap">
+            <Info className="w-4 h-4 cursor-help text-amber-400" />
+            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 hidden group-hover:block z-50 bg-slate-800 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap border border-slate-700">
               <p className="font-medium mb-1">Missing features:</p>
               <ul className="list-disc list-inside space-y-0.5">
                 {missingFeatures.map(f => <li key={f.key}>{f.label}</li>)}
@@ -327,14 +330,14 @@ export function GameReplayPage() {
               currentStep={currentStep}
             />
           ) : (
-            <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-8 text-center text-slate-500 dark:text-slate-400">
+            <div className="glass-panel rounded-xl p-8 text-center text-slate-400">
               Map &ldquo;{gameLog.map}&rdquo; not available for visualization.
             </div>
           )}
 
           {offMapTiles.length > 0 && (
-            <div className="mt-3 text-sm text-slate-600 dark:text-slate-400">
-              <span className="font-medium">Off-map tiles:</span>{' '}
+            <div className="mt-3 text-sm text-slate-400">
+              <span className="font-medium text-slate-300">Off-map tiles:</span>{' '}
               {offMapTiles.map((t, i) => (
                 <span key={t.dbKey}>
                   {i > 0 && ', '}

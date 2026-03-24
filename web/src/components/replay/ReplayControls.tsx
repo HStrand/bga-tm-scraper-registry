@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, SkipBack, SkipForward } from 'lucide-react';
 import type { GameState } from '@/types/gamelog';
 
 interface ReplayControlsProps {
@@ -17,22 +17,34 @@ export function ReplayControls({
   currentStep, totalMoves, gameState, isAnimating,
   onPrev, onNext, onJump, generationBoundaries,
 }: ReplayControlsProps) {
-  const [jumpTarget, setJumpTarget] = useState('');
+  const [sliderHover, setSliderHover] = useState<{ value: number; pct: number } | null>(null);
+  const [showGenPicker, setShowGenPicker] = useState(false);
+  const sliderRef = useRef<HTMLInputElement>(null);
+  const genPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showGenPicker) return;
+    const onClick = (e: MouseEvent) => {
+      if (genPickerRef.current && !genPickerRef.current.contains(e.target as Node)) {
+        setShowGenPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [showGenPicker]);
+
+  const handleSliderHover = useCallback((e: React.MouseEvent<HTMLInputElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const value = Math.round(pct * (totalMoves - 1));
+    setSliderHover({ value, pct: pct * 100 });
+  }, [totalMoves]);
 
   const currentGen = gameState?.generation ?? null;
   const sortedGens = useMemo(
     () => Array.from(generationBoundaries.keys()).sort((a, b) => a - b),
     [generationBoundaries],
   );
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const parsed = parseInt(jumpTarget, 10);
-    if (!isNaN(parsed)) {
-      onJump(parsed - 1); // input is 1-based
-      setJumpTarget('');
-    }
-  };
 
   const jumpGenStart = () => {
     if (currentGen == null) return;
@@ -70,76 +82,108 @@ export function ReplayControls({
   const hasPrevGen = hasGenerations && sortedGens.indexOf(currentGen) > 0;
   const hasNextGen = hasGenerations && sortedGens.indexOf(currentGen) < sortedGens.length - 1;
 
-  const btnClass = "flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-sm font-medium disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300";
+  const sliderPct = totalMoves > 1 ? (currentStep / (totalMoves - 1)) * 100 : 0;
+
+  const navBtn = "nav-glow flex items-center justify-center w-10 h-10 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 disabled:opacity-25 disabled:hover:bg-transparent transition-all";
+  const genBtn = "nav-glow flex items-center justify-center px-3 h-8 rounded-md text-xs font-medium text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-25 transition-all";
 
   return (
-    <div className="mt-4 py-3 border-t border-slate-200 dark:border-slate-700 space-y-2">
-      {/* Step navigation */}
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <button onClick={onPrev} disabled={currentStep <= 0 || isAnimating} className={btnClass}>
-          <ChevronLeft className="w-4 h-4" /> Prev
-        </button>
-        <span className="text-sm text-slate-600 dark:text-slate-400">
-          Move {currentStep + 1} of {totalMoves}
-          {currentGen != null && (
-            <span className="ml-2">&middot; Gen {currentGen}</span>
-          )}
+    <div className="mt-4 glass-panel rounded-2xl px-5 py-4 space-y-3">
+      {/* Move info */}
+      <div className="flex items-center justify-center gap-4 text-sm">
+        <span className="text-slate-400">
+          Move <span className="text-white font-semibold glow-white">{currentStep + 1}</span>
+          <span className="text-slate-500"> / {totalMoves}</span>
         </span>
-        <button onClick={onNext} disabled={currentStep >= totalMoves - 1 || isAnimating} className={btnClass}>
-          Next <ChevronRight className="w-4 h-4" />
-        </button>
-        <div className="w-px h-6 bg-slate-300 dark:bg-slate-600" />
-        <form onSubmit={handleSubmit} className="flex items-center gap-1.5">
-          <label className="text-sm text-slate-500 dark:text-slate-400">Go to:</label>
-          <input
-            type="number"
-            min={1}
-            max={totalMoves}
-            value={jumpTarget}
-            onChange={e => setJumpTarget(e.target.value)}
-            placeholder="#"
-            className="w-16 px-2 py-1.5 text-sm rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-center"
-          />
-          <button
-            type="submit"
-            disabled={isAnimating}
-            className="px-2.5 py-1.5 text-sm rounded border border-slate-200 dark:border-slate-600 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 disabled:opacity-30"
-          >
-            Go
-          </button>
-        </form>
+        {hasGenerations && (
+          <div className="relative" ref={genPickerRef}>
+            <button
+              onClick={() => setShowGenPicker(v => !v)}
+              className="text-slate-400 hover:text-amber-300 transition-colors cursor-pointer"
+            >
+              Gen <span className="text-amber-400 font-semibold glow-amber">{currentGen}</span>
+            </button>
+            {showGenPicker && (
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 glass-panel rounded-xl py-2 shadow-xl z-50 max-h-52 overflow-y-auto min-w-[4.5rem] scrollbar-hidden">
+                {sortedGens.map(g => (
+                  <button
+                    key={g}
+                    onClick={() => {
+                      const bounds = generationBoundaries.get(g);
+                      if (bounds) onJump(bounds.start);
+                      setShowGenPicker(false);
+                    }}
+                    className={`block w-full px-4 py-1.5 text-sm text-left transition-colors ${
+                      g === currentGen
+                        ? 'text-amber-400 font-semibold bg-white/10'
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Gen {g}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Generation navigation */}
-      {hasGenerations && (
-        <div className="flex items-center justify-center gap-1.5">
-          <button onClick={jumpPrevGen} disabled={!hasPrevGen || isAnimating} className={btnClass} title="Previous generation">
-            <ChevronsLeft className="w-4 h-4" />
-          </button>
-          <select
-            value={currentGen ?? ''}
-            onChange={e => {
-              const gen = parseInt(e.target.value, 10);
-              const bounds = generationBoundaries.get(gen);
-              if (bounds) onJump(bounds.start);
-            }}
-            className="px-2 py-1.5 text-sm rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+      {/* Slider */}
+      <div className="relative px-1 pt-1 pb-2">
+        <input
+          ref={sliderRef}
+          type="range"
+          min={0}
+          max={totalMoves - 1}
+          value={currentStep}
+          onChange={e => onJump(parseInt(e.target.value, 10))}
+          onMouseMove={handleSliderHover}
+          onMouseLeave={() => setSliderHover(null)}
+          disabled={isAnimating}
+          className="replay-slider"
+          style={{ '--slider-pct': `${sliderPct}%` } as React.CSSProperties}
+        />
+        {sliderHover && (
+          <div
+            className="absolute -top-6 -translate-x-1/2 pointer-events-none bg-amber-600 text-white text-xs font-bold rounded-md px-2 py-0.5 whitespace-nowrap shadow-lg"
+            style={{ left: `${sliderHover.pct}%` }}
           >
-            {sortedGens.map(g => (
-              <option key={g} value={g}>Gen {g}</option>
-            ))}
-          </select>
-          <button onClick={jumpGenStart} disabled={isAnimating} className={btnClass} title="Start of current generation">
-            Start
+            {sliderHover.value + 1}
+          </div>
+        )}
+      </div>
+
+      {/* Navigation buttons */}
+      <div className="flex items-center justify-center gap-1">
+        {hasGenerations && (
+          <button onClick={jumpPrevGen} disabled={!hasPrevGen || isAnimating} className={navBtn} title="Previous generation">
+            <ChevronsLeft className="w-5 h-5" />
           </button>
-          <button onClick={jumpGenEnd} disabled={isAnimating} className={btnClass} title="End of current generation">
-            End
+        )}
+        <button onClick={onPrev} disabled={currentStep <= 0 || isAnimating} className={navBtn} title="Previous move">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        {hasGenerations && (
+          <div className="flex items-center gap-1 mx-2">
+            <button onClick={jumpGenStart} disabled={isAnimating} className={genBtn} title="Start of generation">
+              <SkipBack className="w-3.5 h-3.5 mr-1" /> Start
+            </button>
+            <button onClick={jumpGenEnd} disabled={isAnimating} className={genBtn} title="End of generation">
+              End <SkipForward className="w-3.5 h-3.5 ml-1" />
+            </button>
+          </div>
+        )}
+
+        <button onClick={onNext} disabled={currentStep >= totalMoves - 1 || isAnimating} className={navBtn} title="Next move">
+          <ChevronRight className="w-5 h-5" />
+        </button>
+        {hasGenerations && (
+          <button onClick={jumpNextGen} disabled={!hasNextGen || isAnimating} className={navBtn} title="Next generation">
+            <ChevronsRight className="w-5 h-5" />
           </button>
-          <button onClick={jumpNextGen} disabled={!hasNextGen || isAnimating} className={btnClass} title="Next generation">
-            <ChevronsRight className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

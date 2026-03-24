@@ -56,3 +56,111 @@
     @apply antialiased bg-background text-foreground;
   }
 }
+
+/* ── Replay page custom styles ── */
+
+.replay-bg {
+  background: radial-gradient(ellipse at 50% 0%, #1a1040 0%, #0a0a1a 50%, #050510 100%);
+  min-height: 100vh;
+  position: relative;
+}
+/* Subtle ambient glow behind the page content */
+.replay-bg::before {
+  content: '';
+  position: fixed;
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 50%;
+  background: radial-gradient(ellipse, rgba(217, 119, 6, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Custom range slider for replay controls */
+.replay-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #d97706 0%, #d97706 var(--slider-pct, 0%), #1e293b var(--slider-pct, 0%), #1e293b 100%);
+  outline: none;
+  cursor: pointer;
+  filter: drop-shadow(0 0 4px rgba(217, 119, 6, 0.3));
+}
+.replay-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fde68a, #d97706);
+  box-shadow:
+    0 0 12px rgba(251, 191, 36, 0.6),
+    0 0 24px rgba(217, 119, 6, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.replay-slider::-webkit-slider-thumb:hover {
+  box-shadow:
+    0 0 16px rgba(251, 191, 36, 0.8),
+    0 0 32px rgba(217, 119, 6, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.5);
+}
+.replay-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: radial-gradient(circle at 40% 35%, #fde68a, #d97706);
+  box-shadow:
+    0 0 12px rgba(251, 191, 36, 0.6),
+    0 0 24px rgba(217, 119, 6, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+.replay-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: transparent;
+}
+
+/* Hidden scrollbar */
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+/* Glassmorphism panel */
+.glass-panel {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(10, 15, 30, 0.95));
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  box-shadow:
+    0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 0 30px rgba(100, 120, 180, 0.06),
+    0 8px 32px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+}
+
+/* Glow utility classes for replay */
+.glow-amber {
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.5), 0 0 20px rgba(217, 119, 6, 0.25);
+}
+.glow-white {
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.3), 0 0 16px rgba(200, 210, 240, 0.15);
+}
+.glow-green {
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6), 0 0 12px rgba(34, 197, 94, 0.3);
+}
+
+/* Nav button hover glow */
+.nav-glow:hover:not(:disabled) {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  filter: drop-shadow(0 0 4px rgba(200, 210, 240, 0.3));
+}

@@ -61,9 +61,9 @@ const TAG_ROWS = [
 function Badge({ label, value, icon, hideLabel, large }: { label: string; value: string | number | null | undefined; icon?: string; hideLabel?: boolean; large?: boolean }) {
   if (value == null) return null;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 ${large ? 'px-3 py-1.5 text-sm' : 'px-2.5 py-1 text-xs'}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full font-medium bg-white/5 border border-white/10 text-slate-300 ${large ? 'px-3 py-1.5 text-sm' : 'px-2.5 py-1 text-xs'}`}>
       {icon && <img src={icon} alt={label} className={`${large ? 'w-8 h-8' : 'w-6 h-6'} object-contain`} />}
-      {!hideLabel && <>{label}:</>} <span className="font-bold">{value}</span>
+      {!hideLabel && <>{label}:</>} <span className="font-bold text-white glow-white">{value}</span>
     </span>
   );
 }
@@ -74,11 +74,11 @@ function TrackerCell({ icon, value, subValue, title }: { icon?: string; value: n
       {icon ? (
         <img src={icon} alt={title} className="w-5 h-5 object-contain" />
       ) : (
-        <div className="w-5 h-5 rounded-full bg-slate-300 dark:bg-slate-600" />
+        <div className="w-5 h-5 rounded-full bg-slate-600" />
       )}
-      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-none">{value}</span>
+      <span className="text-xs font-bold text-slate-200 leading-none">{value}</span>
       {subValue !== undefined && (
-        <span className={`text-[10px] font-medium leading-none ${subValue >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+        <span className={`text-[10px] font-medium leading-none ${subValue >= 0 ? 'text-green-400' : 'text-red-400'}`}>
           {subValue >= 0 ? `+${subValue}` : subValue}
         </span>
       )}
@@ -92,7 +92,7 @@ function getTracker(trackers: Record<string, number>, key: string, altKey?: stri
 
 function PlayerTrackers({ trackers, tileCounts }: { trackers: Record<string, number>; tileCounts?: { cities: number; greeneries: number; total: number } }) {
   return (
-    <div className="border-t border-slate-200 dark:border-slate-700 px-2 py-2 space-y-2">
+    <div className="border-t border-white/10 px-2 py-2 space-y-2">
       {/* Resources + Production */}
       <div className="flex justify-between gap-1">
         {RESOURCES.map(r => (
@@ -154,7 +154,7 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
     <div className="space-y-3">
       {/* Global parameters */}
       {gameState && (
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+        <div className="glass-panel rounded-xl p-3">
           <div className="flex flex-wrap gap-2">
             <Badge label="Gen" value={gameState.generation} large />
             <Badge label="Temp" value={gameState.temperature != null ? `${gameState.temperature}\u00B0C` : null} icon={temperatureImg} hideLabel large />
@@ -179,7 +179,7 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
           return (
             <div
               key={pid}
-              className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden"
+              className="glass-panel rounded-xl overflow-hidden"
             >
               <div
                 className="flex items-center justify-between px-3 py-2"
@@ -193,10 +193,10 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
                   )}
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-slate-900 dark:text-slate-100 truncate">
+                      <span className="font-bold text-white truncate">
                         {playerNames[pid] ?? pid}
                         {playerElos?.[pid] != null && (
-                          <span className="font-normal text-xs text-slate-400 dark:text-slate-500 ml-1">({playerElos[pid]})</span>
+                          <span className="font-normal text-xs text-slate-500 ml-1">({playerElos[pid]})</span>
                         )}
                       </span>
                       {gameState?.starting_player === pid && (
@@ -213,16 +213,16 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
                       )}
                     </div>
                     {playerCorporations[pid] && (
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 -mt-0.5">{playerCorporations[pid]}</div>
+                      <div className="text-[11px] text-slate-400 -mt-0.5">{playerCorporations[pid]}</div>
                     )}
                   </div>
                 </div>
-                <span className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                  {vp.total ?? '?'} <span className="text-xs font-medium text-slate-500 dark:text-slate-400">VP</span>
+                <span className="text-lg font-bold text-white glow-white">
+                  {vp.total ?? '?'} <span className="text-xs font-medium text-slate-400" style={{ textShadow: 'none' }}>VP</span>
                 </span>
               </div>
               {d && (
-                <div className="grid grid-cols-3 gap-px bg-slate-200 dark:bg-slate-700 border-t border-slate-200 dark:border-slate-700">
+                <div className="grid grid-cols-3 gap-px bg-white/5 border-t border-white/10">
                   {([
                     ['TR', d.tr],
                     ['Awards', d.awards],
@@ -231,9 +231,9 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
                     ['Green', d.greeneries],
                     ['Cards', d.cards],
                   ] as const).map(([label, val]) => (
-                    <div key={label} className="bg-white dark:bg-slate-800 px-2 py-1.5 text-center">
-                      <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{val ?? 0}</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</div>
+                    <div key={label} className="bg-slate-900/50 px-2 py-1.5 text-center">
+                      <div className="text-sm font-semibold text-slate-200">{val ?? 0}</div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wide">{label}</div>
                     </div>
                   ))}
                 </div>
@@ -248,21 +248,21 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
 
       {/* Current move */}
       {move && (
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+        <div className="glass-panel rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             {getCubeImage(playerColors[move.player_id]) ? (
               <img src={getCubeImage(playerColors[move.player_id])!} alt="" className="w-6 h-6 flex-shrink-0" />
             ) : (
               <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: playerColors[move.player_id] }} />
             )}
-            <span className="font-bold text-slate-900 dark:text-slate-100">
+            <span className="font-bold text-white">
               {move.player_name}
             </span>
-            <span className="text-xs text-slate-400">{move.action_type}</span>
+            <span className="text-xs text-slate-500">{move.action_type}</span>
           </div>
-          <p className="text-sm text-slate-700 dark:text-slate-300">{move.description}</p>
+          <p className="text-sm text-slate-300">{move.description}</p>
           {move.tile_placed && move.tile_location && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               Placed {move.tile_placed} at {move.tile_location}
             </p>
           )}
@@ -271,16 +271,16 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
 
       {move?.card_played && (
         <div className="space-y-1">
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <p className="text-sm font-medium text-slate-300">
             {move.card_played}
             {move.card_cost != null && (
-              <span className="text-slate-400 ml-1">({move.card_cost} MC)</span>
+              <span className="text-slate-500 ml-1">({move.card_cost} MC)</span>
             )}
           </p>
           <img
             src={cardImage!}
             alt={move.card_played}
-            className="w-64 rounded-lg shadow"
+            className="w-64 rounded-lg shadow-lg shadow-black/30"
           />
         </div>
       )}
