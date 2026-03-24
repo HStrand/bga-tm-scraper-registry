@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Info } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
 import { fetchGameLog, extractTilePlacement, parseTileLocationToDbKey, assignPlayerColors } from '@/lib/gameLog';
@@ -228,6 +229,19 @@ export function GameReplayPage() {
     setCurrentStep(Math.max(0, Math.min(target, gameLog.moves.length - 1)));
   }, [gameLog]);
 
+  // --- missing features detection ---
+  const missingFeatures = useMemo(() => {
+    if (!gameLog) return [];
+    const missing: { key: string; label: string }[] = [];
+    const hasPlayerHands = gameLog.moves.some(m => m.game_state?.player_hands);
+    const hasCardsDiscarded = gameLog.moves.some(m => m.cards_discarded);
+    const hasSpecialTiles = gameLog.moves.some(m => m.game_state?.special_tiles);
+    if (!hasPlayerHands) missing.push({ key: 'player_hands', label: 'Player hands' });
+    if (!hasCardsDiscarded) missing.push({ key: 'cards_discarded', label: 'Cards discarded' });
+    if (!hasSpecialTiles) missing.push({ key: 'special_tiles', label: 'Special tile placements' });
+    return missing;
+  }, [gameLog]);
+
   // --- keyboard ---
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -286,6 +300,21 @@ export function GameReplayPage() {
           )}
         </div>
       </div>
+
+      {missingFeatures.length > 0 && (
+        <div className="mb-4 w-fit bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 text-sm text-amber-800 dark:text-amber-300 flex items-center gap-2">
+          <span>This replay was collected with an older version of the scraper. Some features are missing.</span>
+          <div className="relative group flex-shrink-0">
+            <Info className="w-4 h-4 cursor-help" />
+            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 hidden group-hover:block z-50 bg-slate-800 dark:bg-slate-700 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap">
+              <p className="font-medium mb-1">Missing features:</p>
+              <ul className="list-disc list-inside space-y-0.5">
+                {missingFeatures.map(f => <li key={f.key}>{f.label}</li>)}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main content */}
       <div className="flex flex-col lg:flex-row gap-4">

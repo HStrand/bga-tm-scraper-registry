@@ -83,11 +83,12 @@ export function parseTileLocationToDbKey(tileLocation: string): string {
 }
 
 const PLAYER_COLORS = [
-  '#ef4444', // red
-  '#3b82f6', // blue
-  '#22c55e', // green
-  '#f59e0b', // amber
-  '#8b5cf6', // violet
+  '#ff0000', // red
+  '#00ffff', // cyan
+  '#008000', // green
+  '#ffa500', // orange
+  '#000000', // black
+  '#ffffff', // white
 ];
 
 export function assignPlayerColors(playerIds: string[], playerData?: Record<string, { color?: string }>): Record<string, string> {
