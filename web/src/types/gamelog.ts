@@ -52,6 +52,7 @@ export interface GameState {
   player_vp?: Record<string, PlayerVictoryPoints>;
   player_trackers?: Record<string, Record<string, number>>;
   special_tiles?: Record<string, Record<string, string>>;
+  starting_player?: string;
 }
 
 export interface CardResource {

@@ -1,5 +1,9 @@
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { GameLogMove, GameState } from '@/types/gamelog';
+import startingPlayerImg from '/assets/starting player.png';
+import temperatureImg from '/assets/temperature.png';
+import oxygenImg from '/assets/oxygen.png';
+import oceanImg from '/assets/ocean.png';
 
 // --- Icon loading ---
 const resourceIcons = import.meta.glob('../../../assets/resources/*.png', { eager: true }) as Record<string, { default: string }>;
@@ -54,11 +58,12 @@ const TAG_ROWS = [
   ],
 ];
 
-function Badge({ label, value }: { label: string; value: string | number | null | undefined }) {
+function Badge({ label, value, icon, hideLabel, large }: { label: string; value: string | number | null | undefined; icon?: string; hideLabel?: boolean; large?: boolean }) {
   if (value == null) return null;
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-      {label}: <span className="font-bold">{value}</span>
+    <span className={`inline-flex items-center gap-1.5 rounded-full font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 ${large ? 'px-3 py-1.5 text-sm' : 'px-2.5 py-1 text-xs'}`}>
+      {icon && <img src={icon} alt={label} className={`${large ? 'w-8 h-8' : 'w-6 h-6'} object-contain`} />}
+      {!hideLabel && <>{label}:</>} <span className="font-bold">{value}</span>
     </span>
   );
 }
@@ -136,12 +141,12 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
       {gameState && (
         <div className="bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
           <div className="flex flex-wrap gap-2">
-            <Badge label="Gen" value={gameState.generation} />
-            <Badge label="Temp" value={gameState.temperature != null ? `${gameState.temperature}\u00B0C` : null} />
-            <Badge label="O2" value={gameState.oxygen != null ? `${gameState.oxygen}%` : null} />
-            <Badge label="Oceans" value={gameState.oceans != null ? `${gameState.oceans}/9` : null} />
-            <Badge label="Draw" value={gameState.draw_pile} />
-            <Badge label="Discard" value={gameState.discard_pile} />
+            <Badge label="Gen" value={gameState.generation} large />
+            <Badge label="Temp" value={gameState.temperature != null ? `${gameState.temperature}\u00B0C` : null} icon={temperatureImg} hideLabel large />
+            <Badge label="O2" value={gameState.oxygen != null ? `${gameState.oxygen}%` : null} icon={oxygenImg} hideLabel large />
+            <Badge label="Oceans" value={gameState.oceans != null ? `${gameState.oceans}/9` : null} icon={oceanImg} hideLabel large />
+            <Badge label="Draw" value={gameState.draw_pile ?? 0} icon={getCardPlaceholderImage()} />
+            <Badge label="Discard" value={gameState.discard_pile ?? 0} icon={getCardPlaceholderImage()} />
           </div>
         </div>
       )}
@@ -170,6 +175,9 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
                       <span className="font-bold text-slate-900 dark:text-slate-100 truncate">
                         {playerNames[pid] ?? pid}
                       </span>
+                      {gameState?.starting_player === pid && (
+                        <img src={startingPlayerImg} alt="Starting player" className="w-7 h-7 flex-shrink-0" title="Starting player this generation" />
+                      )}
                       {onOpenTableau && (
                         <button
                           onClick={() => onOpenTableau(pid)}
