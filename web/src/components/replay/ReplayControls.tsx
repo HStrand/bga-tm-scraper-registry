@@ -84,11 +84,11 @@ export function ReplayControls({
 
   const sliderPct = totalMoves > 1 ? (currentStep / (totalMoves - 1)) * 100 : 0;
 
-  const navBtn = "nav-glow flex items-center justify-center w-10 h-10 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 disabled:opacity-25 disabled:hover:bg-transparent transition-all";
-  const genBtn = "nav-glow flex items-center justify-center px-3 h-8 rounded-md text-xs font-medium text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-25 transition-all";
+  const navBtn = "nav-btn flex items-center justify-center w-10 h-10 rounded-xl text-slate-300";
+  const genBtn = "nav-btn flex items-center justify-center px-3 h-8 rounded-lg text-xs font-medium text-slate-400";
 
   return (
-    <div className="mt-4 glass-panel rounded-2xl px-5 py-4 space-y-3">
+    <div className="mt-4 controls-panel rounded-2xl px-5 py-4 space-y-3">
       {/* Move info */}
       <div className="flex items-center justify-center gap-4 text-sm">
         <span className="text-slate-400">
@@ -145,7 +145,8 @@ export function ReplayControls({
         />
         {sliderHover && (
           <div
-            className="absolute -top-6 -translate-x-1/2 pointer-events-none bg-amber-600 text-white text-xs font-bold rounded-md px-2 py-0.5 whitespace-nowrap shadow-lg"
+            className="absolute -top-6 -translate-x-1/2 pointer-events-none text-amber-200 text-xs font-bold rounded-md px-2 py-0.5 whitespace-nowrap glow-amber"
+            style={{ background: 'linear-gradient(180deg, rgba(217,119,6,0.9), rgba(180,80,0,0.95))', boxShadow: 'inset 0 1px 0 rgba(255,220,150,0.3), 0 0 12px rgba(217,119,6,0.5), 0 4px 8px rgba(0,0,0,0.4)' }}
             style={{ left: `${sliderHover.pct}%` }}
           >
             {sliderHover.value + 1}

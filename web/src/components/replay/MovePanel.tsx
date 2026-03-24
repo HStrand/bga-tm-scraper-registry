@@ -61,7 +61,7 @@ const TAG_ROWS = [
 function Badge({ label, value, icon, hideLabel, large }: { label: string; value: string | number | null | undefined; icon?: string; hideLabel?: boolean; large?: boolean }) {
   if (value == null) return null;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full font-medium bg-white/5 border border-white/10 text-slate-300 ${large ? 'px-3 py-1.5 text-sm' : 'px-2.5 py-1 text-xs'}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full font-medium text-slate-300 ${large ? 'px-3 py-1.5 text-sm' : 'px-2.5 py-1 text-xs'}`} style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%), rgba(15,20,35,0.7)', border: '1px solid rgba(148,163,184,0.1)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.3)' }}>
       {icon && <img src={icon} alt={label} className={`${large ? 'w-8 h-8' : 'w-6 h-6'} object-contain`} />}
       {!hideLabel && <>{label}:</>} <span className="font-bold text-white glow-white">{value}</span>
     </span>
@@ -183,7 +183,7 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
             >
               <div
                 className="flex items-center justify-between px-3 py-2"
-                style={{ backgroundColor: `${playerColors[pid]}18` }}
+                style={{ background: `linear-gradient(180deg, ${playerColors[pid]}15 0%, ${playerColors[pid]}08 100%)`, borderBottom: '1px solid rgba(255,255,255,0.04)' }}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   {getCubeImage(playerColors[pid]) ? (
@@ -222,7 +222,7 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
                 </span>
               </div>
               {d && (
-                <div className="grid grid-cols-3 gap-px bg-white/5 border-t border-white/10">
+                <div className="grid grid-cols-3 gap-px border-t border-white/10" style={{ background: 'rgba(255,255,255,0.03)' }}>
                   {([
                     ['TR', d.tr],
                     ['Awards', d.awards],
@@ -231,7 +231,7 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
                     ['Green', d.greeneries],
                     ['Cards', d.cards],
                   ] as const).map(([label, val]) => (
-                    <div key={label} className="bg-slate-900/50 px-2 py-1.5 text-center">
+                    <div key={label} className="px-2 py-1.5 text-center" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.15) 100%)' }}>
                       <div className="text-sm font-semibold text-slate-200">{val ?? 0}</div>
                       <div className="text-[10px] text-slate-500 uppercase tracking-wide">{label}</div>
                     </div>
