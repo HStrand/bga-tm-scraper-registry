@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { X, Grid3X3, Layers, List, EyeOff } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Pin, PinOff, Grid3X3, Layers, List, EyeOff } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { PlayerVictoryPoints } from '@/types/gamelog';
 import { getCubeImage, startingPlayerImg, PlayerTrackers } from './replayShared';
@@ -168,15 +168,56 @@ export function PlayerCard({
   headquarters, played, hand, sold, cardResources,
 }: PlayerCardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const [pinned, setPinned] = useState(false);
+  const [customSize, setCustomSize] = useState<{ w: number; h: number } | null>(null);
+  const resizing = useRef<{ edge: 'right' | 'bottom' | 'corner'; startX: number; startY: number; startW: number; startH: number } | null>(null);
+
+  const handleClose = () => {
+    setPinned(false);
+    setCustomSize(null);
+    onCollapse();
+  };
+
+  const startResize = useCallback((edge: 'right' | 'bottom' | 'corner', e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = overlayRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    resizing.current = { edge, startX: e.clientX, startY: e.clientY, startW: rect.width, startH: rect.height };
+
+    const onMove = (ev: MouseEvent) => {
+      const r = resizing.current;
+      if (!r) return;
+      const dx = ev.clientX - r.startX;
+      const dy = ev.clientY - r.startY;
+      const newW = edge === 'bottom' ? r.startW : Math.max(320, r.startW + dx);
+      const newH = edge === 'right' ? r.startH : Math.max(200, r.startH + dy);
+      setCustomSize({ w: newW, h: newH });
+    };
+    const onUp = () => {
+      resizing.current = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, []);
 
   useEffect(() => {
     if (!isExpanded) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCollapse();
+      if (e.key === 'Escape') handleClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [isExpanded, onCollapse]);
+
+  // Unpin if collapsed externally (e.g. another card hovered)
+  useEffect(() => {
+    if (!isExpanded) setPinned(false);
+  }, [isExpanded]);
 
   const cubeImg = getCubeImage(color);
   const d = vp?.total_details;
@@ -187,7 +228,7 @@ export function PlayerCard({
       className="relative"
       style={{ zIndex: isExpanded ? 50 : 1 }}
       onMouseEnter={onExpand}
-      onMouseLeave={onCollapse}
+      onMouseLeave={() => { if (!pinned) onCollapse(); }}
     >
       {/* Compact card — always in document flow */}
       <div className="glass-panel rounded-xl p-4 cursor-pointer">
@@ -221,12 +262,20 @@ export function PlayerCard({
 
       {/* Expanded overlay — grows rightward */}
       <div
+        ref={overlayRef}
         className={`glass-panel rounded-xl overflow-hidden
           ${isExpanded
-            ? 'w-[calc(100vw-14rem)] max-w-[900px] max-h-[85vh] opacity-100 pointer-events-auto overflow-y-auto scrollbar-hidden'
-            : 'w-full max-h-0 opacity-0 pointer-events-none'
+            ? 'opacity-100 pointer-events-auto overflow-y-auto scrollbar-hidden'
+            : 'opacity-0 pointer-events-none'
           }`}
-        style={{ position: 'absolute', top: 0, left: 0, transition: 'width 500ms cubic-bezier(0.4,0,0.2,1), max-height 500ms cubic-bezier(0.4,0,0.2,1), opacity 400ms ease' }}
+        style={{
+          position: 'absolute', top: 0, left: 0,
+          width: isExpanded ? (customSize ? `${customSize.w}px` : 'calc(100vw - 14rem)') : '100%',
+          maxWidth: customSize ? undefined : '900px',
+          height: customSize ? `${customSize.h}px` : undefined,
+          maxHeight: isExpanded ? (customSize ? undefined : '85vh') : '0px',
+          transition: resizing.current ? 'opacity 200ms ease' : 'width 500ms cubic-bezier(0.4,0,0.2,1), max-height 500ms cubic-bezier(0.4,0,0.2,1), opacity 400ms ease',
+        }}
       >
         {/* Header */}
         <div
@@ -259,7 +308,14 @@ export function PlayerCard({
               {vp?.total ?? '?'} <span className="text-xs font-medium text-slate-400" style={{ textShadow: 'none' }}>VP</span>
             </span>
             <button
-              onClick={(e) => { e.stopPropagation(); onCollapse(); }}
+              onClick={(e) => { e.stopPropagation(); setPinned(p => !p); }}
+              className={`nav-btn w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${pinned ? 'text-amber-400' : 'text-slate-400 hover:text-white'}`}
+              title={pinned ? 'Unpin' : 'Pin open'}
+            >
+              {pinned ? <Pin className="w-4 h-4" /> : <PinOff className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleClose(); }}
               className="nav-btn w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white"
             >
               <X className="w-4 h-4" />
@@ -298,6 +354,31 @@ export function PlayerCard({
           <CardSection cards={played} title="Played" color={color} cardResources={cardResources} defaultViewMode="grid" />
           <CardSection cards={sold} title="Sold" color={color} defaultViewMode="hidden" />
         </div>
+
+        {/* Resize handles */}
+        {isExpanded && (
+          <>
+            {/* Right edge */}
+            <div
+              className="absolute top-0 right-0 w-2 h-full cursor-ew-resize hover:bg-amber-500/20 transition-colors"
+              onMouseDown={e => startResize('right', e)}
+            />
+            {/* Bottom edge */}
+            <div
+              className="absolute bottom-0 left-0 h-2 w-full cursor-ns-resize hover:bg-amber-500/20 transition-colors"
+              onMouseDown={e => startResize('bottom', e)}
+            />
+            {/* Corner */}
+            <div
+              className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
+              onMouseDown={e => startResize('corner', e)}
+            >
+              <svg className="w-4 h-4 text-slate-500 hover:text-amber-400 transition-colors" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M14 14H12V12H14V14ZM14 10H12V8H14V10ZM10 14H8V12H10V14Z" />
+              </svg>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
