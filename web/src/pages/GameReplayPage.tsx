@@ -421,7 +421,7 @@ export function GameReplayPage() {
         </div>
 
         {/* Right: Global params + Move log */}
-        <div className="w-[280px] flex-shrink-0 space-y-3 lg:self-start lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-hidden">
+        <div className="w-[380px] flex-shrink-0 space-y-3 lg:self-start lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-hidden">
           <GlobalParamsBar gameState={gameState} onOpenDiscardPile={() => setShowDiscardPile(true)} />
           <MoveLog move={currentMove} playerColors={playerColors} />
         </div>

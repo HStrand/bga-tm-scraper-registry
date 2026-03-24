@@ -119,10 +119,10 @@ function CardSection({ cards, title, color, cardResources, defaultViewMode = 'gr
   cards: string[]; title: string; color: string; cardResources?: Record<string, number>; defaultViewMode?: ViewMode;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
-  const [cardSize, setCardSize] = useState(100);
+  const [cardSize, setCardSize] = useState(140);
   if (cards.length === 0) return null;
 
-  const btnClass = "p-0.5 rounded transition-colors";
+  const btnClass = "p-1 rounded transition-colors";
   const activeClass = "bg-white/10 text-white";
   const inactiveClass = "text-slate-500 hover:text-slate-300";
   const viewButtons: { mode: ViewMode; icon: typeof Grid3X3; tip: string }[] = [
@@ -134,20 +134,20 @@ function CardSection({ cards, title, color, cardResources, defaultViewMode = 'gr
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-1.5">
+      <div className="flex items-center gap-2.5 mb-2">
         <div className="h-px flex-1 bg-white/10" />
-        <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 flex-shrink-0">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex-shrink-0">
           {title} <span style={{ color }} className="font-bold">{cards.length}</span>
         </h3>
-        <div className="flex items-center bg-white/5 rounded-md p-0.5 gap-0.5 flex-shrink-0">
+        <div className="flex items-center bg-white/5 rounded-lg p-0.5 gap-0.5 flex-shrink-0">
           {viewButtons.map(({ mode, icon: Icon, tip }) => (
             <button key={mode} onClick={() => setViewMode(mode)} className={`${btnClass} ${viewMode === mode ? activeClass : inactiveClass}`} title={tip}>
-              <Icon className="w-3 h-3" />
+              <Icon className="w-4 h-4" />
             </button>
           ))}
         </div>
         {viewMode !== 'hidden' && (
-          <input type="range" min={60} max={180} value={cardSize} onChange={e => setCardSize(Number(e.target.value))} className="w-16 h-1 accent-amber-500 flex-shrink-0" title="Card size" />
+          <input type="range" min={60} max={180} value={cardSize} onChange={e => setCardSize(Number(e.target.value))} className="w-20 h-1.5 accent-amber-500 flex-shrink-0" title="Card size" />
         )}
         <div className="h-px flex-1 bg-white/10" />
       </div>
@@ -173,7 +173,8 @@ export function PlayerCard({
   const [pinned, setPinned] = useState(false);
   const [customSize, setCustomSize] = useState<{ w: number; h: number } | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
-  const resizing = useRef<{ edge: 'right' | 'bottom' | 'corner'; startX: number; startY: number; startW: number; startH: number } | null>(null);
+  type ResizeEdge = 'right' | 'bottom' | 'left' | 'top' | 'corner-br' | 'corner-bl' | 'corner-tr' | 'corner-tl';
+  const resizing = useRef<{ edge: ResizeEdge; startX: number; startY: number; startW: number; startH: number; startPosX: number; startPosY: number } | null>(null);
   const dragging = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
 
   const handleClose = () => {
@@ -209,22 +210,41 @@ export function PlayerCard({
     document.addEventListener('mouseup', onUp);
   }, []);
 
-  const startResize = useCallback((edge: 'right' | 'bottom' | 'corner', e: React.MouseEvent) => {
+  const startResize = useCallback((edge: ResizeEdge, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const el = overlayRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    resizing.current = { edge, startX: e.clientX, startY: e.clientY, startW: rect.width, startH: rect.height };
+    const parentRect = containerRef.current?.getBoundingClientRect();
+    resizing.current = {
+      edge, startX: e.clientX, startY: e.clientY, startW: rect.width, startH: rect.height,
+      startPosX: dragPos?.x ?? rect.left - (parentRect?.left ?? 0),
+      startPosY: dragPos?.y ?? rect.top - (parentRect?.top ?? 0),
+    };
 
     const onMove = (ev: MouseEvent) => {
       const r = resizing.current;
       if (!r) return;
       const dx = ev.clientX - r.startX;
       const dy = ev.clientY - r.startY;
-      const newW = edge === 'bottom' ? r.startW : Math.max(320, r.startW + dx);
-      const newH = edge === 'right' ? r.startH : Math.max(200, r.startH + dy);
+      const resizesRight = edge === 'right' || edge === 'corner-br' || edge === 'corner-tr';
+      const resizesLeft = edge === 'left' || edge === 'corner-bl' || edge === 'corner-tl';
+      const resizesBottom = edge === 'bottom' || edge === 'corner-br' || edge === 'corner-bl';
+      const resizesTop = edge === 'top' || edge === 'corner-tr' || edge === 'corner-tl';
+
+      let newW = r.startW;
+      let newH = r.startH;
+      let newX = dragPos?.x ?? r.startPosX;
+      let newY = dragPos?.y ?? r.startPosY;
+
+      if (resizesRight) newW = Math.max(320, r.startW + dx);
+      if (resizesLeft) { newW = Math.max(320, r.startW - dx); newX = r.startPosX + (r.startW - newW); }
+      if (resizesBottom) newH = Math.max(200, r.startH + dy);
+      if (resizesTop) { newH = Math.max(200, r.startH - dy); newY = r.startPosY + (r.startH - newH); }
+
       setCustomSize({ w: newW, h: newH });
+      if (resizesLeft || resizesTop) setDragPos({ x: newX, y: newY });
     };
     const onUp = () => {
       resizing.current = null;
@@ -233,7 +253,7 @@ export function PlayerCard({
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
-  }, []);
+  }, [dragPos]);
 
   useEffect(() => {
     if (!isExpanded) return;
@@ -373,64 +393,57 @@ export function PlayerCard({
           </div>
         </div>
 
-        {/* VP breakdown */}
-        {d && (
-          <div className="grid grid-cols-6 gap-px border-t border-white/10 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.03)' }}>
-            {([
-              ['TR', d.tr],
-              ['Awards', d.awards],
-              ['Miles', d.milestones],
-              ['Cities', d.cities],
-              ['Green', d.greeneries],
-              ['Cards', d.cards],
-            ] as const).map(([label, val]) => (
-              <div key={label} className="px-2 py-1.5 text-center" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.15) 100%)' }}>
-                <div className="text-sm font-semibold text-slate-200">{val ?? 0}</div>
-                <div className="text-[10px] text-slate-500 uppercase tracking-wide">{label}</div>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Stats — VP breakdown (left) + Trackers (right, wraps below when narrow) */}
+        <div className="flex flex-wrap flex-shrink-0 border-t border-white/10">
+          {/* VP breakdown (left, fixed) */}
+          {d && (
+            <div className="flex-shrink-0 grid grid-cols-3 gap-px" style={{ background: 'rgba(255,255,255,0.03)' }}>
+              {([
+                ['TR', d.tr],
+                ['Awards', d.awards],
+                ['Milestones', d.milestones],
+                ['Cities', d.cities],
+                ['Greeneries', d.greeneries],
+                ['Cards', d.cards],
+              ] as const).map(([label, val]) => (
+                <div key={label} className="px-4 py-2 text-center" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.15) 100%)' }}>
+                  <div className="text-lg font-semibold text-slate-200">{val ?? 0}</div>
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wide">{label}</div>
+                </div>
+              ))}
+            </div>
+          )}
 
-        {/* Trackers */}
-        {trackers && (
-          <div className="flex-shrink-0">
-            <PlayerTrackers trackers={trackers} tileCounts={tileCounts} />
-          </div>
-        )}
+          {/* Trackers (right, wraps below when narrow) */}
+          {trackers && (
+            <div className="flex-1 min-w-[280px] border-l border-white/10">
+              <PlayerTrackers trackers={trackers} tileCounts={tileCounts} />
+            </div>
+          )}
+        </div>
 
         {/* Cards — scrollable */}
         <div className="overflow-y-auto scrollbar-hidden flex-1 min-h-0">
           <div className="px-3 py-2.5 space-y-3 border-t border-white/10">
             <CardSection cards={headquarters} title="Headquarters" color={color} defaultViewMode="grid" />
             <CardSection cards={hand} title="Hand" color={color} defaultViewMode="grid" />
-            <CardSection cards={played} title="Played" color={color} cardResources={cardResources} defaultViewMode="grid" />
+            <CardSection cards={played} title="Played" color={color} cardResources={cardResources} defaultViewMode="stack" />
             <CardSection cards={sold} title="Sold" color={color} defaultViewMode="hidden" />
           </div>
         </div>
 
-        {/* Resize handles */}
+        {/* Resize handles — edges */}
         {isExpanded && (
           <>
-            {/* Right edge */}
-            <div
-              className="absolute top-0 right-0 w-2 h-full cursor-ew-resize hover:bg-amber-500/20 transition-colors"
-              onMouseDown={e => startResize('right', e)}
-            />
-            {/* Bottom edge */}
-            <div
-              className="absolute bottom-0 left-0 h-2 w-full cursor-ns-resize hover:bg-amber-500/20 transition-colors"
-              onMouseDown={e => startResize('bottom', e)}
-            />
-            {/* Corner */}
-            <div
-              className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
-              onMouseDown={e => startResize('corner', e)}
-            >
-              <svg className="w-4 h-4 text-slate-500 hover:text-amber-400 transition-colors" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M14 14H12V12H14V14ZM14 10H12V8H14V10ZM10 14H8V12H10V14Z" />
-              </svg>
-            </div>
+            <div className="absolute top-0 left-2 right-2 h-2 cursor-ns-resize hover:bg-amber-500/20 transition-colors" onMouseDown={e => startResize('top', e)} />
+            <div className="absolute bottom-0 left-2 right-2 h-2 cursor-ns-resize hover:bg-amber-500/20 transition-colors" onMouseDown={e => startResize('bottom', e)} />
+            <div className="absolute left-0 top-2 bottom-2 w-2 cursor-ew-resize hover:bg-amber-500/20 transition-colors" onMouseDown={e => startResize('left', e)} />
+            <div className="absolute right-0 top-2 bottom-2 w-2 cursor-ew-resize hover:bg-amber-500/20 transition-colors" onMouseDown={e => startResize('right', e)} />
+            {/* Corners */}
+            <div className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize" onMouseDown={e => startResize('corner-tl', e)} />
+            <div className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize" onMouseDown={e => startResize('corner-tr', e)} />
+            <div className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize" onMouseDown={e => startResize('corner-bl', e)} />
+            <div className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize" onMouseDown={e => startResize('corner-br', e)} />
           </>
         )}
       </div>
