@@ -22,27 +22,35 @@ import { ResourcesPage } from "@/pages/ResourcesPage";
 export default function App() {
   return (
     <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/corporations" element={<CorporationsOverviewPage />} />
-          <Route path="/corporations/:name" element={<CorporationStatsPage />} />
-          <Route path="/cards" element={<ProjectCardsOverviewPage />} />
-          <Route path="/cards/:name" element={<ProjectCardStatsPage />} />
-          <Route path="/startinghands" element={<StartingHandOverviewPage />} />
-          <Route path="/startinghands/:name" element={<StartingHandStatsPage />} />
-          <Route path="/preludes" element={<PreludesOverviewPage />} />
-          <Route path="/prelude/:name" element={<PreludeStatsPage />} />
-          <Route path="/combinations" element={<CombinationsPage />} />
-          <Route path="/combinations/:kind/:name" element={<CombinationDetailPage />} />
-          <Route path="/milestones" element={<MilestonesOverviewPage />} />
-          <Route path="/awards" element={<AwardsOverviewPage />} />
-          <Route path="/leaderboards" element={<LeaderboardsPage />} />
-          <Route path="/maps" element={<MapPage />} />
-          <Route path="/replay/:tableId" element={<GameReplayPage />} />
-          <Route path="/resources" element={<ResourcesPage />} />
-        </Routes>
-      </Layout>
+      <Routes>
+        <Route path="/replay/:tableId" element={
+          <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+            <div className="container mx-auto px-4 py-6 max-w-7xl"><GameReplayPage /></div>
+          </div>
+        } />
+        <Route path="*" element={
+          <Layout>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/corporations" element={<CorporationsOverviewPage />} />
+              <Route path="/corporations/:name" element={<CorporationStatsPage />} />
+              <Route path="/cards" element={<ProjectCardsOverviewPage />} />
+              <Route path="/cards/:name" element={<ProjectCardStatsPage />} />
+              <Route path="/startinghands" element={<StartingHandOverviewPage />} />
+              <Route path="/startinghands/:name" element={<StartingHandStatsPage />} />
+              <Route path="/preludes" element={<PreludesOverviewPage />} />
+              <Route path="/prelude/:name" element={<PreludeStatsPage />} />
+              <Route path="/combinations" element={<CombinationsPage />} />
+              <Route path="/combinations/:kind/:name" element={<CombinationDetailPage />} />
+              <Route path="/milestones" element={<MilestonesOverviewPage />} />
+              <Route path="/awards" element={<AwardsOverviewPage />} />
+              <Route path="/leaderboards" element={<LeaderboardsPage />} />
+              <Route path="/maps" element={<MapPage />} />
+              <Route path="/resources" element={<ResourcesPage />} />
+            </Routes>
+          </Layout>
+        } />
+      </Routes>
     </Router>
   );
 }

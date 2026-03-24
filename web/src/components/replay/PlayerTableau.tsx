@@ -3,6 +3,16 @@ import { createPortal } from 'react-dom';
 import { X, Grid3X3, Layers, List, EyeOff } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 
+const cubeIcons = import.meta.glob('../../../assets/cubes/*.png', { eager: true }) as Record<string, { default: string }>;
+
+function getCubeImage(hexColor: string): string | undefined {
+  const slug = hexColor.replace('#', '').toLowerCase();
+  const entry = Object.entries(cubeIcons).find(([key]) =>
+    key.replace(/^.*[\\/]/, '').toLowerCase() === `${slug}.png`
+  );
+  return entry?.[1].default;
+}
+
 interface PlayerTableauProps {
   playerName: string;
   corporation: string;
@@ -257,7 +267,11 @@ export function PlayerTableau({ playerName, corporation, color, headquarters, pl
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700" style={{ backgroundColor: `${color}10` }}>
           <div className="flex items-center gap-3 min-w-0">
-            <span className="inline-block w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-white dark:ring-slate-700" style={{ backgroundColor: color }} />
+            {getCubeImage(color) ? (
+              <img src={getCubeImage(color)!} alt="" className="w-6 h-6 flex-shrink-0" />
+            ) : (
+              <span className="inline-block w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-white dark:ring-slate-700" style={{ backgroundColor: color }} />
+            )}
             <div className="min-w-0">
               <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">{playerName}</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
