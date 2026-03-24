@@ -91,42 +91,107 @@ function getTracker(trackers: Record<string, number>, key: string, altKey?: stri
   return trackers[key] ?? (altKey ? trackers[altKey] ?? 0 : 0);
 }
 
+function ResourceCell({ icon, value, prodValue, title }: { icon?: string; value: number; prodValue: number; title: string }) {
+  return (
+    <div
+      className="flex flex-col items-center w-14 py-1.5 rounded-lg"
+      style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.1) 100%)', border: '1px solid rgba(255,255,255,0.06)' }}
+      title={title}
+    >
+      {icon ? (
+        <img src={icon} alt={title} className="w-7 h-7 object-contain" />
+      ) : (
+        <div className="w-7 h-7 rounded-full bg-slate-600" />
+      )}
+      <span className="text-sm font-bold text-white leading-none mt-0.5">{value}</span>
+      <span className={`text-[11px] font-semibold leading-none mt-0.5 ${prodValue >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+        {prodValue >= 0 ? `+${prodValue}` : prodValue}
+      </span>
+    </div>
+  );
+}
+
+function TagCell({ icon, value, title, large }: { icon?: string; value: number; title: string; large?: boolean }) {
+  return (
+    <div
+      className={`flex flex-col items-center rounded-lg ${large ? 'w-14 py-1.5' : 'w-12 py-1'}`}
+      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}
+      title={title}
+    >
+      {icon ? (
+        <img src={icon} alt={title} className={`${large ? 'w-8 h-8' : 'w-6 h-6'} object-contain`} />
+      ) : (
+        <div className={`${large ? 'w-8 h-8' : 'w-6 h-6'} rounded-full bg-slate-600`} />
+      )}
+      <span className="text-sm font-bold text-slate-200 leading-none mt-0.5">{value}</span>
+    </div>
+  );
+}
+
 export function PlayerTrackers({ trackers, tileCounts }: { trackers: Record<string, number>; tileCounts?: { cities: number; greeneries: number; total: number } }) {
   return (
-    <div className="border-t border-white/10 px-2 py-2 space-y-2">
-      <div className="flex justify-between gap-1">
+    <div className="border-t border-white/10 px-3 py-3 space-y-1.5">
+      {/* Resources — inline flex, fixed-width cells */}
+      <div className="flex flex-wrap gap-1">
         {RESOURCES.map(r => (
-          <TrackerCell
+          <ResourceCell
             key={r.key}
             icon={getIcon(resourceIcons, r.icon)}
             value={trackers[r.key] ?? 0}
-            subValue={trackers[r.prodKey] ?? 0}
+            prodValue={trackers[r.prodKey] ?? 0}
             title={`${r.label}: ${trackers[r.key] ?? 0} (prod: ${trackers[r.prodKey] ?? 0})`}
           />
         ))}
       </div>
-      {TAG_ROWS.map((row, ri) => (
-        <div key={ri} className="flex justify-center gap-2">
-          {row.map(t => {
-            const icons = 'iconSource' in t && t.iconSource === 'tile' ? tileIcons : tagIcons;
-            const altKey = 'altKey' in t ? t.altKey : undefined;
-            let val = getTracker(trackers, t.key, altKey);
-            if (val === 0 && tileCounts && 'iconSource' in t) {
-              if (t.key === 'City') val = tileCounts.cities;
-              else if (t.key === 'Forest') val = tileCounts.greeneries;
-              else if (t.key === 'Land') val = tileCounts.total;
-            }
-            return (
-              <TrackerCell
-                key={t.key}
-                icon={getIcon(icons, t.icon)}
-                value={val}
-                title={`${'label' in t ? t.label : t.key}: ${val}`}
-              />
-            );
-          })}
-        </div>
-      ))}
+
+      {/* Tags — inline flex rows */}
+      <div className="flex flex-wrap gap-1">
+        {TAG_ROWS[0].map(t => {
+          const altKey = 'altKey' in t ? t.altKey : undefined;
+          return (
+            <TagCell
+              key={t.key}
+              icon={getIcon(tagIcons, t.icon)}
+              value={getTracker(trackers, t.key, altKey)}
+              title={t.key}
+            />
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {TAG_ROWS[1].map(t => {
+          const altKey = 'altKey' in t ? t.altKey : undefined;
+          return (
+            <TagCell
+              key={t.key}
+              icon={getIcon(tagIcons, t.icon)}
+              value={getTracker(trackers, t.key, altKey)}
+              title={t.key}
+            />
+          );
+        })}
+      </div>
+
+      {/* Tiles */}
+      <div className="flex flex-wrap gap-1">
+        {TAG_ROWS[2].map(t => {
+          let val = getTracker(trackers, t.key);
+          if (val === 0 && tileCounts) {
+            if (t.key === 'City') val = tileCounts.cities;
+            else if (t.key === 'Forest') val = tileCounts.greeneries;
+            else if (t.key === 'Land') val = tileCounts.total;
+          }
+          return (
+            <TagCell
+              key={t.key}
+              icon={getIcon(tileIcons, t.icon)}
+              value={val}
+              title={'label' in t ? t.label : t.key}
+              large
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

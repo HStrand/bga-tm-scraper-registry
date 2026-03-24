@@ -310,9 +310,9 @@ export function PlayerCard({
       {/* Expanded overlay — grows rightward */}
       <div
         ref={overlayRef}
-        className={`glass-panel rounded-xl overflow-hidden
+        className={`glass-panel rounded-xl overflow-hidden flex flex-col
           ${isExpanded
-            ? 'opacity-100 pointer-events-auto overflow-y-auto scrollbar-hidden'
+            ? 'opacity-100 pointer-events-auto'
             : 'opacity-0 pointer-events-none'
           }`}
         style={{
@@ -328,34 +328,34 @@ export function PlayerCard({
       >
         {/* Header — drag handle */}
         <div
-          className="flex items-center justify-between px-3 py-2.5 sticky top-0 z-10 cursor-grab active:cursor-grabbing select-none"
+          className="flex items-center justify-between px-3 py-2.5 flex-shrink-0 cursor-grab active:cursor-grabbing select-none"
           style={{ background: `linear-gradient(180deg, ${color}18 0%, ${color}08 100%)`, borderBottom: '1px solid rgba(255,255,255,0.06)' }}
           onMouseDown={startDrag}
         >
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
             {cubeImg ? (
-              <img src={cubeImg} alt="" className="w-6 h-6 flex-shrink-0" />
+              <img src={cubeImg} alt="" className="w-10 h-10 flex-shrink-0" />
             ) : (
-              <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+              <span className="inline-block w-5 h-5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
             )}
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-white text-sm">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-lg">
                   {playerName}
                   {elo != null && (
-                    <span className="font-normal text-xs text-slate-500 ml-1">({elo})</span>
+                    <span className="font-normal text-base text-slate-400 ml-1.5">({elo})</span>
                   )}
                 </span>
                 {isStartingPlayer && (
-                  <img src={startingPlayerImg} alt="Starting player" className="w-5 h-5 flex-shrink-0" />
+                  <img src={startingPlayerImg} alt="Starting player" className="w-8 h-8 flex-shrink-0" />
                 )}
               </div>
-              <div className="text-[11px] text-slate-400 -mt-0.5">{corporation}</div>
+              <div className="text-sm text-slate-400">{corporation}</div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-lg font-bold text-white glow-white">
-              {vp?.total ?? '?'} <span className="text-xs font-medium text-slate-400" style={{ textShadow: 'none' }}>VP</span>
+            <span className="text-2xl font-bold text-white glow-white">
+              {vp?.total ?? '?'} <span className="text-sm font-medium text-slate-400" style={{ textShadow: 'none' }}>VP</span>
             </span>
             <button
               onClick={(e) => { e.stopPropagation(); setPinned(p => !p); }}
@@ -375,7 +375,7 @@ export function PlayerCard({
 
         {/* VP breakdown */}
         {d && (
-          <div className="grid grid-cols-6 gap-px border-t border-white/10" style={{ background: 'rgba(255,255,255,0.03)' }}>
+          <div className="grid grid-cols-6 gap-px border-t border-white/10 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.03)' }}>
             {([
               ['TR', d.tr],
               ['Awards', d.awards],
@@ -394,15 +394,19 @@ export function PlayerCard({
 
         {/* Trackers */}
         {trackers && (
-          <PlayerTrackers trackers={trackers} tileCounts={tileCounts} />
+          <div className="flex-shrink-0">
+            <PlayerTrackers trackers={trackers} tileCounts={tileCounts} />
+          </div>
         )}
 
-        {/* Cards */}
-        <div className="px-3 py-2.5 space-y-3 border-t border-white/10">
-          <CardSection cards={headquarters} title="Headquarters" color={color} defaultViewMode="grid" />
-          <CardSection cards={hand} title="Hand" color={color} defaultViewMode="grid" />
-          <CardSection cards={played} title="Played" color={color} cardResources={cardResources} defaultViewMode="grid" />
-          <CardSection cards={sold} title="Sold" color={color} defaultViewMode="hidden" />
+        {/* Cards — scrollable */}
+        <div className="overflow-y-auto scrollbar-hidden flex-1 min-h-0">
+          <div className="px-3 py-2.5 space-y-3 border-t border-white/10">
+            <CardSection cards={headquarters} title="Headquarters" color={color} defaultViewMode="grid" />
+            <CardSection cards={hand} title="Hand" color={color} defaultViewMode="grid" />
+            <CardSection cards={played} title="Played" color={color} cardResources={cardResources} defaultViewMode="grid" />
+            <CardSection cards={sold} title="Sold" color={color} defaultViewMode="hidden" />
+          </div>
         </div>
 
         {/* Resize handles */}
