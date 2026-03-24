@@ -369,7 +369,7 @@ export function GameReplayPage() {
         </div>
 
         {/* Center: Map + controls */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 text-center">
           {mapDefinition ? (
             <ReplayMap
               mapDefinition={mapDefinition}
@@ -384,7 +384,7 @@ export function GameReplayPage() {
           )}
 
           {offMapTiles.length > 0 && (
-            <div className="mt-3 text-sm text-slate-400">
+            <div className="mt-3 text-sm text-slate-400 text-left">
               <span className="font-medium text-slate-300">Off-map tiles:</span>{' '}
               {offMapTiles.map((t, i) => (
                 <span key={t.dbKey}>

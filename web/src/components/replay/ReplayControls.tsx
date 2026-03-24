@@ -88,7 +88,7 @@ export function ReplayControls({
   const genBtn = "nav-btn flex items-center justify-center px-3 h-8 rounded-lg text-xs font-medium text-slate-400";
 
   return (
-    <div className="mt-4 controls-panel rounded-2xl px-5 py-4 space-y-3">
+    <div className="mt-4 controls-panel rounded-2xl px-5 py-4 space-y-3 max-w-3xl mx-auto">
       {/* Move info */}
       <div className="flex items-center justify-center gap-4 text-sm">
         <span className="text-slate-400">

@@ -171,13 +171,42 @@ export function PlayerCard({
   const overlayRef = useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = useState(false);
   const [customSize, setCustomSize] = useState<{ w: number; h: number } | null>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const resizing = useRef<{ edge: 'right' | 'bottom' | 'corner'; startX: number; startY: number; startW: number; startH: number } | null>(null);
+  const dragging = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
 
   const handleClose = () => {
     setPinned(false);
     setCustomSize(null);
+    setDragPos(null);
     onCollapse();
   };
+
+  const startDrag = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    e.preventDefault();
+    const el = overlayRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    // Use viewport coords since we switch to position:fixed when dragged
+    dragging.current = { startX: e.clientX, startY: e.clientY, startLeft: rect.left, startTop: rect.top };
+
+    const onMove = (ev: MouseEvent) => {
+      const d = dragging.current;
+      if (!d) return;
+      setDragPos({
+        x: d.startLeft + (ev.clientX - d.startX),
+        y: d.startTop + (ev.clientY - d.startY),
+      });
+    };
+    const onUp = () => {
+      dragging.current = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, []);
 
   const startResize = useCallback((edge: 'right' | 'bottom' | 'corner', e: React.MouseEvent) => {
     e.preventDefault();
@@ -269,18 +298,21 @@ export function PlayerCard({
             : 'opacity-0 pointer-events-none'
           }`}
         style={{
-          position: 'absolute', top: 0, left: 0,
+          position: dragPos ? 'fixed' : 'absolute',
+          top: dragPos ? `${dragPos.y}px` : 0,
+          left: dragPos ? `${dragPos.x}px` : 0,
           width: isExpanded ? (customSize ? `${customSize.w}px` : 'calc(100vw - 14rem)') : '100%',
           maxWidth: customSize ? undefined : '900px',
           height: customSize ? `${customSize.h}px` : undefined,
           maxHeight: isExpanded ? (customSize ? undefined : '85vh') : '0px',
-          transition: resizing.current ? 'opacity 200ms ease' : 'width 500ms cubic-bezier(0.4,0,0.2,1), max-height 500ms cubic-bezier(0.4,0,0.2,1), opacity 400ms ease',
+          transition: (resizing.current || dragging.current) ? 'opacity 200ms ease' : 'width 500ms cubic-bezier(0.4,0,0.2,1), max-height 500ms cubic-bezier(0.4,0,0.2,1), opacity 400ms ease',
         }}
       >
-        {/* Header */}
+        {/* Header — drag handle */}
         <div
-          className="flex items-center justify-between px-3 py-2.5 sticky top-0 z-10"
+          className="flex items-center justify-between px-3 py-2.5 sticky top-0 z-10 cursor-grab active:cursor-grabbing select-none"
           style={{ background: `linear-gradient(180deg, ${color}18 0%, ${color}08 100%)`, borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+          onMouseDown={startDrag}
         >
           <div className="flex items-center gap-2 min-w-0">
             {cubeImg ? (
