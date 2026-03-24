@@ -1,46 +1,50 @@
+import { useState, useRef, useEffect } from 'react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { GameLogMove } from '@/types/gamelog';
 import { getCubeImage } from './replayShared';
 
 interface MoveLogProps {
-  move: GameLogMove | undefined;
+  moves: GameLogMove[];
+  currentStep: number;
+  generationBoundaries: Map<number, { start: number; end: number }>;
   playerColors: Record<string, string>;
+  onJump: (step: number) => void;
 }
 
-export function MoveLog({ move, playerColors }: MoveLogProps) {
-  if (!move) return null;
-
+function MoveEntry({ move, moveIndex, isCurrent, isExpanded, playerColors, onClick, onHover, onLeave }: {
+  move: GameLogMove; moveIndex: number; isCurrent: boolean; isExpanded: boolean;
+  playerColors: Record<string, string>; onClick: () => void; onHover: () => void; onLeave: () => void;
+}) {
   const cardImage = move.card_played
     ? getCardImage(move.card_played) ?? getCardPlaceholderImage()
     : null;
 
   return (
-    <div className="glass-panel rounded-xl p-3 space-y-2">
-      {/* Move description */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          {getCubeImage(playerColors[move.player_id]) ? (
-            <img src={getCubeImage(playerColors[move.player_id])!} alt="" className="w-5 h-5 flex-shrink-0" />
-          ) : (
-            <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: playerColors[move.player_id] }} />
-          )}
-          <span className="font-bold text-white text-sm">
-            {move.player_name}
-          </span>
-          <span className="text-xs text-slate-500">{move.action_type}</span>
-        </div>
-        <p className="text-xs text-slate-300 leading-relaxed">{move.description}</p>
-        {move.tile_placed && move.tile_location && (
-          <p className="text-[11px] text-slate-400 mt-0.5">
-            Placed {move.tile_placed} at {move.tile_location}
-          </p>
+    <div
+      className={`px-3 py-2 rounded-lg transition-colors cursor-pointer hover:bg-white/5 ${isCurrent ? 'bg-white/5 border border-white/10' : 'opacity-50 hover:opacity-80'}`}
+      onClick={onClick}
+      onMouseEnter={onHover}
+      onMouseLeave={onLeave}
+    >
+      <div className="flex items-center gap-2 mb-0.5">
+        <span className="text-xs font-mono text-slate-500 flex-shrink-0">#{moveIndex + 1}</span>
+        {getCubeImage(playerColors[move.player_id]) ? (
+          <img src={getCubeImage(playerColors[move.player_id])!} alt="" className="w-4 h-4 flex-shrink-0" />
+        ) : (
+          <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: playerColors[move.player_id] }} />
         )}
+        <span className="font-bold text-white text-xs">{move.player_name}</span>
+        <span className="text-[10px] text-slate-500">{move.action_type}</span>
       </div>
-
-      {/* Card image */}
-      {move.card_played && cardImage && (
-        <div>
-          <p className="text-xs font-medium text-slate-300 mb-1">
+      <p className="text-[11px] text-slate-300 leading-relaxed">{move.description}</p>
+      {move.tile_placed && move.tile_location && (
+        <p className="text-[10px] text-slate-400 mt-0.5">
+          Placed {move.tile_placed} at {move.tile_location}
+        </p>
+      )}
+      {isExpanded && move.card_played && cardImage && (
+        <div className="mt-1.5">
+          <p className="text-[11px] font-medium text-slate-300 mb-1">
             {move.card_played}
             {move.card_cost != null && (
               <span className="text-slate-500 ml-1">({move.card_cost} MC)</span>
@@ -53,6 +57,48 @@ export function MoveLog({ move, playerColors }: MoveLogProps) {
           />
         </div>
       )}
+    </div>
+  );
+}
+
+export function MoveLog({ moves, currentStep, generationBoundaries, playerColors, onJump }: MoveLogProps) {
+  const currentMove = moves[currentStep];
+  const currentGen = currentMove?.game_state?.generation;
+  const bounds = currentGen != null ? generationBoundaries.get(currentGen) : undefined;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef<HTMLDivElement>(null);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  // Scroll active move into view
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [currentStep]);
+
+  const startIdx = bounds?.start ?? currentStep;
+  const endIdx = Math.min(bounds?.end ?? currentStep, currentStep);
+
+  return (
+    <div className="glass-panel rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 22rem)' }}>
+      <div ref={scrollRef} className="overflow-y-auto scrollbar-hidden py-2 space-y-1">
+        {Array.from({ length: endIdx - startIdx + 1 }, (_, i) => {
+          const idx = endIdx - i;
+          const move = moves[idx];
+          if (!move) return null;
+          const isCurrent = idx === currentStep;
+          return (
+            <div key={idx} ref={isCurrent ? activeRef : undefined}>
+              <MoveEntry
+                move={move} moveIndex={idx} isCurrent={isCurrent}
+                isExpanded={isCurrent || hoveredIdx === idx}
+                playerColors={playerColors}
+                onClick={() => onJump(idx)}
+                onHover={() => setHoveredIdx(idx)}
+                onLeave={() => setHoveredIdx(null)}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
