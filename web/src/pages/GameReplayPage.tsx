@@ -129,17 +129,18 @@ export function GameReplayPage() {
     }
     for (let i = 0; i <= currentStep; i++) {
       const move = gameLog.moves[i];
-      // Use the hand snapshot when available
-      if (move?.hand) {
-        const entry = map.get(move.player_id);
-        if (entry) entry.hand = [...move.hand];
+      // Use the hand snapshot when available (keyed by player id in game_state)
+      const playerHands = move?.game_state?.player_hands;
+      if (playerHands) {
+        for (const [pid, hand] of Object.entries(playerHands)) {
+          const entry = map.get(pid);
+          if (entry) entry.hand = [...hand];
+        }
       }
       // Track played cards — separate preludes into headquarters
       if (move?.card_played) {
         const entry = map.get(move.player_id);
         if (entry) {
-          const handIdx = entry.hand.indexOf(move.card_played);
-          if (handIdx !== -1) entry.hand.splice(handIdx, 1);
           const preludeNames = playerPreludeNames.get(move.player_id);
           if (preludeNames?.has(move.card_played)) {
             entry.headquarters.push(move.card_played);

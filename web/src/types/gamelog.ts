@@ -40,7 +40,6 @@ export interface GameLogMove {
   card_options?: Record<string, string[]> | null;
   cards_sold?: string[] | null;
   cards_discarded?: string[] | null;
-  hand?: string[] | null;
   game_state?: GameState;
 }
 
@@ -55,6 +54,7 @@ export interface GameState {
   player_trackers?: Record<string, Record<string, number>>;
   special_tiles?: Record<string, Record<string, string>>;
   starting_player?: string;
+  player_hands?: Record<string, string[]>;
 }
 
 export interface CardResource {
