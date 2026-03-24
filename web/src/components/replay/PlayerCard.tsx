@@ -169,6 +169,7 @@ export function PlayerCard({
 }: PlayerCardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const compactRef = useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = useState(false);
   const [customSize, setCustomSize] = useState<{ w: number; h: number } | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
@@ -251,6 +252,37 @@ export function PlayerCard({
   const cubeImg = getCubeImage(color);
   const d = vp?.total_details;
 
+  const compactCard = (
+    <div ref={compactRef} className="glass-panel rounded-xl p-4 cursor-pointer">
+      <div className="flex items-center gap-3">
+        {cubeImg ? (
+          <img src={cubeImg} alt="" className="w-10 h-10 flex-shrink-0" />
+        ) : (
+          <span className="inline-block w-6 h-6 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white text-lg truncate">{playerName}</span>
+            {elo != null && (
+              <span className="text-base text-slate-400 flex-shrink-0">({elo})</span>
+            )}
+            {isStartingPlayer && (
+              <img src={startingPlayerImg} alt="1st" className="w-9 h-9 flex-shrink-0" />
+            )}
+          </div>
+          <div className="text-base text-slate-400 truncate">{corporation}</div>
+        </div>
+        <span className="text-2xl font-bold text-white glow-white flex-shrink-0">
+          {vp?.total ?? '?'}
+        </span>
+      </div>
+      <div className="flex items-center gap-2.5 mt-3 pt-2.5 border-t border-white/5">
+        <img src={getCardPlaceholderImage()} alt="Cards" className="w-8 h-11 object-cover rounded-sm opacity-60" />
+        <span className="text-xl font-semibold text-white">{hand.length}</span>
+      </div>
+    </div>
+  );
+
   return (
     <div
       ref={containerRef}
@@ -259,35 +291,21 @@ export function PlayerCard({
       onMouseEnter={onExpand}
       onMouseLeave={() => { if (!pinned) onCollapse(); }}
     >
-      {/* Compact card — always in document flow */}
-      <div className="glass-panel rounded-xl p-4 cursor-pointer">
-        <div className="flex items-center gap-3">
-          {cubeImg ? (
-            <img src={cubeImg} alt="" className="w-10 h-10 flex-shrink-0" />
-          ) : (
-            <span className="inline-block w-6 h-6 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-white text-lg truncate">{playerName}</span>
-              {elo != null && (
-                <span className="text-base text-slate-400 flex-shrink-0">({elo})</span>
-              )}
-              {isStartingPlayer && (
-                <img src={startingPlayerImg} alt="1st" className="w-9 h-9 flex-shrink-0" />
-              )}
+      {/* Compact card — in flow when not dragged, fixed when dragged */}
+      {dragPos ? (
+        <>
+          {/* Placeholder to keep column spacing */}
+          <div style={{ visibility: 'hidden' }}>{compactCard}</div>
+          {/* Floating compact card at drag position — hidden while expanded */}
+          {!isExpanded && (
+            <div className="w-[320px]" style={{ position: 'fixed', top: dragPos.y, left: dragPos.x, zIndex: 1 }}>
+              {compactCard}
             </div>
-            <div className="text-base text-slate-400 truncate">{corporation}</div>
-          </div>
-          <span className="text-2xl font-bold text-white glow-white flex-shrink-0">
-            {vp?.total ?? '?'}
-          </span>
-        </div>
-        <div className="flex items-center gap-2.5 mt-3 pt-2.5 border-t border-white/5">
-          <img src={getCardPlaceholderImage()} alt="Cards" className="w-8 h-11 object-cover rounded-sm opacity-60" />
-          <span className="text-xl font-semibold text-white">{hand.length}</span>
-        </div>
-      </div>
+          )}
+        </>
+      ) : (
+        compactCard
+      )}
 
       {/* Expanded overlay — grows rightward */}
       <div

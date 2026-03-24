@@ -20,21 +20,33 @@ export function GameReplayPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [tableauPlayerId, setTableauPlayerId] = useState<string | null>(null);
   const [showDiscardPile, setShowDiscardPile] = useState(false);
-  const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
-  const collapseTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [expandedPlayerIds, setExpandedPlayerIds] = useState<Set<string>>(new Set());
+  const collapseTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const handlePlayerExpand = useCallback((pid: string) => {
-    if (collapseTimeout.current) {
-      clearTimeout(collapseTimeout.current);
-      collapseTimeout.current = null;
+    const existing = collapseTimeouts.current.get(pid);
+    if (existing) {
+      clearTimeout(existing);
+      collapseTimeouts.current.delete(pid);
     }
-    setExpandedPlayerId(pid);
+    setExpandedPlayerIds(prev => {
+      if (prev.has(pid)) return prev;
+      const next = new Set(prev);
+      next.add(pid);
+      return next;
+    });
   }, []);
 
-  const handlePlayerCollapse = useCallback(() => {
-    collapseTimeout.current = setTimeout(() => {
-      setExpandedPlayerId(null);
-    }, 150);
+  const handlePlayerCollapse = useCallback((pid: string) => {
+    collapseTimeouts.current.set(pid, setTimeout(() => {
+      collapseTimeouts.current.delete(pid);
+      setExpandedPlayerIds(prev => {
+        if (!prev.has(pid)) return prev;
+        const next = new Set(prev);
+        next.delete(pid);
+        return next;
+      });
+    }, 150));
   }, []);
 
   // --- data fetching ---
@@ -355,9 +367,9 @@ export function GameReplayPage() {
                 trackers={gameState.player_trackers?.[pid]}
                 tileCounts={playerTileCounts?.[pid]}
                 isStartingPlayer={gameState.starting_player === pid}
-                isExpanded={expandedPlayerId === pid}
+                isExpanded={expandedPlayerIds.has(pid)}
                 onExpand={() => handlePlayerExpand(pid)}
-                onCollapse={handlePlayerCollapse}
+                onCollapse={() => handlePlayerCollapse(pid)}
                 headquarters={tableau?.headquarters ?? []}
                 played={tableau?.played ?? []}
                 hand={tableau?.hand ?? []}
