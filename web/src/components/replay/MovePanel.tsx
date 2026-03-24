@@ -36,25 +36,25 @@ const RESOURCES = [
 
 const TAG_ROWS = [
   [
-    { key: 'Building tag', icon: 'building' },
-    { key: 'Space tag', icon: 'space' },
-    { key: 'Science tag', icon: 'science' },
-    { key: 'Energy tag', icon: 'power' },
-    { key: 'Earth tag', icon: 'earth' },
-    { key: 'Jovian tag', icon: 'jovian' },
+    { key: 'Building tag', altKey: 'Count of Building tags', icon: 'building' },
+    { key: 'Space tag', altKey: 'Count of Space tags', icon: 'space' },
+    { key: 'Science tag', altKey: 'Count of Science tags', icon: 'science' },
+    { key: 'Energy tag', altKey: 'Count of Power tags', icon: 'power' },
+    { key: 'Earth tag', altKey: 'Count of Earth tags', icon: 'earth' },
+    { key: 'Jovian tag', altKey: 'Count of Jovian tags', icon: 'jovian' },
   ],
   [
-    { key: 'City tag', icon: 'city' },
-    { key: 'Plant tag', icon: 'plant' },
-    { key: 'Microbe tag', icon: 'microbe' },
-    { key: 'Animal tag', icon: 'animal' },
-    { key: 'Wild tag', icon: 'wild' },
-    { key: 'Event tag', icon: 'event' },
+    { key: 'City tag', altKey: 'Count of City tags', icon: 'city' },
+    { key: 'Plant tag', altKey: 'Count of Plant tags', icon: 'plant' },
+    { key: 'Microbe tag', altKey: 'Count of Microbe tags', icon: 'microbe' },
+    { key: 'Animal tag', altKey: 'Count of Animal tags', icon: 'animal' },
+    { key: 'Wild tag', altKey: 'Count of Wild tags', icon: 'wild' },
+    { key: 'Event tag', altKey: 'Count of played Events cards', icon: 'event' },
   ],
   [
     { key: 'City', icon: 'city tile', iconSource: 'tile' as const, label: 'Cities' },
     { key: 'Forest', icon: 'greenery tile', iconSource: 'tile' as const, label: 'Greeneries' },
-    { key: 'Land', icon: 'ocean tile', iconSource: 'tile' as const, label: 'Tiles' },
+    { key: 'Land', icon: 'tile', iconSource: 'tile' as const, label: 'Tiles' },
   ],
 ];
 
@@ -86,7 +86,11 @@ function TrackerCell({ icon, value, subValue, title }: { icon?: string; value: n
   );
 }
 
-function PlayerTrackers({ trackers }: { trackers: Record<string, number> }) {
+function getTracker(trackers: Record<string, number>, key: string, altKey?: string): number {
+  return trackers[key] ?? (altKey ? trackers[altKey] ?? 0 : 0);
+}
+
+function PlayerTrackers({ trackers, tileCounts }: { trackers: Record<string, number>; tileCounts?: { cities: number; greeneries: number; total: number } }) {
   return (
     <div className="border-t border-slate-200 dark:border-slate-700 px-2 py-2 space-y-2">
       {/* Resources + Production */}
@@ -106,12 +110,20 @@ function PlayerTrackers({ trackers }: { trackers: Record<string, number> }) {
         <div key={ri} className="flex justify-center gap-2">
           {row.map(t => {
             const icons = 'iconSource' in t && t.iconSource === 'tile' ? tileIcons : tagIcons;
+            const altKey = 'altKey' in t ? t.altKey : undefined;
+            let val = getTracker(trackers, t.key, altKey);
+            // Fall back to computed tile counts when tracker keys are missing
+            if (val === 0 && tileCounts && 'iconSource' in t) {
+              if (t.key === 'City') val = tileCounts.cities;
+              else if (t.key === 'Forest') val = tileCounts.greeneries;
+              else if (t.key === 'Land') val = tileCounts.total;
+            }
             return (
               <TrackerCell
                 key={t.key}
                 icon={getIcon(icons, t.icon)}
-                value={trackers[t.key] ?? 0}
-                title={`${'label' in t ? t.label : t.key}: ${trackers[t.key] ?? 0}`}
+                value={val}
+                title={`${'label' in t ? t.label : t.key}: ${val}`}
               />
             );
           })}
@@ -127,11 +139,12 @@ interface MovePanelProps {
   playerColors: Record<string, string>;
   playerNames: Record<string, string>;
   playerCorporations: Record<string, string>;
+  playerTileCounts?: Record<string, { cities: number; greeneries: number; total: number }>;
   onOpenTableau?: (playerId: string) => void;
   onOpenDiscardPile?: () => void;
 }
 
-export function MovePanel({ move, gameState, playerColors, playerNames, playerCorporations, onOpenTableau, onOpenDiscardPile }: MovePanelProps) {
+export function MovePanel({ move, gameState, playerColors, playerNames, playerCorporations, playerTileCounts, onOpenTableau, onOpenDiscardPile }: MovePanelProps) {
   const cardImage = move?.card_played
     ? getCardImage(move.card_played) ?? getCardPlaceholderImage()
     : null;
@@ -222,7 +235,7 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
                 </div>
               )}
               {gameState?.player_trackers?.[pid] && (
-                <PlayerTrackers trackers={gameState.player_trackers[pid]} />
+                <PlayerTrackers trackers={gameState.player_trackers[pid]} tileCounts={playerTileCounts?.[pid]} />
               )}
             </div>
           );

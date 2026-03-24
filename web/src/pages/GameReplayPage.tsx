@@ -87,6 +87,20 @@ export function GameReplayPage() {
     return map;
   }, [gameLog, currentStep]);
 
+  const playerTileCounts = useMemo(() => {
+    const counts: Record<string, { cities: number; greeneries: number; total: number }> = {};
+    for (const tile of placedTiles.values()) {
+      const t = tile.tileType.toLowerCase();
+      if (t === 'ocean') continue; // oceans are not player-owned tiles
+      if (!counts[tile.playerId]) counts[tile.playerId] = { cities: 0, greeneries: 0, total: 0 };
+      const c = counts[tile.playerId];
+      c.total++;
+      if (t === 'city' || t.includes('capital')) c.cities++;
+      else if (t === 'forest' || t === 'greenery') c.greeneries++;
+    }
+    return counts;
+  }, [placedTiles]);
+
   const offMapTiles = useMemo(() => {
     if (!mapDefinition) return [] as PlacedTile[];
     const hexKeys = new Set(mapDefinition.hexes.map(h => h.dbKey));
@@ -127,6 +141,15 @@ export function GameReplayPage() {
       // Corporation is always first in headquarters
       map.set(id, { headquarters: [p.corporation], played: [], hand: [], sold: [], cardResources: {} });
     }
+    // First pass: collect all played cards per player
+    const allPlayed = new Map<string, string[]>();
+    for (const id of Object.keys(gameLog.players)) allPlayed.set(id, []);
+    for (let i = 0; i <= currentStep; i++) {
+      const move = gameLog.moves[i];
+      if (move?.card_played) {
+        allPlayed.get(move.player_id)?.push(move.card_played);
+      }
+    }
     for (let i = 0; i <= currentStep; i++) {
       const move = gameLog.moves[i];
       // Use the hand snapshot when available (keyed by player id in game_state)
@@ -135,18 +158,6 @@ export function GameReplayPage() {
         for (const [pid, hand] of Object.entries(playerHands)) {
           const entry = map.get(pid);
           if (entry) entry.hand = [...hand];
-        }
-      }
-      // Track played cards — separate preludes into headquarters
-      if (move?.card_played) {
-        const entry = map.get(move.player_id);
-        if (entry) {
-          const preludeNames = playerPreludeNames.get(move.player_id);
-          if (preludeNames?.has(move.card_played)) {
-            entry.headquarters.push(move.card_played);
-          } else {
-            entry.played.push(move.card_played);
-          }
         }
       }
       // Track sold cards
@@ -170,6 +181,22 @@ export function GameReplayPage() {
               }
               entry.cardResources = resources;
             }
+          }
+        }
+      }
+    }
+    // Reconcile: played cards that are no longer in hand go to played/headquarters
+    for (const [pid, cards] of allPlayed) {
+      const entry = map.get(pid);
+      if (!entry) continue;
+      const handSet = new Set(entry.hand);
+      for (const card of cards) {
+        if (!handSet.has(card)) {
+          const preludeNames = playerPreludeNames.get(pid);
+          if (preludeNames?.has(card)) {
+            entry.headquarters.push(card);
+          } else {
+            entry.played.push(card);
           }
         }
       }
@@ -283,7 +310,7 @@ export function GameReplayPage() {
         </div>
 
         <div className="lg:w-80 lg:self-start lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto flex-shrink-0">
-          <MovePanel move={currentMove} gameState={gameState} playerColors={playerColors} playerNames={playerNames} playerCorporations={playerCorporations} onOpenTableau={setTableauPlayerId} onOpenDiscardPile={() => setShowDiscardPile(true)} />
+          <MovePanel move={currentMove} gameState={gameState} playerColors={playerColors} playerNames={playerNames} playerCorporations={playerCorporations} playerTileCounts={playerTileCounts} onOpenTableau={setTableauPlayerId} onOpenDiscardPile={() => setShowDiscardPile(true)} />
         </div>
       </div>
 

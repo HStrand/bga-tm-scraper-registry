@@ -30,6 +30,71 @@ function CardGrid({ cards, cardSize }: { cards: string[]; cardSize: number }) {
   );
 }
 
+function CardStack({ cards, cardSize }: { cards: string[]; cardSize: number }) {
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+
+  if (cards.length === 0) return null;
+
+  const cardWidth = cardSize;
+  const cardOffset = Math.round(cardWidth * 0.22);
+  const cardHeight = Math.round(cardWidth * 1.4);
+  const cardsPerCol = Math.max(4, Math.round(400 / cardOffset));
+  const columns: string[][] = [];
+  for (let i = 0; i < cards.length; i += cardsPerCol) {
+    columns.push(cards.slice(i, i + cardsPerCol));
+  }
+
+  return (
+    <div className="flex gap-4 flex-wrap">
+      {columns.map((col, colIdx) => (
+        <div
+          key={colIdx}
+          className="relative flex-shrink-0"
+          style={{
+            width: `${cardWidth}px`,
+            height: `${cardOffset * (col.length - 1) + cardHeight}px`,
+          }}
+        >
+          {col.map((card, i) => {
+            const globalIdx = colIdx * cardsPerCol + i;
+            const hoverKey = `discard-${globalIdx}`;
+            const img = getCardImage(card) ?? getCardPlaceholderImage();
+            const isHovered = hoveredKey === hoverKey;
+            const hoveredInCol = hoveredKey?.startsWith('discard-')
+              ? parseInt(hoveredKey.split('-').pop()!, 10)
+              : null;
+            const hoveredColIdx = hoveredInCol !== null ? Math.floor(hoveredInCol / cardsPerCol) : -1;
+            const hoveredLocalIdx = hoveredInCol !== null ? hoveredInCol % cardsPerCol : -1;
+            const isAfterHovered = hoveredColIdx === colIdx && i > hoveredLocalIdx;
+            const top = cardOffset * i + (isAfterHovered ? cardHeight * 0.45 : 0);
+
+            return (
+              <div
+                key={`${card}-${globalIdx}`}
+                className="absolute left-0 transition-all duration-150 ease-out"
+                style={{
+                  top: `${top}px`,
+                  zIndex: isHovered ? 100 : i,
+                  width: `${cardWidth}px`,
+                }}
+                onMouseEnter={() => setHoveredKey(hoverKey)}
+                onMouseLeave={() => setHoveredKey(null)}
+              >
+                <img
+                  src={img}
+                  alt={card}
+                  className={`rounded shadow-sm transition-transform duration-150 ${isHovered ? 'scale-[1.15] shadow-lg' : ''}`}
+                  style={{ width: `${cardWidth}px` }}
+                />
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function CardSynthetic({ cards, cardSize }: { cards: string[]; cardSize: number }) {
   const boxWidth = Math.max(120, cardSize * 1.3);
   return (
@@ -61,6 +126,7 @@ export function DiscardPileModal({ cards, onClose }: DiscardPileModalProps) {
 
   const viewButtons: { mode: ViewMode; icon: typeof Grid3X3; tip: string }[] = [
     { mode: 'grid', icon: Grid3X3, tip: 'Grid' },
+    { mode: 'stack', icon: Layers, tip: 'Stack' },
     { mode: 'synthetic', icon: List, tip: 'List' },
     { mode: 'hidden', icon: EyeOff, tip: 'Hide' },
   ];
@@ -120,6 +186,8 @@ export function DiscardPileModal({ cards, onClose }: DiscardPileModalProps) {
             <p className="text-slate-500 dark:text-slate-400 italic text-center py-8">No cards discarded yet.</p>
           ) : viewMode === 'hidden' ? (
             <p className="text-slate-500 dark:text-slate-400 italic text-center py-4">{cards.length} cards hidden</p>
+          ) : viewMode === 'stack' ? (
+            <CardStack cards={cards} cardSize={cardSize} />
           ) : viewMode === 'synthetic' ? (
             <CardSynthetic cards={cards} cardSize={cardSize} />
           ) : (
