@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Info } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
@@ -21,6 +21,21 @@ export function GameReplayPage() {
   const [tableauPlayerId, setTableauPlayerId] = useState<string | null>(null);
   const [showDiscardPile, setShowDiscardPile] = useState(false);
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
+  const collapseTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePlayerExpand = useCallback((pid: string) => {
+    if (collapseTimeout.current) {
+      clearTimeout(collapseTimeout.current);
+      collapseTimeout.current = null;
+    }
+    setExpandedPlayerId(pid);
+  }, []);
+
+  const handlePlayerCollapse = useCallback(() => {
+    collapseTimeout.current = setTimeout(() => {
+      setExpandedPlayerId(null);
+    }, 150);
+  }, []);
 
   // --- data fetching ---
   useEffect(() => {
@@ -325,7 +340,7 @@ export function GameReplayPage() {
       {/* Main content — 3 column layout */}
       <div className="flex gap-4">
         {/* Left: Player cards */}
-        <div className="w-[180px] flex-shrink-0 space-y-2.5">
+        <div className="w-[320px] flex-shrink-0 space-y-3">
           {gameState?.player_vp && Object.keys(gameState.player_vp).map(pid => {
             const tableau = playerTableaux.get(pid);
             return (
@@ -341,8 +356,8 @@ export function GameReplayPage() {
                 tileCounts={playerTileCounts?.[pid]}
                 isStartingPlayer={gameState.starting_player === pid}
                 isExpanded={expandedPlayerId === pid}
-                onExpand={() => setExpandedPlayerId(pid)}
-                onCollapse={() => setExpandedPlayerId(null)}
+                onExpand={() => handlePlayerExpand(pid)}
+                onCollapse={handlePlayerCollapse}
                 headquarters={tableau?.headquarters ?? []}
                 played={tableau?.played ?? []}
                 hand={tableau?.hand ?? []}

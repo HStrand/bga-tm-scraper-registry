@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Grid3X3, Layers, List, EyeOff } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { PlayerVictoryPoints } from '@/types/gamelog';
@@ -167,22 +167,7 @@ export function PlayerCard({
   isStartingPlayer, isExpanded, onExpand, onCollapse,
   headquarters, played, hand, sold, cardResources,
 }: PlayerCardProps) {
-  const leaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const handleEnter = useCallback(() => {
-    if (leaveTimeout.current) {
-      clearTimeout(leaveTimeout.current);
-      leaveTimeout.current = null;
-    }
-    onExpand();
-  }, [onExpand]);
-
-  const handleLeave = useCallback(() => {
-    leaveTimeout.current = setTimeout(() => {
-      onCollapse();
-    }, 150);
-  }, [onCollapse]);
 
   useEffect(() => {
     if (!isExpanded) return;
@@ -193,12 +178,6 @@ export function PlayerCard({
     return () => window.removeEventListener('keydown', onKey);
   }, [isExpanded, onCollapse]);
 
-  useEffect(() => {
-    return () => {
-      if (leaveTimeout.current) clearTimeout(leaveTimeout.current);
-    };
-  }, []);
-
   const cubeImg = getCubeImage(color);
   const d = vp?.total_details;
 
@@ -207,40 +186,47 @@ export function PlayerCard({
       ref={containerRef}
       className="relative"
       style={{ zIndex: isExpanded ? 50 : 1 }}
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
+      onMouseEnter={onExpand}
+      onMouseLeave={onCollapse}
     >
       {/* Compact card — always in document flow */}
-      <div className="glass-panel rounded-xl p-2.5 cursor-pointer">
-        <div className="flex items-center gap-2">
+      <div className="glass-panel rounded-xl p-4 cursor-pointer">
+        <div className="flex items-center gap-3">
           {cubeImg ? (
-            <img src={cubeImg} alt="" className="w-5 h-5 flex-shrink-0" />
+            <img src={cubeImg} alt="" className="w-10 h-10 flex-shrink-0" />
           ) : (
-            <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+            <span className="inline-block w-6 h-6 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
           )}
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1">
-              <span className="font-bold text-white text-xs truncate">{playerName}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-white text-lg truncate">{playerName}</span>
+              {elo != null && (
+                <span className="text-base text-slate-400 flex-shrink-0">({elo})</span>
+              )}
               {isStartingPlayer && (
-                <img src={startingPlayerImg} alt="1st" className="w-4 h-4 flex-shrink-0" />
+                <img src={startingPlayerImg} alt="1st" className="w-9 h-9 flex-shrink-0" />
               )}
             </div>
-            <div className="text-[10px] text-slate-400 truncate">{corporation}</div>
+            <div className="text-base text-slate-400 truncate">{corporation}</div>
           </div>
-          <span className="text-sm font-bold text-white glow-white flex-shrink-0">
+          <span className="text-2xl font-bold text-white glow-white flex-shrink-0">
             {vp?.total ?? '?'}
           </span>
+        </div>
+        <div className="flex items-center gap-2.5 mt-3 pt-2.5 border-t border-white/5">
+          <img src={getCardPlaceholderImage()} alt="Cards" className="w-8 h-11 object-cover rounded-sm opacity-60" />
+          <span className="text-xl font-semibold text-white">{hand.length}</span>
         </div>
       </div>
 
       {/* Expanded overlay — grows rightward */}
       <div
-        className={`absolute top-0 left-0 glass-panel rounded-xl overflow-hidden
-          transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]
+        className={`glass-panel rounded-xl overflow-hidden
           ${isExpanded
             ? 'w-[calc(100vw-14rem)] max-w-[900px] max-h-[85vh] opacity-100 pointer-events-auto overflow-y-auto scrollbar-hidden'
             : 'w-full max-h-0 opacity-0 pointer-events-none'
           }`}
+        style={{ position: 'absolute', top: 0, left: 0, transition: 'width 500ms cubic-bezier(0.4,0,0.2,1), max-height 500ms cubic-bezier(0.4,0,0.2,1), opacity 400ms ease' }}
       >
         {/* Header */}
         <div

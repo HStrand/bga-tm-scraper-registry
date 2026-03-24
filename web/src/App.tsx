@@ -25,7 +25,7 @@ export default function App() {
       <Routes>
         <Route path="/replay/:tableId" element={
           <div className="replay-bg">
-            <div className="container mx-auto px-4 py-6 max-w-7xl"><GameReplayPage /></div>
+            <div className="mx-auto px-6 py-6"><GameReplayPage /></div>
           </div>
         } />
         <Route path="*" element={
