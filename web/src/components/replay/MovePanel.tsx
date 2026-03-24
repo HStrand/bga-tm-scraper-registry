@@ -139,12 +139,13 @@ interface MovePanelProps {
   playerColors: Record<string, string>;
   playerNames: Record<string, string>;
   playerCorporations: Record<string, string>;
+  playerElos?: Record<string, number | null>;
   playerTileCounts?: Record<string, { cities: number; greeneries: number; total: number }>;
   onOpenTableau?: (playerId: string) => void;
   onOpenDiscardPile?: () => void;
 }
 
-export function MovePanel({ move, gameState, playerColors, playerNames, playerCorporations, playerTileCounts, onOpenTableau, onOpenDiscardPile }: MovePanelProps) {
+export function MovePanel({ move, gameState, playerColors, playerNames, playerCorporations, playerElos, playerTileCounts, onOpenTableau, onOpenDiscardPile }: MovePanelProps) {
   const cardImage = move?.card_played
     ? getCardImage(move.card_played) ?? getCardPlaceholderImage()
     : null;
@@ -194,6 +195,9 @@ export function MovePanel({ move, gameState, playerColors, playerNames, playerCo
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold text-slate-900 dark:text-slate-100 truncate">
                         {playerNames[pid] ?? pid}
+                        {playerElos?.[pid] != null && (
+                          <span className="font-normal text-xs text-slate-400 dark:text-slate-500 ml-1">({playerElos[pid]})</span>
+                        )}
                       </span>
                       {gameState?.starting_player === pid && (
                         <img src={startingPlayerImg} alt="Starting player" className="w-7 h-7 flex-shrink-0" title="Starting player this generation" />

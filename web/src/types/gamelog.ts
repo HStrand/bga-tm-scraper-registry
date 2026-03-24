@@ -22,6 +22,10 @@ export interface GameLogPlayer {
     preludes?: string[] | null;
     project_cards?: string[] | null;
   };
+  elo_data?: {
+    game_rank?: number | null;
+    arena_points?: number | null;
+  };
 }
 
 export interface GameLogMove {

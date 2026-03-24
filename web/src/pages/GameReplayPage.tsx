@@ -54,6 +54,13 @@ export function GameReplayPage() {
     [gameLog],
   );
 
+  const playerElos = useMemo(
+    () => gameLog
+      ? Object.fromEntries(Object.entries(gameLog.players).map(([id, p]) => [id, p.elo_data?.game_rank ?? null]))
+      : {},
+    [gameLog],
+  );
+
   const placedTiles = useMemo(() => {
     if (!gameLog) return new Map<string, PlacedTile>();
     const map = new Map<string, PlacedTile>();
@@ -310,7 +317,7 @@ export function GameReplayPage() {
         </div>
 
         <div className="lg:w-80 lg:self-start lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto flex-shrink-0">
-          <MovePanel move={currentMove} gameState={gameState} playerColors={playerColors} playerNames={playerNames} playerCorporations={playerCorporations} playerTileCounts={playerTileCounts} onOpenTableau={setTableauPlayerId} onOpenDiscardPile={() => setShowDiscardPile(true)} />
+          <MovePanel move={currentMove} gameState={gameState} playerColors={playerColors} playerNames={playerNames} playerCorporations={playerCorporations} playerElos={playerElos} playerTileCounts={playerTileCounts} onOpenTableau={setTableauPlayerId} onOpenDiscardPile={() => setShowDiscardPile(true)} />
         </div>
       </div>
 
