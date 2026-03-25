@@ -1,4 +1,6 @@
 import { hexCenter, hexPoints, type MapDefinition } from '@/data/mapHexes';
+import { getMapOverlays } from '@/data/mapOverlays';
+import type { GameState } from '@/types/gamelog';
 import cityTileImage from '/assets/tiles/city tile.png';
 import greeneryTileImage from '/assets/tiles/greenery tile.png';
 import oceanTileImage from '/assets/tiles/ocean tile.png';
@@ -35,9 +37,12 @@ interface ReplayMapProps {
   placedTiles: Map<string, PlacedTile>;
   playerColors: Record<string, string>;
   currentStep: number;
+  gameState?: GameState;
+  claimedMilestones?: Map<string, string>; // milestone name → player id
+  fundedAwards?: Map<string, string>;      // award name → player id
 }
 
-export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentStep }: ReplayMapProps) {
+export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentStep, gameState, claimedMilestones, fundedAwards }: ReplayMapProps) {
   const tileSize = mapDefinition.grid.hexRadius * 2;
   return (
     <div className="relative inline-block select-none">
@@ -128,48 +133,110 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
             </g>
           );
         })}
-        {/* Off-map tiles (Phobos Space Haven, Ganymede Colony) */}
-        {mapDefinition.name === 'Tharsis' && (() => {
-          const offMapLocations: Record<string, { cx: number; cy: number }> = {
-            'Phobos Space Haven': { cx: 119, cy: 168 },
-            'Ganymede Colony': { cx: 87, cy: 326 },
-          };
-          return Object.entries(offMapLocations).map(([name, { cx, cy }]) => {
+        {/* Off-map tiles from map overlay config */}
+        {(() => {
+          const overlays = getMapOverlays(mapDefinition.name);
+          if (!overlays.offMapTiles) return null;
+          const tileImages: Record<string, string> = { city: cityTileImage, greenery: greeneryTileImage };
+          return overlays.offMapTiles.map(({ name, tileType, cx, cy }) => {
             const tile = placedTiles.get(name);
             if (!tile || tile.moveIndex > currentStep) return null;
             const color = playerColors[tile.playerId] ?? '#888';
             const size = tileSize;
             const cubeSize = tileSize * 0.4;
+            const img = tileImages[tileType] ?? getSpecialTileImage(tile.tileType);
             return (
               <g key={`offmap-${name}`}>
-                <image
-                  href={cityTileImage}
-                  x={cx - size / 2}
-                  y={cy - size / 2}
-                  width={size}
-                  height={size}
-                />
+                {img && (
+                  <image href={img} x={cx - size / 2} y={cy - size / 2} width={size} height={size} />
+                )}
                 {getCubeImage(color) ? (
-                  <image
-                    href={getCubeImage(color)!}
-                    x={cx - cubeSize / 2}
-                    y={cy - cubeSize / 2}
-                    width={cubeSize}
-                    height={cubeSize}
-                  />
+                  <image href={getCubeImage(color)!} x={cx - cubeSize / 2} y={cy - cubeSize / 2} width={cubeSize} height={cubeSize} />
                 ) : (
-                  <rect
-                    x={cx - cubeSize / 2}
-                    y={cy - cubeSize / 2}
-                    width={cubeSize}
-                    height={cubeSize}
-                    rx={2}
-                    fill={color}
-                    stroke="#fff"
-                    strokeWidth={1}
-                  />
+                  <rect x={cx - cubeSize / 2} y={cy - cubeSize / 2} width={cubeSize} height={cubeSize} rx={2} fill={color} stroke="#fff" strokeWidth={1} />
                 )}
               </g>
+            );
+          });
+        })()}
+
+        {/* Global parameter trackers on map */}
+        {gameState && (() => {
+          const overlays = getMapOverlays(mapDefinition.name);
+          if (!overlays.trackers) return null;
+          const values: Record<string, number | null> = {
+            oceans: gameState.oceans,
+            generation: gameState.generation,
+            temperature: gameState.temperature,
+            oxygen: gameState.oxygen,
+          };
+          return overlays.trackers.map(({ key, cx, cy }) => {
+            const val = values[key];
+            if (val == null) return null;
+            const label = key === 'oceans' ? String(9 - val)
+              : key === 'temperature' ? `${val}°`
+              : key === 'oxygen' ? `${val}%`
+              : String(val);
+            return (
+              <text key={`tracker-${key}`} x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={28} fontWeight="bold" style={{ filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.5))' }}>
+                {label}
+              </text>
+            );
+          });
+        })()}
+
+        {/* Cube trackers (oxygen, temperature) */}
+        {gameState && (() => {
+          const overlays = getMapOverlays(mapDefinition.name);
+          if (!overlays.cubeTrackers) return null;
+          const values: Record<string, number | null> = {
+            oxygen: gameState.oxygen,
+            temperature: gameState.temperature,
+          };
+          const cubeSize = tileSize * 0.45;
+          return overlays.cubeTrackers.map(({ key, positions, minValue, step }) => {
+            const val = values[key];
+            if (val == null) return null;
+            const idx = Math.max(0, Math.min(positions.length - 1, Math.round((val - minValue) / step)));
+            const { cx, cy } = positions[idx];
+            return (
+              <image
+                key={`cube-tracker-${key}`}
+                href={getCubeImage('#ffffff') ?? ''}
+                x={cx - cubeSize / 2}
+                y={cy - cubeSize / 2}
+                width={cubeSize}
+                height={cubeSize}
+                style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.5))' }}
+              />
+            );
+          });
+        })()}
+
+        {/* Milestones & Awards cubes */}
+        {(() => {
+          const overlays = getMapOverlays(mapDefinition.name);
+          const cubeSize = tileSize * 0.4;
+          const entries: { name: string; cx: number; cy: number; playerId: string }[] = [];
+          if (overlays.milestones && claimedMilestones) {
+            for (const m of overlays.milestones) {
+              const pid = claimedMilestones.get(m.name.toUpperCase());
+              if (pid) entries.push({ ...m, playerId: pid });
+            }
+          }
+          if (overlays.awards && fundedAwards) {
+            for (const a of overlays.awards) {
+              const pid = fundedAwards.get(a.name.toLowerCase());
+              if (pid) entries.push({ ...a, playerId: pid });
+            }
+          }
+          return entries.map(({ name, cx, cy, playerId }) => {
+            const color = playerColors[playerId] ?? '#888';
+            const cube = getCubeImage(color);
+            return cube ? (
+              <image key={`ma-${name}`} href={cube} x={cx - cubeSize / 2} y={cy - cubeSize / 2} width={cubeSize} height={cubeSize} />
+            ) : (
+              <rect key={`ma-${name}`} x={cx - cubeSize / 2} y={cy - cubeSize / 2} width={cubeSize} height={cubeSize} rx={2} fill={color} stroke="#fff" strokeWidth={1} />
             );
           });
         })()}

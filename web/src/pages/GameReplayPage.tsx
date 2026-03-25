@@ -3,6 +3,7 @@ import { Info } from 'lucide-react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
 import { fetchGameLog, extractTilePlacement, parseTileLocationToDbKey, assignPlayerColors } from '@/lib/gameLog';
+import { getMapOverlays } from '@/data/mapOverlays';
 import { ReplayMap, type PlacedTile } from '@/components/replay/ReplayMap';
 import { ReplayControls } from '@/components/replay/ReplayControls';
 import { GlobalParamsBar } from '@/components/replay/GlobalParamsBar';
