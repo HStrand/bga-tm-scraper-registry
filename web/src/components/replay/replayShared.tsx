@@ -105,7 +105,7 @@ function ResourceCell({ icon, value, prodValue, title, resourceKey }: { icon?: s
   return (
     <div className="flex flex-col items-center w-14 rounded-lg overflow-hidden" title={title}>
       {/* Icon on colored background */}
-      <div className="w-full flex items-center justify-center py-1.5" style={{ background: bg }}>
+      <div className="w-full flex items-center justify-center h-10" style={{ background: bg }}>
         {icon ? (
           <img src={icon} alt={title} className="w-7 h-7 object-contain drop-shadow-md" />
         ) : (
@@ -129,19 +129,35 @@ function ResourceCell({ icon, value, prodValue, title, resourceKey }: { icon?: s
   );
 }
 
+const TAG_COLORS: Record<string, string> = {
+  'Building tag': '#6b4c2a', 'Count of Building tags': '#6b4c2a',
+  'Space tag': '#1a1a2e', 'Count of Space tags': '#1a1a2e',
+  'Science tag': '#f5f5f5', 'Count of Science tags': '#f5f5f5',
+  'Energy tag': '#6b21a8', 'Count of Power tags': '#6b21a8',
+  'Earth tag': '#1e40af', 'Count of Earth tags': '#1e40af',
+  'Jovian tag': '#92400e', 'Count of Jovian tags': '#92400e',
+  'City tag': '#374151', 'Count of City tags': '#374151',
+  'Plant tag': '#166534', 'Count of Plant tags': '#166534',
+  'Microbe tag': '#065f46', 'Count of Microbe tags': '#065f46',
+  'Animal tag': '#713f12', 'Count of Animal tags': '#713f12',
+  'Wild tag': '#6b7280', 'Count of Wild tags': '#6b7280',
+  'Event tag': '#991b1b', 'Count of played Events cards': '#991b1b',
+};
+
 function TagCell({ icon, value, title, large }: { icon?: string; value: number; title: string; large?: boolean }) {
+  const bg = TAG_COLORS[title] ?? '#334155';
   return (
-    <div
-      className={`flex flex-col items-center rounded-lg ${large ? 'w-14 py-1.5' : 'w-12 py-1'}`}
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}
-      title={title}
-    >
-      {icon ? (
-        <img src={icon} alt={title} className={`${large ? 'w-8 h-8' : 'w-6 h-6'} object-contain`} />
-      ) : (
-        <div className={`${large ? 'w-8 h-8' : 'w-6 h-6'} rounded-full bg-slate-600`} />
-      )}
-      <span className="text-sm font-bold text-slate-200 leading-none mt-0.5">{value}</span>
+    <div className="flex flex-col items-center w-14 rounded-lg overflow-hidden" title={title}>
+      <div className="w-full flex items-center justify-center h-10" style={{ background: bg }}>
+        {icon ? (
+          <img src={icon} alt={title} className={`${large ? 'w-8 h-8' : 'w-7 h-7'} object-contain drop-shadow-md`} />
+        ) : (
+          <div className={`${large ? 'w-8 h-8' : 'w-7 h-7'} rounded-full bg-white/20`} />
+        )}
+      </div>
+      <div className="w-full text-center py-0.5" style={{ background: 'rgba(255,255,255,0.08)' }}>
+        <span className="text-sm font-bold text-white">{value}</span>
+      </div>
     </div>
   );
 }
@@ -169,18 +185,6 @@ export function PlayerTrackers({ trackers, tileCounts, inline }: { trackers: Rec
           {TAG_ROWS[1].map(t => {
             const altKey = 'altKey' in t ? t.altKey : undefined;
             return <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={getTracker(trackers, t.key, altKey)} title={t.key} />;
-          })}
-        </div>
-        {/* Tiles as one block */}
-        <div className="flex gap-1 flex-shrink-0">
-          {TAG_ROWS[2].map(t => {
-            let val = getTracker(trackers, t.key);
-            if (val === 0 && tileCounts && 'iconSource' in t) {
-              if (t.key === 'City') val = tileCounts.cities;
-              else if (t.key === 'Forest') val = tileCounts.greeneries;
-              else if (t.key === 'Land') val = tileCounts.total;
-            }
-            return <TagCell key={t.key} icon={getIcon(tileIcons, t.icon)} value={val} title={'label' in t ? t.label : t.key} large />;
           })}
         </div>
       </>

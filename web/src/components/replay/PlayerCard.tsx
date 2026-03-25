@@ -380,9 +380,37 @@ export const PlayerCard = memo(function PlayerCard({
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-2xl font-bold text-white glow-white">
-              {vp?.total ?? '?'} <span className="text-sm font-medium text-slate-400" style={{ textShadow: 'none' }}>VP</span>
-            </span>
+            <div className="relative group/vp">
+              <span className="text-2xl font-bold text-white glow-white cursor-help">
+                {vp?.total ?? '?'} <span className="text-sm font-medium text-slate-400" style={{ textShadow: 'none' }}>VP</span>
+              </span>
+              {d && (
+                <div className="absolute right-0 top-full mt-2 hidden group-hover/vp:block z-50">
+                  <div className="glass-panel rounded-lg shadow-xl px-4 py-3 min-w-[200px]" style={{ position: 'relative' }}>
+                    <div className="font-bold text-sm text-white mb-2">VP Breakdown</div>
+                    <div className="space-y-1">
+                      {([
+                        ['TR', d.tr],
+                        ['Awards', d.awards],
+                        ['Milestones', d.milestones],
+                        ['Cities', d.cities],
+                        ['Greeneries', d.greeneries],
+                        ['Cards', d.cards],
+                      ] as const).map(([label, val]) => (
+                        <div key={label} className="flex justify-between gap-4 text-xs">
+                          <span className="text-slate-400">{label}</span>
+                          <span className="text-white font-semibold">{val ?? 0}</span>
+                        </div>
+                      ))}
+                      <div className="border-t border-white/10 pt-1 mt-1 flex justify-between gap-4 text-xs">
+                        <span className="text-slate-300 font-medium">Total</span>
+                        <span className="text-amber-400 font-bold">{vp?.total ?? 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             <button
               onClick={(e) => { e.stopPropagation(); setPinned(p => !p); }}
               className={`nav-btn w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${pinned ? 'text-amber-400' : 'text-slate-400 hover:text-white'}`}
@@ -399,66 +427,45 @@ export const PlayerCard = memo(function PlayerCard({
           </div>
         </div>
 
-        {/* Stats — VP + Resources + Tags all in one flowing row */}
+        {/* Stats — Resources + Tags */}
         <div className="flex flex-wrap items-start gap-1 px-3 py-2.5 flex-shrink-0 border-t border-white/10">
-          {/* VP row 1: TR, Awards, Milestones */}
-          {d && (
-            <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.03)' }}>
-              {([['TR', d.tr], ['Awards', d.awards], ['Milestones', d.milestones]] as const).map(([label, val]) => (
-                <div key={label} className="px-4 py-2 text-center" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.15) 100%)' }}>
-                  <div className="text-lg font-semibold text-slate-200">{val ?? 0}</div>
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wide">{label}</div>
-                </div>
-              ))}
-            </div>
-          )}
-          {/* VP row 2: Cities, Greeneries, Cards */}
-          {d && (
-            <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.03)' }}>
-              {([['Cities', d.cities], ['Greeneries', d.greeneries], ['Cards', d.cards]] as const).map(([label, val]) => (
-                <div key={label} className="px-4 py-2 text-center" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.15) 100%)' }}>
-                  <div className="text-lg font-semibold text-slate-200">{val ?? 0}</div>
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wide">{label}</div>
-                </div>
-              ))}
-            </div>
-          )}
-          {/* Resources + production */}
           {trackers && (
             <PlayerTrackers trackers={trackers} tileCounts={tileCounts} inline />
           )}
         </div>
 
         {/* Cards — scrollable */}
+        {/* Cards — scrollable */}
+        {(() => {
+          const automated: string[] = [];
+          const actions: string[] = [];
+          const effects: string[] = [];
+          const events: string[] = [];
+          const extraHQ: string[] = [];
+          for (const card of played) {
+            const cat = getCardCategory(card);
+            if (cat === 'prelude') extraHQ.push(card);
+            else if (cat === 'automated') automated.push(card);
+            else if (cat === 'action') actions.push(card);
+            else if (cat === 'effect') effects.push(card);
+            else if (cat === 'event') events.push(card);
+            else automated.push(card);
+          }
+          const allHQ = extraHQ.length > 0 ? [...headquarters, ...extraHQ] : headquarters;
+          return (
         <div className="overflow-y-auto scrollbar-hidden flex-1 min-h-0">
           <div className="px-3 py-2.5 space-y-3 border-t border-white/10">
-            <CardSection cards={headquarters} title="Headquarters" color={color} defaultViewMode="grid" defaultCardSize={180} />
+            <CardSection cards={allHQ} title="Headquarters" color={color} defaultViewMode="grid" defaultCardSize={180} />
             <CardSection cards={hand} title="Hand" color={color} defaultViewMode="grid" defaultCardSize={130} />
-            {(() => {
-              const automated: string[] = [];
-              const actions: string[] = [];
-              const effects: string[] = [];
-              const events: string[] = [];
-              for (const card of played) {
-                const cat = getCardCategory(card);
-                if (cat === 'automated') automated.push(card);
-                else if (cat === 'action') actions.push(card);
-                else if (cat === 'effect') effects.push(card);
-                else if (cat === 'event') events.push(card);
-                else automated.push(card); // fallback
-              }
-              return (
-                <>
-                  <CardSection cards={actions} title="Actions" color="#60a5fa" cardResources={cardResources} defaultViewMode="grid" activatedCards={activatedCards} />
-                  <CardSection cards={effects} title="Effects" color="#60a5fa" cardResources={cardResources} defaultViewMode="stack" />
-                  <CardSection cards={automated} title="Automated" color="#4ade80" cardResources={cardResources} defaultViewMode="synthetic" />
-                  <CardSection cards={events} title="Events" color="#f87171" cardResources={cardResources} defaultViewMode="hidden" />
-                </>
-              );
-            })()}
+            <CardSection cards={actions} title="Actions" color="#60a5fa" cardResources={cardResources} defaultViewMode="grid" activatedCards={activatedCards} />
+            <CardSection cards={effects} title="Effects" color="#60a5fa" cardResources={cardResources} defaultViewMode="stack" />
+            <CardSection cards={automated} title="Automated" color="#4ade80" cardResources={cardResources} defaultViewMode="synthetic" />
+            <CardSection cards={events} title="Events" color="#f87171" cardResources={cardResources} defaultViewMode="hidden" />
             <CardSection cards={sold} title="Sold" color={color} defaultViewMode="hidden" />
           </div>
         </div>
+          );
+        })()}
 
         {/* Resize handles — edges */}
         {isExpanded && (
