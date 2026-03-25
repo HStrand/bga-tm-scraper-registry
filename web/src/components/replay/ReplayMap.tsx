@@ -10,8 +10,14 @@ import oceanTileImage from '/assets/tiles/ocean tile.png';
 const specialTileImages = import.meta.glob('../../../assets/tiles/*.png', { eager: true }) as Record<string, { default: string }>;
 const cubeImages = import.meta.glob('../../../assets/cubes/*.png', { eager: true }) as Record<string, { default: string }>;
 
+// Tile type aliases for cases where the game log name differs from the image filename
+const TILE_ALIASES: Record<string, string> = {
+  'mining area': 'mining',
+  'mining rights': 'mining',
+};
+
 function getSpecialTileImage(tileType: string): string | undefined {
-  const slug = tileType.toLowerCase();
+  const slug = TILE_ALIASES[tileType.toLowerCase()] ?? tileType.toLowerCase();
   const entry = Object.entries(specialTileImages).find(([key]) => {
     const base = key.replace(/^.*[\\/]/, '').toLowerCase().replace('.png', '');
     return base === slug;
