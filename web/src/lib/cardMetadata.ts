@@ -27,13 +27,20 @@ export function isPrelude(cardName: string): boolean {
   return getCardMeta(cardName)?.type === 'prelude';
 }
 
+// Known card name mismatches between game logs and metadata
+const CARD_ALIASES: Record<string, string> = {
+  'excentric sponsor': 'eccentric sponsor',
+  'allied bank': 'allied banks',
+};
+
 const cardsByName = new Map<string, CardMeta>();
 for (const card of tmCards as CardMeta[]) {
   cardsByName.set(card.name.toLowerCase(), card);
 }
 
 export function getCardMeta(cardName: string): CardMeta | undefined {
-  return cardsByName.get(cardName.toLowerCase());
+  const key = cardName.toLowerCase();
+  return cardsByName.get(CARD_ALIASES[key] ?? key);
 }
 
 export function isAutomated(cardName: string): boolean {

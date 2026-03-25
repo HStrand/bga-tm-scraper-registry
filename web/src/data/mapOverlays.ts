@@ -27,6 +27,7 @@ export interface ScorerContext {
   playerId: string;
   placedTiles?: Map<string, { dbKey: string; tileType: string; playerId: string; moveIndex: number }>;
   playedCards?: string[];
+  gameState?: import('@/types/gamelog').GameState;
 }
 
 export type CustomScorer = (ctx: ScorerContext) => number;
@@ -119,7 +120,7 @@ const polarExplorerScorer: CustomScorer = ({ playerId, placedTiles }) => {
   return count;
 };
 
-import { countAutomatedCards, countCardsWithRequirements, getCardCategory } from '@/lib/cardMetadata';
+import { countAutomatedCards, countCardsWithRequirements, getCardCategory, getCardMeta } from '@/lib/cardMetadata';
 
 const tacticianScorer: CustomScorer = ({ playedCards }) => {
   return playedCards ? countCardsWithRequirements(playedCards) : 0;
@@ -162,6 +163,72 @@ const tycoonScorer: CustomScorer = ({ playedCards }) => {
 const legendScorer: CustomScorer = ({ playedCards }) => {
   if (!playedCards) return 0;
   return playedCards.filter(c => getCardCategory(c) === 'event').length;
+};
+
+// Celebrity: count played cards costing 20 MC or more
+const celebrityScorer: CustomScorer = ({ playedCards }) => {
+  if (!playedCards) return 0;
+  return playedCards.filter(c => {
+    const meta = getCardMeta(c);
+    return meta && meta.cost != null && meta.cost >= 20;
+  }).length;
+};
+
+// Desert Settler: tiles below equator (row >= 6), excluding oceans
+const desertSettlerScorer: CustomScorer = ({ playerId, placedTiles }) => {
+  if (!placedTiles) return 0;
+  let count = 0;
+  for (const tile of placedTiles.values()) {
+    if (tile.playerId !== playerId) continue;
+    if (tile.tileType.toLowerCase() === 'ocean') continue;
+    const rowMatch = tile.dbKey.match(/(\d+),(\d+)/);
+    if (rowMatch) {
+      const row = parseInt(rowMatch[2], 10);
+      if (row >= 6) count++;
+    }
+  }
+  return count;
+};
+
+// Benefactor: highest TR
+const benefactorScorer: CustomScorer = ({ playerId, gameState }) => {
+  return gameState?.player_vp?.[playerId]?.total_details?.tr ?? 0;
+};
+
+// Estate Dealer: tiles adjacent to oceans
+// Hex adjacency: even rows offset left, odd rows offset right
+function getHexNeighbors(col: number, row: number): [number, number][] {
+  if (row % 2 === 0) {
+    return [[col-1,row], [col+1,row], [col-1,row-1], [col,row-1], [col-1,row+1], [col,row+1]];
+  } else {
+    return [[col-1,row], [col+1,row], [col,row-1], [col+1,row-1], [col,row+1], [col+1,row+1]];
+  }
+}
+
+const estateDealerScorer: CustomScorer = ({ playerId, placedTiles }) => {
+  if (!placedTiles) return 0;
+  // Build set of ocean hex coordinates
+  const oceanCoords = new Set<string>();
+  for (const tile of placedTiles.values()) {
+    if (tile.tileType.toLowerCase() === 'ocean') {
+      const m = tile.dbKey.match(/(\d+),(\d+)/);
+      if (m) oceanCoords.add(`${m[1]},${m[2]}`);
+    }
+  }
+  let count = 0;
+  for (const tile of placedTiles.values()) {
+    if (tile.playerId !== playerId) continue;
+    if (tile.tileType.toLowerCase() === 'ocean') continue;
+    const m = tile.dbKey.match(/(\d+),(\d+)/);
+    if (!m) continue;
+    const col = parseInt(m[1], 10);
+    const row = parseInt(m[2], 10);
+    const neighbors = getHexNeighbors(col, row);
+    if (neighbors.some(([nc, nr]) => oceanCoords.has(`${nc},${nr}`))) {
+      count++;
+    }
+  }
+  return count;
 };
 
 const overlays: Record<string, MapOverlays> = {
@@ -383,15 +450,15 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Generalist', cx: 59, cy: 889, metric: '1 of each production', threshold: 6, customScorer: generalistScorer },
       { name: 'Specialist', cx: 161, cy: 889, metric: '10 production of one resource', threshold: 10, customScorer: specialistScorer },
       { name: 'Ecologist', cx: 272, cy: 889, metric: '4 bio tags', threshold: 4, customScorer: ecologistScorer },
-      { name: 'Tycoon', cx: 385, cy: 889, metric: '15 green or blue cards', threshold: 15, customScorer: tycoonScorer },
+      { name: 'Tycoon', cx: 385, cy: 889, metric: '15 blue or green cards', threshold: 15, customScorer: tycoonScorer },
       { name: 'Legend', cx: 488, cy: 889, metric: '5 events played', threshold: 5, customScorer: legendScorer },
     ],
     awards: [
-      { name: 'Celebrity', cx: 643, cy: 889, metric: 'Most VP on cards', trackerKeys: [] },
+      { name: 'Celebrity', cx: 643, cy: 889, metric: 'Most cards costing 20+ MC', trackerKeys: [], customScorer: celebrityScorer },
       { name: 'Industrialist', cx: 751, cy: 889, metric: 'Most steel + energy resources', trackerKeys: ['Steel', 'Energy'] },
-      { name: 'Desert Settler', cx: 860, cy: 889, metric: 'Most tiles', trackerKeys: [], useTileCounts: 'total' },
-      { name: 'Estate Dealer', cx: 968, cy: 889, metric: 'Most tiles adjacent to ocean', trackerKeys: [] },
-      { name: 'Benefactor', cx: 1076, cy: 889, metric: 'Highest TR', trackerKeys: [] },
+      { name: 'Desert Settler', cx: 860, cy: 889, metric: 'Most tiles below equator', trackerKeys: [], customScorer: desertSettlerScorer },
+      { name: 'Estate Dealer', cx: 968, cy: 889, metric: 'Most tiles adjacent to ocean', trackerKeys: [], customScorer: estateDealerScorer },
+      { name: 'Benefactor', cx: 1076, cy: 889, metric: 'Highest TR', trackerKeys: [], customScorer: benefactorScorer },
     ],
     milestonesLabel: { cx: 300, cy: 835, width: 200, height: 30 },
     awardsLabel: { cx: 870, cy: 835, width: 200, height: 30 },

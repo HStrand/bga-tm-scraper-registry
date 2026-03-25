@@ -53,6 +53,7 @@ export function computeStandings(
         playerId: pid,
         placedTiles: ctx.placedTiles,
         playedCards: ctx.playerPlayedCards?.[pid],
+        gameState: ctx.gameState,
       });
     } else if (item.useTR && ctx.gameState?.player_vp) {
       score = ctx.gameState.player_vp[pid]?.total_details?.tr ?? 0;

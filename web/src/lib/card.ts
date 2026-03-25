@@ -1,5 +1,18 @@
 // Project card utility functions
 
+// Known card name mismatches between game logs and card images
+const CARD_NAME_ALIASES: Record<string, string> = {
+  'excentric sponsor': 'eccentric sponsor',
+  'allied bank': 'allied banks',
+};
+
+/**
+ * Normalize a card name, applying known aliases
+ */
+function normalizeCardName(cardName: string): string {
+  return CARD_NAME_ALIASES[cardName.toLowerCase()] ?? cardName;
+}
+
 /**
  * Convert a card name to a URL-friendly slug
  * Example: "Martian Rails" -> "martian_rails"
@@ -30,7 +43,7 @@ export function slugToCardName(slug: string): string {
  */
 export function getCardImage(cardName: string): string | undefined {
   try {
-    const slug = cardNameToSlug(cardName);
+    const slug = cardNameToSlug(normalizeCardName(cardName));
     
     // Import all card images to find the matching one
     const cardImages = import.meta.glob('../../assets/cards/**/*-*.png', { eager: true }) as Record<string, { default: string }>;
