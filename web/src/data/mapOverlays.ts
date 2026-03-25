@@ -21,7 +21,14 @@ export interface CubeTracker {
   step: number;     // value increment per position (1 for oxygen, 2 for temperature)
 }
 
-export type CustomScorer = (trackers: Record<string, number>, tileCounts?: { cities: number; greeneries: number; total: number }) => number;
+export interface ScorerContext {
+  trackers: Record<string, number>;
+  tileCounts?: { cities: number; greeneries: number; total: number };
+  playerId: string;
+  placedTiles?: Map<string, { dbKey: string; tileType: string; playerId: string; moveIndex: number }>;
+}
+
+export type CustomScorer = (ctx: ScorerContext) => number;
 
 export interface MilestoneAwardOverlay {
   name: string;
@@ -31,6 +38,7 @@ export interface MilestoneAwardOverlay {
   threshold?: number;
   trackerKeys?: string[];
   altKeys?: boolean;
+  includeWildTags?: boolean; // add wild tags to the score (each wild tag counts as +1)
   useTileCounts?: 'cities' | 'greeneries' | 'total';
   useHandCount?: boolean;
   useTR?: boolean;
@@ -76,15 +84,38 @@ const TAG_KEYS: [string, string][] = [
   ['Animal tag', 'Count of Animal tags'],
 ];
 
-const diversifierScorer: CustomScorer = (trackers) => {
+const diversifierScorer: CustomScorer = ({ trackers }) => {
   let distinctTags = 0;
   for (const [key, altKey] of TAG_KEYS) {
     if ((trackers[key] ?? trackers[altKey] ?? 0) > 0) distinctTags++;
   }
   const wildCount = trackers['Wild tag'] ?? trackers['Count of Wild tags'] ?? 0;
-  // Each wild tag can count as a unique tag type not already present
   const totalTagTypes = TAG_KEYS.length;
   return Math.min(distinctTags + wildCount, totalTagTypes);
+};
+
+// Named tiles and their row coordinates on Hellas
+const HELLAS_NAMED_ROWS: Record<string, number> = {
+  'South Pole': 9,
+};
+
+const polarExplorerScorer: CustomScorer = ({ playerId, placedTiles }) => {
+  if (!placedTiles) return 0;
+  let count = 0;
+  for (const tile of placedTiles.values()) {
+    if (tile.playerId !== playerId) continue;
+    if (tile.tileType.toLowerCase() === 'ocean') continue;
+    // Try "Hex col,row" format
+    const rowMatch = tile.dbKey.match(/(\d+),(\d+)/);
+    if (rowMatch) {
+      const row = parseInt(rowMatch[2], 10);
+      if (row === 8 || row === 9) count++;
+    } else if (HELLAS_NAMED_ROWS[tile.dbKey] != null) {
+      const row = HELLAS_NAMED_ROWS[tile.dbKey];
+      if (row === 8 || row === 9) count++;
+    }
+  }
+  return count;
 };
 
 const overlays: Record<string, MapOverlays> = {
@@ -152,7 +183,7 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Terraformer', cx: 55, cy: 889, metric: '35 TR', threshold: 35, useTR: true },
       { name: 'Mayor', cx: 161, cy: 889, metric: '3 city tiles', threshold: 3, useTileCounts: 'cities' },
       { name: 'Gardener', cx: 272, cy: 889, metric: '3 greeneries', threshold: 3, useTileCounts: 'greeneries' },
-      { name: 'Builder', cx: 378, cy: 889, metric: '8 building tags', threshold: 8, trackerKeys: ['Building tag', 'Count of Building tags'], altKeys: true },
+      { name: 'Builder', cx: 378, cy: 889, metric: '8 building tags', threshold: 8, trackerKeys: ['Building tag', 'Count of Building tags'], altKeys: true, includeWildTags: true },
       { name: 'Planner', cx: 488, cy: 889, metric: '16 cards in hand', threshold: 16, useHandCount: true },
     ],
     awards: [
@@ -228,9 +259,9 @@ const overlays: Record<string, MapOverlays> = {
     milestones: [
       { name: 'Diversifier', cx: 60, cy: 884, metric: '8 different tags', threshold: 8, customScorer: diversifierScorer },
       { name: 'Tactician', cx: 166, cy: 884, metric: '5 cards with requirements', threshold: 5 },
-      { name: 'Polar Explorer', cx: 277, cy: 884, metric: '3 tiles in bottom 2 rows', threshold: 3 },
+      { name: 'Polar Explorer', cx: 277, cy: 884, metric: '3 tiles in bottom 2 rows', threshold: 3, customScorer: polarExplorerScorer },
       { name: 'Energizer', cx: 383, cy: 884, metric: '6 energy production', threshold: 6, trackerKeys: ['Energy Production'] },
-      { name: 'Rim Settler', cx: 493, cy: 884, metric: '3 Jovian tags', threshold: 3, trackerKeys: ['Jovian tag', 'Count of Jovian tags'], altKeys: true },
+      { name: 'Rim Settler', cx: 493, cy: 884, metric: '3 Jovian tags', threshold: 3, trackerKeys: ['Jovian tag', 'Count of Jovian tags'], altKeys: true, includeWildTags: true },
     ],
     awards: [
       { name: 'Cultivator', cx: 648, cy: 884, metric: 'Most greenery tiles', trackerKeys: [], useTileCounts: 'greeneries' },

@@ -62,6 +62,7 @@ export function MapOverlaysSvg(props: MapOverlaysProps) {
     playerTileCounts,
     playerHandCounts,
     gameState,
+    placedTiles,
   };
 
   return (
@@ -124,7 +125,7 @@ export function MapOverlaysSvg(props: MapOverlaysProps) {
 
 export function MapMilestonesAwardsSvg(props: MapOverlaysProps & { setTooltip: (t: TooltipData | null) => void }) {
   const {
-    mapName, tileSize, playerColors,
+    mapName, tileSize, playerColors, placedTiles,
     claimedMilestones, fundedAwards, playerNames, playerTrackers, playerTileCounts, playerHandCounts, gameState,
     getCubeImage, setTooltip,
   } = props;
@@ -139,6 +140,7 @@ export function MapMilestonesAwardsSvg(props: MapOverlaysProps & { setTooltip: (
     playerTileCounts,
     playerHandCounts,
     gameState,
+    placedTiles,
   };
 
   const elements: React.ReactNode[] = [];

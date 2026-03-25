@@ -33,6 +33,7 @@ export interface StandingsContext {
   playerTileCounts?: Record<string, { cities: number; greeneries: number; total: number }>;
   playerHandCounts?: Record<string, number>;
   gameState?: GameState;
+  placedTiles?: Map<string, { dbKey: string; tileType: string; playerId: string; moveIndex: number }>;
 }
 
 export function computeStandings(
@@ -44,8 +45,13 @@ export function computeStandings(
   for (const pid of pids) {
     const name = ctx.playerNames[pid] ?? pid;
     let score = 0;
-    if (item.customScorer && ctx.playerTrackers?.[pid]) {
-      score = item.customScorer(ctx.playerTrackers[pid], ctx.playerTileCounts?.[pid]);
+    if (item.customScorer) {
+      score = item.customScorer({
+        trackers: ctx.playerTrackers?.[pid] ?? {},
+        tileCounts: ctx.playerTileCounts?.[pid],
+        playerId: pid,
+        placedTiles: ctx.placedTiles,
+      });
     } else if (item.useTR && ctx.gameState?.player_vp) {
       score = ctx.gameState.player_vp[pid]?.total_details?.tr ?? 0;
     } else if (item.useTileCounts && ctx.playerTileCounts?.[pid]) {
@@ -54,12 +60,16 @@ export function computeStandings(
       score = ctx.playerHandCounts[pid] ?? 0;
     } else if (item.trackerKeys && item.trackerKeys.length > 0 && ctx.playerTrackers?.[pid]) {
       const t = ctx.playerTrackers[pid];
-      const isAward = 'metric' in item && !('threshold' in item && item.threshold != null);
       if (item.altKeys) {
         score = Math.max(...item.trackerKeys.map(k => t[k] ?? 0));
       } else {
         score = item.trackerKeys.reduce((sum, k) => sum + (t[k] ?? 0), 0);
       }
+    }
+    // Add wild tags to score when applicable
+    if (item.includeWildTags && ctx.playerTrackers?.[pid]) {
+      const t = ctx.playerTrackers[pid];
+      score += t['Wild tag'] ?? t['Count of Wild tags'] ?? 0;
     }
     scores.push({ name, score });
   }
