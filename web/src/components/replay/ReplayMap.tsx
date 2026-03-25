@@ -47,9 +47,10 @@ interface ReplayMapProps {
   playerTileCounts?: Record<string, { cities: number; greeneries: number; total: number }>;
   playerHandCounts?: Record<string, number>;
   playerPlayedCards?: Record<string, string[]>;
+  moves?: import('@/types/gamelog').GameLogMove[];
 }
 
-export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentStep, gameState, claimedMilestones, fundedAwards, playerNames, playerTrackers, playerTileCounts, playerHandCounts, playerPlayedCards }: ReplayMapProps) {
+export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentStep, gameState, claimedMilestones, fundedAwards, playerNames, playerTrackers, playerTileCounts, playerHandCounts, playerPlayedCards, moves }: ReplayMapProps) {
   const tileSize = mapDefinition.grid.hexRadius * 2;
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -151,6 +152,41 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
           const points = hexPoints(cx, cy, mapDefinition.grid.hexRadius);
           return (
             <polygon key={`highlight-${hex.col},${hex.row}`} points={points} fill="none" stroke="#fff" strokeWidth={3} />
+          );
+        })}
+
+        {/* Hex tile hover areas */}
+        {mapDefinition.hexes.map(hex => {
+          const tile = placedTiles.get(hex.dbKey);
+          if (!tile) return null;
+          const { cx, cy } = hexCenter(mapDefinition.grid, hex.col, hex.row);
+          const points = hexPoints(cx, cy, mapDefinition.grid.hexRadius);
+          const tileNorm = tile.tileType.toLowerCase();
+          const tileLabel = tileNorm === 'city' ? 'City'
+            : (tileNorm === 'greenery' || tileNorm === 'forest') ? 'Greenery'
+            : tileNorm === 'ocean' ? 'Ocean'
+            : tile.tileType;
+          const pName = playerNames?.[tile.playerId] ?? tile.playerId;
+          const pColor = playerColors[tile.playerId] ?? '#888';
+          const gen = moves?.[tile.moveIndex]?.game_state?.generation;
+          const hexName = hex.name ?? hex.dbKey;
+          return (
+            <polygon
+              key={`hover-${hex.col},${hex.row}`}
+              points={points}
+              fill="transparent"
+              style={{ pointerEvents: 'all', cursor: 'pointer' }}
+              onMouseEnter={() => setTooltip({
+                title: hexName,
+                type: 'hex-tile',
+                tileType: tileLabel,
+                playerName: tileNorm === 'ocean' ? undefined : pName,
+                playerColor: tileNorm === 'ocean' ? undefined : pColor,
+                generation: gen ?? undefined,
+                coordinates: `${hex.col}, ${hex.row}`,
+              })}
+              onMouseLeave={() => setTooltip(null)}
+            />
           );
         })}
       </svg>

@@ -435,6 +435,7 @@ export function GameReplayPage() {
               playerHandCounts={Object.fromEntries(
                 Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.hand.length])
               )}
+              moves={gameLog.moves}
               playerPlayedCards={Object.fromEntries(
                 Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.played])
               )}

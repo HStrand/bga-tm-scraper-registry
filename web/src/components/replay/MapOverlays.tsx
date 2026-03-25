@@ -30,7 +30,7 @@ interface MapOverlaysProps {
 
 interface TooltipData {
   title: string;
-  type: 'milestone' | 'award' | 'milestones-table' | 'awards-table';
+  type: 'milestone' | 'award' | 'milestones-table' | 'awards-table' | 'hex-tile';
   claimedBy?: string;
   generation?: number;
   metric?: string;
@@ -46,6 +46,11 @@ interface TooltipData {
     threshold?: number;
   }[];
   playerColumns?: { name: string; color: string }[];
+  // hex-tile specific
+  tileType?: string;
+  playerName?: string;
+  playerColor?: string;
+  coordinates?: string;
 }
 
 export function MapOverlaysSvg(props: MapOverlaysProps) {
@@ -306,6 +311,27 @@ export function MapTooltip({ tooltip, tooltipPos, getCubeImage }: { tooltip: Too
                     <span className={i === 0 ? 'text-amber-400 font-bold' : 'text-slate-300'}>{s.score}</span>
                   </div>
                 ))}
+              </div>
+            )}
+          </>
+        )}
+        {tooltip.type === 'hex-tile' && (
+          <>
+            {tooltip.tileType && (
+              <div className="text-slate-400 text-xs mb-1">{tooltip.tileType}</div>
+            )}
+            {tooltip.coordinates && (
+              <div className="text-slate-500 text-[10px] mb-1">{tooltip.coordinates}</div>
+            )}
+            {tooltip.playerName && (
+              <div className="flex items-center gap-1.5 text-xs">
+                {tooltip.playerColor && getCubeImage(tooltip.playerColor) && (
+                  <img src={getCubeImage(tooltip.playerColor)!} alt="" className="w-4 h-4" />
+                )}
+                <span className="text-white font-semibold">{tooltip.playerName}</span>
+                {tooltip.generation != null && (
+                  <span className="text-slate-400">(Gen {tooltip.generation})</span>
+                )}
               </div>
             )}
           </>
