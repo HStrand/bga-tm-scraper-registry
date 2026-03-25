@@ -83,6 +83,7 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
     playerHandCounts,
     playerPlayedCards,
     playerCardResources,
+    hexCoords: new Map(mapDefinition.hexes.map(h => [h.dbKey, [h.col, h.row] as [number, number]])),
     getCubeImage,
     cityTileImage,
     greeneryTileImage,

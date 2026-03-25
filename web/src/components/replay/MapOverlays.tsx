@@ -23,6 +23,7 @@ interface MapOverlaysProps {
   playerHandCounts?: Record<string, number>;
   playerPlayedCards?: Record<string, string[]>;
   playerCardResources?: Record<string, Record<string, number>>;
+  hexCoords?: Map<string, [number, number]>;
   getCubeImage: (color: string) => string | undefined;
   cityTileImage: string;
   greeneryTileImage: string;
@@ -70,6 +71,7 @@ export function MapOverlaysSvg(props: MapOverlaysProps) {
     playerHandCounts,
     playerPlayedCards: props.playerPlayedCards,
     playerCardResources: props.playerCardResources,
+    hexCoords: props.hexCoords,
     gameState,
     placedTiles,
   };
@@ -150,6 +152,7 @@ export function MapMilestonesAwardsSvg(props: MapOverlaysProps & { setTooltip: (
     playerHandCounts,
     playerPlayedCards: props.playerPlayedCards,
     playerCardResources: props.playerCardResources,
+    hexCoords: props.hexCoords,
     gameState,
     placedTiles,
   };

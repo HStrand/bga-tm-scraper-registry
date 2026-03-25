@@ -29,6 +29,18 @@ export interface ScorerContext {
   playedCards?: string[];
   cardResources?: Record<string, number>;
   gameState?: import('@/types/gamelog').GameState;
+  hexCoords?: Map<string, [number, number]>; // dbKey -> [col, row] for all hexes on the map
+}
+
+/** Resolve a tile dbKey to [col, row], using hexCoords lookup for named tiles */
+function resolveCoords(dbKey: string, hexCoords?: Map<string, [number, number]>): [number, number] | null {
+  const m = dbKey.match(/(\d+),(\d+)/);
+  if (m) return [parseInt(m[1], 10), parseInt(m[2], 10)];
+  if (hexCoords) {
+    const coords = hexCoords.get(dbKey);
+    if (coords) return coords;
+  }
+  return null;
 }
 
 export type CustomScorer = (ctx: ScorerContext) => number;
@@ -97,26 +109,14 @@ const diversifierScorer: CustomScorer = ({ trackers }) => {
   return Math.min(distinctTags + wildCount, totalTagTypes);
 };
 
-// Named tiles and their row coordinates on Hellas
-const HELLAS_NAMED_ROWS: Record<string, number> = {
-  'South Pole': 9,
-};
-
-const polarExplorerScorer: CustomScorer = ({ playerId, placedTiles }) => {
+const polarExplorerScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) => {
   if (!placedTiles) return 0;
   let count = 0;
   for (const tile of placedTiles.values()) {
     if (tile.playerId !== playerId) continue;
     if (tile.tileType.toLowerCase() === 'ocean') continue;
-    // Try "Hex col,row" format
-    const rowMatch = tile.dbKey.match(/(\d+),(\d+)/);
-    if (rowMatch) {
-      const row = parseInt(rowMatch[2], 10);
-      if (row === 8 || row === 9) count++;
-    } else if (HELLAS_NAMED_ROWS[tile.dbKey] != null) {
-      const row = HELLAS_NAMED_ROWS[tile.dbKey];
-      if (row === 8 || row === 9) count++;
-    }
+    const coords = resolveCoords(tile.dbKey, hexCoords);
+    if (coords && (coords[1] === 8 || coords[1] === 9)) count++;
   }
   return count;
 };
@@ -178,9 +178,8 @@ const VOLCANIC_HEXES: [number, number][] = [
   [2, 4],  // Alba Mons
   [2, 7],  // Uranius Tholus
 ];
-const geologistScorer: CustomScorer = ({ playerId, placedTiles }) => {
+const geologistScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) => {
   if (!placedTiles) return 0;
-  // Build set of volcanic hexes + their neighbors
   const volcanicSet = new Set<string>();
   for (const [col, row] of VOLCANIC_HEXES) {
     volcanicSet.add(`${col},${row}`);
@@ -192,16 +191,8 @@ const geologistScorer: CustomScorer = ({ playerId, placedTiles }) => {
   for (const tile of placedTiles.values()) {
     if (tile.playerId !== playerId) continue;
     if (tile.tileType.toLowerCase() === 'ocean') continue;
-    const m = tile.dbKey.match(/(\d+),(\d+)/);
-    if (m && volcanicSet.has(`${m[1]},${m[2]}`)) count++;
-    // Also check named tiles that are volcanic
-    if (!m) {
-      const named = VOLCANIC_HEXES.find(([c, r]) => {
-        const names: Record<string, string> = { '5,1': 'Hecates Tholus', '8,2': 'Elysium Mons', '2,4': 'Alba Mons', '2,7': 'Uranius Tholus' };
-        return names[`${c},${r}`] === tile.dbKey;
-      });
-      if (named) count++;
-    }
+    const coords = resolveCoords(tile.dbKey, hexCoords);
+    if (coords && volcanicSet.has(`${coords[0]},${coords[1]}`)) count++;
   }
   return count;
 };
@@ -219,6 +210,76 @@ const farmerScorer: CustomScorer = ({ playedCards, cardResources }) => {
   return total;
 };
 
+// Traveller (Vastitas): Jovian + Earth tags (+ wild)
+const travellerScorer: CustomScorer = ({ trackers }) => {
+  const jovian = Math.max(trackers['Jovian tag'] ?? 0, trackers['Count of Jovian tags'] ?? 0);
+  const earth = Math.max(trackers['Earth tag'] ?? 0, trackers['Count of Earth tags'] ?? 0);
+  const wild = trackers['Wild tag'] ?? trackers['Count of Wild tags'] ?? 0;
+  return jovian + earth + wild;
+};
+
+// Landscaper (Vastitas): biggest cluster of connected tiles for a player
+const landscaperScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) => {
+  if (!placedTiles) return 0;
+  const playerHexes = new Set<string>();
+  for (const tile of placedTiles.values()) {
+    if (tile.playerId !== playerId) continue;
+    if (tile.tileType.toLowerCase() === 'ocean') continue;
+    const coords = resolveCoords(tile.dbKey, hexCoords);
+    if (coords) playerHexes.add(`${coords[0]},${coords[1]}`);
+  }
+  const visited = new Set<string>();
+  let maxCluster = 0;
+  for (const hex of playerHexes) {
+    if (visited.has(hex)) continue;
+    let clusterSize = 0;
+    const queue = [hex];
+    while (queue.length > 0) {
+      const current = queue.pop()!;
+      if (visited.has(current)) continue;
+      visited.add(current);
+      clusterSize++;
+      const [c, r] = current.split(',').map(Number);
+      for (const [nc, nr] of getHexNeighbors(c, r)) {
+        const key = `${nc},${nr}`;
+        if (playerHexes.has(key) && !visited.has(key)) queue.push(key);
+      }
+    }
+    maxCluster = Math.max(maxCluster, clusterSize);
+  }
+  return maxCluster;
+};
+
+// Highlander (Vastitas): tiles NOT adjacent to any ocean
+const highlanderScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) => {
+  if (!placedTiles) return 0;
+  const oceanCoords = new Set<string>();
+  for (const tile of placedTiles.values()) {
+    if (tile.tileType.toLowerCase() === 'ocean') {
+      const coords = resolveCoords(tile.dbKey, hexCoords);
+      if (coords) oceanCoords.add(`${coords[0]},${coords[1]}`);
+    }
+  }
+  let count = 0;
+  for (const tile of placedTiles.values()) {
+    if (tile.playerId !== playerId) continue;
+    if (tile.tileType.toLowerCase() === 'ocean') continue;
+    const coords = resolveCoords(tile.dbKey, hexCoords);
+    if (!coords) continue;
+    const neighbors = getHexNeighbors(coords[0], coords[1]);
+    if (!neighbors.some(([nc, nr]) => oceanCoords.has(`${nc},${nr}`))) {
+      count++;
+    }
+  }
+  return count;
+};
+
+// Promoter (Vastitas): most event cards played
+const promoterScorer: CustomScorer = ({ playedCards }) => {
+  if (!playedCards) return 0;
+  return playedCards.filter(c => getCardCategory(c) === 'event').length;
+};
+
 // Celebrity: count played cards costing 20 MC or more
 const celebrityScorer: CustomScorer = ({ playedCards }) => {
   if (!playedCards) return 0;
@@ -229,17 +290,14 @@ const celebrityScorer: CustomScorer = ({ playedCards }) => {
 };
 
 // Desert Settler: tiles below equator (row >= 6), excluding oceans
-const desertSettlerScorer: CustomScorer = ({ playerId, placedTiles }) => {
+const desertSettlerScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) => {
   if (!placedTiles) return 0;
   let count = 0;
   for (const tile of placedTiles.values()) {
     if (tile.playerId !== playerId) continue;
     if (tile.tileType.toLowerCase() === 'ocean') continue;
-    const rowMatch = tile.dbKey.match(/(\d+),(\d+)/);
-    if (rowMatch) {
-      const row = parseInt(rowMatch[2], 10);
-      if (row >= 6) count++;
-    }
+    const coords = resolveCoords(tile.dbKey, hexCoords);
+    if (coords && coords[1] >= 6) count++;
   }
   return count;
 };
@@ -259,25 +317,22 @@ function getHexNeighbors(col: number, row: number): [number, number][] {
   }
 }
 
-const estateDealerScorer: CustomScorer = ({ playerId, placedTiles }) => {
+const estateDealerScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) => {
   if (!placedTiles) return 0;
-  // Build set of ocean hex coordinates
   const oceanCoords = new Set<string>();
   for (const tile of placedTiles.values()) {
     if (tile.tileType.toLowerCase() === 'ocean') {
-      const m = tile.dbKey.match(/(\d+),(\d+)/);
-      if (m) oceanCoords.add(`${m[1]},${m[2]}`);
+      const coords = resolveCoords(tile.dbKey, hexCoords);
+      if (coords) oceanCoords.add(`${coords[0]},${coords[1]}`);
     }
   }
   let count = 0;
   for (const tile of placedTiles.values()) {
     if (tile.playerId !== playerId) continue;
     if (tile.tileType.toLowerCase() === 'ocean') continue;
-    const m = tile.dbKey.match(/(\d+),(\d+)/);
-    if (!m) continue;
-    const col = parseInt(m[1], 10);
-    const row = parseInt(m[2], 10);
-    const neighbors = getHexNeighbors(col, row);
+    const coords = resolveCoords(tile.dbKey, hexCoords);
+    if (!coords) continue;
+    const neighbors = getHexNeighbors(coords[0], coords[1]);
     if (neighbors.some(([nc, nr]) => oceanCoords.has(`${nc},${nr}`))) {
       count++;
     }
@@ -585,10 +640,10 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Farmer', cx: 488, cy: 886, metric: '5 animal or microbe resources', threshold: 5, customScorer: farmerScorer },
     ],
     awards: [
-      { name: 'Traveller', cx: 643, cy: 886, metric: 'Most space tags', trackerKeys: ['Space tag', 'Count of Space tags'], altKeys: true },
-      { name: 'Landscape', cx: 751, cy: 886, metric: 'Most tiles', trackerKeys: [], useTileCounts: 'total' },
-      { name: 'Highlander', cx: 860, cy: 886, metric: 'Most tiles on volcanic areas', trackerKeys: [] },
-      { name: 'Promoter', cx: 968, cy: 886, metric: 'Most MC production', trackerKeys: ['M€ Production'] },
+      { name: 'Traveller', cx: 643, cy: 886, metric: 'Most Jovian + Earth tags', trackerKeys: [], customScorer: travellerScorer },
+      { name: 'Landscaper', cx: 751, cy: 886, metric: 'Biggest cluster of tiles', trackerKeys: [], customScorer: landscaperScorer },
+      { name: 'Highlander', cx: 860, cy: 886, metric: 'Most tiles not next to oceans', trackerKeys: [], customScorer: highlanderScorer },
+      { name: 'Promoter', cx: 968, cy: 886, metric: 'Most event cards played', trackerKeys: [], customScorer: promoterScorer },
       { name: 'Blacksmith', cx: 1076, cy: 886, metric: 'Most steel + titanium production', trackerKeys: ['Steel Production', 'Titanium Production'] },
     ],
     milestonesLabel: { cx: 300, cy: 842, width: 200, height: 30 },
