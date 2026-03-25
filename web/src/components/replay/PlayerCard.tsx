@@ -399,32 +399,27 @@ export const PlayerCard = memo(function PlayerCard({
           </div>
         </div>
 
-        {/* Stats — VP breakdown (left) + Trackers (right, wraps below when narrow) */}
-        <div className="flex flex-wrap flex-shrink-0 border-t border-white/10">
-          {/* VP breakdown (left, fixed) */}
-          {d && (
-            <div className="flex-shrink-0 grid grid-cols-3 gap-px" style={{ background: 'rgba(255,255,255,0.03)' }}>
-              {([
-                ['TR', d.tr],
-                ['Awards', d.awards],
-                ['Milestones', d.milestones],
-                ['Cities', d.cities],
-                ['Greeneries', d.greeneries],
-                ['Cards', d.cards],
-              ] as const).map(([label, val]) => (
-                <div key={label} className="px-4 py-2 text-center" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.15) 100%)' }}>
-                  <div className="text-lg font-semibold text-slate-200">{val ?? 0}</div>
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wide">{label}</div>
-                </div>
-              ))}
+        {/* Stats — VP + Resources + Tags all in one flowing row */}
+        <div className="flex flex-wrap items-start gap-1 px-3 py-2.5 flex-shrink-0 border-t border-white/10">
+          {/* VP cells */}
+          {d && ([
+            ['TR', d.tr],
+            ['Awards', d.awards],
+            ['Milestones', d.milestones],
+            ['Cities', d.cities],
+            ['Greeneries', d.greeneries],
+            ['Cards', d.cards],
+          ] as const).map(([label, val]) => (
+            <div key={label} className="w-14 py-1.5 text-center rounded-lg" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.1) 100%)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="text-base font-bold text-white">{val ?? 0}</div>
+              <div className="text-[8px] text-slate-500 uppercase tracking-wide">{label}</div>
             </div>
-          )}
-
-          {/* Trackers (right, wraps below when narrow) */}
+          ))}
+          {/* Separator */}
+          {d && trackers && <div className="w-px h-12 bg-white/10 mx-1 self-center" />}
+          {/* Resource + Tag trackers inline */}
           {trackers && (
-            <div className="flex-1 min-w-[280px] border-l border-white/10">
-              <PlayerTrackers trackers={trackers} tileCounts={tileCounts} />
-            </div>
+            <PlayerTrackers trackers={trackers} tileCounts={tileCounts} inline />
           )}
         </div>
 

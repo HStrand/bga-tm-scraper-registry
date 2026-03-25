@@ -146,9 +146,9 @@ function TagCell({ icon, value, title, large }: { icon?: string; value: number; 
   );
 }
 
-export function PlayerTrackers({ trackers, tileCounts }: { trackers: Record<string, number>; tileCounts?: { cities: number; greeneries: number; total: number } }) {
+export function PlayerTrackers({ trackers, tileCounts, inline }: { trackers: Record<string, number>; tileCounts?: { cities: number; greeneries: number; total: number }; inline?: boolean }) {
   return (
-    <div className="border-t border-white/10 px-3 py-3 space-y-1.5">
+    <div className={inline ? 'flex flex-wrap gap-1 items-start' : 'border-t border-white/10 px-3 py-3 space-y-1.5'}>
       {/* Resources — inline flex, fixed-width cells */}
       <div className="flex flex-wrap gap-1">
         {RESOURCES.map(r => (
