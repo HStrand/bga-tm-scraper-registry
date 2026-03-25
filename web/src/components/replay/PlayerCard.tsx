@@ -3,6 +3,7 @@ import { X, Pin, PinOff, Grid3X3, Layers, List, EyeOff } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { PlayerVictoryPoints } from '@/types/gamelog';
 import { getCubeImage, startingPlayerImg, PlayerTrackers } from './replayShared';
+import { getCardCategory } from '@/lib/cardMetadata';
 
 interface PlayerCardProps {
   playerId: string;
@@ -55,9 +56,9 @@ const CardStack = memo(function CardStack({ cards, cardResources, cardSize }: { 
   if (cards.length === 0) return null;
 
   const cardWidth = cardSize;
-  const cardOffset = Math.round(cardWidth * 0.22);
+  const cardOffset = Math.round(cardWidth * 0.35);
   const cardHeight = Math.round(cardWidth * 1.4);
-  const cardsPerCol = Math.max(4, Math.round(400 / cardOffset));
+  const cardsPerCol = Math.max(3, Math.round(350 / cardOffset));
   const columns: string[][] = [];
   for (let i = 0; i < cards.length; i += cardsPerCol) columns.push(cards.slice(i, i + cardsPerCol));
 
@@ -115,11 +116,11 @@ const CardSynthetic = memo(function CardSynthetic({ cards, cardResources, cardSi
   );
 });
 
-const CardSection = memo(function CardSection({ cards, title, color, cardResources, defaultViewMode = 'grid' }: {
-  cards: string[]; title: string; color: string; cardResources?: Record<string, number>; defaultViewMode?: ViewMode;
+const CardSection = memo(function CardSection({ cards, title, color, cardResources, defaultViewMode = 'grid', defaultCardSize = 140 }: {
+  cards: string[]; title: string; color: string; cardResources?: Record<string, number>; defaultViewMode?: ViewMode; defaultCardSize?: number;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
-  const [cardSize, setCardSize] = useState(140);
+  const [cardSize, setCardSize] = useState(defaultCardSize);
   if (cards.length === 0) return null;
 
   const btnClass = "p-1 rounded transition-colors";
@@ -422,9 +423,30 @@ export const PlayerCard = memo(function PlayerCard({
         {/* Cards — scrollable */}
         <div className="overflow-y-auto scrollbar-hidden flex-1 min-h-0">
           <div className="px-3 py-2.5 space-y-3 border-t border-white/10">
-            <CardSection cards={headquarters} title="Headquarters" color={color} defaultViewMode="grid" />
-            <CardSection cards={hand} title="Hand" color={color} defaultViewMode="grid" />
-            <CardSection cards={played} title="Played" color={color} cardResources={cardResources} defaultViewMode="stack" />
+            <CardSection cards={headquarters} title="Headquarters" color={color} defaultViewMode="grid" defaultCardSize={180} />
+            <CardSection cards={hand} title="Hand" color={color} defaultViewMode="grid" defaultCardSize={130} />
+            {(() => {
+              const automated: string[] = [];
+              const actions: string[] = [];
+              const effects: string[] = [];
+              const events: string[] = [];
+              for (const card of played) {
+                const cat = getCardCategory(card);
+                if (cat === 'automated') automated.push(card);
+                else if (cat === 'action') actions.push(card);
+                else if (cat === 'effect') effects.push(card);
+                else if (cat === 'event') events.push(card);
+                else automated.push(card); // fallback
+              }
+              return (
+                <>
+                  <CardSection cards={actions} title="Actions" color="#60a5fa" cardResources={cardResources} defaultViewMode="grid" />
+                  <CardSection cards={effects} title="Effects" color="#60a5fa" cardResources={cardResources} defaultViewMode="stack" />
+                  <CardSection cards={automated} title="Automated" color="#4ade80" cardResources={cardResources} defaultViewMode="synthetic" />
+                  <CardSection cards={events} title="Events" color="#f87171" cardResources={cardResources} defaultViewMode="hidden" />
+                </>
+              );
+            })()}
             <CardSection cards={sold} title="Sold" color={color} defaultViewMode="hidden" />
           </div>
         </div>

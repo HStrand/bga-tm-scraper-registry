@@ -54,7 +54,8 @@
       "science"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 6,
@@ -65,7 +66,8 @@
       "science"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "action"
   },
   {
     "number": 7,
@@ -76,7 +78,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 8,
@@ -133,7 +136,8 @@
       "jovian"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 13,
@@ -146,6 +150,7 @@
     ],
     "has_requirements": false,
     "expansion": "corporate_era",
+    "subtype": "action",
     "vp": "2"
   },
   {
@@ -158,7 +163,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "action"
   },
   {
     "number": 15,
@@ -169,7 +175,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 16,
@@ -232,7 +239,8 @@
       "science"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "effect"
   },
   {
     "number": 21,
@@ -265,7 +273,8 @@
       "plant"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "effect"
   },
   {
     "number": 24,
@@ -276,7 +285,8 @@
       "animal"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 25,
@@ -288,6 +298,7 @@
     ],
     "has_requirements": false,
     "expansion": "corporate_era",
+    "subtype": "effect",
     "vp": "1"
   },
   {
@@ -325,7 +336,8 @@
       "space"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "action"
   },
   {
     "number": 29,
@@ -360,7 +372,8 @@
       "space"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "effect"
   },
   {
     "number": 32,
@@ -384,7 +397,8 @@
       "microbe"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 34,
@@ -396,7 +410,8 @@
       "microbe"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 35,
@@ -407,7 +422,8 @@
       "microbe"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 36,
@@ -439,6 +455,7 @@
     ],
     "has_requirements": false,
     "expansion": "base",
+    "subtype": "effect",
     "vp": "1"
   },
   {
@@ -567,7 +584,8 @@
       "microbe"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "action"
   },
   {
     "number": 50,
@@ -602,7 +620,8 @@
       "animal"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 53,
@@ -623,7 +642,8 @@
       "animal"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 55,
@@ -766,6 +786,7 @@
     ],
     "has_requirements": true,
     "expansion": "corporate_era",
+    "subtype": "action",
     "vp": "1"
   },
   {
@@ -778,6 +799,7 @@
     ],
     "has_requirements": false,
     "expansion": "corporate_era",
+    "subtype": "effect",
     "vp": "2"
   },
   {
@@ -789,7 +811,8 @@
       "science"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "effect"
   },
   {
     "number": 72,
@@ -800,7 +823,8 @@
       "animal"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 73,
@@ -813,6 +837,7 @@
     ],
     "has_requirements": false,
     "expansion": "corporate_era",
+    "subtype": "effect",
     "vp": "1"
   },
   {
@@ -825,7 +850,8 @@
       "microbe"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "effect"
   },
   {
     "number": 75,
@@ -848,7 +874,8 @@
       "space"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 77,
@@ -884,7 +911,8 @@
       "science"
     ],
     "has_requirements": true,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "effect"
   },
   {
     "number": 80,
@@ -1061,7 +1089,8 @@
       "power"
     ],
     "has_requirements": true,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "effect"
   },
   {
     "number": 95,
@@ -1073,7 +1102,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "action"
   },
   {
     "number": 96,
@@ -1143,7 +1173,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 102,
@@ -1165,7 +1196,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 104,
@@ -1176,7 +1208,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 105,
@@ -1187,7 +1220,8 @@
       "earth"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "effect"
   },
   {
     "number": 106,
@@ -1233,7 +1267,8 @@
       "earth"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "effect"
   },
   {
     "number": 110,
@@ -1244,7 +1279,8 @@
       "earth"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "action"
   },
   {
     "number": 111,
@@ -1392,7 +1428,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "action"
   },
   {
     "number": 124,
@@ -1443,7 +1480,8 @@
       "animal"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "effect"
   },
   {
     "number": 129,
@@ -1475,7 +1513,8 @@
       "microbe"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "effect"
   },
   {
     "number": 132,
@@ -1499,7 +1538,8 @@
       "microbe"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 134,
@@ -1510,7 +1550,8 @@
       "microbe"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 135,
@@ -1662,7 +1703,8 @@
       "animal"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "effect"
   },
   {
     "number": 148,
@@ -1694,6 +1736,7 @@
     ],
     "has_requirements": true,
     "expansion": "corporate_era",
+    "subtype": "effect",
     "vp": "3"
   },
   {
@@ -1726,6 +1769,7 @@
     ],
     "has_requirements": false,
     "expansion": "base",
+    "subtype": "effect",
     "vp": "1"
   },
   {
@@ -1735,7 +1779,8 @@
     "cost": 3,
     "tags": [],
     "has_requirements": true,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "action"
   },
   {
     "number": 155,
@@ -1758,7 +1803,8 @@
       "science"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "effect"
   },
   {
     "number": 157,
@@ -1769,7 +1815,8 @@
       "microbe"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 158,
@@ -1870,6 +1917,7 @@
     ],
     "has_requirements": true,
     "expansion": "base",
+    "subtype": "effect",
     "vp": "1"
   },
   {
@@ -1930,7 +1978,8 @@
       "animal"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "effect"
   },
   {
     "number": 173,
@@ -1939,7 +1988,8 @@
     "cost": 5,
     "tags": [],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "effect"
   },
   {
     "number": 174,
@@ -1986,7 +2036,8 @@
       "building"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 178,
@@ -2068,7 +2119,8 @@
       "animal"
     ],
     "has_requirements": true,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 185,
@@ -2082,6 +2134,7 @@
     ],
     "has_requirements": false,
     "expansion": "corporate_era",
+    "subtype": "effect",
     "vp": "1"
   },
   {
@@ -2103,7 +2156,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 188,
@@ -2176,7 +2230,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "action"
   },
   {
     "number": 195,
@@ -2235,7 +2290,8 @@
       "science"
     ],
     "has_requirements": false,
-    "expansion": "corporate_era"
+    "expansion": "corporate_era",
+    "subtype": "action"
   },
   {
     "number": 200,
@@ -2247,7 +2303,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "effect"
   },
   {
     "number": 201,
@@ -2270,7 +2327,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "base"
+    "expansion": "base",
+    "subtype": "action"
   },
   {
     "number": 203,
@@ -2341,6 +2399,7 @@
     ],
     "has_requirements": true,
     "expansion": "corporate_era",
+    "subtype": "action",
     "vp": "1"
   },
   {
@@ -2361,7 +2420,8 @@
     "cost": 7,
     "tags": [],
     "has_requirements": true,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": 211,
@@ -2383,7 +2443,8 @@
       "animal"
     ],
     "has_requirements": true,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": 213,
@@ -2395,6 +2456,7 @@
     ],
     "has_requirements": false,
     "expansion": "venus_next",
+    "subtype": "action",
     "vp": "1"
   },
   {
@@ -2490,7 +2552,8 @@
       "venus"
     ],
     "has_requirements": false,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 222,
@@ -2501,7 +2564,8 @@
       "venus"
     ],
     "has_requirements": false,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 223,
@@ -2512,7 +2576,8 @@
       "venus"
     ],
     "has_requirements": false,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 224,
@@ -2524,7 +2589,8 @@
       "microbe"
     ],
     "has_requirements": true,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 225,
@@ -2535,7 +2601,8 @@
       "venus"
     ],
     "has_requirements": true,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 226,
@@ -2546,7 +2613,8 @@
       "venus"
     ],
     "has_requirements": false,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 227,
@@ -2641,7 +2709,8 @@
       "venus"
     ],
     "has_requirements": false,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 235,
@@ -2652,7 +2721,8 @@
       "venus"
     ],
     "has_requirements": false,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 236,
@@ -2689,6 +2759,7 @@
     ],
     "has_requirements": true,
     "expansion": "venus_next",
+    "subtype": "action",
     "vp": "3"
   },
   {
@@ -2745,7 +2816,8 @@
       "space"
     ],
     "has_requirements": true,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 244,
@@ -2803,7 +2875,8 @@
       "venus"
     ],
     "has_requirements": true,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 249,
@@ -2815,7 +2888,8 @@
       "venus"
     ],
     "has_requirements": true,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 250,
@@ -2839,7 +2913,8 @@
       "venus"
     ],
     "has_requirements": true,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 252,
@@ -2862,7 +2937,8 @@
       "venus"
     ],
     "has_requirements": true,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 254,
@@ -2895,7 +2971,8 @@
       "venus"
     ],
     "has_requirements": true,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 257,
@@ -2920,6 +2997,7 @@
     ],
     "has_requirements": false,
     "expansion": "venus_next",
+    "subtype": "effect",
     "vp": "1"
   },
   {
@@ -2933,7 +3011,8 @@
       "science"
     ],
     "has_requirements": true,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "effect"
   },
   {
     "number": 260,
@@ -2945,7 +3024,8 @@
       "microbe"
     ],
     "has_requirements": true,
-    "expansion": "venus_next"
+    "expansion": "venus_next",
+    "subtype": "action"
   },
   {
     "number": 261,
@@ -3005,7 +3085,8 @@
       "microbe"
     ],
     "has_requirements": true,
-    "expansion": "prelude"
+    "expansion": "prelude",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -3068,7 +3149,8 @@
     "cost": 15,
     "tags": [],
     "has_requirements": false,
-    "expansion": "colonies"
+    "expansion": "colonies",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -3114,6 +3196,7 @@
     ],
     "has_requirements": false,
     "expansion": "colonies",
+    "subtype": "effect",
     "vp": "1"
   },
   {
@@ -3173,7 +3256,8 @@
       "science"
     ],
     "has_requirements": false,
-    "expansion": "colonies"
+    "expansion": "colonies",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -3242,7 +3326,8 @@
       "jovian"
     ],
     "has_requirements": true,
-    "expansion": "colonies"
+    "expansion": "colonies",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -3254,6 +3339,7 @@
     ],
     "has_requirements": true,
     "expansion": "colonies",
+    "subtype": "action",
     "vp": "1"
   },
   {
@@ -3312,6 +3398,7 @@
     ],
     "has_requirements": true,
     "expansion": "unknown",
+    "subtype": "action",
     "vp": "1"
   },
   {
@@ -3403,6 +3490,7 @@
     ],
     "has_requirements": true,
     "expansion": "colonies",
+    "subtype": "action",
     "vp": "2"
   },
   {
@@ -3414,7 +3502,8 @@
       "earth"
     ],
     "has_requirements": false,
-    "expansion": "colonies"
+    "expansion": "colonies",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -3437,7 +3526,8 @@
       "space"
     ],
     "has_requirements": false,
-    "expansion": "colonies"
+    "expansion": "colonies",
+    "subtype": "effect"
   },
   {
     "number": null,
@@ -3450,6 +3540,7 @@
     ],
     "has_requirements": true,
     "expansion": "colonies",
+    "subtype": "effect",
     "vp": "2"
   },
   {
@@ -3508,7 +3599,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "colonies"
+    "expansion": "colonies",
+    "subtype": "effect"
   },
   {
     "number": null,
@@ -3519,7 +3611,8 @@
       "animal"
     ],
     "has_requirements": true,
-    "expansion": "colonies"
+    "expansion": "colonies",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -3531,6 +3624,7 @@
     ],
     "has_requirements": false,
     "expansion": "colonies",
+    "subtype": "action",
     "vp": "2"
   },
   {
@@ -3543,6 +3637,7 @@
     ],
     "has_requirements": false,
     "expansion": "colonies",
+    "subtype": "action",
     "vp": "1"
   },
   {
@@ -3556,6 +3651,7 @@
     ],
     "has_requirements": false,
     "expansion": "colonies",
+    "subtype": "action",
     "vp": "1"
   },
   {
@@ -3565,7 +3661,8 @@
     "cost": 6,
     "tags": [],
     "has_requirements": false,
-    "expansion": "colonies"
+    "expansion": "colonies",
+    "subtype": "effect"
   },
   {
     "number": null,
@@ -3576,7 +3673,8 @@
       "space"
     ],
     "has_requirements": false,
-    "expansion": "colonies"
+    "expansion": "colonies",
+    "subtype": "effect"
   },
   {
     "number": null,
@@ -3599,6 +3697,7 @@
     ],
     "has_requirements": true,
     "expansion": "colonies",
+    "subtype": "effect",
     "vp": "2"
   },
   {
@@ -3653,7 +3752,8 @@
       "science"
     ],
     "has_requirements": false,
-    "expansion": "turmoil"
+    "expansion": "turmoil",
+    "subtype": "effect"
   },
   {
     "number": null,
@@ -3665,7 +3765,8 @@
       "science"
     ],
     "has_requirements": true,
-    "expansion": "turmoil"
+    "expansion": "turmoil",
+    "subtype": "effect"
   },
   {
     "number": null,
@@ -3676,7 +3777,8 @@
       "building"
     ],
     "has_requirements": true,
-    "expansion": "turmoil"
+    "expansion": "turmoil",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -3804,7 +3906,8 @@
       "power"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -3817,6 +3920,7 @@
     ],
     "has_requirements": false,
     "expansion": "promo",
+    "subtype": "action",
     "vp": "1"
   },
   {
@@ -3852,7 +3956,8 @@
       "space"
     ],
     "has_requirements": true,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "effect"
   },
   {
     "number": null,
@@ -3865,6 +3970,7 @@
     ],
     "has_requirements": false,
     "expansion": "promo",
+    "subtype": "action",
     "vp": "2"
   },
   {
@@ -3886,6 +3992,7 @@
     ],
     "has_requirements": false,
     "expansion": "promo",
+    "subtype": "effect",
     "vp": "1"
   },
   {
@@ -3899,6 +4006,7 @@
     ],
     "has_requirements": false,
     "expansion": "promo",
+    "subtype": "action",
     "vp": "1"
   },
   {
@@ -3923,7 +4031,8 @@
       "earth"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "effect"
   },
   {
     "number": null,
@@ -3936,7 +4045,8 @@
       "earth"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -3947,7 +4057,8 @@
       "space"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -3958,7 +4069,8 @@
       "space"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -3980,6 +4092,7 @@
     ],
     "has_requirements": false,
     "expansion": "promo",
+    "subtype": "effect",
     "vp": "1"
   },
   {
@@ -3991,7 +4104,8 @@
       "space"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -4059,7 +4173,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "effect"
   },
   {
     "number": null,
@@ -4070,7 +4185,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -4081,7 +4197,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -4106,6 +4223,7 @@
     ],
     "has_requirements": true,
     "expansion": "promo",
+    "subtype": "action",
     "vp": "2"
   },
   {
@@ -4118,7 +4236,8 @@
       "earth"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "effect"
   },
   {
     "number": null,
@@ -4165,7 +4284,8 @@
       "earth"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -4188,7 +4308,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -4242,7 +4363,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "effect"
   },
   {
     "number": null,
@@ -4253,7 +4375,8 @@
       "space"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -4262,7 +4385,8 @@
     "cost": 1,
     "tags": [],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -4298,6 +4422,7 @@
     ],
     "has_requirements": false,
     "expansion": "promo",
+    "subtype": "effect",
     "vp": "1"
   },
   {
@@ -4329,7 +4454,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "effect"
   },
   {
     "number": null,
@@ -4347,7 +4473,8 @@
     "cost": 13,
     "tags": [],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -4359,7 +4486,8 @@
       "building"
     ],
     "has_requirements": true,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "effect"
   },
   {
     "number": null,
@@ -4368,7 +4496,8 @@
     "cost": 2,
     "tags": [],
     "has_requirements": true,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
@@ -4381,6 +4510,7 @@
     ],
     "has_requirements": false,
     "expansion": "promo",
+    "subtype": "effect",
     "vp": "1"
   },
   {
@@ -4393,7 +4523,8 @@
       "building"
     ],
     "has_requirements": false,
-    "expansion": "promo"
+    "expansion": "promo",
+    "subtype": "action"
   },
   {
     "number": null,
