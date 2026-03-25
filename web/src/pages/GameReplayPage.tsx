@@ -257,6 +257,28 @@ export function GameReplayPage() {
     return map;
   }, [gameLog, currentStep, playerPreludeNames]);
 
+  // Track which action cards have been activated this generation
+  const activatedCards = useMemo(() => {
+    if (!gameLog) return new Map<string, Set<string>>();
+    const currentGen = gameLog.moves[currentStep]?.game_state?.generation;
+    if (currentGen == null) return new Map<string, Set<string>>();
+    const bounds = generationBoundaries.get(currentGen);
+    const startIdx = bounds?.start ?? 0;
+    const activated = new Map<string, Set<string>>();
+    for (let i = startIdx; i <= currentStep; i++) {
+      const move = gameLog.moves[i];
+      if (move.action_type === 'activate_card') {
+        const match = move.description.match(/activates (.+?)(?:\s*\||$)/i);
+        if (match) {
+          const cardName = match[1].trim();
+          if (!activated.has(move.player_id)) activated.set(move.player_id, new Set());
+          activated.get(move.player_id)!.add(cardName);
+        }
+      }
+    }
+    return activated;
+  }, [gameLog, currentStep, generationBoundaries]);
+
   const discardPile = useMemo(() => {
     if (!gameLog) return [];
     const cards: string[] = [];
@@ -390,6 +412,7 @@ export function GameReplayPage() {
                 hand={tableau?.hand ?? []}
                 sold={tableau?.sold ?? []}
                 cardResources={tableau?.cardResources ?? {}}
+                activatedCards={activatedCards.get(pid)}
               />
             );
           })}

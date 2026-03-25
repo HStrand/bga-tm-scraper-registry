@@ -23,27 +23,29 @@ interface PlayerCardProps {
   hand: string[];
   sold: string[];
   cardResources: Record<string, number>;
+  activatedCards?: Set<string>;
 }
 
 type ViewMode = 'grid' | 'stack' | 'synthetic' | 'hidden';
 
 // --- Card view components (dark-themed) ---
 
-const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number }) {
+const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize, activatedCards }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string> }) {
   return (
     <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${cardSize}px, 1fr))` }}>
       {cards.map((card, i) => {
         const img = getCardImage(card) ?? getCardPlaceholderImage();
         const res = cardResources?.[card];
+        const used = activatedCards?.has(card);
         return (
           <div key={`${card}-${i}`} className="group/card relative">
             <div className="relative">
-              <img src={img} alt={card} className="w-full rounded shadow-sm group-hover/card:scale-110 group-hover/card:shadow-lg group-hover/card:z-10 relative transition-transform duration-150" />
+              <img src={img} alt={card} className={`w-full rounded shadow-sm group-hover/card:scale-110 group-hover/card:shadow-lg group-hover/card:z-10 relative transition-transform duration-150 ${used ? 'opacity-40 grayscale' : ''}`} />
               {res != null && res > 0 && (
                 <span className="absolute top-0.5 right-0.5 bg-amber-500 text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center shadow">{res}</span>
               )}
             </div>
-            <p className="text-[9px] text-center text-slate-500 truncate mt-0.5">{card}</p>
+            <p className={`text-[9px] text-center truncate mt-0.5 ${used ? 'text-slate-600' : 'text-slate-500'}`}>{card}</p>
           </div>
         );
       })}
@@ -51,7 +53,7 @@ const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize }: { ca
   );
 });
 
-const CardStack = memo(function CardStack({ cards, cardResources, cardSize }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number }) {
+const CardStack = memo(function CardStack({ cards, cardResources, cardSize, activatedCards }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string> }) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   if (cards.length === 0) return null;
 
@@ -79,7 +81,12 @@ const CardStack = memo(function CardStack({ cards, cardResources, cardSize }: { 
             const top = cardOffset * i + (isAfterHovered ? cardHeight * 0.45 : 0);
             return (
               <div key={`${card}-${globalIdx}`} className="absolute left-0 transition-all duration-150 ease-out" style={{ top: `${top}px`, zIndex: isHovered ? 100 : i, width: `${cardWidth}px` }} onMouseEnter={() => setHoveredKey(hoverKey)} onMouseLeave={() => setHoveredKey(null)}>
-                <img src={img} alt={card} className={`rounded shadow-sm transition-transform duration-150 ${isHovered ? 'scale-[1.15] shadow-lg' : ''}`} style={{ width: `${cardWidth}px` }} />
+                <div className="relative">
+                <img src={img} alt={card} className={`rounded shadow-sm transition-transform duration-150 ${isHovered ? 'scale-[1.15] shadow-lg' : ''} ${activatedCards?.has(card) ? 'grayscale' : ''}`} style={{ width: `${cardWidth}px` }} />
+                {activatedCards?.has(card) && (
+                  <div className="absolute inset-0 rounded" style={{ background: 'rgba(10, 15, 30, 0.65)' }} />
+                )}
+                </div>
                 {res != null && res > 0 && (
                   <span className="absolute top-0.5 right-0.5 bg-amber-500 text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center shadow">{res}</span>
                 )}
@@ -92,14 +99,15 @@ const CardStack = memo(function CardStack({ cards, cardResources, cardSize }: { 
   );
 });
 
-const CardSynthetic = memo(function CardSynthetic({ cards, cardResources, cardSize }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number }) {
+const CardSynthetic = memo(function CardSynthetic({ cards, cardResources, cardSize, activatedCards }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string> }) {
   const boxWidth = Math.max(100, cardSize * 1.2);
   return (
     <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${boxWidth}px, 1fr))` }}>
       {cards.map((card, i) => {
         const res = cardResources?.[card];
+        const used = activatedCards?.has(card);
         return (
-          <div key={`${card}-${i}`} className="rounded-lg overflow-hidden" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.1) 100%)', border: '1px solid rgba(148,163,184,0.08)' }}>
+          <div key={`${card}-${i}`} className={`rounded-lg overflow-hidden ${used ? 'opacity-40' : ''}`} style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.1) 100%)', border: '1px solid rgba(148,163,184,0.08)' }}>
             <div className="px-2 py-1.5">
               <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wide leading-tight line-clamp-2">{card}</span>
             </div>
@@ -116,8 +124,8 @@ const CardSynthetic = memo(function CardSynthetic({ cards, cardResources, cardSi
   );
 });
 
-const CardSection = memo(function CardSection({ cards, title, color, cardResources, defaultViewMode = 'grid', defaultCardSize = 140 }: {
-  cards: string[]; title: string; color: string; cardResources?: Record<string, number>; defaultViewMode?: ViewMode; defaultCardSize?: number;
+const CardSection = memo(function CardSection({ cards, title, color, cardResources, defaultViewMode = 'grid', defaultCardSize = 140, activatedCards }: {
+  cards: string[]; title: string; color: string; cardResources?: Record<string, number>; defaultViewMode?: ViewMode; defaultCardSize?: number; activatedCards?: Set<string>;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
   const [cardSize, setCardSize] = useState(defaultCardSize);
@@ -153,11 +161,11 @@ const CardSection = memo(function CardSection({ cards, title, color, cardResourc
         <div className="h-px flex-1 bg-white/10" />
       </div>
       {viewMode === 'hidden' ? null : viewMode === 'stack' ? (
-        <CardStack cards={cards} cardResources={cardResources} cardSize={cardSize} />
+        <CardStack cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} />
       ) : viewMode === 'synthetic' ? (
-        <CardSynthetic cards={cards} cardResources={cardResources} cardSize={cardSize} />
+        <CardSynthetic cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} />
       ) : (
-        <CardGrid cards={cards} cardResources={cardResources} cardSize={cardSize} />
+        <CardGrid cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} />
       )}
     </div>
   );
@@ -166,7 +174,7 @@ const CardSection = memo(function CardSection({ cards, title, color, cardResourc
 export const PlayerCard = memo(function PlayerCard({
   playerId, playerName, corporation, color, elo, vp, trackers, tileCounts,
   isStartingPlayer, isExpanded, onExpand, onCollapse,
-  headquarters, played, hand, sold, cardResources,
+  headquarters, played, hand, sold, cardResources, activatedCards,
 }: PlayerCardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -440,7 +448,7 @@ export const PlayerCard = memo(function PlayerCard({
               }
               return (
                 <>
-                  <CardSection cards={actions} title="Actions" color="#60a5fa" cardResources={cardResources} defaultViewMode="grid" />
+                  <CardSection cards={actions} title="Actions" color="#60a5fa" cardResources={cardResources} defaultViewMode="grid" activatedCards={activatedCards} />
                   <CardSection cards={effects} title="Effects" color="#60a5fa" cardResources={cardResources} defaultViewMode="stack" />
                   <CardSection cards={automated} title="Automated" color="#4ade80" cardResources={cardResources} defaultViewMode="synthetic" />
                   <CardSection cards={events} title="Events" color="#f87171" cardResources={cardResources} defaultViewMode="hidden" />
@@ -484,6 +492,7 @@ export const PlayerCard = memo(function PlayerCard({
     if (prev.sold.length !== next.sold.length) return false;
     if (prev.trackers !== next.trackers) return false;
     if (prev.tileCounts !== next.tileCounts) return false;
+    if (prev.activatedCards !== next.activatedCards) return false;
   }
   return true;
 });
