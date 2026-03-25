@@ -286,9 +286,7 @@ export const PlayerCard = memo(function PlayerCard({
             {elo != null && (
               <span className="text-base text-slate-400 flex-shrink-0">({elo})</span>
             )}
-            {isStartingPlayer && (
-              <img src={startingPlayerImg} alt="1st" className="w-9 h-9 flex-shrink-0" />
-            )}
+            <img src={startingPlayerImg} alt="1st" className={`w-9 h-9 flex-shrink-0 ${isStartingPlayer ? '' : 'invisible'}`} />
           </div>
           <div className="text-base text-slate-400 truncate">{corporation}</div>
         </div>
@@ -366,9 +364,7 @@ export const PlayerCard = memo(function PlayerCard({
                     <span className="font-normal text-base text-slate-400 ml-1.5">({elo})</span>
                   )}
                 </span>
-                {isStartingPlayer && (
-                  <img src={startingPlayerImg} alt="Starting player" className="w-8 h-8 flex-shrink-0" />
-                )}
+                <img src={startingPlayerImg} alt="Starting player" className={`w-8 h-8 flex-shrink-0 ${isStartingPlayer ? '' : 'invisible'}`} />
               </div>
               <div className="text-sm text-slate-400">{corporation}</div>
             </div>
