@@ -27,6 +27,7 @@ export interface ScorerContext {
   playerId: string;
   placedTiles?: Map<string, { dbKey: string; tileType: string; playerId: string; moveIndex: number }>;
   playedCards?: string[];
+  cardResources?: Record<string, number>;
   gameState?: import('@/types/gamelog').GameState;
 }
 
@@ -120,7 +121,7 @@ const polarExplorerScorer: CustomScorer = ({ playerId, placedTiles }) => {
   return count;
 };
 
-import { countAutomatedCards, countCardsWithRequirements, getCardCategory, getCardMeta } from '@/lib/cardMetadata';
+import { countAutomatedCards, countCardsWithRequirements, getCardCategory, getCardMeta, getCardResourceType } from '@/lib/cardMetadata';
 
 const tacticianScorer: CustomScorer = ({ playedCards }) => {
   return playedCards ? countCardsWithRequirements(playedCards) : 0;
@@ -163,6 +164,59 @@ const tycoonScorer: CustomScorer = ({ playedCards }) => {
 const legendScorer: CustomScorer = ({ playedCards }) => {
   if (!playedCards) return 0;
   return playedCards.filter(c => getCardCategory(c) === 'event').length;
+};
+
+// Engineer: sum of heat + energy production
+const engineerScorer: CustomScorer = ({ trackers }) => {
+  return (trackers['Heat Production'] ?? 0) + (trackers['Energy Production'] ?? 0);
+};
+
+// Geologist (Vastitas): tiles at or adjacent to volcanic areas
+const VOLCANIC_HEXES: [number, number][] = [
+  [5, 1],  // Hecates Tholus
+  [8, 2],  // Elysium Mons
+  [2, 4],  // Alba Mons
+  [2, 7],  // Uranius Tholus
+];
+const geologistScorer: CustomScorer = ({ playerId, placedTiles }) => {
+  if (!placedTiles) return 0;
+  // Build set of volcanic hexes + their neighbors
+  const volcanicSet = new Set<string>();
+  for (const [col, row] of VOLCANIC_HEXES) {
+    volcanicSet.add(`${col},${row}`);
+    for (const [nc, nr] of getHexNeighbors(col, row)) {
+      volcanicSet.add(`${nc},${nr}`);
+    }
+  }
+  let count = 0;
+  for (const tile of placedTiles.values()) {
+    if (tile.playerId !== playerId) continue;
+    if (tile.tileType.toLowerCase() === 'ocean') continue;
+    const m = tile.dbKey.match(/(\d+),(\d+)/);
+    if (m && volcanicSet.has(`${m[1]},${m[2]}`)) count++;
+    // Also check named tiles that are volcanic
+    if (!m) {
+      const named = VOLCANIC_HEXES.find(([c, r]) => {
+        const names: Record<string, string> = { '5,1': 'Hecates Tholus', '8,2': 'Elysium Mons', '2,4': 'Alba Mons', '2,7': 'Uranius Tholus' };
+        return names[`${c},${r}`] === tile.dbKey;
+      });
+      if (named) count++;
+    }
+  }
+  return count;
+};
+
+// Farmer: count animal + microbe resources on cards
+const farmerScorer: CustomScorer = ({ playedCards, cardResources }) => {
+  if (!playedCards || !cardResources) return 0;
+  let total = 0;
+  for (const card of playedCards) {
+    const resType = getCardResourceType(card);
+    if (resType === 'animal' || resType === 'microbe') {
+      total += cardResources[card] ?? 0;
+    }
+  }
+  return total;
 };
 
 // Celebrity: count played cards costing 20 MC or more
@@ -524,11 +578,11 @@ const overlays: Record<string, MapOverlays> = {
       },
     ],
     milestones: [
-      { name: 'Agronomist', cx: 55, cy: 886 },
-      { name: 'Engineer', cx: 161, cy: 886 },
-      { name: 'Spacefarer', cx: 272, cy: 886 },
-      { name: 'Geologist', cx: 378, cy: 886 },
-      { name: 'Farmer', cx: 488, cy: 886 },
+      { name: 'Agronomist', cx: 55, cy: 886, metric: '4 plant tags', threshold: 4, trackerKeys: ['Plant tag', 'Count of Plant tags'], altKeys: true, includeWildTags: true },
+      { name: 'Engineer', cx: 161, cy: 886, metric: '10 heat + energy production', threshold: 10, customScorer: engineerScorer },
+      { name: 'Spacefarer', cx: 272, cy: 886, metric: '4 space tags', threshold: 4, trackerKeys: ['Space tag', 'Count of Space tags'], altKeys: true, includeWildTags: true },
+      { name: 'Geologist', cx: 378, cy: 886, metric: '3 tiles at/adjacent to volcanic areas', threshold: 3, customScorer: geologistScorer },
+      { name: 'Farmer', cx: 488, cy: 886, metric: '5 animal or microbe resources', threshold: 5, customScorer: farmerScorer },
     ],
     awards: [
       { name: 'Traveller', cx: 643, cy: 886, metric: 'Most space tags', trackerKeys: ['Space tag', 'Count of Space tags'], altKeys: true },

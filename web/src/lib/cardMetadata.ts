@@ -10,6 +10,7 @@ export interface CardMeta {
   has_requirements: boolean;
   expansion: string;
   vp?: string;
+  holds_resource?: string; // resource type this card collects: animal, microbe, science, floater, etc.
 }
 
 /** Get the display category for a card (for tableau sections) */
@@ -25,6 +26,10 @@ export function getCardCategory(cardName: string): 'automated' | 'action' | 'eff
 
 export function isPrelude(cardName: string): boolean {
   return getCardMeta(cardName)?.type === 'prelude';
+}
+
+export function getCardResourceType(cardName: string): string | undefined {
+  return getCardMeta(cardName)?.holds_resource;
 }
 
 // Known card name mismatches between game logs and metadata

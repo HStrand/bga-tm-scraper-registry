@@ -55,7 +55,8 @@
     ],
     "has_requirements": true,
     "expansion": "base",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "science"
   },
   {
     "number": 6,
@@ -286,7 +287,8 @@
     ],
     "has_requirements": true,
     "expansion": "base",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "animal"
   },
   {
     "number": 25,
@@ -337,7 +339,8 @@
     ],
     "has_requirements": false,
     "expansion": "corporate_era",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "fighter"
   },
   {
     "number": 29,
@@ -398,7 +401,8 @@
     ],
     "has_requirements": false,
     "expansion": "base",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "microbe"
   },
   {
     "number": 34,
@@ -411,7 +415,8 @@
     ],
     "has_requirements": true,
     "expansion": "base",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "microbe"
   },
   {
     "number": 35,
@@ -423,7 +428,8 @@
     ],
     "has_requirements": true,
     "expansion": "base",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "microbe"
   },
   {
     "number": 36,
@@ -585,7 +591,8 @@
     ],
     "has_requirements": false,
     "expansion": "corporate_era",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "microbe"
   },
   {
     "number": 50,
@@ -621,7 +628,8 @@
     ],
     "has_requirements": true,
     "expansion": "base",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "animal"
   },
   {
     "number": 53,
@@ -643,7 +651,8 @@
     ],
     "has_requirements": true,
     "expansion": "base",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "animal"
   },
   {
     "number": 55,
@@ -824,7 +833,8 @@
     ],
     "has_requirements": true,
     "expansion": "base",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "animal"
   },
   {
     "number": 73,
@@ -1103,7 +1113,8 @@
     ],
     "has_requirements": false,
     "expansion": "corporate_era",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "science"
   },
   {
     "number": 96,
@@ -1481,7 +1492,8 @@
     ],
     "has_requirements": true,
     "expansion": "base",
-    "subtype": "effect"
+    "subtype": "effect",
+    "holds_resource": "animal"
   },
   {
     "number": 129,
@@ -1514,7 +1526,8 @@
     ],
     "has_requirements": true,
     "expansion": "base",
-    "subtype": "effect"
+    "subtype": "effect",
+    "holds_resource": "microbe"
   },
   {
     "number": 132,
@@ -1704,7 +1717,8 @@
     ],
     "has_requirements": true,
     "expansion": "base",
-    "subtype": "effect"
+    "subtype": "effect",
+    "holds_resource": "animal"
   },
   {
     "number": 148,
@@ -1816,7 +1830,8 @@
     ],
     "has_requirements": false,
     "expansion": "base",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "microbe"
   },
   {
     "number": 158,
@@ -1979,7 +1994,8 @@
     ],
     "has_requirements": false,
     "expansion": "base",
-    "subtype": "effect"
+    "subtype": "effect",
+    "holds_resource": "animal"
   },
   {
     "number": 173,
@@ -2120,7 +2136,8 @@
     ],
     "has_requirements": true,
     "expansion": "base",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "animal"
   },
   {
     "number": 185,
@@ -2135,7 +2152,8 @@
     "has_requirements": false,
     "expansion": "corporate_era",
     "subtype": "effect",
-    "vp": "1"
+    "vp": "1",
+    "holds_resource": "science"
   },
   {
     "number": 186,
@@ -2444,7 +2462,8 @@
     ],
     "has_requirements": true,
     "expansion": "promo",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "animal"
   },
   {
     "number": 213,
@@ -2553,7 +2572,8 @@
     ],
     "has_requirements": false,
     "expansion": "venus_next",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "floater"
   },
   {
     "number": 222,
@@ -2577,7 +2597,8 @@
     ],
     "has_requirements": false,
     "expansion": "venus_next",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "floater"
   },
   {
     "number": 224,
@@ -2590,7 +2611,8 @@
     ],
     "has_requirements": true,
     "expansion": "venus_next",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "microbe"
   },
   {
     "number": 225,
@@ -2602,7 +2624,8 @@
     ],
     "has_requirements": true,
     "expansion": "venus_next",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "floater"
   },
   {
     "number": 226,
@@ -2614,7 +2637,8 @@
     ],
     "has_requirements": false,
     "expansion": "venus_next",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "floater"
   },
   {
     "number": 227,
@@ -2722,7 +2746,8 @@
     ],
     "has_requirements": false,
     "expansion": "venus_next",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "floater"
   },
   {
     "number": 236,
@@ -2817,7 +2842,8 @@
     ],
     "has_requirements": true,
     "expansion": "venus_next",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "asteroid"
   },
   {
     "number": 244,
@@ -2876,7 +2902,8 @@
     ],
     "has_requirements": true,
     "expansion": "venus_next",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "floater"
   },
   {
     "number": 249,
@@ -2889,7 +2916,8 @@
     ],
     "has_requirements": true,
     "expansion": "venus_next",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "animal"
   },
   {
     "number": 250,
@@ -2914,7 +2942,8 @@
     ],
     "has_requirements": true,
     "expansion": "venus_next",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "microbe"
   },
   {
     "number": 252,
@@ -3012,7 +3041,8 @@
     ],
     "has_requirements": true,
     "expansion": "venus_next",
-    "subtype": "effect"
+    "subtype": "effect",
+    "holds_resource": "animal"
   },
   {
     "number": 260,
@@ -3025,7 +3055,8 @@
     ],
     "has_requirements": true,
     "expansion": "venus_next",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "microbe"
   },
   {
     "number": 261,
@@ -3086,7 +3117,8 @@
     ],
     "has_requirements": true,
     "expansion": "prelude",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "microbe"
   },
   {
     "number": null,
@@ -3327,7 +3359,8 @@
     ],
     "has_requirements": true,
     "expansion": "colonies",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "floater"
   },
   {
     "number": null,
@@ -3491,7 +3524,8 @@
     "has_requirements": true,
     "expansion": "colonies",
     "subtype": "action",
-    "vp": "2"
+    "vp": "2",
+    "holds_resource": "floater"
   },
   {
     "number": null,
@@ -3503,7 +3537,8 @@
     ],
     "has_requirements": false,
     "expansion": "colonies",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "camp"
   },
   {
     "number": null,
@@ -3612,7 +3647,8 @@
     ],
     "has_requirements": true,
     "expansion": "colonies",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "animal"
   },
   {
     "number": null,
@@ -4046,7 +4082,8 @@
     ],
     "has_requirements": false,
     "expansion": "promo",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "asteroid"
   },
   {
     "number": null,
@@ -4058,7 +4095,8 @@
     ],
     "has_requirements": false,
     "expansion": "promo",
-    "subtype": "action"
+    "subtype": "action",
+    "holds_resource": "asteroid"
   },
   {
     "number": null,

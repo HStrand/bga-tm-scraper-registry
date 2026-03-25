@@ -33,6 +33,7 @@ export interface StandingsContext {
   playerTileCounts?: Record<string, { cities: number; greeneries: number; total: number }>;
   playerHandCounts?: Record<string, number>;
   playerPlayedCards?: Record<string, string[]>;
+  playerCardResources?: Record<string, Record<string, number>>;
   gameState?: GameState;
   placedTiles?: Map<string, { dbKey: string; tileType: string; playerId: string; moveIndex: number }>;
 }
@@ -53,6 +54,7 @@ export function computeStandings(
         playerId: pid,
         placedTiles: ctx.placedTiles,
         playedCards: ctx.playerPlayedCards?.[pid],
+        cardResources: ctx.playerCardResources?.[pid],
         gameState: ctx.gameState,
       });
     } else if (item.useTR && ctx.gameState?.player_vp) {

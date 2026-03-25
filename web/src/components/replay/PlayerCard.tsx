@@ -2,8 +2,8 @@ import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { X, Pin, PinOff, Grid3X3, Layers, List, EyeOff } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { PlayerVictoryPoints } from '@/types/gamelog';
-import { getCubeImage, startingPlayerImg, PlayerTrackers } from './replayShared';
-import { getCardCategory } from '@/lib/cardMetadata';
+import { getCubeImage, startingPlayerImg, PlayerTrackers, getIcon, resourceIcons } from './replayShared';
+import { getCardCategory, getCardResourceType } from '@/lib/cardMetadata';
 
 interface PlayerCardProps {
   playerId: string;
@@ -28,6 +28,31 @@ interface PlayerCardProps {
 
 type ViewMode = 'grid' | 'stack' | 'synthetic' | 'hidden';
 
+// --- Resource badge with icon ---
+function ResourceBadge({ card, count, size = 'normal' }: { card: string; count: number; size?: 'normal' | 'small' }) {
+  if (count <= 0) return null;
+  const resType = getCardResourceType(card);
+  const resIcon = resType ? getIcon(resourceIcons, resType) : undefined;
+  const sz = size === 'small' ? 'w-7 h-7' : 'w-9 h-9';
+  const textSz = size === 'small' ? 'text-sm' : 'text-base';
+  return (
+    <span className={`absolute top-0.5 right-0.5 flex items-center justify-center ${sz} shadow z-10`}>
+      {resIcon ? (
+        <span className="relative">
+          <img src={resIcon} alt={resType} className={`${sz} object-contain drop-shadow`} />
+          <span className={`absolute inset-0 flex items-center justify-center ${textSz} font-bold text-white`} style={{ textShadow: '0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.5)' }}>
+            {count}
+          </span>
+        </span>
+      ) : (
+        <span className={`bg-amber-500 text-white ${textSz} font-bold rounded-full ${sz} flex items-center justify-center`}>
+          {count}
+        </span>
+      )}
+    </span>
+  );
+}
+
 // --- Card view components (dark-themed) ---
 
 const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize, activatedCards }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string> }) {
@@ -41,9 +66,7 @@ const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize, activa
           <div key={`${card}-${i}`} className="group/card relative">
             <div className="relative">
               <img src={img} alt={card} className={`w-full rounded shadow-sm group-hover/card:scale-110 group-hover/card:shadow-lg group-hover/card:z-10 relative transition-transform duration-150 ${used ? 'opacity-40 grayscale' : ''}`} />
-              {res != null && res > 0 && (
-                <span className="absolute top-0.5 right-0.5 bg-amber-500 text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center shadow">{res}</span>
-              )}
+              {res != null && res > 0 && <ResourceBadge card={card} count={res} />}
             </div>
             <p className={`text-[9px] text-center truncate mt-0.5 ${used ? 'text-slate-600' : 'text-slate-500'}`}>{card}</p>
           </div>
@@ -87,9 +110,7 @@ const CardStack = memo(function CardStack({ cards, cardResources, cardSize, acti
                   <div className="absolute inset-0 rounded" style={{ background: 'rgba(10, 15, 30, 0.65)' }} />
                 )}
                 </div>
-                {res != null && res > 0 && (
-                  <span className="absolute top-0.5 right-0.5 bg-amber-500 text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center shadow">{res}</span>
-                )}
+                {res != null && res > 0 && <ResourceBadge card={card} count={res} size="small" />}
               </div>
             );
           })}
@@ -111,12 +132,21 @@ const CardSynthetic = memo(function CardSynthetic({ cards, cardResources, cardSi
             <div className="px-2 py-1.5">
               <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wide leading-tight line-clamp-2">{card}</span>
             </div>
-            {res != null && res > 0 && (
-              <div className="px-2 py-1 flex items-center gap-1 border-t border-white/5">
-                <span className="inline-flex items-center justify-center bg-amber-500 text-white text-[9px] font-bold rounded-full w-4 h-4 shadow-sm">{res}</span>
-                <span className="text-[9px] text-slate-500">res</span>
-              </div>
-            )}
+            {res != null && res > 0 && (() => {
+              const resType = getCardResourceType(card);
+              const resIcon = resType ? getIcon(resourceIcons, resType) : undefined;
+              return (
+                <div className="px-2 py-1 flex items-center gap-1.5 border-t border-white/5">
+                  {resIcon ? (
+                    <img src={resIcon} alt={resType} className="w-4 h-4 object-contain" />
+                  ) : (
+                    <span className="inline-flex items-center justify-center bg-amber-500 text-white text-[9px] font-bold rounded-full w-4 h-4 shadow-sm">{res}</span>
+                  )}
+                  <span className="text-[9px] text-white font-semibold">{res}</span>
+                  {resType && <span className="text-[9px] text-slate-500">{resType}</span>}
+                </div>
+              );
+            })()}
           </div>
         );
       })}

@@ -439,6 +439,9 @@ export function GameReplayPage() {
               playerPlayedCards={Object.fromEntries(
                 Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.played])
               )}
+              playerCardResources={Object.fromEntries(
+                Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.cardResources])
+              )}
             />
           ) : (
             <div className="glass-panel rounded-xl p-8 text-center text-slate-400">
