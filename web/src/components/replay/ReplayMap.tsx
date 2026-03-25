@@ -128,6 +128,52 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
             </g>
           );
         })}
+        {/* Off-map tiles (Phobos Space Haven, Ganymede Colony) */}
+        {mapDefinition.name === 'Tharsis' && (() => {
+          const offMapLocations: Record<string, { cx: number; cy: number }> = {
+            'Phobos Space Haven': { cx: 119, cy: 168 },
+            'Ganymede Colony': { cx: 87, cy: 326 },
+          };
+          return Object.entries(offMapLocations).map(([name, { cx, cy }]) => {
+            const tile = placedTiles.get(name);
+            if (!tile || tile.moveIndex > currentStep) return null;
+            const color = playerColors[tile.playerId] ?? '#888';
+            const size = tileSize;
+            const cubeSize = tileSize * 0.4;
+            return (
+              <g key={`offmap-${name}`}>
+                <image
+                  href={cityTileImage}
+                  x={cx - size / 2}
+                  y={cy - size / 2}
+                  width={size}
+                  height={size}
+                />
+                {getCubeImage(color) ? (
+                  <image
+                    href={getCubeImage(color)!}
+                    x={cx - cubeSize / 2}
+                    y={cy - cubeSize / 2}
+                    width={cubeSize}
+                    height={cubeSize}
+                  />
+                ) : (
+                  <rect
+                    x={cx - cubeSize / 2}
+                    y={cy - cubeSize / 2}
+                    width={cubeSize}
+                    height={cubeSize}
+                    rx={2}
+                    fill={color}
+                    stroke="#fff"
+                    strokeWidth={1}
+                  />
+                )}
+              </g>
+            );
+          });
+        })()}
+
         {/* Highlight for current move rendered last so it's on top */}
         {mapDefinition.hexes.map(hex => {
           const tile = placedTiles.get(hex.dbKey);

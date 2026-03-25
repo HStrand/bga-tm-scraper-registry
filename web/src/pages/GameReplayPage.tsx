@@ -148,7 +148,13 @@ export function GameReplayPage() {
   const offMapTiles = useMemo(() => {
     if (!mapDefinition) return [] as PlacedTile[];
     const hexKeys = new Set(mapDefinition.hexes.map(h => h.dbKey));
-    return Array.from(placedTiles.values()).filter(t => !hexKeys.has(t.dbKey));
+    // Tiles rendered on the map image (e.g. Phobos/Ganymede on Tharsis) are not "off-map"
+    const renderedOffMap = new Set<string>();
+    if (mapDefinition.name === 'Tharsis') {
+      renderedOffMap.add('Phobos Space Haven');
+      renderedOffMap.add('Ganymede Colony');
+    }
+    return Array.from(placedTiles.values()).filter(t => !hexKeys.has(t.dbKey) && !renderedOffMap.has(t.dbKey));
   }, [placedTiles, mapDefinition]);
 
   const generationBoundaries = useMemo(() => {
