@@ -147,47 +147,63 @@ function TagCell({ icon, value, title, large }: { icon?: string; value: number; 
 }
 
 export function PlayerTrackers({ trackers, tileCounts, inline }: { trackers: Record<string, number>; tileCounts?: { cities: number; greeneries: number; total: number }; inline?: boolean }) {
+  if (inline) {
+    // Render as separate fragments so parent flex-wrap controls the flow
+    return (
+      <>
+        {/* Resources as one block */}
+        <div className="flex gap-1 flex-shrink-0">
+          {RESOURCES.map(r => (
+            <ResourceCell key={r.key} resourceKey={r.key} icon={getIcon(resourceIcons, r.icon)} value={trackers[r.key] ?? 0} prodValue={trackers[r.prodKey] ?? 0} title={`${r.label}: ${trackers[r.key] ?? 0} (prod: ${trackers[r.prodKey] ?? 0})`} />
+          ))}
+        </div>
+        {/* Tag row 1 as one block */}
+        <div className="flex gap-1 flex-shrink-0">
+          {TAG_ROWS[0].map(t => {
+            const altKey = 'altKey' in t ? t.altKey : undefined;
+            return <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={getTracker(trackers, t.key, altKey)} title={t.key} />;
+          })}
+        </div>
+        {/* Tag row 2 as one block */}
+        <div className="flex gap-1 flex-shrink-0">
+          {TAG_ROWS[1].map(t => {
+            const altKey = 'altKey' in t ? t.altKey : undefined;
+            return <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={getTracker(trackers, t.key, altKey)} title={t.key} />;
+          })}
+        </div>
+        {/* Tiles as one block */}
+        <div className="flex gap-1 flex-shrink-0">
+          {TAG_ROWS[2].map(t => {
+            let val = getTracker(trackers, t.key);
+            if (val === 0 && tileCounts && 'iconSource' in t) {
+              if (t.key === 'City') val = tileCounts.cities;
+              else if (t.key === 'Forest') val = tileCounts.greeneries;
+              else if (t.key === 'Land') val = tileCounts.total;
+            }
+            return <TagCell key={t.key} icon={getIcon(tileIcons, t.icon)} value={val} title={'label' in t ? t.label : t.key} large />;
+          })}
+        </div>
+      </>
+    );
+  }
+
   return (
-    <div className={inline ? 'flex flex-wrap gap-1 items-start' : 'border-t border-white/10 px-3 py-3 space-y-1.5'}>
-      {/* Resources — inline flex, fixed-width cells */}
+    <div className="border-t border-white/10 px-3 py-3 space-y-1.5">
       <div className="flex flex-wrap gap-1">
         {RESOURCES.map(r => (
-          <ResourceCell
-            key={r.key}
-            resourceKey={r.key}
-            icon={getIcon(resourceIcons, r.icon)}
-            value={trackers[r.key] ?? 0}
-            prodValue={trackers[r.prodKey] ?? 0}
-            title={`${r.label}: ${trackers[r.key] ?? 0} (prod: ${trackers[r.prodKey] ?? 0})`}
-          />
+          <ResourceCell key={r.key} resourceKey={r.key} icon={getIcon(resourceIcons, r.icon)} value={trackers[r.key] ?? 0} prodValue={trackers[r.prodKey] ?? 0} title={`${r.label}: ${trackers[r.key] ?? 0} (prod: ${trackers[r.prodKey] ?? 0})`} />
         ))}
       </div>
-
-      {/* Tags — inline flex rows */}
       <div className="flex flex-wrap gap-1">
         {TAG_ROWS[0].map(t => {
           const altKey = 'altKey' in t ? t.altKey : undefined;
-          return (
-            <TagCell
-              key={t.key}
-              icon={getIcon(tagIcons, t.icon)}
-              value={getTracker(trackers, t.key, altKey)}
-              title={t.key}
-            />
-          );
+          return <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={getTracker(trackers, t.key, altKey)} title={t.key} />;
         })}
       </div>
       <div className="flex flex-wrap gap-1">
         {TAG_ROWS[1].map(t => {
           const altKey = 'altKey' in t ? t.altKey : undefined;
-          return (
-            <TagCell
-              key={t.key}
-              icon={getIcon(tagIcons, t.icon)}
-              value={getTracker(trackers, t.key, altKey)}
-              title={t.key}
-            />
-          );
+          return <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={getTracker(trackers, t.key, altKey)} title={t.key} />;
         })}
       </div>
 
