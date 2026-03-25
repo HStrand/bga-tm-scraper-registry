@@ -540,9 +540,9 @@ namespace BgaTmScraperRegistry.Services
                     AND (g.ReplayDeleted IS NULL OR g.ReplayDeleted = 0)
                     AND (g.AssignedTo IS NULL OR g.AssignedAt < DATEADD(hour, -24, GETUTCDATE()))
                     ORDER BY CASE g.Map
-                        WHEN 'Random' THEN 1
-                        WHEN 'Vastitas Borealis' THEN 2
-                        WHEN 'Elysium' THEN 3
+                        WHEN 'Vastitas Borealis' THEN 1
+                        WHEN 'Elysium' THEN 2
+                        WHEN 'Random' THEN 3
                         WHEN 'Hellas' THEN 4
                         WHEN 'Tharsis' THEN 5
                         WHEN 'Amazonis Planitia' THEN 6

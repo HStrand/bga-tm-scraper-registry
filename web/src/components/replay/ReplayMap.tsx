@@ -46,9 +46,10 @@ interface ReplayMapProps {
   playerTrackers?: Record<string, Record<string, number>>;
   playerTileCounts?: Record<string, { cities: number; greeneries: number; total: number }>;
   playerHandCounts?: Record<string, number>;
+  playerPlayedCards?: Record<string, string[]>;
 }
 
-export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentStep, gameState, claimedMilestones, fundedAwards, playerNames, playerTrackers, playerTileCounts, playerHandCounts }: ReplayMapProps) {
+export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentStep, gameState, claimedMilestones, fundedAwards, playerNames, playerTrackers, playerTileCounts, playerHandCounts, playerPlayedCards }: ReplayMapProps) {
   const tileSize = mapDefinition.grid.hexRadius * 2;
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -72,6 +73,7 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
     playerTrackers,
     playerTileCounts,
     playerHandCounts,
+    playerPlayedCards,
     getCubeImage,
     cityTileImage,
     greeneryTileImage,

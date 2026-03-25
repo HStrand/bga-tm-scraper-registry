@@ -412,6 +412,9 @@ export function GameReplayPage() {
               playerHandCounts={Object.fromEntries(
                 Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.hand.length])
               )}
+              playerPlayedCards={Object.fromEntries(
+                Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.played])
+              )}
             />
           ) : (
             <div className="glass-panel rounded-xl p-8 text-center text-slate-400">

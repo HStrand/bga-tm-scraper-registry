@@ -26,6 +26,7 @@ export interface ScorerContext {
   tileCounts?: { cities: number; greeneries: number; total: number };
   playerId: string;
   placedTiles?: Map<string, { dbKey: string; tileType: string; playerId: string; moveIndex: number }>;
+  playedCards?: string[];
 }
 
 export type CustomScorer = (ctx: ScorerContext) => number;
@@ -116,6 +117,16 @@ const polarExplorerScorer: CustomScorer = ({ playerId, placedTiles }) => {
     }
   }
   return count;
+};
+
+import { countAutomatedCards, countCardsWithRequirements } from '@/lib/cardMetadata';
+
+const tacticianScorer: CustomScorer = ({ playedCards }) => {
+  return playedCards ? countCardsWithRequirements(playedCards) : 0;
+};
+
+const magnateScorer: CustomScorer = ({ playedCards }) => {
+  return playedCards ? countAutomatedCards(playedCards) : 0;
 };
 
 const overlays: Record<string, MapOverlays> = {
@@ -258,14 +269,14 @@ const overlays: Record<string, MapOverlays> = {
     ],
     milestones: [
       { name: 'Diversifier', cx: 60, cy: 884, metric: '8 different tags', threshold: 8, customScorer: diversifierScorer },
-      { name: 'Tactician', cx: 166, cy: 884, metric: '5 cards with requirements', threshold: 5 },
+      { name: 'Tactician', cx: 166, cy: 884, metric: '5 cards with requirements', threshold: 5, customScorer: tacticianScorer },
       { name: 'Polar Explorer', cx: 277, cy: 884, metric: '3 tiles in bottom 2 rows', threshold: 3, customScorer: polarExplorerScorer },
       { name: 'Energizer', cx: 383, cy: 884, metric: '6 energy production', threshold: 6, trackerKeys: ['Energy Production'] },
       { name: 'Rim Settler', cx: 493, cy: 884, metric: '3 Jovian tags', threshold: 3, trackerKeys: ['Jovian tag', 'Count of Jovian tags'], altKeys: true, includeWildTags: true },
     ],
     awards: [
       { name: 'Cultivator', cx: 648, cy: 884, metric: 'Most greenery tiles', trackerKeys: [], useTileCounts: 'greeneries' },
-      { name: 'Magnate', cx: 756, cy: 884, metric: 'Most automated cards (green)', trackerKeys: [] },
+      { name: 'Magnate', cx: 756, cy: 884, metric: 'Most automated cards (green)', trackerKeys: [], customScorer: magnateScorer },
       { name: 'Space Baron', cx: 865, cy: 884, metric: 'Most space tags', trackerKeys: ['Space tag', 'Count of Space tags'], altKeys: true },
       { name: 'Eccentric', cx: 973, cy: 884, metric: 'Most resources on cards', trackerKeys: [] },
       { name: 'Contractor', cx: 1081, cy: 884, metric: 'Most building tags', trackerKeys: ['Building tag', 'Count of Building tags'], altKeys: true },

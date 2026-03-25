@@ -1,0 +1,5011 @@
+[
+  {
+    "number": 1,
+    "name": "Colonizer Training Camp",
+    "type": "automated",
+    "cost": 8,
+    "tags": [
+      "building",
+      "jovian"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "2"
+  },
+  {
+    "number": 2,
+    "name": "Asteroid Mining Consortium",
+    "type": "automated",
+    "cost": 13,
+    "tags": [
+      "jovian"
+    ],
+    "has_requirements": true,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 3,
+    "name": "Deep Well Heating",
+    "type": "automated",
+    "cost": 13,
+    "tags": [
+      "building",
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 4,
+    "name": "Cloud Seeding",
+    "type": "automated",
+    "cost": 11,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 5,
+    "name": "Search for Life",
+    "type": "active",
+    "cost": 3,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 6,
+    "name": "Inventors' Guild",
+    "type": "active",
+    "cost": 9,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 7,
+    "name": "Martian Rails",
+    "type": "active",
+    "cost": 13,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 8,
+    "name": "Capital",
+    "type": "automated",
+    "cost": 26,
+    "tags": [
+      "city",
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 9,
+    "name": "Asteroid",
+    "type": "event",
+    "cost": 14,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 10,
+    "name": "Comet",
+    "type": "event",
+    "cost": 21,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 11,
+    "name": "Big Asteroid",
+    "type": "event",
+    "cost": 27,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 12,
+    "name": "Water Import from Europa",
+    "type": "active",
+    "cost": 25,
+    "tags": [
+      "space",
+      "jovian"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 13,
+    "name": "Space Elevator",
+    "type": "active",
+    "cost": 27,
+    "tags": [
+      "space",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "2"
+  },
+  {
+    "number": 14,
+    "name": "Development Center",
+    "type": "active",
+    "cost": 11,
+    "tags": [
+      "science",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 15,
+    "name": "Equatorial Magnetizer",
+    "type": "active",
+    "cost": 11,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 16,
+    "name": "Domed Crater",
+    "type": "automated",
+    "cost": 24,
+    "tags": [
+      "city",
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 17,
+    "name": "Noctis City",
+    "type": "automated",
+    "cost": 18,
+    "tags": [
+      "city",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 18,
+    "name": "Methane from Titan",
+    "type": "automated",
+    "cost": 28,
+    "tags": [
+      "space",
+      "jovian"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "2"
+  },
+  {
+    "number": 19,
+    "name": "Imported Hydrogen",
+    "type": "event",
+    "cost": 16,
+    "tags": [
+      "earth",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 20,
+    "name": "Research Outpost",
+    "type": "active",
+    "cost": 18,
+    "tags": [
+      "city",
+      "building",
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 21,
+    "name": "Phobos Space Haven",
+    "type": "automated",
+    "cost": 25,
+    "tags": [
+      "space",
+      "city"
+    ],
+    "has_requirements": false,
+    "expansion": "base",
+    "vp": "3"
+  },
+  {
+    "number": 22,
+    "name": "Black Polar Dust",
+    "type": "automated",
+    "cost": 15,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 23,
+    "name": "Arctic Algae",
+    "type": "active",
+    "cost": 12,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 24,
+    "name": "Predators",
+    "type": "active",
+    "cost": 14,
+    "tags": [
+      "animal"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 25,
+    "name": "Space Station",
+    "type": "active",
+    "cost": 10,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 26,
+    "name": "Eos Chasma National Park",
+    "type": "automated",
+    "cost": 16,
+    "tags": [
+      "plant",
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 27,
+    "name": "Interstellar Colony Ship",
+    "type": "event",
+    "cost": 24,
+    "tags": [
+      "earth",
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "corporate_era",
+    "vp": "4"
+  },
+  {
+    "number": 28,
+    "name": "Security Fleet",
+    "type": "active",
+    "cost": 12,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 29,
+    "name": "Cupola City",
+    "type": "automated",
+    "cost": 16,
+    "tags": [
+      "city",
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 30,
+    "name": "Lunar Beam",
+    "type": "automated",
+    "cost": 13,
+    "tags": [
+      "earth",
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 31,
+    "name": "Optimal Aerobraking",
+    "type": "active",
+    "cost": 7,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 32,
+    "name": "Underground city",
+    "type": "automated",
+    "cost": 18,
+    "tags": [
+      "city",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 33,
+    "name": "Regolith Eaters",
+    "type": "active",
+    "cost": 13,
+    "tags": [
+      "science",
+      "microbe"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 34,
+    "name": "GHG Producing Bacteria",
+    "type": "active",
+    "cost": 8,
+    "tags": [
+      "science",
+      "microbe"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 35,
+    "name": "Ants",
+    "type": "active",
+    "cost": 9,
+    "tags": [
+      "microbe"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 36,
+    "name": "Release of Inert Gases",
+    "type": "event",
+    "cost": 14,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 37,
+    "name": "Nitrogen-Rich Asteroid",
+    "type": "event",
+    "cost": 31,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 38,
+    "name": "Rover Construction",
+    "type": "active",
+    "cost": 8,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 39,
+    "name": "Deimos Down",
+    "type": "event",
+    "cost": 31,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 40,
+    "name": "Asteroid Mining",
+    "type": "automated",
+    "cost": 30,
+    "tags": [
+      "space",
+      "jovian"
+    ],
+    "has_requirements": false,
+    "expansion": "base",
+    "vp": "2"
+  },
+  {
+    "number": 41,
+    "name": "Food Factory",
+    "type": "automated",
+    "cost": 12,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 42,
+    "name": "Archaebacteria",
+    "type": "automated",
+    "cost": 6,
+    "tags": [
+      "microbe"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 43,
+    "name": "Carbonate Processing",
+    "type": "automated",
+    "cost": 6,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 44,
+    "name": "Natural Preserve",
+    "type": "automated",
+    "cost": 9,
+    "tags": [
+      "building",
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 45,
+    "name": "Nuclear Power",
+    "type": "automated",
+    "cost": 10,
+    "tags": [
+      "building",
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 46,
+    "name": "Lightning Harvest",
+    "type": "automated",
+    "cost": 8,
+    "tags": [
+      "power"
+    ],
+    "has_requirements": true,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 47,
+    "name": "Algae",
+    "type": "automated",
+    "cost": 10,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 48,
+    "name": "Adapted Lichen",
+    "type": "automated",
+    "cost": 9,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 49,
+    "name": "Tardigrades",
+    "type": "active",
+    "cost": 4,
+    "tags": [
+      "microbe"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 50,
+    "name": "Virus",
+    "type": "event",
+    "cost": 1,
+    "tags": [
+      "microbe"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 51,
+    "name": "Miranda Resort",
+    "type": "automated",
+    "cost": 12,
+    "tags": [
+      "space",
+      "jovian"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 52,
+    "name": "Fish",
+    "type": "active",
+    "cost": 9,
+    "tags": [
+      "animal"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 53,
+    "name": "Lake Marineris",
+    "type": "automated",
+    "cost": 18,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "2"
+  },
+  {
+    "number": 54,
+    "name": "Small Animals",
+    "type": "active",
+    "cost": 6,
+    "tags": [
+      "animal"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 55,
+    "name": "Kelp Farming",
+    "type": "automated",
+    "cost": 17,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 56,
+    "name": "Mine",
+    "type": "automated",
+    "cost": 4,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 57,
+    "name": "Vesta Shipyard",
+    "type": "automated",
+    "cost": 15,
+    "tags": [
+      "space",
+      "jovian"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 59,
+    "name": "Mangrove",
+    "type": "automated",
+    "cost": 12,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 60,
+    "name": "Trees",
+    "type": "automated",
+    "cost": 13,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 62,
+    "name": "Mineral Deposit",
+    "type": "event",
+    "cost": 5,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 63,
+    "name": "Mining Expedition",
+    "type": "event",
+    "cost": 12,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 64,
+    "name": "Mining Area",
+    "type": "automated",
+    "cost": 4,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 65,
+    "name": "Building Industries",
+    "type": "automated",
+    "cost": 6,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 66,
+    "name": "Land Claim",
+    "type": "event",
+    "cost": 1,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 67,
+    "name": "Mining Rights",
+    "type": "automated",
+    "cost": 9,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 68,
+    "name": "Sponsors",
+    "type": "automated",
+    "cost": 6,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 69,
+    "name": "Electro Catapult",
+    "type": "active",
+    "cost": 17,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 70,
+    "name": "Earth Catapult",
+    "type": "active",
+    "cost": 23,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "2"
+  },
+  {
+    "number": 71,
+    "name": "Advanced Alloys",
+    "type": "active",
+    "cost": 9,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 72,
+    "name": "Birds",
+    "type": "active",
+    "cost": 10,
+    "tags": [
+      "animal"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 73,
+    "name": "Mars University",
+    "type": "active",
+    "cost": 8,
+    "tags": [
+      "science",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 74,
+    "name": "Viral Enhancers",
+    "type": "active",
+    "cost": 9,
+    "tags": [
+      "science",
+      "microbe"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 75,
+    "name": "Towing a Comet",
+    "type": "event",
+    "cost": 23,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 76,
+    "name": "Space Mirrors",
+    "type": "active",
+    "cost": 3,
+    "tags": [
+      "power",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 77,
+    "name": "Solar Wind Power",
+    "type": "automated",
+    "cost": 11,
+    "tags": [
+      "science",
+      "power",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 78,
+    "name": "Ice Asteroid",
+    "type": "event",
+    "cost": 23,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 79,
+    "name": "Quantum Extractor",
+    "type": "active",
+    "cost": 13,
+    "tags": [
+      "power",
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 80,
+    "name": "Giant Ice Asteroid",
+    "type": "event",
+    "cost": 36,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 81,
+    "name": "Ganymede Colony",
+    "type": "automated",
+    "cost": 20,
+    "tags": [
+      "space",
+      "jovian",
+      "city"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 82,
+    "name": "Callisto Penal Mines",
+    "type": "automated",
+    "cost": 24,
+    "tags": [
+      "space",
+      "jovian"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "2"
+  },
+  {
+    "number": 83,
+    "name": "Giant Space Mirror",
+    "type": "automated",
+    "cost": 17,
+    "tags": [
+      "space",
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 84,
+    "name": "Trans-Neptune Probe",
+    "type": "automated",
+    "cost": 6,
+    "tags": [
+      "space",
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 85,
+    "name": "Commercial District",
+    "type": "automated",
+    "cost": 16,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 86,
+    "name": "Robotic Workforce",
+    "type": "automated",
+    "cost": 9,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 87,
+    "name": "Grass",
+    "type": "automated",
+    "cost": 11,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 88,
+    "name": "Heather",
+    "type": "automated",
+    "cost": 6,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 89,
+    "name": "Peroxide Power",
+    "type": "automated",
+    "cost": 7,
+    "tags": [
+      "building",
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 90,
+    "name": "Research",
+    "type": "automated",
+    "cost": 11,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 91,
+    "name": "Gene Repair",
+    "type": "automated",
+    "cost": 12,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "corporate_era",
+    "vp": "2"
+  },
+  {
+    "number": 92,
+    "name": "Io Mining Industries",
+    "type": "automated",
+    "cost": 41,
+    "tags": [
+      "space",
+      "jovian"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 93,
+    "name": "Bushes",
+    "type": "automated",
+    "cost": 10,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 94,
+    "name": "Mass Converter",
+    "type": "active",
+    "cost": 8,
+    "tags": [
+      "science",
+      "power"
+    ],
+    "has_requirements": true,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 95,
+    "name": "Physics Complex",
+    "type": "active",
+    "cost": 12,
+    "tags": [
+      "science",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 96,
+    "name": "Greenhouses",
+    "type": "automated",
+    "cost": 6,
+    "tags": [
+      "plant",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 97,
+    "name": "Nuclear Zone",
+    "type": "automated",
+    "cost": 10,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "base",
+    "vp": "-2"
+  },
+  {
+    "number": 98,
+    "name": "Tropical Resort",
+    "type": "automated",
+    "cost": 13,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "2"
+  },
+  {
+    "number": 99,
+    "name": "Toll Station",
+    "type": "automated",
+    "cost": 12,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 100,
+    "name": "Fueled Generators",
+    "type": "automated",
+    "cost": 1,
+    "tags": [
+      "building",
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 101,
+    "name": "Ironworks",
+    "type": "active",
+    "cost": 11,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 102,
+    "name": "Power Grid",
+    "type": "automated",
+    "cost": 18,
+    "tags": [
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 103,
+    "name": "Steelworks",
+    "type": "active",
+    "cost": 15,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 104,
+    "name": "Ore Processor",
+    "type": "active",
+    "cost": 13,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 105,
+    "name": "Earth Office",
+    "type": "active",
+    "cost": 1,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 106,
+    "name": "Acquired Company",
+    "type": "automated",
+    "cost": 10,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 107,
+    "name": "Media Archives",
+    "type": "automated",
+    "cost": 8,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 108,
+    "name": "Open City",
+    "type": "automated",
+    "cost": 23,
+    "tags": [
+      "city",
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 109,
+    "name": "Media Group",
+    "type": "active",
+    "cost": 6,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 110,
+    "name": "Business Network",
+    "type": "active",
+    "cost": 4,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 111,
+    "name": "Business Contacts",
+    "type": "event",
+    "cost": 7,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 112,
+    "name": "Bribed Committee",
+    "type": "event",
+    "cost": 7,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "-2"
+  },
+  {
+    "number": 113,
+    "name": "Solar Power",
+    "type": "automated",
+    "cost": 11,
+    "tags": [
+      "building",
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 114,
+    "name": "Breathing Filters",
+    "type": "automated",
+    "cost": 11,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "2"
+  },
+  {
+    "number": 115,
+    "name": "Artificial Photosynthesis",
+    "type": "automated",
+    "cost": 12,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 116,
+    "name": "Artificial Lake",
+    "type": "automated",
+    "cost": 15,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 117,
+    "name": "Geothermal Power",
+    "type": "automated",
+    "cost": 11,
+    "tags": [
+      "building",
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 118,
+    "name": "Farming",
+    "type": "automated",
+    "cost": 16,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "2"
+  },
+  {
+    "number": 119,
+    "name": "Dust Seals",
+    "type": "automated",
+    "cost": 2,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 120,
+    "name": "Urbanized Area",
+    "type": "automated",
+    "cost": 10,
+    "tags": [
+      "city",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 121,
+    "name": "Sabotage",
+    "type": "event",
+    "cost": 1,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 122,
+    "name": "Moss",
+    "type": "automated",
+    "cost": 4,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 123,
+    "name": "Industrial Center",
+    "type": "active",
+    "cost": 4,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 124,
+    "name": "Hired Raiders",
+    "type": "event",
+    "cost": 1,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 125,
+    "name": "Hackers",
+    "type": "automated",
+    "cost": 3,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "-1"
+  },
+  {
+    "number": 126,
+    "name": "GHG Factories",
+    "type": "automated",
+    "cost": 11,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 127,
+    "name": "Subterranean Reservoir",
+    "type": "event",
+    "cost": 11,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 128,
+    "name": "Ecological Zone",
+    "type": "active",
+    "cost": 12,
+    "tags": [
+      "plant",
+      "animal"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 129,
+    "name": "Zeppelins",
+    "type": "automated",
+    "cost": 13,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 130,
+    "name": "Worms",
+    "type": "automated",
+    "cost": 8,
+    "tags": [
+      "microbe"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 131,
+    "name": "Decomposers",
+    "type": "active",
+    "cost": 5,
+    "tags": [
+      "microbe"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 132,
+    "name": "Fusion Power",
+    "type": "automated",
+    "cost": 14,
+    "tags": [
+      "building",
+      "power",
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 133,
+    "name": "Symbiotic Fungus",
+    "type": "active",
+    "cost": 4,
+    "tags": [
+      "microbe"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 134,
+    "name": "Extreme-Cold Fungus",
+    "type": "active",
+    "cost": 13,
+    "tags": [
+      "microbe"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 135,
+    "name": "Advanced Ecosystems",
+    "type": "automated",
+    "cost": 11,
+    "tags": [
+      "plant",
+      "animal",
+      "microbe"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "3"
+  },
+  {
+    "number": 136,
+    "name": "Great Dam",
+    "type": "automated",
+    "cost": 12,
+    "tags": [
+      "building",
+      "power"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 137,
+    "name": "Cartel",
+    "type": "automated",
+    "cost": 8,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 138,
+    "name": "Strip Mine",
+    "type": "automated",
+    "cost": 25,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 139,
+    "name": "Wave Power",
+    "type": "automated",
+    "cost": 8,
+    "tags": [
+      "power"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 140,
+    "name": "Lava Flows",
+    "type": "event",
+    "cost": 18,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 141,
+    "name": "Power Plant",
+    "type": "automated",
+    "cost": 4,
+    "tags": [
+      "building",
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 142,
+    "name": "Mohole Area",
+    "type": "automated",
+    "cost": 20,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 143,
+    "name": "Large Convoy",
+    "type": "event",
+    "cost": 36,
+    "tags": [
+      "earth",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base",
+    "vp": "2"
+  },
+  {
+    "number": 144,
+    "name": "Titanium Mine",
+    "type": "automated",
+    "cost": 7,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 145,
+    "name": "Tectonic Stress Power",
+    "type": "automated",
+    "cost": 18,
+    "tags": [
+      "building",
+      "power"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 146,
+    "name": "Nitrophilic Moss",
+    "type": "automated",
+    "cost": 8,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 147,
+    "name": "Herbivores",
+    "type": "active",
+    "cost": 12,
+    "tags": [
+      "animal"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 148,
+    "name": "Insects",
+    "type": "automated",
+    "cost": 9,
+    "tags": [
+      "microbe"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 149,
+    "name": "CEO's Favorite Project",
+    "type": "event",
+    "cost": 1,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 150,
+    "name": "Anti-gravity Technology",
+    "type": "active",
+    "cost": 14,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "corporate_era",
+    "vp": "3"
+  },
+  {
+    "number": 151,
+    "name": "Investment Loan",
+    "type": "event",
+    "cost": 3,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 152,
+    "name": "Insulation",
+    "type": "automated",
+    "cost": 2,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 153,
+    "name": "Adaptation Technology",
+    "type": "active",
+    "cost": 12,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 154,
+    "name": "Caretaker Contract",
+    "type": "active",
+    "cost": 3,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 155,
+    "name": "Designed Microorganisms",
+    "type": "automated",
+    "cost": 16,
+    "tags": [
+      "microbe",
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 156,
+    "name": "Standard Technology",
+    "type": "active",
+    "cost": 6,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 157,
+    "name": "Nitrite Reducing Bacteria",
+    "type": "active",
+    "cost": 11,
+    "tags": [
+      "microbe"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 158,
+    "name": "Industrial Microbes",
+    "type": "automated",
+    "cost": 12,
+    "tags": [
+      "building",
+      "microbe"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 159,
+    "name": "Lichen",
+    "type": "automated",
+    "cost": 7,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 160,
+    "name": "Power Supply Consortium",
+    "type": "automated",
+    "cost": 5,
+    "tags": [
+      "power"
+    ],
+    "has_requirements": true,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 161,
+    "name": "Convoy From Europa",
+    "type": "event",
+    "cost": 15,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 162,
+    "name": "Imported GHG",
+    "type": "event",
+    "cost": 7,
+    "tags": [
+      "earth",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 163,
+    "name": "Imported Nitrogen",
+    "type": "event",
+    "cost": 23,
+    "tags": [
+      "earth",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 164,
+    "name": "Micro-Mills",
+    "type": "automated",
+    "cost": 3,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 165,
+    "name": "Magnetic Field Generators",
+    "type": "automated",
+    "cost": 20,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 166,
+    "name": "Shuttles",
+    "type": "active",
+    "cost": 10,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 167,
+    "name": "Import of Advanced GHG",
+    "type": "event",
+    "cost": 9,
+    "tags": [
+      "earth",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 168,
+    "name": "Windmills",
+    "type": "automated",
+    "cost": 6,
+    "tags": [
+      "building",
+      "power"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 169,
+    "name": "Tundra Farming",
+    "type": "automated",
+    "cost": 16,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "2"
+  },
+  {
+    "number": 171,
+    "name": "Magnetic Field Dome",
+    "type": "automated",
+    "cost": 5,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 172,
+    "name": "Pets",
+    "type": "active",
+    "cost": 10,
+    "tags": [
+      "earth",
+      "animal"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 173,
+    "name": "Protected Habitats",
+    "type": "active",
+    "cost": 5,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 174,
+    "name": "Protected Valley",
+    "type": "automated",
+    "cost": 23,
+    "tags": [
+      "plant",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 175,
+    "name": "Satellites",
+    "type": "automated",
+    "cost": 10,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 176,
+    "name": "Noctis Farming",
+    "type": "automated",
+    "cost": 10,
+    "tags": [
+      "building",
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 177,
+    "name": "Water Splitting Plant",
+    "type": "active",
+    "cost": 12,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 178,
+    "name": "Heat Trappers",
+    "type": "automated",
+    "cost": 6,
+    "tags": [
+      "building",
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "base",
+    "vp": "-1"
+  },
+  {
+    "number": 179,
+    "name": "Soil Factory",
+    "type": "automated",
+    "cost": 9,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
+    "number": 180,
+    "name": "Fuel Factory",
+    "type": "automated",
+    "cost": 6,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 181,
+    "name": "Ice Cap Melting",
+    "type": "event",
+    "cost": 5,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 182,
+    "name": "Corporate Stronghold",
+    "type": "automated",
+    "cost": 11,
+    "tags": [
+      "city",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "-2"
+  },
+  {
+    "number": 183,
+    "name": "Biomass Combustors",
+    "type": "automated",
+    "cost": 4,
+    "tags": [
+      "building",
+      "power"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "-1"
+  },
+  {
+    "number": 184,
+    "name": "Livestock",
+    "type": "active",
+    "cost": 13,
+    "tags": [
+      "animal"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 185,
+    "name": "Olympus Conference",
+    "type": "active",
+    "cost": 10,
+    "tags": [
+      "science",
+      "building",
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 186,
+    "name": "Rad-Suits",
+    "type": "automated",
+    "cost": 6,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 187,
+    "name": "Aquifer Pumping",
+    "type": "active",
+    "cost": 18,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 188,
+    "name": "Flooding",
+    "type": "event",
+    "cost": 7,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "base",
+    "vp": "-1"
+  },
+  {
+    "number": 189,
+    "name": "Energy Saving",
+    "type": "automated",
+    "cost": 15,
+    "tags": [
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 190,
+    "name": "Local Heat Trapping",
+    "type": "event",
+    "cost": 1,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 191,
+    "name": "Permafrost Extraction",
+    "type": "event",
+    "cost": 8,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 192,
+    "name": "Invention Contest",
+    "type": "event",
+    "cost": 2,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 193,
+    "name": "Plantation",
+    "type": "automated",
+    "cost": 15,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "base"
+  },
+  {
+    "number": 194,
+    "name": "Power Infrastructure",
+    "type": "active",
+    "cost": 4,
+    "tags": [
+      "power",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 195,
+    "name": "Indentured Workers",
+    "type": "event",
+    "cost": 0,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "-1"
+  },
+  {
+    "number": 196,
+    "name": "Lagrange Observatory",
+    "type": "automated",
+    "cost": 9,
+    "tags": [
+      "space",
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 197,
+    "name": "Terraforming Ganymede",
+    "type": "automated",
+    "cost": 33,
+    "tags": [
+      "space",
+      "jovian"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "2"
+  },
+  {
+    "number": 198,
+    "name": "Immigration Shuttles",
+    "type": "automated",
+    "cost": 31,
+    "tags": [
+      "space",
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 199,
+    "name": "Restricted Area",
+    "type": "active",
+    "cost": 11,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 200,
+    "name": "Immigrant City",
+    "type": "active",
+    "cost": 13,
+    "tags": [
+      "city",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 201,
+    "name": "Energy Tapping",
+    "type": "automated",
+    "cost": 3,
+    "tags": [
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "-1"
+  },
+  {
+    "number": 202,
+    "name": "Underground Detonations",
+    "type": "active",
+    "cost": 6,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 203,
+    "name": "Soletta",
+    "type": "automated",
+    "cost": 35,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 204,
+    "name": "Technology Demonstration",
+    "type": "event",
+    "cost": 5,
+    "tags": [
+      "science",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era"
+  },
+  {
+    "number": 205,
+    "name": "Rad-Chem Factory",
+    "type": "automated",
+    "cost": 8,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 206,
+    "name": "Special Design",
+    "type": "event",
+    "cost": 4,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
+  },
+  {
+    "number": 207,
+    "name": "Medical Lab",
+    "type": "automated",
+    "cost": 13,
+    "tags": [
+      "building",
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 208,
+    "name": "AI Central",
+    "type": "active",
+    "cost": 21,
+    "tags": [
+      "science",
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "corporate_era",
+    "vp": "1"
+  },
+  {
+    "number": 209,
+    "name": "Small Asteroid",
+    "type": "event",
+    "cost": 10,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": 210,
+    "name": "Self-replicating robots",
+    "type": "active",
+    "cost": 7,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "promo"
+  },
+  {
+    "number": 211,
+    "name": "Snow Algae",
+    "type": "automated",
+    "cost": 12,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "promo"
+  },
+  {
+    "number": 212,
+    "name": "Penguins",
+    "type": "active",
+    "cost": 7,
+    "tags": [
+      "animal"
+    ],
+    "has_requirements": true,
+    "expansion": "promo"
+  },
+  {
+    "number": 213,
+    "name": "Aerial Mappers",
+    "type": "active",
+    "cost": 11,
+    "tags": [
+      "venus"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next",
+    "vp": "1"
+  },
+  {
+    "number": 214,
+    "name": "Aerosport Tournament",
+    "type": "event",
+    "cost": 7,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "venus_next",
+    "vp": "1"
+  },
+  {
+    "number": 215,
+    "name": "Air-Scrapping Expedition",
+    "type": "event",
+    "cost": 13,
+    "tags": [
+      "venus"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 216,
+    "name": "Atalanta Planitia Lab",
+    "type": "automated",
+    "cost": 10,
+    "tags": [
+      "science",
+      "venus"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next",
+    "vp": "2"
+  },
+  {
+    "number": 217,
+    "name": "Atmoscoop",
+    "type": "automated",
+    "cost": 22,
+    "tags": [
+      "jovian",
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next",
+    "vp": "1"
+  },
+  {
+    "number": 218,
+    "name": "Comet for Venus",
+    "type": "event",
+    "cost": 11,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 219,
+    "name": "Corroder Suits",
+    "type": "automated",
+    "cost": 8,
+    "tags": [
+      "venus"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 220,
+    "name": "Dawn City",
+    "type": "automated",
+    "cost": 15,
+    "tags": [
+      "space",
+      "city"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next",
+    "vp": "3"
+  },
+  {
+    "number": 221,
+    "name": "Deuterium Export",
+    "type": "active",
+    "cost": 11,
+    "tags": [
+      "space",
+      "power",
+      "venus"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 222,
+    "name": "Dirigibles",
+    "type": "active",
+    "cost": 11,
+    "tags": [
+      "venus"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 223,
+    "name": "Extractor Balloons",
+    "type": "active",
+    "cost": 21,
+    "tags": [
+      "venus"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 224,
+    "name": "Extremophiles",
+    "type": "active",
+    "cost": 3,
+    "tags": [
+      "venus",
+      "microbe"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 225,
+    "name": "Floating Habs",
+    "type": "active",
+    "cost": 5,
+    "tags": [
+      "venus"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 226,
+    "name": "Forced Precipitation",
+    "type": "active",
+    "cost": 8,
+    "tags": [
+      "venus"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 227,
+    "name": "Freyja Biodomes",
+    "type": "automated",
+    "cost": 14,
+    "tags": [
+      "venus",
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next",
+    "vp": "2"
+  },
+  {
+    "number": 228,
+    "name": "GHG Import From Venus",
+    "type": "event",
+    "cost": 23,
+    "tags": [
+      "venus",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 229,
+    "name": "Giant Solar Shade",
+    "type": "automated",
+    "cost": 27,
+    "tags": [
+      "venus",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 230,
+    "name": "Gyropolis",
+    "type": "automated",
+    "cost": 20,
+    "tags": [
+      "city",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 231,
+    "name": "Hydrogen to Venus",
+    "type": "event",
+    "cost": 11,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 232,
+    "name": "IO Sulphur Research",
+    "type": "automated",
+    "cost": 17,
+    "tags": [
+      "jovian",
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next",
+    "vp": "2"
+  },
+  {
+    "number": 233,
+    "name": "Ishtar Mining",
+    "type": "automated",
+    "cost": 5,
+    "tags": [
+      "venus"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 234,
+    "name": "Jet Stream Microscrappers",
+    "type": "active",
+    "cost": 12,
+    "tags": [
+      "venus"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 235,
+    "name": "Local Shading",
+    "type": "active",
+    "cost": 4,
+    "tags": [
+      "venus"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 236,
+    "name": "Luna Metropolis",
+    "type": "automated",
+    "cost": 21,
+    "tags": [
+      "earth",
+      "space",
+      "city"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next",
+    "vp": "2"
+  },
+  {
+    "number": 237,
+    "name": "Luxury Foods",
+    "type": "automated",
+    "cost": 8,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "venus_next",
+    "vp": "2"
+  },
+  {
+    "number": 238,
+    "name": "Maxwell Base",
+    "type": "active",
+    "cost": 18,
+    "tags": [
+      "city",
+      "venus"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next",
+    "vp": "3"
+  },
+  {
+    "number": 239,
+    "name": "Mining Quota",
+    "type": "automated",
+    "cost": 5,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 240,
+    "name": "Neutralizer Factory",
+    "type": "automated",
+    "cost": 7,
+    "tags": [
+      "venus"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 241,
+    "name": "Omnicourt",
+    "type": "automated",
+    "cost": 11,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 242,
+    "name": "Orbital Reflectors",
+    "type": "automated",
+    "cost": 26,
+    "tags": [
+      "venus",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 243,
+    "name": "Rotator Impacts",
+    "type": "active",
+    "cost": 6,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 244,
+    "name": "Sister Planet Support",
+    "type": "automated",
+    "cost": 7,
+    "tags": [
+      "venus",
+      "earth"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 245,
+    "name": "Solarnet",
+    "type": "automated",
+    "cost": 7,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "venus_next",
+    "vp": "1"
+  },
+  {
+    "number": 246,
+    "name": "Spin-Inducing Asteroid",
+    "type": "event",
+    "cost": 16,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 247,
+    "name": "Sponsored Academies",
+    "type": "automated",
+    "cost": 9,
+    "tags": [
+      "science",
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next",
+    "vp": "1"
+  },
+  {
+    "number": 248,
+    "name": "Stratopolis",
+    "type": "active",
+    "cost": 22,
+    "tags": [
+      "city",
+      "venus"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 249,
+    "name": "Stratospheric Birds",
+    "type": "active",
+    "cost": 12,
+    "tags": [
+      "animal",
+      "venus"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 250,
+    "name": "Sulphur Exports",
+    "type": "automated",
+    "cost": 21,
+    "tags": [
+      "venus",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 251,
+    "name": "Sulphur-eating Bacteria",
+    "type": "active",
+    "cost": 6,
+    "tags": [
+      "microbe",
+      "venus"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 252,
+    "name": "Terraforming Contract",
+    "type": "automated",
+    "cost": 8,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 253,
+    "name": "Thermophiles",
+    "type": "active",
+    "cost": 9,
+    "tags": [
+      "microbe",
+      "venus"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 254,
+    "name": "Water to Venus",
+    "type": "event",
+    "cost": 9,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 255,
+    "name": "Venus Governor",
+    "type": "automated",
+    "cost": 4,
+    "tags": [
+      "venus"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 256,
+    "name": "Venus Magnetizer",
+    "type": "active",
+    "cost": 7,
+    "tags": [
+      "venus"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 257,
+    "name": "Venus Soils",
+    "type": "automated",
+    "cost": 20,
+    "tags": [
+      "venus",
+      "plant"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 258,
+    "name": "Venus Waystation",
+    "type": "active",
+    "cost": 9,
+    "tags": [
+      "space",
+      "venus"
+    ],
+    "has_requirements": false,
+    "expansion": "venus_next",
+    "vp": "1"
+  },
+  {
+    "number": 259,
+    "name": "Venusian Animals",
+    "type": "active",
+    "cost": 15,
+    "tags": [
+      "animal",
+      "venus",
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 260,
+    "name": "Venusian Insects",
+    "type": "active",
+    "cost": 5,
+    "tags": [
+      "venus",
+      "microbe"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next"
+  },
+  {
+    "number": 261,
+    "name": "Venusian Plants",
+    "type": "automated",
+    "cost": 13,
+    "tags": [
+      "venus",
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "venus_next",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "House Printing",
+    "type": "automated",
+    "cost": 10,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Lava Tube Settlement",
+    "type": "automated",
+    "cost": 15,
+    "tags": [
+      "building",
+      "city"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Martian Survey",
+    "type": "event",
+    "cost": 9,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "prelude",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "PSYCHROPHILES",
+    "type": "active",
+    "cost": 2,
+    "tags": [
+      "microbe"
+    ],
+    "has_requirements": true,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "RESEARCH COORDINATION",
+    "type": "automated",
+    "cost": 4,
+    "tags": [
+      "wild"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "SF MEMORIAL",
+    "type": "automated",
+    "cost": 7,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Space Hotels",
+    "type": "automated",
+    "cost": 12,
+    "tags": [
+      "earth",
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Airliners",
+    "type": "automated",
+    "cost": 11,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "colonies",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Air Raid",
+    "type": "event",
+    "cost": 0,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Atmo Collectors",
+    "type": "active",
+    "cost": 15,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Community Services",
+    "type": "automated",
+    "cost": 13,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "colonies",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Conscription",
+    "type": "event",
+    "cost": 5,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies",
+    "vp": "-1"
+  },
+  {
+    "number": null,
+    "name": "Corona Extractor",
+    "type": "automated",
+    "cost": 10,
+    "tags": [
+      "power",
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Cryo Sleep",
+    "type": "active",
+    "cost": 10,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Earth Elevator",
+    "type": "automated",
+    "cost": 43,
+    "tags": [
+      "space",
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies",
+    "vp": "4"
+  },
+  {
+    "number": null,
+    "name": "Ecology Research",
+    "type": "automated",
+    "cost": 21,
+    "tags": [
+      "science",
+      "animal",
+      "microbe",
+      "plant"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Floater Leasing",
+    "type": "automated",
+    "cost": 3,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Floater Prototypes",
+    "type": "event",
+    "cost": 2,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Floater Technology",
+    "type": "active",
+    "cost": 7,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Galilean Waystation",
+    "type": "automated",
+    "cost": 15,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Heavy Taxation",
+    "type": "automated",
+    "cost": 3,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies",
+    "vp": "-1"
+  },
+  {
+    "number": null,
+    "name": "Ice Moon Colony",
+    "type": "automated",
+    "cost": 23,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Impactor Swarm",
+    "type": "event",
+    "cost": 11,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Interplanetary Colony Ship",
+    "type": "event",
+    "cost": 12,
+    "tags": [
+      "space",
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Jovian Lanterns",
+    "type": "active",
+    "cost": 20,
+    "tags": [
+      "jovian"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Jupiter Floating Station",
+    "type": "active",
+    "cost": 9,
+    "tags": [
+      "jovian"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Luna Governor",
+    "type": "automated",
+    "cost": 4,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Lunar Exports",
+    "type": "automated",
+    "cost": 19,
+    "tags": [
+      "space",
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Lunar Mining",
+    "type": "automated",
+    "cost": 11,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Market Manipulation",
+    "type": "event",
+    "cost": 1,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Martian Zoo",
+    "type": "active",
+    "cost": 12,
+    "tags": [
+      "building",
+      "animal"
+    ],
+    "has_requirements": true,
+    "expansion": "unknown",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Mining Colony",
+    "type": "automated",
+    "cost": 20,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Minority Refuge",
+    "type": "automated",
+    "cost": 5,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Molecular Printing",
+    "type": "automated",
+    "cost": 11,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Nitrogen From Titan",
+    "type": "automated",
+    "cost": 25,
+    "tags": [
+      "space",
+      "jovian"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Pioneer Settlement",
+    "type": "automated",
+    "cost": 13,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies",
+    "vp": "2"
+  },
+  {
+    "number": null,
+    "name": "Productive Outpost",
+    "type": "automated",
+    "cost": 0,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Quantum Communications",
+    "type": "automated",
+    "cost": 8,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "colonies",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Red Spot Observatory",
+    "type": "active",
+    "cost": 17,
+    "tags": [
+      "jovian",
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies",
+    "vp": "2"
+  },
+  {
+    "number": null,
+    "name": "Refugee Camps",
+    "type": "active",
+    "cost": 10,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Research Colony",
+    "type": "automated",
+    "cost": 20,
+    "tags": [
+      "space",
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Rim Freighters",
+    "type": "active",
+    "cost": 4,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Sky Docks",
+    "type": "active",
+    "cost": 18,
+    "tags": [
+      "earth",
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies",
+    "vp": "2"
+  },
+  {
+    "number": null,
+    "name": "Solar Probe",
+    "type": "event",
+    "cost": 9,
+    "tags": [
+      "science",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Solar Reflectors",
+    "type": "automated",
+    "cost": 23,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Space Port",
+    "type": "automated",
+    "cost": 22,
+    "tags": [
+      "city",
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Space Port Colony",
+    "type": "automated",
+    "cost": 27,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Spin-off Department",
+    "type": "active",
+    "cost": 10,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Sub-Zero Salt Fish",
+    "type": "active",
+    "cost": 5,
+    "tags": [
+      "animal"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Titan Air-scrapping",
+    "type": "active",
+    "cost": 21,
+    "tags": [
+      "jovian"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies",
+    "vp": "2"
+  },
+  {
+    "number": null,
+    "name": "Titan Floating Launch-Pad",
+    "type": "active",
+    "cost": 18,
+    "tags": [
+      "jovian"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Titan Shuttles",
+    "type": "active",
+    "cost": 23,
+    "tags": [
+      "jovian",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Trade Envoys",
+    "type": "active",
+    "cost": 6,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Trading Colony",
+    "type": "active",
+    "cost": 18,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Urban Decomposers",
+    "type": "automated",
+    "cost": 6,
+    "tags": [
+      "microbe"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies"
+  },
+  {
+    "number": null,
+    "name": "Warp Drive",
+    "type": "active",
+    "cost": 14,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "colonies",
+    "vp": "2"
+  },
+  {
+    "number": null,
+    "name": "Aerial Lenses",
+    "type": "automated",
+    "cost": 2,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "turmoil",
+    "vp": "-1"
+  },
+  {
+    "number": null,
+    "name": "Banned Delegate",
+    "type": "event",
+    "cost": 0,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Cultural Metropolis",
+    "type": "automated",
+    "cost": 20,
+    "tags": [
+      "city",
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Diaspora Movement",
+    "type": "automated",
+    "cost": 7,
+    "tags": [
+      "jovian"
+    ],
+    "has_requirements": true,
+    "expansion": "turmoil",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Event Analysts",
+    "type": "active",
+    "cost": 5,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "GMO Contract",
+    "type": "active",
+    "cost": 3,
+    "tags": [
+      "microbe",
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Martian Media Center",
+    "type": "active",
+    "cost": 7,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Parliament Hall",
+    "type": "automated",
+    "cost": 8,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "turmoil",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "PR Office",
+    "type": "automated",
+    "cost": 7,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": true,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Public Celebrations",
+    "type": "event",
+    "cost": 8,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "turmoil",
+    "vp": "2"
+  },
+  {
+    "number": null,
+    "name": "Recruitment",
+    "type": "event",
+    "cost": 2,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Red Tourism Wave",
+    "type": "event",
+    "cost": 3,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": true,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Sponsored Mohole",
+    "type": "automated",
+    "cost": 5,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Supported Research",
+    "type": "automated",
+    "cost": 3,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": true,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Wildlife Dome",
+    "type": "automated",
+    "cost": 15,
+    "tags": [
+      "building",
+      "animal",
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Vote of no Confidence",
+    "type": "event",
+    "cost": 5,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Dusk Laser Mining",
+    "type": "automated",
+    "cost": 8,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Project Inspection",
+    "type": "event",
+    "cost": 0,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Energy Market",
+    "type": "active",
+    "cost": 3,
+    "tags": [
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Hi-Tech Lab",
+    "type": "active",
+    "cost": 17,
+    "tags": [
+      "science",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "promo",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Interplanetary Trade",
+    "type": "automated",
+    "cost": 27,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "promo",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Law Suit",
+    "type": "event",
+    "cost": 2,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "promo",
+    "vp": "-1"
+  },
+  {
+    "number": null,
+    "name": "Mercurian Alloys",
+    "type": "active",
+    "cost": 3,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Orbital Cleanup",
+    "type": "active",
+    "cost": 14,
+    "tags": [
+      "space",
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "promo",
+    "vp": "2"
+  },
+  {
+    "number": null,
+    "name": "Political Alliance",
+    "type": "event",
+    "cost": 4,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Rego Plastics",
+    "type": "active",
+    "cost": 10,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "promo",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Saturn Surfing",
+    "type": "active",
+    "cost": 13,
+    "tags": [
+      "jovian",
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "promo",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Stanford Torus",
+    "type": "automated",
+    "cost": 12,
+    "tags": [
+      "city",
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "promo",
+    "vp": "2"
+  },
+  {
+    "number": null,
+    "name": "Advertising",
+    "type": "active",
+    "cost": 4,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Asteroid Deflection System",
+    "type": "active",
+    "cost": 13,
+    "tags": [
+      "building",
+      "space",
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Asteroid Hollowing",
+    "type": "active",
+    "cost": 16,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Comet Aiming",
+    "type": "active",
+    "cost": 17,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Crash site Cleanup",
+    "type": "event",
+    "cost": 4,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "promo",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Cutting Edge Technology",
+    "type": "active",
+    "cost": 12,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "promo",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Directed Impactors",
+    "type": "active",
+    "cost": 8,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Diversity Support",
+    "type": "event",
+    "cost": 1,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Field-Capped City",
+    "type": "automated",
+    "cost": 29,
+    "tags": [
+      "building",
+      "city",
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Imported Nutrients",
+    "type": "event",
+    "cost": 14,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Jovian Embassy",
+    "type": "automated",
+    "cost": 14,
+    "tags": [
+      "jovian",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "promo",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Magnetic Shield",
+    "type": "automated",
+    "cost": 24,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": true,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Meat Industries",
+    "type": "active",
+    "cost": 5,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Meltworks",
+    "type": "active",
+    "cost": 4,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Mohole Lake",
+    "type": "active",
+    "cost": 31,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Potatoes",
+    "type": "automated",
+    "cost": 2,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Sub-Crust Measurements",
+    "type": "active",
+    "cost": 20,
+    "tags": [
+      "building",
+      "science",
+      "earth"
+    ],
+    "has_requirements": true,
+    "expansion": "promo",
+    "vp": "2"
+  },
+  {
+    "number": null,
+    "name": "Topsoil Contract",
+    "type": "active",
+    "cost": 8,
+    "tags": [
+      "microbe",
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Deimos Down",
+    "type": "event",
+    "cost": 31,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Great Dam",
+    "type": "automated",
+    "cost": 15,
+    "tags": [
+      "building",
+      "power"
+    ],
+    "has_requirements": true,
+    "expansion": "promo",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Magnetic Field Generators",
+    "type": "automated",
+    "cost": 22,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Asteroid Rights",
+    "type": "active",
+    "cost": 10,
+    "tags": [
+      "space",
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Bactoviral Research",
+    "type": "automated",
+    "cost": 10,
+    "tags": [
+      "microbe",
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Bio Printing Facility",
+    "type": "active",
+    "cost": 7,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Harvest",
+    "type": "event",
+    "cost": 4,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": true,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Outdoor Sports",
+    "type": "automated",
+    "cost": 8,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "promo",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "16 Psych",
+    "type": "automated",
+    "cost": 31,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "promo",
+    "vp": "2"
+  },
+  {
+    "number": null,
+    "name": "Robot Pollinators",
+    "type": "automated",
+    "cost": 9,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Supercapacitors",
+    "type": "active",
+    "cost": 4,
+    "tags": [
+      "power",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Icy Impactors",
+    "type": "active",
+    "cost": 15,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Directed Heat Usage",
+    "type": "active",
+    "cost": 1,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Aqueduct Systems",
+    "type": "automated",
+    "cost": 9,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "promo",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Astra Mechanica",
+    "type": "automated",
+    "cost": 7,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Carbon Nanosystems",
+    "type": "active",
+    "cost": 14,
+    "tags": [
+      "building",
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "promo",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Cyberia Systems",
+    "type": "automated",
+    "cost": 17,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Hermetic Order of Mars",
+    "type": "automated",
+    "cost": 10,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Homeostasis Bureau",
+    "type": "active",
+    "cost": 16,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Kaguya Tech",
+    "type": "automated",
+    "cost": 10,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Mars Nomads",
+    "type": "active",
+    "cost": 13,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Martian Lumber Corps",
+    "type": "active",
+    "cost": 6,
+    "tags": [
+      "plant",
+      "building"
+    ],
+    "has_requirements": true,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Red Ships",
+    "type": "active",
+    "cost": 2,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Solar Logistics",
+    "type": "active",
+    "cost": 20,
+    "tags": [
+      "space",
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "promo",
+    "vp": "1"
+  },
+  {
+    "number": null,
+    "name": "Teslaract",
+    "type": "active",
+    "cost": 14,
+    "tags": [
+      "power",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "promo"
+  },
+  {
+    "number": null,
+    "name": "Allied Banks",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Aquifer Turbines",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Biofuels",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "microbe"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Biolab",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Biosphere Support",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Business Empire",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Dome Farming",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "building",
+      "plant"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Donation",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Early Settlement",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "building",
+      "city"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Ecology Experts",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "plant",
+      "microbe"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Excentric Sponsor",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Experimental Forest",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "plant"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Galilean Mining",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "jovian"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Great Aquifer",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Huge Asteroid",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Io Research Outpost",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "jovian",
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Loan",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Martian Industries",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Metal-rich Asteroid",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Metals Company",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Mining Operations",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Mohole",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Mohole Excavation",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Nitrogen Shipment",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Orbital Construction Yard",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Polar Industries",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Power Generation",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Research Network",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "wild"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Self-Sufficient Settlement",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "city",
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Smelting Plant",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "building"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Society Support",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Supplier",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "power"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Supply Drop",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "UNMI Contractor",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "earth"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Acquired Space Agency",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Corporate Archives",
+    "type": "prelude",
+    "cost": null,
+    "tags": [
+      "science"
+    ],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Double Down",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Merger",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "New partner",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Head start",
+    "type": "prelude",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "prelude"
+  },
+  {
+    "number": null,
+    "name": "Scientific Communities",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Eco Sabotage",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Productivity",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Red Influence",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Strong Society",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Diversity",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Sabotage",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Solar Flare",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "War onEarth",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "GlobalDust Storm",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "SponsoredProjects",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Pandemic",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "ParadigmBreakdown",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Revolution",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Solarnet Shutdown",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "VolcanicEruptions",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "CelebrityLeaders",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Riots",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Election",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Jovian Tax Rights",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Cloud Societies",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  },
+  {
+    "number": null,
+    "name": "Corrosive Rain",
+    "type": "global_event",
+    "cost": null,
+    "tags": [],
+    "has_requirements": false,
+    "expansion": "turmoil"
+  }
+]

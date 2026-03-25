@@ -35,9 +35,15 @@ export function ReplayControls({
 
   const handleSliderHover = useCallback((e: React.MouseEvent<HTMLInputElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    // Account for thumb width (20px) — the usable track is inset by half the thumb on each side
+    const thumbHalf = 10;
+    const trackWidth = rect.width - thumbHalf * 2;
+    const rawX = e.clientX - rect.left - thumbHalf;
+    const pct = Math.max(0, Math.min(1, rawX / trackWidth));
     const value = Math.round(pct * (totalMoves - 1));
-    setSliderHover({ value, pct: pct * 100 });
+    // Position the tooltip using the same inset-aware percentage
+    const displayPct = (thumbHalf + pct * trackWidth) / rect.width * 100;
+    setSliderHover({ value, pct: displayPct });
   }, [totalMoves]);
 
   const currentGen = gameState?.generation ?? null;
