@@ -119,7 +119,7 @@ const polarExplorerScorer: CustomScorer = ({ playerId, placedTiles }) => {
   return count;
 };
 
-import { countAutomatedCards, countCardsWithRequirements } from '@/lib/cardMetadata';
+import { countAutomatedCards, countCardsWithRequirements, getCardCategory } from '@/lib/cardMetadata';
 
 const tacticianScorer: CustomScorer = ({ playedCards }) => {
   return playedCards ? countCardsWithRequirements(playedCards) : 0;
@@ -127,6 +127,41 @@ const tacticianScorer: CustomScorer = ({ playedCards }) => {
 
 const magnateScorer: CustomScorer = ({ playedCards }) => {
   return playedCards ? countAutomatedCards(playedCards) : 0;
+};
+
+// Generalist: count how many of the 6 production types are >= 1
+const PROD_KEYS = ['M€ Production', 'Steel Production', 'Titanium Production', 'Plant Production', 'Energy Production', 'Heat Production'];
+const generalistScorer: CustomScorer = ({ trackers }) => {
+  return PROD_KEYS.filter(k => (trackers[k] ?? 0) >= 1).length;
+};
+
+// Specialist: highest single production value
+const specialistScorer: CustomScorer = ({ trackers }) => {
+  return Math.max(...PROD_KEYS.map(k => trackers[k] ?? 0));
+};
+
+// Ecologist: count bio tags (plant + microbe + animal) + wild
+const ecologistScorer: CustomScorer = ({ trackers }) => {
+  const plant = Math.max(trackers['Plant tag'] ?? 0, trackers['Count of Plant tags'] ?? 0);
+  const microbe = Math.max(trackers['Microbe tag'] ?? 0, trackers['Count of Microbe tags'] ?? 0);
+  const animal = Math.max(trackers['Animal tag'] ?? 0, trackers['Count of Animal tags'] ?? 0);
+  const wild = trackers['Wild tag'] ?? trackers['Count of Wild tags'] ?? 0;
+  return plant + microbe + animal + wild;
+};
+
+// Tycoon: count green (automated) + blue (active) cards played
+const tycoonScorer: CustomScorer = ({ playedCards }) => {
+  if (!playedCards) return 0;
+  return playedCards.filter(c => {
+    const cat = getCardCategory(c);
+    return cat === 'automated' || cat === 'action' || cat === 'effect';
+  }).length;
+};
+
+// Legend: count event cards played
+const legendScorer: CustomScorer = ({ playedCards }) => {
+  if (!playedCards) return 0;
+  return playedCards.filter(c => getCardCategory(c) === 'event').length;
 };
 
 const overlays: Record<string, MapOverlays> = {
@@ -345,11 +380,11 @@ const overlays: Record<string, MapOverlays> = {
       },
     ],
     milestones: [
-      { name: 'Generalist', cx: 59, cy: 889 },
-      { name: 'Specialist', cx: 161, cy: 889 },
-      { name: 'Ecologist', cx: 272, cy: 889 },
-      { name: 'Tycoon', cx: 385, cy: 889 },
-      { name: 'Legend', cx: 488, cy: 889 },
+      { name: 'Generalist', cx: 59, cy: 889, metric: '1 of each production', threshold: 6, customScorer: generalistScorer },
+      { name: 'Specialist', cx: 161, cy: 889, metric: '10 production of one resource', threshold: 10, customScorer: specialistScorer },
+      { name: 'Ecologist', cx: 272, cy: 889, metric: '4 bio tags', threshold: 4, customScorer: ecologistScorer },
+      { name: 'Tycoon', cx: 385, cy: 889, metric: '15 green or blue cards', threshold: 15, customScorer: tycoonScorer },
+      { name: 'Legend', cx: 488, cy: 889, metric: '5 events played', threshold: 5, customScorer: legendScorer },
     ],
     awards: [
       { name: 'Celebrity', cx: 643, cy: 889, metric: 'Most VP on cards', trackerKeys: [] },
@@ -358,8 +393,8 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Estate Dealer', cx: 968, cy: 889, metric: 'Most tiles adjacent to ocean', trackerKeys: [] },
       { name: 'Benefactor', cx: 1076, cy: 889, metric: 'Highest TR', trackerKeys: [] },
     ],
-    milestonesLabel: { cx: 300, cy: 845, width: 200, height: 30 },
-    awardsLabel: { cx: 870, cy: 845, width: 200, height: 30 },
+    milestonesLabel: { cx: 300, cy: 835, width: 200, height: 30 },
+    awardsLabel: { cx: 870, cy: 835, width: 200, height: 30 },
   },
   'Vastitas Borealis': {
     offMapTiles: [
