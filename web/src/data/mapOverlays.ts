@@ -25,6 +25,20 @@ export interface MilestoneAwardOverlay {
   name: string;
   cx: number;
   cy: number;
+  metric?: string;
+  threshold?: number;
+  trackerKeys?: string[];
+  altKeys?: boolean;
+  useTileCounts?: 'cities' | 'greeneries' | 'total';
+  useHandCount?: boolean;
+  useTR?: boolean;
+}
+
+export interface AwardOverlay extends MilestoneAwardOverlay {
+  metric: string; // description of what's measured
+  trackerKeys: string[]; // keys from player_trackers
+  altKeys?: boolean; // if true, keys are alternates (take max); if false/absent, sum them
+  useTileCounts?: 'total'; // use tile counts instead of tracker keys
 }
 
 export interface MapOverlays {
@@ -32,7 +46,7 @@ export interface MapOverlays {
   trackers?: TrackerOverlay[];
   cubeTrackers?: CubeTracker[];
   milestones?: MilestoneAwardOverlay[];
-  awards?: MilestoneAwardOverlay[];
+  awards?: AwardOverlay[];
 }
 
 const overlays: Record<string, MapOverlays> = {
@@ -97,18 +111,18 @@ const overlays: Record<string, MapOverlays> = {
       },
     ],
     milestones: [
-      { name: 'Terraformer', cx: 55, cy: 889 },
-      { name: 'Mayor', cx: 161, cy: 889 },
-      { name: 'Gardener', cx: 272, cy: 889 },
-      { name: 'Builder', cx: 378, cy: 889 },
-      { name: 'Planner', cx: 488, cy: 889 },
+      { name: 'Terraformer', cx: 55, cy: 889, metric: '35 TR', threshold: 35, useTR: true },
+      { name: 'Mayor', cx: 161, cy: 889, metric: '3 city tiles', threshold: 3, useTileCounts: 'cities' },
+      { name: 'Gardener', cx: 272, cy: 889, metric: '3 greeneries', threshold: 3, useTileCounts: 'greeneries' },
+      { name: 'Builder', cx: 378, cy: 889, metric: '8 building tags', threshold: 8, trackerKeys: ['Building tag', 'Count of Building tags'], altKeys: true },
+      { name: 'Planner', cx: 488, cy: 889, metric: '16 cards in hand', threshold: 16, useHandCount: true },
     ],
     awards: [
-      { name: 'Landlord', cx: 643, cy: 889 },
-      { name: 'Banker', cx: 751, cy: 889 },
-      { name: 'Scientist', cx: 860, cy: 889 },
-      { name: 'Thermalist', cx: 968, cy: 889 },
-      { name: 'Miner', cx: 1076, cy: 889 },
+      { name: 'Landlord', cx: 643, cy: 889, metric: 'Most tiles', trackerKeys: [], useTileCounts: 'total' },
+      { name: 'Banker', cx: 751, cy: 889, metric: 'Most MC production', trackerKeys: ['M€ Production'] },
+      { name: 'Scientist', cx: 860, cy: 889, metric: 'Most science tags', trackerKeys: ['Science tag', 'Count of Science tags'], altKeys: true },
+      { name: 'Thermalist', cx: 968, cy: 889, metric: 'Most heat resources', trackerKeys: ['Heat'] },
+      { name: 'Miner', cx: 1076, cy: 889, metric: 'Most steel + titanium', trackerKeys: ['Steel', 'Titanium'] },
     ],
   },
   Hellas: {
@@ -179,11 +193,11 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Rim Settler', cx: 493, cy: 884 },
     ],
     awards: [
-      { name: 'Cultivator', cx: 648, cy: 884 },
-      { name: 'Magnate', cx: 756, cy: 884 },
-      { name: 'Space Baron', cx: 865, cy: 884 },
-      { name: 'Eccentric', cx: 973, cy: 884 },
-      { name: 'Contractor', cx: 1081, cy: 884 },
+      { name: 'Cultivator', cx: 648, cy: 884, metric: 'Most greeneries', trackerKeys: [], useTileCounts: 'total' },
+      { name: 'Magnate', cx: 756, cy: 884, metric: 'Most event cards', trackerKeys: ['Event tag', 'Count of played Events cards'], altKeys: true },
+      { name: 'Space Baron', cx: 865, cy: 884, metric: 'Most space tags', trackerKeys: ['Space tag', 'Count of Space tags'], altKeys: true },
+      { name: 'Eccentric', cx: 973, cy: 884, metric: 'Most resources on cards', trackerKeys: [] },
+      { name: 'Contractor', cx: 1081, cy: 884, metric: 'Most building tags', trackerKeys: ['Building tag', 'Count of Building tags'], altKeys: true },
     ],
   },
   Elysium: {
@@ -254,11 +268,11 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Legend', cx: 488, cy: 889 },
     ],
     awards: [
-      { name: 'Celebrity', cx: 643, cy: 889 },
-      { name: 'Industrialist', cx: 751, cy: 889 },
-      { name: 'Desert Settler', cx: 860, cy: 889 },
-      { name: 'Estate Dealer', cx: 968, cy: 889 },
-      { name: 'Benefactor', cx: 1076, cy: 889 },
+      { name: 'Celebrity', cx: 643, cy: 889, metric: 'Most VP on cards', trackerKeys: [] },
+      { name: 'Industrialist', cx: 751, cy: 889, metric: 'Most steel + energy resources', trackerKeys: ['Steel', 'Energy'] },
+      { name: 'Desert Settler', cx: 860, cy: 889, metric: 'Most tiles', trackerKeys: [], useTileCounts: 'total' },
+      { name: 'Estate Dealer', cx: 968, cy: 889, metric: 'Most tiles adjacent to ocean', trackerKeys: [] },
+      { name: 'Benefactor', cx: 1076, cy: 889, metric: 'Highest TR', trackerKeys: [] },
     ],
   },
   'Vastitas Borealis': {
@@ -329,11 +343,11 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Farmer', cx: 488, cy: 886 },
     ],
     awards: [
-      { name: 'Traveller', cx: 643, cy: 886 },
-      { name: 'Landscape', cx: 751, cy: 886 },
-      { name: 'Highlander', cx: 860, cy: 886 },
-      { name: 'Promoter', cx: 968, cy: 886 },
-      { name: 'Blacksmith', cx: 1076, cy: 886 },
+      { name: 'Traveller', cx: 643, cy: 886, metric: 'Most space tags', trackerKeys: ['Space tag', 'Count of Space tags'], altKeys: true },
+      { name: 'Landscape', cx: 751, cy: 886, metric: 'Most tiles', trackerKeys: [], useTileCounts: 'total' },
+      { name: 'Highlander', cx: 860, cy: 886, metric: 'Most tiles on volcanic areas', trackerKeys: [] },
+      { name: 'Promoter', cx: 968, cy: 886, metric: 'Most MC production', trackerKeys: ['M€ Production'] },
+      { name: 'Blacksmith', cx: 1076, cy: 886, metric: 'Most steel + titanium production', trackerKeys: ['Steel Production', 'Titanium Production'] },
     ],
   },
 };

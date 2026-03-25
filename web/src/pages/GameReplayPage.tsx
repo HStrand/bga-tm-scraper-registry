@@ -155,17 +155,18 @@ export function GameReplayPage() {
   }, [placedTiles, mapDefinition]);
 
   const { claimedMilestones, fundedAwards } = useMemo(() => {
-    const claimed = new Map<string, string>();
-    const funded = new Map<string, string>();
+    const claimed = new Map<string, { playerId: string; playerName: string; generation: number }>();
+    const funded = new Map<string, { playerId: string; playerName: string; generation: number }>();
     if (!gameLog) return { claimedMilestones: claimed, fundedAwards: funded };
     for (let i = 0; i <= currentStep; i++) {
       const move = gameLog.moves[i];
+      const gen = move.game_state?.generation ?? 0;
       if (move.action_type === 'claim_milestone') {
         const match = move.description.match(/claims milestone (.+?)(?:\s*\||\s*$)/i);
-        if (match) claimed.set(match[1].trim().toUpperCase(), move.player_id);
+        if (match) claimed.set(match[1].trim().toUpperCase(), { playerId: move.player_id, playerName: move.player_name, generation: gen });
       } else if (move.action_type === 'fund_award') {
         const match = move.description.match(/funds (.+?) award/i);
-        if (match) funded.set(match[1].trim().toLowerCase(), move.player_id);
+        if (match) funded.set(match[1].trim().toLowerCase(), { playerId: move.player_id, playerName: move.player_name, generation: gen });
       }
     }
     return { claimedMilestones: claimed, fundedAwards: funded };
@@ -417,6 +418,12 @@ export function GameReplayPage() {
               gameState={gameState}
               claimedMilestones={claimedMilestones}
               fundedAwards={fundedAwards}
+              playerNames={playerNames}
+              playerTrackers={gameState?.player_trackers}
+              playerTileCounts={playerTileCounts}
+              playerHandCounts={Object.fromEntries(
+                Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.hand.length])
+              )}
             />
           ) : (
             <div className="glass-panel rounded-xl p-8 text-center text-slate-400">

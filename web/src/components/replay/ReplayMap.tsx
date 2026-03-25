@@ -1,5 +1,7 @@
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { hexCenter, hexPoints, type MapDefinition } from '@/data/mapHexes';
-import { getMapOverlays } from '@/data/mapOverlays';
+import { getMapOverlays, type AwardOverlay } from '@/data/mapOverlays';
 import type { GameState } from '@/types/gamelog';
 import cityTileImage from '/assets/tiles/city tile.png';
 import greeneryTileImage from '/assets/tiles/greenery tile.png';
@@ -38,14 +40,79 @@ interface ReplayMapProps {
   playerColors: Record<string, string>;
   currentStep: number;
   gameState?: GameState;
-  claimedMilestones?: Map<string, string>; // milestone name → player id
-  fundedAwards?: Map<string, string>;      // award name → player id
+  claimedMilestones?: Map<string, { playerId: string; playerName: string; generation: number }>;
+  fundedAwards?: Map<string, { playerId: string; playerName: string; generation: number }>;
+  playerNames?: Record<string, string>;
+  playerTrackers?: Record<string, Record<string, number>>;
+  playerTileCounts?: Record<string, { cities: number; greeneries: number; total: number }>;
+  playerHandCounts?: Record<string, number>;
 }
 
-export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentStep, gameState, claimedMilestones, fundedAwards }: ReplayMapProps) {
+interface TooltipData {
+  title: string;
+  type: 'milestone' | 'award';
+  claimedBy?: string;
+  generation?: number;
+  metric?: string;
+  threshold?: number;
+  standings?: { name: string; score: number }[];
+}
+
+export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentStep, gameState, claimedMilestones, fundedAwards, playerNames, playerTrackers, playerTileCounts, playerHandCounts }: ReplayMapProps) {
   const tileSize = mapDefinition.grid.hexRadius * 2;
+  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    setTooltipPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const getMilestoneStandings = (m: import('@/data/mapOverlays').MilestoneAwardOverlay): { name: string; score: number }[] => {
+    const scores: { name: string; score: number }[] = [];
+    const pids = Object.keys(playerTrackers ?? playerTileCounts ?? {});
+    for (const pid of pids) {
+      const name = playerNames?.[pid] ?? pid;
+      let score = 0;
+      if (m.useTR && gameState?.player_vp) {
+        score = gameState.player_vp[pid]?.total_details?.tr ?? 0;
+      } else if (m.useTileCounts && playerTileCounts?.[pid]) {
+        score = playerTileCounts[pid][m.useTileCounts];
+      } else if (m.useHandCount && playerHandCounts) {
+        score = playerHandCounts[pid] ?? 0;
+      } else if (m.trackerKeys && m.trackerKeys.length > 0 && playerTrackers?.[pid]) {
+        const t = playerTrackers[pid];
+        score = m.altKeys ? Math.max(...m.trackerKeys.map(k => t[k] ?? 0)) : m.trackerKeys.reduce((sum, k) => sum + (t[k] ?? 0), 0);
+      }
+      scores.push({ name, score });
+    }
+    scores.sort((a, b) => b.score - a.score);
+    return scores;
+  };
+
+  const getStandings = (award: AwardOverlay): { name: string; score: number }[] => {
+    const scores: { name: string; score: number }[] = [];
+    const pids = Object.keys(playerTrackers ?? playerTileCounts ?? {});
+    for (const pid of pids) {
+      const name = playerNames?.[pid] ?? pid;
+      let score = 0;
+      if (award.useTileCounts === 'total' && playerTileCounts?.[pid]) {
+        score = playerTileCounts[pid].total;
+      } else if (award.trackerKeys.length > 0 && playerTrackers?.[pid]) {
+        const t = playerTrackers[pid];
+        if (award.altKeys) {
+          score = Math.max(...award.trackerKeys.map(k => t[k] ?? 0));
+        } else {
+          score = award.trackerKeys.reduce((sum, k) => sum + (t[k] ?? 0), 0);
+        }
+      }
+      scores.push({ name, score });
+    }
+    scores.sort((a, b) => b.score - a.score);
+    return scores;
+  };
+
   return (
-    <div className="relative inline-block select-none">
+    <div className="relative inline-block select-none" onMouseMove={handleMouseMove}>
       <img
         src={mapDefinition.image}
         alt={`${mapDefinition.name} board`}
@@ -213,32 +280,60 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
           });
         })()}
 
-        {/* Milestones & Awards cubes */}
+        {/* Milestones & Awards cubes + hover tooltips */}
         {(() => {
           const overlays = getMapOverlays(mapDefinition.name);
           const cubeSize = tileSize * 0.4;
-          const entries: { name: string; cx: number; cy: number; playerId: string }[] = [];
-          if (overlays.milestones && claimedMilestones) {
+          const hitSize = tileSize * 0.8;
+          const elements: React.ReactNode[] = [];
+
+          if (overlays.milestones) {
             for (const m of overlays.milestones) {
-              const pid = claimedMilestones.get(m.name.toUpperCase());
-              if (pid) entries.push({ ...m, playerId: pid });
+              const claim = claimedMilestones?.get(m.name.toUpperCase());
+              const color = claim ? (playerColors[claim.playerId] ?? '#888') : undefined;
+              const cube = color ? getCubeImage(color) : undefined;
+              elements.push(
+                <g key={`ms-${m.name}`} style={{ pointerEvents: 'all' }}>
+                  <rect x={m.cx - hitSize / 2} y={m.cy - hitSize / 2} width={hitSize} height={hitSize} fill="transparent" cursor="pointer"
+                    onMouseEnter={() => setTooltip({
+                      title: m.name, type: 'milestone',
+                      claimedBy: claim?.playerName, generation: claim?.generation,
+                      metric: m.metric, threshold: m.threshold,
+                      standings: m.metric ? getMilestoneStandings(m) : undefined,
+                    })}
+                    onMouseLeave={() => setTooltip(null)}
+                  />
+                  {cube && <image href={cube} x={m.cx - cubeSize / 2} y={m.cy - cubeSize / 2} width={cubeSize} height={cubeSize} style={{ pointerEvents: 'none' }} />}
+                  {color && !cube && <rect x={m.cx - cubeSize / 2} y={m.cy - cubeSize / 2} width={cubeSize} height={cubeSize} rx={2} fill={color} stroke="#fff" strokeWidth={1} style={{ pointerEvents: 'none' }} />}
+                </g>
+              );
             }
           }
-          if (overlays.awards && fundedAwards) {
+
+          if (overlays.awards) {
             for (const a of overlays.awards) {
-              const pid = fundedAwards.get(a.name.toLowerCase());
-              if (pid) entries.push({ ...a, playerId: pid });
+              const fund = fundedAwards?.get(a.name.toLowerCase());
+              const color = fund ? (playerColors[fund.playerId] ?? '#888') : undefined;
+              const cube = color ? getCubeImage(color) : undefined;
+              elements.push(
+                <g key={`aw-${a.name}`} style={{ pointerEvents: 'all' }}>
+                  <rect x={a.cx - hitSize / 2} y={a.cy - hitSize / 2} width={hitSize} height={hitSize} fill="transparent" cursor="pointer"
+                    onMouseEnter={() => setTooltip({
+                      title: a.name, type: 'award',
+                      claimedBy: fund?.playerName, generation: fund?.generation,
+                      metric: a.metric,
+                      standings: getStandings(a),
+                    })}
+                    onMouseLeave={() => setTooltip(null)}
+                  />
+                  {cube && <image href={cube} x={a.cx - cubeSize / 2} y={a.cy - cubeSize / 2} width={cubeSize} height={cubeSize} style={{ pointerEvents: 'none' }} />}
+                  {color && !cube && <rect x={a.cx - cubeSize / 2} y={a.cy - cubeSize / 2} width={cubeSize} height={cubeSize} rx={2} fill={color} stroke="#fff" strokeWidth={1} style={{ pointerEvents: 'none' }} />}
+                </g>
+              );
             }
           }
-          return entries.map(({ name, cx, cy, playerId }) => {
-            const color = playerColors[playerId] ?? '#888';
-            const cube = getCubeImage(color);
-            return cube ? (
-              <image key={`ma-${name}`} href={cube} x={cx - cubeSize / 2} y={cy - cubeSize / 2} width={cubeSize} height={cubeSize} />
-            ) : (
-              <rect key={`ma-${name}`} x={cx - cubeSize / 2} y={cy - cubeSize / 2} width={cubeSize} height={cubeSize} rx={2} fill={color} stroke="#fff" strokeWidth={1} />
-            );
-          });
+
+          return elements;
         })()}
 
         {/* Highlight for current move rendered last so it's on top */}
@@ -258,6 +353,67 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
           );
         })}
       </svg>
+
+      {/* Custom tooltip portal */}
+      {tooltip && createPortal(
+        <div
+          className="fixed z-[9999] pointer-events-none"
+          style={{ left: tooltipPos.x + 16, top: tooltipPos.y - 10 }}
+        >
+          <div className="glass-panel rounded-lg shadow-xl px-4 py-3 text-sm min-w-[200px]" style={{ position: 'relative' }}>
+            <div className="font-bold text-base text-white mb-1">{tooltip.title}</div>
+            {tooltip.type === 'milestone' && (
+              <>
+                {tooltip.metric && (
+                  <div className="text-slate-400 text-xs mb-1">{tooltip.metric}</div>
+                )}
+                {tooltip.claimedBy ? (
+                  <div className="text-green-400 text-xs mb-1">
+                    Claimed by <span className="font-semibold text-white">{tooltip.claimedBy}</span> (Gen {tooltip.generation})
+                  </div>
+                ) : (
+                  <div className="text-slate-500 text-xs italic mb-1">Not claimed</div>
+                )}
+                {tooltip.standings && tooltip.standings.length > 0 && (
+                  <div className="border-t border-white/10 pt-1.5 space-y-0.5">
+                    {tooltip.standings.map((s) => (
+                      <div key={s.name} className="flex justify-between gap-4 text-xs">
+                        <span className={s.score >= (tooltip.threshold ?? Infinity) ? 'text-green-400 font-semibold' : 'text-slate-400'}>{s.name}</span>
+                        <span className={s.score >= (tooltip.threshold ?? Infinity) ? 'text-green-400 font-bold' : 'text-slate-300'}>
+                          {s.score}{tooltip.threshold ? `/${tooltip.threshold}` : ''}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+            {tooltip.type === 'award' && (
+              <>
+                <div className="text-slate-400 text-xs mb-1.5">{tooltip.metric}</div>
+                {tooltip.claimedBy ? (
+                  <div className="text-amber-400 text-xs mb-1.5">
+                    Funded by <span className="font-semibold text-white">{tooltip.claimedBy}</span> (Gen {tooltip.generation})
+                  </div>
+                ) : (
+                  <div className="text-slate-500 text-xs italic mb-1.5">Not funded</div>
+                )}
+                {tooltip.standings && tooltip.standings.length > 0 && (
+                  <div className="border-t border-white/10 pt-1.5 space-y-0.5">
+                    {tooltip.standings.map((s, i) => (
+                      <div key={s.name} className="flex justify-between gap-4 text-xs">
+                        <span className={i === 0 ? 'text-white font-semibold' : 'text-slate-400'}>{s.name}</span>
+                        <span className={i === 0 ? 'text-amber-400 font-bold' : 'text-slate-300'}>{s.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
