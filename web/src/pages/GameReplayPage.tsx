@@ -4,6 +4,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
 import { fetchGameLog, extractTilePlacement, parseTileLocationToDbKey, assignPlayerColors } from '@/lib/gameLog';
 import { getMapOverlays } from '@/data/mapOverlays';
+import { parseMilestonesAndAwards } from '@/lib/replayUtils';
 import { ReplayMap, type PlacedTile } from '@/components/replay/ReplayMap';
 import { ReplayControls } from '@/components/replay/ReplayControls';
 import { GlobalParamsBar } from '@/components/replay/GlobalParamsBar';
@@ -155,21 +156,8 @@ export function GameReplayPage() {
   }, [placedTiles, mapDefinition]);
 
   const { claimedMilestones, fundedAwards } = useMemo(() => {
-    const claimed = new Map<string, { playerId: string; playerName: string; generation: number }>();
-    const funded = new Map<string, { playerId: string; playerName: string; generation: number }>();
-    if (!gameLog) return { claimedMilestones: claimed, fundedAwards: funded };
-    for (let i = 0; i <= currentStep; i++) {
-      const move = gameLog.moves[i];
-      const gen = move.game_state?.generation ?? 0;
-      if (move.action_type === 'claim_milestone') {
-        const match = move.description.match(/claims milestone (.+?)(?:\s*\||\s*$)/i);
-        if (match) claimed.set(match[1].trim().toUpperCase(), { playerId: move.player_id, playerName: move.player_name, generation: gen });
-      } else if (move.action_type === 'fund_award') {
-        const match = move.description.match(/funds (.+?) award/i);
-        if (match) funded.set(match[1].trim().toLowerCase(), { playerId: move.player_id, playerName: move.player_name, generation: gen });
-      }
-    }
-    return { claimedMilestones: claimed, fundedAwards: funded };
+    if (!gameLog) return { claimedMilestones: new Map(), fundedAwards: new Map() };
+    return parseMilestonesAndAwards(gameLog.moves, currentStep);
   }, [gameLog, currentStep]);
 
   const generationBoundaries = useMemo(() => {

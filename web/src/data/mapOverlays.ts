@@ -21,6 +21,8 @@ export interface CubeTracker {
   step: number;     // value increment per position (1 for oxygen, 2 for temperature)
 }
 
+export type CustomScorer = (trackers: Record<string, number>, tileCounts?: { cities: number; greeneries: number; total: number }) => number;
+
 export interface MilestoneAwardOverlay {
   name: string;
   cx: number;
@@ -32,13 +34,14 @@ export interface MilestoneAwardOverlay {
   useTileCounts?: 'cities' | 'greeneries' | 'total';
   useHandCount?: boolean;
   useTR?: boolean;
+  customScorer?: CustomScorer;
 }
 
 export interface AwardOverlay extends MilestoneAwardOverlay {
   metric: string; // description of what's measured
   trackerKeys: string[]; // keys from player_trackers
   altKeys?: boolean; // if true, keys are alternates (take max); if false/absent, sum them
-  useTileCounts?: 'total'; // use tile counts instead of tracker keys
+  useTileCounts?: 'cities' | 'greeneries' | 'total'; // use tile counts instead of tracker keys
 }
 
 export interface LabelHitArea {
@@ -57,6 +60,32 @@ export interface MapOverlays {
   milestonesLabel?: LabelHitArea;
   awardsLabel?: LabelHitArea;
 }
+
+// Tag keys used for Diversifier counting (excluding Wild)
+// Tags that count for Diversifier (Event tags excluded)
+const TAG_KEYS: [string, string][] = [
+  ['Building tag', 'Count of Building tags'],
+  ['Space tag', 'Count of Space tags'],
+  ['Science tag', 'Count of Science tags'],
+  ['Energy tag', 'Count of Power tags'],
+  ['Earth tag', 'Count of Earth tags'],
+  ['Jovian tag', 'Count of Jovian tags'],
+  ['City tag', 'Count of City tags'],
+  ['Plant tag', 'Count of Plant tags'],
+  ['Microbe tag', 'Count of Microbe tags'],
+  ['Animal tag', 'Count of Animal tags'],
+];
+
+const diversifierScorer: CustomScorer = (trackers) => {
+  let distinctTags = 0;
+  for (const [key, altKey] of TAG_KEYS) {
+    if ((trackers[key] ?? trackers[altKey] ?? 0) > 0) distinctTags++;
+  }
+  const wildCount = trackers['Wild tag'] ?? trackers['Count of Wild tags'] ?? 0;
+  // Each wild tag can count as a unique tag type not already present
+  const totalTagTypes = TAG_KEYS.length;
+  return Math.min(distinctTags + wildCount, totalTagTypes);
+};
 
 const overlays: Record<string, MapOverlays> = {
   Tharsis: {
@@ -197,15 +226,15 @@ const overlays: Record<string, MapOverlays> = {
       },
     ],
     milestones: [
-      { name: 'Diversifier', cx: 60, cy: 884 },
-      { name: 'Tactician', cx: 166, cy: 884 },
-      { name: 'Polar Explorer', cx: 277, cy: 884 },
-      { name: 'Energizer', cx: 383, cy: 884 },
-      { name: 'Rim Settler', cx: 493, cy: 884 },
+      { name: 'Diversifier', cx: 60, cy: 884, metric: '8 different tags', threshold: 8, customScorer: diversifierScorer },
+      { name: 'Tactician', cx: 166, cy: 884, metric: '5 cards with requirements', threshold: 5 },
+      { name: 'Polar Explorer', cx: 277, cy: 884, metric: '3 tiles in bottom 2 rows', threshold: 3 },
+      { name: 'Energizer', cx: 383, cy: 884, metric: '6 energy production', threshold: 6, trackerKeys: ['Energy Production'] },
+      { name: 'Rim Settler', cx: 493, cy: 884, metric: '3 Jovian tags', threshold: 3, trackerKeys: ['Jovian tag', 'Count of Jovian tags'], altKeys: true },
     ],
     awards: [
-      { name: 'Cultivator', cx: 648, cy: 884, metric: 'Most greeneries', trackerKeys: [], useTileCounts: 'total' },
-      { name: 'Magnate', cx: 756, cy: 884, metric: 'Most event cards', trackerKeys: ['Event tag', 'Count of played Events cards'], altKeys: true },
+      { name: 'Cultivator', cx: 648, cy: 884, metric: 'Most greenery tiles', trackerKeys: [], useTileCounts: 'greeneries' },
+      { name: 'Magnate', cx: 756, cy: 884, metric: 'Most automated cards (green)', trackerKeys: [] },
       { name: 'Space Baron', cx: 865, cy: 884, metric: 'Most space tags', trackerKeys: ['Space tag', 'Count of Space tags'], altKeys: true },
       { name: 'Eccentric', cx: 973, cy: 884, metric: 'Most resources on cards', trackerKeys: [] },
       { name: 'Contractor', cx: 1081, cy: 884, metric: 'Most building tags', trackerKeys: ['Building tag', 'Count of Building tags'], altKeys: true },
