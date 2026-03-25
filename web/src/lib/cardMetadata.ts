@@ -13,13 +13,18 @@ export interface CardMeta {
 }
 
 /** Get the display category for a card (for tableau sections) */
-export function getCardCategory(cardName: string): 'automated' | 'action' | 'effect' | 'event' | 'unknown' {
+export function getCardCategory(cardName: string): 'automated' | 'action' | 'effect' | 'event' | 'prelude' | 'unknown' {
   const meta = getCardMeta(cardName);
   if (!meta) return 'unknown';
   if (meta.type === 'automated') return 'automated';
   if (meta.type === 'event') return 'event';
+  if (meta.type === 'prelude') return 'prelude';
   if (meta.type === 'active') return meta.subtype === 'effect' ? 'effect' : 'action';
   return 'unknown';
+}
+
+export function isPrelude(cardName: string): boolean {
+  return getCardMeta(cardName)?.type === 'prelude';
 }
 
 const cardsByName = new Map<string, CardMeta>();
