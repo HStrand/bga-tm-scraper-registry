@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { hexCenter, hexPoints, type MapDefinition } from '@/data/mapHexes';
-import { getMapOverlays, type AwardOverlay } from '@/data/mapOverlays';
+import { getMapOverlays, type AwardOverlay, type MilestoneAwardOverlay } from '@/data/mapOverlays';
 import type { GameState } from '@/types/gamelog';
 import cityTileImage from '/assets/tiles/city tile.png';
 import greeneryTileImage from '/assets/tiles/greenery tile.png';
@@ -50,12 +50,22 @@ interface ReplayMapProps {
 
 interface TooltipData {
   title: string;
-  type: 'milestone' | 'award';
+  type: 'milestone' | 'award' | 'milestones-table' | 'awards-table';
   claimedBy?: string;
   generation?: number;
   metric?: string;
   threshold?: number;
   standings?: { name: string; score: number }[];
+  tableRows?: {
+    name: string;
+    metric: string;
+    claimedBy?: string;
+    claimedColor?: string;
+    generation?: number;
+    playerScores: { name: string; score: number; meetsThreshold?: boolean }[];
+    threshold?: number;
+  }[];
+  playerColumns?: { name: string; color: string }[];
 }
 
 export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentStep, gameState, claimedMilestones, fundedAwards, playerNames, playerTrackers, playerTileCounts, playerHandCounts }: ReplayMapProps) {
@@ -336,6 +346,72 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
           return elements;
         })()}
 
+        {/* Milestones/Awards label hit areas for table tooltip */}
+        {(() => {
+          const overlays = getMapOverlays(mapDefinition.name);
+          const pids = Object.keys(playerNames ?? {});
+          const pNames = pids.map(pid => playerNames?.[pid] ?? pid);
+
+          const buildTableRows = (items: (MilestoneAwardOverlay | AwardOverlay)[], type: 'milestone' | 'award') => {
+            return items.map(item => {
+              const isMilestone = type === 'milestone';
+              const claim = isMilestone
+                ? claimedMilestones?.get(item.name.toUpperCase())
+                : fundedAwards?.get(item.name.toLowerCase());
+              const metric = 'metric' in item && item.metric ? item.metric : '';
+              const standings = isMilestone ? getMilestoneStandings(item) : getStandings(item as AwardOverlay);
+              const threshold = 'threshold' in item ? item.threshold : undefined;
+              return {
+                name: item.name,
+                metric,
+                claimedBy: claim?.playerName,
+                claimedColor: claim ? (playerColors[claim.playerId] ?? '#888') : undefined,
+                generation: claim?.generation,
+                playerScores: pids.map((pid, i) => ({
+                  name: pNames[i],
+                  score: standings.find(s => s.name === pNames[i])?.score ?? 0,
+                  meetsThreshold: threshold != null ? (standings.find(s => s.name === pNames[i])?.score ?? 0) >= threshold : undefined,
+                })),
+                threshold,
+              };
+            });
+          };
+
+          const elements: React.ReactNode[] = [];
+
+          if (overlays.milestonesLabel && overlays.milestones) {
+            const l = overlays.milestonesLabel;
+            elements.push(
+              <rect key="ms-label" x={l.cx - l.width / 2} y={l.cy - l.height / 2} width={l.width} height={l.height}
+                fill="transparent" cursor="pointer" style={{ pointerEvents: 'all' }}
+                onMouseEnter={() => setTooltip({
+                  title: 'Milestones', type: 'milestones-table',
+                  tableRows: buildTableRows(overlays.milestones!, 'milestone'),
+                  playerColumns: pids.map((pid, i) => ({ name: pNames[i], color: playerColors[pid] ?? '#888' })),
+                })}
+                onMouseLeave={() => setTooltip(null)}
+              />
+            );
+          }
+
+          if (overlays.awardsLabel && overlays.awards) {
+            const l = overlays.awardsLabel;
+            elements.push(
+              <rect key="aw-label" x={l.cx - l.width / 2} y={l.cy - l.height / 2} width={l.width} height={l.height}
+                fill="transparent" cursor="pointer" style={{ pointerEvents: 'all' }}
+                onMouseEnter={() => setTooltip({
+                  title: 'Awards', type: 'awards-table',
+                  tableRows: buildTableRows(overlays.awards!, 'award'),
+                  playerColumns: pids.map((pid, i) => ({ name: pNames[i], color: playerColors[pid] ?? '#888' })),
+                })}
+                onMouseLeave={() => setTooltip(null)}
+              />
+            );
+          }
+
+          return elements;
+        })()}
+
         {/* Highlight for current move rendered last so it's on top */}
         {mapDefinition.hexes.map(hex => {
           const tile = placedTiles.get(hex.dbKey);
@@ -409,6 +485,62 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
                   </div>
                 )}
               </>
+            )}
+            {(tooltip.type === 'milestones-table' || tooltip.type === 'awards-table') && tooltip.tableRows && tooltip.playerColumns && (
+              <table className="w-full text-xs border-collapse mt-1">
+                <thead>
+                  <tr className="border-b border-white/10">
+                    <th className="text-left py-1.5 pr-3 text-slate-400 font-medium">{tooltip.type === 'milestones-table' ? 'Milestone' : 'Award'}</th>
+                    <th className="text-left py-1.5 pr-3 text-slate-400 font-medium">Criteria</th>
+                    <th className="text-center py-1.5 px-2 text-slate-400 font-medium">{tooltip.type === 'milestones-table' ? 'Claimed' : 'Funded'}</th>
+                    {tooltip.playerColumns.map(p => (
+                      <th key={p.name} className="text-center py-1.5 px-2 text-white font-semibold">
+                        <span className="inline-flex items-center gap-1">
+                          {getCubeImage(p.color) ? (
+                            <img src={getCubeImage(p.color)!} alt="" className="w-4 h-4" />
+                          ) : (
+                            <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: p.color }} />
+                          )}
+                          {p.name}
+                        </span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {tooltip.tableRows.map(row => (
+                    <tr key={row.name} className="border-b border-white/5">
+                      <td className="py-1.5 pr-3 font-semibold text-white whitespace-nowrap">{row.name}</td>
+                      <td className="py-1.5 pr-3 text-slate-400 whitespace-nowrap">{row.metric}</td>
+                      <td className="py-1.5 px-2 text-center">
+                        {row.claimedBy ? (
+                          <span className="inline-flex items-center gap-1">
+                            {row.claimedColor && getCubeImage(row.claimedColor) && (
+                              <img src={getCubeImage(row.claimedColor)!} alt="" className="w-4 h-4" />
+                            )}
+                            <span className={tooltip.type === 'milestones-table' ? 'text-green-400' : 'text-amber-400'}>
+                              Gen {row.generation}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-600">&mdash;</span>
+                        )}
+                      </td>
+                      {row.playerScores.map(ps => (
+                        <td key={ps.name} className="py-1.5 px-2 text-center">
+                          <span className={
+                            ps.meetsThreshold ? 'text-green-400 font-bold' :
+                            ps.meetsThreshold === false ? 'text-slate-400' :
+                            'text-slate-300'
+                          }>
+                            {ps.score}{row.threshold != null ? `/${row.threshold}` : ''}
+                          </span>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </div>,

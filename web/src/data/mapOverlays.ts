@@ -41,12 +41,21 @@ export interface AwardOverlay extends MilestoneAwardOverlay {
   useTileCounts?: 'total'; // use tile counts instead of tracker keys
 }
 
+export interface LabelHitArea {
+  cx: number;
+  cy: number;
+  width: number;
+  height: number;
+}
+
 export interface MapOverlays {
   offMapTiles?: OffMapTile[];
   trackers?: TrackerOverlay[];
   cubeTrackers?: CubeTracker[];
   milestones?: MilestoneAwardOverlay[];
   awards?: AwardOverlay[];
+  milestonesLabel?: LabelHitArea;
+  awardsLabel?: LabelHitArea;
 }
 
 const overlays: Record<string, MapOverlays> = {
@@ -124,6 +133,8 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Thermalist', cx: 968, cy: 889, metric: 'Most heat resources', trackerKeys: ['Heat'] },
       { name: 'Miner', cx: 1076, cy: 889, metric: 'Most steel + titanium', trackerKeys: ['Steel', 'Titanium'] },
     ],
+    milestonesLabel: { cx: 300, cy: 845, width: 200, height: 30 },
+    awardsLabel: { cx: 870, cy: 845, width: 200, height: 30 },
   },
   Hellas: {
     offMapTiles: [
@@ -199,6 +210,8 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Eccentric', cx: 973, cy: 884, metric: 'Most resources on cards', trackerKeys: [] },
       { name: 'Contractor', cx: 1081, cy: 884, metric: 'Most building tags', trackerKeys: ['Building tag', 'Count of Building tags'], altKeys: true },
     ],
+    milestonesLabel: { cx: 300, cy: 840, width: 200, height: 30 },
+    awardsLabel: { cx: 870, cy: 840, width: 200, height: 30 },
   },
   Elysium: {
     offMapTiles: [
@@ -274,6 +287,8 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Estate Dealer', cx: 968, cy: 889, metric: 'Most tiles adjacent to ocean', trackerKeys: [] },
       { name: 'Benefactor', cx: 1076, cy: 889, metric: 'Highest TR', trackerKeys: [] },
     ],
+    milestonesLabel: { cx: 300, cy: 845, width: 200, height: 30 },
+    awardsLabel: { cx: 870, cy: 845, width: 200, height: 30 },
   },
   'Vastitas Borealis': {
     offMapTiles: [
@@ -349,6 +364,8 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Promoter', cx: 968, cy: 886, metric: 'Most MC production', trackerKeys: ['M€ Production'] },
       { name: 'Blacksmith', cx: 1076, cy: 886, metric: 'Most steel + titanium production', trackerKeys: ['Steel Production', 'Titanium Production'] },
     ],
+    milestonesLabel: { cx: 300, cy: 842, width: 200, height: 30 },
+    awardsLabel: { cx: 870, cy: 842, width: 200, height: 30 },
   },
 };
 
