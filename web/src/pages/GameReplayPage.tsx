@@ -376,7 +376,7 @@ export function GameReplayPage() {
       )}
 
       {/* Main content — 3 column layout */}
-      <div className="flex gap-4">
+      <div className="flex gap-4 overflow-x-clip">
         {/* Left: Player cards */}
         <div className="w-[320px] flex-shrink-0 space-y-3">
           {gameState?.player_vp && Object.keys(gameState.player_vp).map(pid => {
