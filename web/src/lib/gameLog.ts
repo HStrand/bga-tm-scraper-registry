@@ -84,17 +84,37 @@ export function parseTileLocationToDbKey(tileLocation: string): string {
 
 const PLAYER_COLORS = [
   '#ff0000', // red
-  '#00ffff', // cyan
+  '#0000ff', // blue
   '#008000', // green
   '#ffa500', // orange
   '#000000', // black
   '#ffffff', // white
 ];
 
+// Colors that have matching cube images
+const CUBE_COLORS = new Set(PLAYER_COLORS.map(c => c.toLowerCase()));
+
 export function assignPlayerColors(playerIds: string[], playerData?: Record<string, { color?: string }>): Record<string, string> {
   const colors: Record<string, string> = {};
-  playerIds.forEach((id, i) => {
-    colors[id] = playerData?.[id]?.color ?? PLAYER_COLORS[i % PLAYER_COLORS.length];
-  });
+  const usedColors = new Set<string>();
+
+  // First pass: assign players that have a recognized cube color
+  for (const id of playerIds) {
+    const color = playerData?.[id]?.color;
+    if (color && CUBE_COLORS.has(color.toLowerCase())) {
+      colors[id] = color;
+      usedColors.add(color.toLowerCase());
+    }
+  }
+
+  // Second pass: players with unrecognized or missing colors get the first unused cube color
+  for (const id of playerIds) {
+    if (colors[id]) continue;
+    const available = PLAYER_COLORS.find(c => !usedColors.has(c.toLowerCase()));
+    const color = available ?? PLAYER_COLORS[0];
+    colors[id] = color;
+    usedColors.add(color.toLowerCase());
+  }
+
   return colors;
 }
