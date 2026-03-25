@@ -149,14 +149,27 @@ export function GameReplayPage() {
   const offMapTiles = useMemo(() => {
     if (!mapDefinition) return [] as PlacedTile[];
     const hexKeys = new Set(mapDefinition.hexes.map(h => h.dbKey));
-    // Tiles rendered on the map image (e.g. Phobos/Ganymede on Tharsis) are not "off-map"
-    const renderedOffMap = new Set<string>();
-    if (mapDefinition.name === 'Tharsis') {
-      renderedOffMap.add('Phobos Space Haven');
-      renderedOffMap.add('Ganymede Colony');
-    }
+    const overlays = getMapOverlays(mapDefinition.name);
+    const renderedOffMap = new Set(overlays.offMapTiles?.map(t => t.name) ?? []);
     return Array.from(placedTiles.values()).filter(t => !hexKeys.has(t.dbKey) && !renderedOffMap.has(t.dbKey));
   }, [placedTiles, mapDefinition]);
+
+  const { claimedMilestones, fundedAwards } = useMemo(() => {
+    const claimed = new Map<string, string>();
+    const funded = new Map<string, string>();
+    if (!gameLog) return { claimedMilestones: claimed, fundedAwards: funded };
+    for (let i = 0; i <= currentStep; i++) {
+      const move = gameLog.moves[i];
+      if (move.action_type === 'claim_milestone') {
+        const match = move.description.match(/claims milestone (.+?)(?:\s*\||\s*$)/i);
+        if (match) claimed.set(match[1].trim().toUpperCase(), move.player_id);
+      } else if (move.action_type === 'fund_award') {
+        const match = move.description.match(/funds (.+?) award/i);
+        if (match) funded.set(match[1].trim().toLowerCase(), move.player_id);
+      }
+    }
+    return { claimedMilestones: claimed, fundedAwards: funded };
+  }, [gameLog, currentStep]);
 
   const generationBoundaries = useMemo(() => {
     if (!gameLog) return new Map<number, { start: number; end: number }>();
@@ -401,6 +414,9 @@ export function GameReplayPage() {
               placedTiles={placedTiles}
               playerColors={playerColors}
               currentStep={currentStep}
+              gameState={gameState}
+              claimedMilestones={claimedMilestones}
+              fundedAwards={fundedAwards}
             />
           ) : (
             <div className="glass-panel rounded-xl p-8 text-center text-slate-400">
