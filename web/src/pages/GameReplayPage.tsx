@@ -12,6 +12,7 @@ import { MoveLog } from '@/components/replay/MoveLog';
 import { PlayerCard } from '@/components/replay/PlayerCard';
 import { PlayerTableau } from '@/components/replay/PlayerTableau';
 import { DiscardPileModal } from '@/components/replay/DiscardPileModal';
+import { StartingHandModal, type StartingHandPlayerData } from '@/components/replay/StartingHandModal';
 import type { GameLog } from '@/types/gamelog';
 
 export function GameReplayPage() {
@@ -27,6 +28,7 @@ export function GameReplayPage() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareIncludeMove, setShareIncludeMove] = useState(true);
   const [shareCopied, setShareCopied] = useState(false);
+  const [startingHandOpen, setStartingHandOpen] = useState(true);
   const [mapScale, setMapScale] = useState(1);
   const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -201,9 +203,16 @@ export function GameReplayPage() {
   const playerTableaux = useMemo(() => {
     if (!gameLog) return new Map<string, { headquarters: string[]; played: string[]; hand: string[]; sold: string[]; cardResources: Record<string, number> }>();
     const map = new Map<string, { headquarters: string[]; played: string[]; hand: string[]; sold: string[]; cardResources: Record<string, number> }>();
+    // Determine which players have selected their starting hand by currentStep
+    const hasKept = new Set<string>();
+    for (let i = 0; i <= currentStep; i++) {
+      const ck = gameLog.moves[i]?.cards_kept;
+      if (ck) for (const pid of Object.keys(ck)) hasKept.add(pid);
+    }
     for (const [id, p] of Object.entries(gameLog.players)) {
-      // Corporation is always first in headquarters
-      map.set(id, { headquarters: [p.corporation], played: [], hand: [], sold: [], cardResources: {} });
+      // Only show corporation in headquarters after it's been selected
+      const showCorp = !p.starting_hand || hasKept.has(id);
+      map.set(id, { headquarters: showCorp ? [p.corporation] : [], played: [], hand: [], sold: [], cardResources: {} });
     }
     // First pass: collect all played cards per player
     const allPlayed = new Map<string, string[]>();
@@ -249,6 +258,19 @@ export function GameReplayPage() {
         }
       }
     }
+    // Move kept preludes and corporation cards from hand to headquarters
+    for (const [pid, entry] of map) {
+      const preludeNames = playerPreludeNames.get(pid);
+      const corp = gameLog.players[pid]?.corporation;
+      const isHQ = (c: string) => (preludeNames?.has(c)) || (corp && c === corp);
+      const kept = entry.hand.filter(isHQ);
+      if (kept.length > 0) {
+        entry.hand = entry.hand.filter(c => !isHQ(c));
+        for (const card of kept) {
+          if (!entry.headquarters.includes(card)) entry.headquarters.push(card);
+        }
+      }
+    }
     // Reconcile: played cards that are no longer in hand go to played/headquarters
     for (const [pid, cards] of allPlayed) {
       const entry = map.get(pid);
@@ -258,7 +280,7 @@ export function GameReplayPage() {
         if (!handSet.has(card)) {
           const preludeNames = playerPreludeNames.get(pid);
           if (preludeNames?.has(card)) {
-            entry.headquarters.push(card);
+            if (!entry.headquarters.includes(card)) entry.headquarters.push(card);
           } else {
             entry.played.push(card);
           }
@@ -267,6 +289,61 @@ export function GameReplayPage() {
     }
     return map;
   }, [gameLog, currentStep, playerPreludeNames]);
+
+  // Build starting hand data for the modal — sensitive to currentStep
+  const startingHandData = useMemo(() => {
+    if (!gameLog) return null;
+    const hasAny = Object.values(gameLog.players).some(p => p.starting_hand);
+    if (!hasAny) return null;
+
+    // Find the move index where each player's cards_kept appears
+    const keptMoveByPlayer = new Map<string, number>();
+    const keptCardsByPlayer = new Map<string, string[]>();
+    for (let i = 0; i < gameLog.moves.length; i++) {
+      const move = gameLog.moves[i];
+      if (move.cards_kept) {
+        for (const [pid, cards] of Object.entries(move.cards_kept)) {
+          if (!keptMoveByPlayer.has(pid)) {
+            keptMoveByPlayer.set(pid, i);
+            keptCardsByPlayer.set(pid, cards);
+          }
+        }
+      }
+    }
+
+    // If all players have kept and currentStep is past all of them, hide the modal entirely
+    const pids = Object.keys(gameLog.players).filter(pid => gameLog.players[pid].starting_hand);
+    const lastKeptMove = Math.max(...pids.map(pid => keptMoveByPlayer.get(pid) ?? -1));
+    if (lastKeptMove >= 0 && currentStep > lastKeptMove) return null;
+
+    const result: Record<string, StartingHandPlayerData> = {};
+    for (const pid of pids) {
+      const player = gameLog.players[pid];
+      const keptAt = keptMoveByPlayer.get(pid);
+      const hasKept = keptAt != null && currentStep >= keptAt;
+      const tableau = playerTableaux.get(pid);
+
+      // Kept preludes: from headquarters (only relevant after kept)
+      const keptPreludes = hasKept
+        ? (tableau?.headquarters ?? []).filter(c => player.starting_hand?.preludes?.includes(c))
+        : [];
+
+      // Kept project cards: from cards_kept data
+      const keptProjectCards = hasKept ? (keptCardsByPlayer.get(pid) ?? []) : [];
+
+      result[pid] = {
+        playerName: player.player_name,
+        color: playerColors[pid] ?? '#888',
+        corporation: player.corporation,
+        startingHand: player.starting_hand!,
+        hasKept,
+        keptCorporation: hasKept ? player.corporation : null,
+        keptPreludes,
+        keptProjectCards,
+      };
+    }
+    return result;
+  }, [gameLog, currentStep, playerTableaux, playerColors]);
 
   // Track which action cards have been activated this generation
   const activatedCards = useMemo(() => {
@@ -388,6 +465,14 @@ export function GameReplayPage() {
           {gameLog.winner && currentStep === gameLog.moves.length - 1 && (
             <span className="font-medium text-amber-400 glow-amber">Winner: {gameLog.winner}</span>
           )}
+          {startingHandData && !startingHandOpen && (
+            <button
+              onClick={() => setStartingHandOpen(true)}
+              className="text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-pulse cursor-pointer px-4 py-1.5 border border-white/30 rounded-lg"
+            >
+              Starting Hands
+            </button>
+          )}
         </div>
       </div>
 
@@ -417,7 +502,7 @@ export function GameReplayPage() {
                 key={pid}
                 playerId={pid}
                 playerName={playerNames[pid] ?? pid}
-                corporation={playerCorporations[pid] ?? ''}
+                corporation={(tableau?.headquarters ?? []).includes(playerCorporations[pid] ?? '') ? playerCorporations[pid] ?? '' : ''}
                 color={playerColors[pid] ?? '#888'}
                 elo={playerElos?.[pid] ?? null}
                 vp={gameState.player_vp?.[pid]}
@@ -566,6 +651,13 @@ export function GameReplayPage() {
 
       {showDiscardPile && (
         <DiscardPileModal cards={discardPile} onClose={() => setShowDiscardPile(false)} />
+      )}
+
+      {startingHandData && startingHandOpen && (
+        <StartingHandModal
+          players={startingHandData}
+          onClose={() => setStartingHandOpen(false)}
+        />
       )}
 
       {showShareDialog && (() => {

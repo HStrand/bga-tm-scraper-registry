@@ -535,6 +535,7 @@ export const PlayerCard = memo(function PlayerCard({
   if (prev.vp?.total !== next.vp?.total) return false;
   if (prev.color !== next.color) return false;
   if (prev.isStartingPlayer !== next.isStartingPlayer) return false;
+  if (prev.corporation !== next.corporation) return false;
   if (prev.elo !== next.elo) return false;
   // Only check card arrays if expanded (they're not rendered when collapsed)
   if (next.isExpanded) {
