@@ -3,6 +3,7 @@ import { X, Pin, PinOff, Grid3X3, Layers, List, EyeOff } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { PlayerVictoryPoints } from '@/types/gamelog';
 import { getCubeImage, startingPlayerImg, PlayerTrackers, getIcon, resourceIcons } from './replayShared';
+import trImg from '/assets/tr.png';
 import { getCardCategory, getCardResourceType } from '@/lib/cardMetadata';
 
 interface PlayerCardProps {
@@ -335,6 +336,13 @@ export const PlayerCard = memo(function PlayerCard({
       <div className="flex items-center gap-2.5 mt-3 pt-2.5 border-t border-white/5">
         <img src={getCardPlaceholderImage()} alt="Cards" className="w-8 h-11 object-cover rounded-sm opacity-60" />
         <span className="text-xl font-semibold text-white">{hand.length}</span>
+        <div className="w-px h-8 bg-white/10 mx-1" />
+        <span className="relative flex-shrink-0">
+          <img src={trImg} alt="TR" className="w-11 h-11 object-contain" />
+          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-white" style={{ textShadow: '0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.5)' }}>
+            {d?.tr ?? '?'}
+          </span>
+        </span>
         <div className="flex-1" />
         <img src={startingPlayerImg} alt="1st" className={`w-9 h-9 flex-shrink-0 ${isStartingPlayer ? '' : 'invisible'}`} />
       </div>
@@ -410,6 +418,12 @@ export const PlayerCard = memo(function PlayerCard({
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <span className="relative flex-shrink-0">
+              <img src={trImg} alt="TR" className="w-12 h-12 object-contain" />
+              <span className="absolute inset-0 flex items-center justify-center text-base font-bold text-white" style={{ textShadow: '0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.5)' }}>
+                {d?.tr ?? '?'}
+              </span>
+            </span>
             <div className="relative group/vp">
               <span className="text-2xl font-bold text-white glow-white cursor-help">
                 {vp?.total ?? '?'} <span className="text-sm font-medium text-slate-400" style={{ textShadow: 'none' }}>VP</span>
