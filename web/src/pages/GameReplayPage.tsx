@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Info } from 'lucide-react';
+import { Info, Share2, Check, Copy } from 'lucide-react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
 import { fetchGameLog, extractTilePlacement, parseTileLocationToDbKey, assignPlayerColors } from '@/lib/gameLog';
@@ -24,6 +24,9 @@ export function GameReplayPage() {
   const [tableauPlayerId, setTableauPlayerId] = useState<string | null>(null);
   const [showDiscardPile, setShowDiscardPile] = useState(false);
   const [expandedPlayerIds, setExpandedPlayerIds] = useState<Set<string>>(new Set());
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [shareIncludeMove, setShareIncludeMove] = useState(true);
+  const [shareCopied, setShareCopied] = useState(false);
   const collapseTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const handlePlayerExpand = useCallback((pid: string) => {
@@ -349,12 +352,21 @@ export function GameReplayPage() {
     <div>
       {/* Header */}
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-white mb-1 tracking-tight glow-white">
-          Table {tableId}
-          {mapDefinition && (
-            <span className="text-slate-400 font-normal" style={{ textShadow: 'none' }}> &mdash; {mapDefinition.name}</span>
-          )}
-        </h1>
+        <div className="flex items-center gap-3 mb-1">
+          <h1 className="text-2xl font-bold text-white tracking-tight glow-white">
+            Table {tableId}
+            {mapDefinition && (
+              <span className="text-slate-400 font-normal" style={{ textShadow: 'none' }}> &mdash; {mapDefinition.name}</span>
+            )}
+          </h1>
+          <button
+            onClick={() => { setShareCopied(false); setShowShareDialog(true); }}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            title="Share replay"
+          >
+            <Share2 size={18} />
+          </button>
+        </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
           {gameLog.game_date && <span>{gameLog.game_date}</span>}
           {gameLog.game_speed && <span className="text-slate-500">{gameLog.game_speed}</span>}
@@ -502,6 +514,43 @@ export function GameReplayPage() {
       {showDiscardPile && (
         <DiscardPileModal cards={discardPile} onClose={() => setShowDiscardPile(false)} />
       )}
+
+      {showShareDialog && (() => {
+        const url = new URL(window.location.origin + `/replay/${tableId}`);
+        if (shareIncludeMove && currentStep > 0) url.searchParams.set('move', String(currentStep));
+        const shareUrl = url.toString();
+        return (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60" onClick={() => setShowShareDialog(false)}>
+            <div className="glass-panel rounded-xl p-5 w-[520px] max-w-[90vw] shadow-2xl" onClick={e => e.stopPropagation()}>
+              <h2 className="text-lg font-bold text-white mb-3">Share Replay</h2>
+              <div className="flex gap-2 mb-3">
+                <input
+                  readOnly
+                  value={shareUrl}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 select-all outline-none focus:border-blue-500/50"
+                  onFocus={e => e.target.select()}
+                />
+                <button
+                  onClick={() => { navigator.clipboard.writeText(shareUrl); setShareCopied(true); }}
+                  className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium flex items-center gap-1.5 transition-colors"
+                >
+                  {shareCopied ? <Check size={16} /> : <Copy size={16} />}
+                  {shareCopied ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={shareIncludeMove}
+                  onChange={e => { setShareIncludeMove(e.target.checked); setShareCopied(false); }}
+                  className="rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500/30"
+                />
+                Include current move ({currentStep})
+              </label>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
