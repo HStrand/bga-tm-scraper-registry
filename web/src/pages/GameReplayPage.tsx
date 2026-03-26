@@ -27,6 +27,10 @@ export function GameReplayPage() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareIncludeMove, setShareIncludeMove] = useState(true);
   const [shareCopied, setShareCopied] = useState(false);
+  const [mapScale, setMapScale] = useState(1);
+  const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
   const collapseTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const handlePlayerExpand = useCallback((pid: string) => {
@@ -435,59 +439,108 @@ export function GameReplayPage() {
         </div>
 
         {/* Center: Map + controls */}
-        <div className="flex-1 min-w-0 text-center">
-          {mapDefinition ? (
-            <ReplayMap
-              mapDefinition={mapDefinition}
-              placedTiles={placedTiles}
-              playerColors={playerColors}
+        <div className="flex-1 min-w-0 flex flex-col items-center">
+          <div
+            className="relative inline-flex flex-col items-center"
+            style={{
+              transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
+              cursor: isDragging ? 'grabbing' : 'grab',
+              userSelect: 'none',
+            }}
+            onMouseDown={e => {
+              if (e.button !== 0) return;
+              // Don't drag when interacting with controls
+              const target = e.target as HTMLElement;
+              if (target.closest('button, input[type="range"], input[type="checkbox"]')) return;
+              setIsDragging(true);
+              dragStart.current = { x: e.clientX, y: e.clientY, ox: mapOffset.x, oy: mapOffset.y };
+              const onMove = (ev: MouseEvent) => {
+                setMapOffset({
+                  x: dragStart.current.ox + (ev.clientX - dragStart.current.x),
+                  y: dragStart.current.oy + (ev.clientY - dragStart.current.y),
+                });
+              };
+              const onUp = () => {
+                setIsDragging(false);
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', onUp);
+              };
+              window.addEventListener('mousemove', onMove);
+              window.addEventListener('mouseup', onUp);
+            }}
+          >
+            {/* Zoom slider */}
+            <div className="flex items-center gap-2 mb-2" style={{ cursor: 'default' }}>
+              <span className="text-xs text-slate-500">−</span>
+              <input
+                type="range"
+                min={0.5}
+                max={1}
+                step={0.05}
+                value={mapScale}
+                onChange={e => setMapScale(parseFloat(e.target.value))}
+                className="w-32 accent-amber-500"
+              />
+              <span className="text-xs text-slate-500">+</span>
+              <span className="text-xs text-slate-400 w-10 text-center">{Math.round(mapScale * 100)}%</span>
+              <button onClick={() => { setMapScale(1); setMapOffset({ x: 0, y: 0 }); }} className="text-xs text-slate-500 hover:text-slate-300 ml-1" title="Reset map zoom">↺</button>
+            </div>
+
+            <div style={{ width: `${mapScale * 100}%` }}>
+              {mapDefinition ? (
+                <ReplayMap
+                  mapDefinition={mapDefinition}
+                  placedTiles={placedTiles}
+                  playerColors={playerColors}
+                  currentStep={currentStep}
+                  gameState={gameState}
+                  claimedMilestones={claimedMilestones}
+                  fundedAwards={fundedAwards}
+                  playerNames={playerNames}
+                  playerTrackers={gameState?.player_trackers}
+                  playerTileCounts={playerTileCounts}
+                  playerHandCounts={Object.fromEntries(
+                    Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.hand.length])
+                  )}
+                  moves={gameLog.moves}
+                  playerPlayedCards={Object.fromEntries(
+                    Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.played])
+                  )}
+                  playerCardResources={Object.fromEntries(
+                    Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.cardResources])
+                  )}
+                />
+              ) : (
+                <div className="glass-panel rounded-xl p-8 text-center text-slate-400">
+                  Map &ldquo;{gameLog.map}&rdquo; not available for visualization.
+                </div>
+              )}
+
+              {offMapTiles.length > 0 && (
+                <div className="mt-3 text-sm text-slate-400 text-left">
+                  <span className="font-medium text-slate-300">Off-map tiles:</span>{' '}
+                  {offMapTiles.map((t, i) => (
+                    <span key={t.dbKey}>
+                      {i > 0 && ', '}
+                      <span className="inline-block w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: playerColors[t.playerId] }} />
+                      {t.dbKey} ({t.tileType} &mdash; {gameLog.players[t.playerId]?.player_name ?? t.playerId})
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <ReplayControls
               currentStep={currentStep}
+              totalMoves={gameLog.moves.length}
               gameState={gameState}
-              claimedMilestones={claimedMilestones}
-              fundedAwards={fundedAwards}
-              playerNames={playerNames}
-              playerTrackers={gameState?.player_trackers}
-              playerTileCounts={playerTileCounts}
-              playerHandCounts={Object.fromEntries(
-                Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.hand.length])
-              )}
-              moves={gameLog.moves}
-              playerPlayedCards={Object.fromEntries(
-                Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.played])
-              )}
-              playerCardResources={Object.fromEntries(
-                Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.cardResources])
-              )}
+              isAnimating={false}
+              onPrev={() => setCurrentStep(s => s - 1)}
+              onNext={() => setCurrentStep(s => s + 1)}
+              onJump={jumpTo}
+              generationBoundaries={generationBoundaries}
             />
-          ) : (
-            <div className="glass-panel rounded-xl p-8 text-center text-slate-400">
-              Map &ldquo;{gameLog.map}&rdquo; not available for visualization.
-            </div>
-          )}
-
-          {offMapTiles.length > 0 && (
-            <div className="mt-3 text-sm text-slate-400 text-left">
-              <span className="font-medium text-slate-300">Off-map tiles:</span>{' '}
-              {offMapTiles.map((t, i) => (
-                <span key={t.dbKey}>
-                  {i > 0 && ', '}
-                  <span className="inline-block w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: playerColors[t.playerId] }} />
-                  {t.dbKey} ({t.tileType} &mdash; {gameLog.players[t.playerId]?.player_name ?? t.playerId})
-                </span>
-              ))}
-            </div>
-          )}
-
-          <ReplayControls
-            currentStep={currentStep}
-            totalMoves={gameLog.moves.length}
-            gameState={gameState}
-            isAnimating={false}
-            onPrev={() => setCurrentStep(s => s - 1)}
-            onNext={() => setCurrentStep(s => s + 1)}
-            onJump={jumpTo}
-            generationBoundaries={generationBoundaries}
-          />
+          </div>
         </div>
 
         {/* Right: Global params + Move log */}

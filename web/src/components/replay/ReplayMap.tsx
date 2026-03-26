@@ -6,6 +6,7 @@ import { MapOverlaysSvg, MapMilestonesAwardsSvg, MapTooltip, type TooltipData } 
 import cityTileImage from '/assets/tiles/city tile.png';
 import greeneryTileImage from '/assets/tiles/greenery tile.png';
 import oceanTileImage from '/assets/tiles/ocean tile.png';
+import tileHighlightImage from '/assets/tiles/tile highlight.png';
 
 const specialTileImages = import.meta.glob('../../../assets/tiles/*.png', { eager: true }) as Record<string, { default: string }>;
 const cubeImages = import.meta.glob('../../../assets/cubes/*.png', { eager: true }) as Record<string, { default: string }>;
@@ -159,8 +160,24 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
           if (!tile || tile.moveIndex !== currentStep) return null;
           const { cx, cy } = hexCenter(mapDefinition.grid, hex.col, hex.row);
           const points = hexPoints(cx, cy, mapDefinition.grid.hexRadius);
+          const color = playerColors[tile.playerId] ?? '#d97706';
+          const filterId = `hex-glow-${hex.col}-${hex.row}`;
           return (
-            <polygon key={`highlight-${hex.col},${hex.row}`} points={points} fill="none" stroke="#fff" strokeWidth={3} />
+            <g key={`highlight-${hex.col},${hex.row}`}>
+              <defs>
+                <filter id={filterId}>
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feFlood floodColor={color} floodOpacity="0.8" result="color" />
+                  <feComposite in="color" in2="blur" operator="in" result="glow" />
+                  <feMerge>
+                    <feMergeNode in="glow" />
+                    <feMergeNode in="glow" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <polygon points={points} fill="none" stroke={color} strokeWidth={3} filter={`url(#${filterId})`} />
+            </g>
           );
         })}
 
