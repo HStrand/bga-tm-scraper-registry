@@ -77,7 +77,7 @@ export function MoveLog({ moves, currentStep, generationBoundaries, playerColors
 
   return (
     <div className="glass-panel rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 22rem)' }}>
-      <div ref={scrollRef} className="overflow-y-auto scrollbar-hidden py-2 space-y-1">
+      <div ref={scrollRef} className="overflow-y-auto scrollbar-subtle py-2 space-y-1">
         {Array.from({ length: endIdx - startIdx + 1 }, (_, i) => {
           const idx = endIdx - i;
           const move = moves[idx];

@@ -181,7 +181,7 @@ export function DiscardPileModal({ cards, onClose }: DiscardPileModalProps) {
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto px-5 py-4 scrollbar-hidden">
+        <div className="overflow-y-auto px-5 py-4 scrollbar-subtle">
           {cards.length === 0 ? (
             <p className="text-slate-500 italic text-center py-8">No cards discarded yet.</p>
           ) : viewMode === 'hidden' ? (

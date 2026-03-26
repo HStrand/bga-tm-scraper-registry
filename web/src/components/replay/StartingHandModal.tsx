@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Minus, GripHorizontal, Eye, EyeOff } from 'lucide-react';
+import { X, GripHorizontal, Eye, EyeOff } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import { getCubeImage } from './replayShared';
 
@@ -131,14 +131,14 @@ export function StartingHandModal({ players, onClose }: StartingHandModalProps) 
                 className="w-20 h-1.5 accent-amber-500"
               />
             </div>
-            <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors" title="Minimize">
-              <Minus size={18} />
+            <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors" title="Close">
+              <X size={18} />
             </button>
           </div>
         </div>
 
         {/* Body — scrollable */}
-        <div className="overflow-y-auto scrollbar-hidden p-2">
+        <div className="overflow-y-auto scrollbar-subtle p-2">
           {pids.map((pid, idx) => {
             const p = players[pid];
             const cube = getCubeImage(p.color);

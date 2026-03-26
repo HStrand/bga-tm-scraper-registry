@@ -1,5 +1,5 @@
 import { memo, useState, useEffect, useRef, useCallback } from 'react';
-import { X, Pin, PinOff, Grid3X3, Layers, List, EyeOff } from 'lucide-react';
+import { X, Pin, PinOff, Grid3X3, Layers, List, EyeOff, GripHorizontal } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { PlayerVictoryPoints } from '@/types/gamelog';
 import { getCubeImage, startingPlayerImg, PlayerTrackers, getIcon, resourceIcons } from './replayShared';
@@ -399,6 +399,7 @@ export const PlayerCard = memo(function PlayerCard({
           onMouseDown={startDrag}
         >
           <div className="flex items-center gap-3 min-w-0">
+            <GripHorizontal size={16} className="text-slate-500 flex-shrink-0" />
             {cubeImg ? (
               <img src={cubeImg} alt="" className="w-10 h-10 flex-shrink-0" />
             ) : (
@@ -497,7 +498,7 @@ export const PlayerCard = memo(function PlayerCard({
           }
           const allHQ = extraHQ.length > 0 ? [...headquarters, ...extraHQ] : headquarters;
           return (
-        <div className="overflow-y-auto scrollbar-hidden flex-1 min-h-0">
+        <div className="overflow-y-auto scrollbar-subtle flex-1 min-h-0 mr-2">
           <div className="px-3 py-2.5 space-y-3 border-t border-white/10">
             <CardSection cards={allHQ} title="Headquarters" color={color} defaultViewMode="grid" defaultCardSize={180} />
             <CardSection cards={hand} title="Hand" color={color} defaultViewMode="grid" defaultCardSize={130} />
