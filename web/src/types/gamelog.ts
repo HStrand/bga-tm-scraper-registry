@@ -30,6 +30,7 @@ export interface GameLogPlayer {
   };
   elo_data?: {
     game_rank?: number | null;
+    game_rank_change?: number | null;
     arena_points?: number | null;
   };
 }

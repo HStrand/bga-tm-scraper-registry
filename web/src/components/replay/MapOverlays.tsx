@@ -311,12 +311,15 @@ export function MapTooltip({ tooltip, tooltipPos, getCubeImage }: { tooltip: Too
             )}
             {tooltip.standings && tooltip.standings.length > 0 && (
               <div className="border-t border-white/10 pt-1.5 space-y-0.5">
-                {tooltip.standings.map((s, i) => (
-                  <div key={s.name} className="flex justify-between gap-4 text-xs">
-                    <span className={i === 0 ? 'text-white font-semibold' : 'text-slate-400'}>{s.name}</span>
-                    <span className={i === 0 ? 'text-amber-400 font-bold' : 'text-slate-300'}>{s.score}</span>
-                  </div>
-                ))}
+                {tooltip.standings.map((s) => {
+                  const isLeader = s.score === tooltip.standings![0].score;
+                  return (
+                    <div key={s.name} className="flex justify-between gap-4 text-xs">
+                      <span className={isLeader ? 'text-white font-semibold' : 'text-slate-400'}>{s.name}</span>
+                      <span className={isLeader ? 'text-amber-400 font-bold' : 'text-slate-300'}>{s.score}</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </>
@@ -382,17 +385,22 @@ export function MapTooltip({ tooltip, tooltipPos, getCubeImage }: { tooltip: Too
                       <span className="text-slate-600">&mdash;</span>
                     )}
                   </td>
-                  {row.playerScores.map(ps => (
-                    <td key={ps.name} className="py-1.5 px-2 text-center">
-                      <span className={
-                        ps.meetsThreshold ? 'text-green-400 font-bold' :
-                        ps.meetsThreshold === false ? 'text-slate-400' :
-                        'text-slate-300'
-                      }>
-                        {ps.score}{row.threshold != null ? `/${row.threshold}` : ''}
-                      </span>
-                    </td>
-                  ))}
+                  {row.playerScores.map(ps => {
+                    const maxScore = Math.max(...row.playerScores.map(p => p.score));
+                    const isLeader = ps.score === maxScore && maxScore > 0;
+                    return (
+                      <td key={ps.name} className="py-1.5 px-2 text-center">
+                        <span className={
+                          ps.meetsThreshold ? 'text-green-400 font-bold' :
+                          ps.meetsThreshold === false ? 'text-slate-400' :
+                          isLeader ? 'text-amber-400 font-bold' :
+                          'text-slate-300'
+                        }>
+                          {ps.score}{row.threshold != null ? `/${row.threshold}` : ''}
+                        </span>
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>

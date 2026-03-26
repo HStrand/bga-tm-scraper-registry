@@ -95,7 +95,11 @@ export function GameReplayPage() {
 
   const playerElos = useMemo(
     () => gameLog
-      ? Object.fromEntries(Object.entries(gameLog.players).map(([id, p]) => [id, p.elo_data?.game_rank ?? null]))
+      ? Object.fromEntries(Object.entries(gameLog.players).map(([id, p]) => {
+          const rank = p.elo_data?.game_rank;
+          const change = p.elo_data?.game_rank_change ?? 0;
+          return [id, rank != null ? rank - change : null];
+        }))
       : {},
     [gameLog],
   );

@@ -129,7 +129,7 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
 
           const color = playerColors[tile.playerId] ?? '#888';
           const cubeSize = tileSize * 0.4;
-          const imgSize = isOcean ? tileSize * 1.4 : tileSize;
+          const imgSize = isOcean ? tileSize * 1.28 : tileSize;
 
           return (
             <g key={`${hex.col},${hex.row}`}>
