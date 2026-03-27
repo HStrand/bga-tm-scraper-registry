@@ -236,6 +236,15 @@ export function GameReplayPage() {
           if (entry) entry.hand = [...hand];
         }
       }
+      // Seed hand from cards_kept when player_hands isn't available yet
+      if (move?.cards_kept) {
+        for (const [pid, cards] of Object.entries(move.cards_kept)) {
+          const entry = map.get(pid);
+          if (entry && entry.hand.length === 0) {
+            entry.hand = [...cards];
+          }
+        }
+      }
       // Track sold cards
       if (move?.cards_sold) {
         const entry = map.get(move.player_id);
@@ -326,13 +335,11 @@ export function GameReplayPage() {
       const hasKept = keptAt != null && currentStep >= keptAt;
       const tableau = playerTableaux.get(pid);
 
-      // Kept preludes: from headquarters (only relevant after kept)
-      const keptPreludes = hasKept
-        ? (tableau?.headquarters ?? []).filter(c => player.starting_hand?.preludes?.includes(c))
-        : [];
-
-      // Kept project cards: from cards_kept data
-      const keptProjectCards = hasKept ? (keptCardsByPlayer.get(pid) ?? []) : [];
+      // Kept preludes and project cards: both from cards_kept data
+      const allKept = hasKept ? (keptCardsByPlayer.get(pid) ?? []) : [];
+      const preludeSet = new Set(player.starting_hand?.preludes ?? []);
+      const keptPreludes = allKept.filter(c => preludeSet.has(c));
+      const keptProjectCards = allKept.filter(c => !preludeSet.has(c) && c !== player.corporation);
 
       result[pid] = {
         playerName: player.player_name,
