@@ -13,6 +13,7 @@ import { PlayerCard } from '@/components/replay/PlayerCard';
 import { PlayerTableau } from '@/components/replay/PlayerTableau';
 import { DiscardPileModal } from '@/components/replay/DiscardPileModal';
 import { StartingHandModal, type StartingHandPlayerData } from '@/components/replay/StartingHandModal';
+import { DraftModal, type DraftData, type DraftPlayerData } from '@/components/replay/DraftModal';
 import type { GameLog } from '@/types/gamelog';
 
 export function GameReplayPage() {
@@ -29,6 +30,8 @@ export function GameReplayPage() {
   const [shareIncludeMove, setShareIncludeMove] = useState(true);
   const [shareCopied, setShareCopied] = useState(false);
   const [startingHandOpen, setStartingHandOpen] = useState(true);
+  const [draftOpen, setDraftOpen] = useState(false);
+  const prevDraftGen = useRef<number | null>(null);
   const [mapScale, setMapScale] = useState(1);
   const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -345,6 +348,152 @@ export function GameReplayPage() {
     return result;
   }, [gameLog, currentStep, playerTableaux, playerColors]);
 
+  // Compute active draft data based on currentStep
+  const draftData = useMemo((): DraftData | null => {
+    if (!gameLog) return null;
+
+    // Find all draft sequences (grouped by generation)
+    // A draft sequence starts with a card_options move and ends with the last cards_kept move
+    interface DraftSequence {
+      startIdx: number;
+      endIdx: number; // last cards_kept move
+      generation: number;
+    }
+    const sequences: DraftSequence[] = [];
+    let seqStart: number | null = null;
+    let seqGen = 0;
+    let lastKeptIdx = -1;
+
+    for (let i = 0; i < gameLog.moves.length; i++) {
+      const m = gameLog.moves[i];
+      if (m.action_type !== 'draft') {
+        if (seqStart != null) {
+          sequences.push({ startIdx: seqStart, endIdx: lastKeptIdx >= seqStart ? lastKeptIdx : i - 1, generation: seqGen });
+          seqStart = null;
+        }
+        continue;
+      }
+      if (m.card_options && seqStart == null) {
+        seqStart = i;
+        seqGen = m.game_state?.generation ?? 0;
+      }
+      if (m.cards_kept) lastKeptIdx = i;
+    }
+    if (seqStart != null) {
+      sequences.push({ startIdx: seqStart, endIdx: lastKeptIdx >= seqStart ? lastKeptIdx : gameLog.moves.length - 1, generation: seqGen });
+    }
+
+    // Find the active sequence for currentStep (show until 1 move after last kept)
+    const activeSeq = sequences.find(s => currentStep >= s.startIdx && currentStep <= s.endIdx);
+    if (!activeSeq) return null;
+
+    // Build player data by replaying draft moves up to currentStep
+    const pids = Object.keys(gameLog.players);
+    const players: Record<string, DraftPlayerData> = {};
+    for (const pid of pids) {
+      players[pid] = {
+        playerName: gameLog.players[pid].player_name,
+        color: playerColors[pid] ?? '#888',
+        options: [],
+        drafted: [],
+        keptCards: null,
+      };
+    }
+
+    // Track current options per player (updated each time card_options appears)
+    const latestOptions = new Map<string, string[]>();
+    // Track which cards each player has drafted (to remove from options)
+    const draftedPerPlayer = new Map<string, Set<string>>();
+    for (const pid of pids) draftedPerPlayer.set(pid, new Set());
+
+    let direction: 'left' | 'right' = 'right';
+    let firstOptions: Map<string, Set<string>> | null = null;
+
+    for (let i = activeSeq.startIdx; i <= Math.min(currentStep, activeSeq.endIdx); i++) {
+      const m = gameLog.moves[i];
+      if (m.action_type !== 'draft') continue;
+
+      if (m.card_options) {
+        for (const [pid, cards] of Object.entries(m.card_options)) {
+          latestOptions.set(pid, [...cards]);
+        }
+
+        // Detect direction from the second card_options move
+        if (!firstOptions) {
+          firstOptions = new Map();
+          for (const [pid, cards] of Object.entries(m.card_options)) {
+            firstOptions.set(pid, new Set(cards));
+          }
+        } else {
+          const pidList = Object.keys(m.card_options);
+          if (pidList.length >= 2) {
+            // Check if player[1]'s current options came from player[0]'s previous options
+            const cur1 = new Set(m.card_options[pidList[1]] ?? []);
+            const prev0 = firstOptions.get(pidList[0]);
+            if (prev0 && [...cur1].every(c => prev0.has(c))) {
+              direction = 'right';
+            } else {
+              // Check reverse: player[last]'s current options came from player[0]
+              const curLast = new Set(m.card_options[pidList[pidList.length - 1]] ?? []);
+              if (prev0 && [...curLast].every(c => prev0.has(c))) {
+                direction = 'left';
+              }
+            }
+          }
+        }
+      }
+
+      // When card_options has only 1 card per player, it's a forced pick — auto-draft it
+      if (m.card_options) {
+        for (const [pid, cards] of Object.entries(m.card_options)) {
+          if (cards.length === 1) {
+            const card = cards[0];
+            if (!draftedPerPlayer.get(pid)?.has(card)) {
+              players[pid]?.drafted.push(card);
+              draftedPerPlayer.get(pid)?.add(card);
+            }
+          }
+        }
+      }
+
+      // Skip card_drafted on keep moves (it repeats the previous pick)
+      if (m.card_drafted && m.player_id && !m.cards_kept) {
+        if (!draftedPerPlayer.get(m.player_id)?.has(m.card_drafted)) {
+          players[m.player_id]?.drafted.push(m.card_drafted);
+          draftedPerPlayer.get(m.player_id)?.add(m.card_drafted);
+        }
+      }
+
+      if (m.cards_kept) {
+        for (const [pid, cards] of Object.entries(m.cards_kept)) {
+          if (players[pid]) players[pid].keptCards = cards;
+        }
+      }
+    }
+
+    // Set current options = latest options minus already-drafted cards
+    for (const pid of pids) {
+      const opts = latestOptions.get(pid) ?? [];
+      const drafted = draftedPerPlayer.get(pid) ?? new Set();
+      players[pid].options = opts.filter(c => !drafted.has(c));
+    }
+
+    return {
+      generation: activeSeq.generation,
+      direction,
+      players,
+    };
+  }, [gameLog, currentStep, playerColors]);
+
+  // Auto-open draft dialog when entering a new draft sequence
+  useEffect(() => {
+    const gen = draftData?.generation ?? null;
+    if (gen != null && gen !== prevDraftGen.current) {
+      setDraftOpen(true);
+    }
+    prevDraftGen.current = gen;
+  }, [draftData?.generation]);
+
   // Track which action cards have been activated this generation
   const activatedCards = useMemo(() => {
     if (!gameLog) return new Map<string, Set<string>>();
@@ -471,6 +620,14 @@ export function GameReplayPage() {
               className="text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-pulse cursor-pointer px-4 py-1.5 border border-white/30 rounded-lg"
             >
               Starting Hands
+            </button>
+          )}
+          {draftData && !draftOpen && (
+            <button
+              onClick={() => setDraftOpen(true)}
+              className="text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-pulse cursor-pointer px-4 py-1.5 border border-white/30 rounded-lg"
+            >
+              Draft (Gen {draftData.generation})
             </button>
           )}
         </div>
@@ -657,6 +814,13 @@ export function GameReplayPage() {
         <StartingHandModal
           players={startingHandData}
           onClose={() => setStartingHandOpen(false)}
+        />
+      )}
+
+      {draftData && draftOpen && (
+        <DraftModal
+          draft={draftData}
+          onClose={() => setDraftOpen(false)}
         />
       )}
 
