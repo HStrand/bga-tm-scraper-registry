@@ -64,7 +64,7 @@ function DraftCardGroup({ title, cards, keptCards, cardSize }: {
 }
 
 export function DraftModal({ draft, onClose }: DraftModalProps) {
-  const [cardSize, setCardSize] = useState(100);
+  const [cardSize, setCardSize] = useState(160);
   const [hiddenPlayers, setHiddenPlayers] = useState<Set<string>>(new Set());
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const dragging = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
