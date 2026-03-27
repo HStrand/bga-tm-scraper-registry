@@ -236,12 +236,15 @@ export function GameReplayPage() {
           if (entry) entry.hand = [...hand];
         }
       }
-      // Seed hand from cards_kept when player_hands isn't available yet
+      // Seed hand from cards_kept — add any cards not already tracked
       if (move?.cards_kept) {
         for (const [pid, cards] of Object.entries(move.cards_kept)) {
           const entry = map.get(pid);
-          if (entry && entry.hand.length === 0) {
-            entry.hand = [...cards];
+          if (entry) {
+            const existing = new Set([...entry.hand, ...entry.headquarters]);
+            for (const card of cards) {
+              if (!existing.has(card)) entry.hand.push(card);
+            }
           }
         }
       }
