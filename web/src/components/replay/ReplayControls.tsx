@@ -143,6 +143,7 @@ export function ReplayControls({
           max={totalMoves - 1}
           value={currentStep}
           onChange={e => onJump(parseInt(e.target.value, 10))}
+          onMouseUp={e => (e.target as HTMLInputElement).blur()}
           onMouseMove={handleSliderHover}
           onMouseLeave={() => setSliderHover(null)}
           disabled={isAnimating}

@@ -73,7 +73,9 @@ export function GameReplayPage() {
       .then(data => {
         setGameLog(data);
         const moveParam = parseInt(searchParams.get('move') ?? '', 10);
-        const initial = !isNaN(moveParam) && moveParam >= 1 ? Math.min(moveParam - 1, data.moves.length - 1) : 0;
+        let initial = !isNaN(moveParam) && moveParam >= 1 ? Math.min(moveParam - 1, data.moves.length - 1) : 0;
+        // Skip game_state_change moves backward
+        while (initial > 0 && data.moves[initial]?.action_type === 'game_state_change') initial--;
         setCurrentStep(initial);
       })
       .catch(() => setError('Game not found.'))
@@ -566,11 +568,26 @@ export function GameReplayPage() {
     return cards;
   }, [gameLog, currentStep]);
 
+  // Resolve a step index to skip game_state_change moves
+  const resolveStep = useCallback((target: number, direction: 'forward' | 'backward' | 'auto' = 'auto') => {
+    if (!gameLog) return target;
+    const clamped = Math.max(0, Math.min(target, gameLog.moves.length - 1));
+    if (gameLog.moves[clamped]?.action_type !== 'game_state_change') return clamped;
+    // For 'auto' (slider/jump), go backward to show previous real move
+    // For 'forward' (next), skip ahead; for 'backward' (prev), skip back
+    const dir = direction === 'forward' ? 1 : -1;
+    let step = clamped + dir;
+    while (step >= 0 && step < gameLog.moves.length && gameLog.moves[step]?.action_type === 'game_state_change') {
+      step += dir;
+    }
+    return Math.max(0, Math.min(step, gameLog.moves.length - 1));
+  }, [gameLog]);
+
   // --- jump ---
   const jumpTo = useCallback((target: number) => {
     if (!gameLog) return;
-    setCurrentStep(Math.max(0, Math.min(target, gameLog.moves.length - 1)));
-  }, [gameLog]);
+    setCurrentStep(resolveStep(target, 'auto'));
+  }, [gameLog, resolveStep]);
 
   // --- missing features detection ---
   const missingFeatures = useMemo(() => {
@@ -589,12 +606,12 @@ export function GameReplayPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!gameLog) return;
-      if (e.key === 'ArrowLeft' && currentStep > 0) setCurrentStep(s => s - 1);
-      else if (e.key === 'ArrowRight' && currentStep < gameLog.moves.length - 1) setCurrentStep(s => s + 1);
+      if (e.key === 'ArrowLeft' && currentStep > 0) setCurrentStep(s => resolveStep(s - 1, 'backward'));
+      else if (e.key === 'ArrowRight' && currentStep < gameLog.moves.length - 1) setCurrentStep(s => resolveStep(s + 1, 'forward'));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [gameLog, currentStep]);
+  }, [gameLog, currentStep, resolveStep]);
 
   // --- render ---
   if (loading) {
@@ -816,8 +833,8 @@ export function GameReplayPage() {
               totalMoves={gameLog.moves.length}
               gameState={gameState}
               isAnimating={false}
-              onPrev={() => setCurrentStep(s => s - 1)}
-              onNext={() => setCurrentStep(s => s + 1)}
+              onPrev={() => setCurrentStep(s => resolveStep(s - 1, 'backward'))}
+              onNext={() => setCurrentStep(s => resolveStep(s + 1, 'forward'))}
               onJump={jumpTo}
               generationBoundaries={generationBoundaries}
             />
