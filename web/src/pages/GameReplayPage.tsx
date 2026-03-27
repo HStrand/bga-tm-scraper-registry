@@ -400,11 +400,11 @@ export function GameReplayPage() {
       };
     }
 
-    // Track current options per player (updated each time card_options appears)
-    const latestOptions = new Map<string, string[]>();
-    // Track which cards each player has drafted (to remove from options)
-    const draftedPerPlayer = new Map<string, Set<string>>();
-    for (const pid of pids) draftedPerPlayer.set(pid, new Set());
+    // Current hand per player (cards in front of them, not yet picked from)
+    const currentHand = new Map<string, string[]>();
+    // Full initial pool for inferring missing picks
+    let initialPool: Set<string> | null = null;
+    const cardsPerPlayer = { count: 0 };
 
     let direction: 'left' | 'right' = 'right';
     let firstOptions: Map<string, Set<string>> | null = null;
@@ -413,12 +413,45 @@ export function GameReplayPage() {
       const m = gameLog.moves[i];
       if (m.action_type !== 'draft') continue;
 
+      // Process card_drafted BEFORE card_options on the same move,
+      // since the pick is from the previous hand, then new hands arrive
+      if (m.card_drafted && m.player_id && !m.cards_kept) {
+        const hand = currentHand.get(m.player_id);
+        if (hand) {
+          const idx = hand.indexOf(m.card_drafted);
+          if (idx >= 0) hand.splice(idx, 1);
+        }
+        if (!players[m.player_id]?.drafted.includes(m.card_drafted)) {
+          players[m.player_id]?.drafted.push(m.card_drafted);
+        }
+      }
+
       if (m.card_options) {
+        // Set each player's current hand (new pass of cards arriving)
         for (const [pid, cards] of Object.entries(m.card_options)) {
-          latestOptions.set(pid, [...cards]);
+          currentHand.set(pid, [...cards]);
         }
 
-        // Detect direction from the second card_options move
+        // Capture initial pool from first card_options
+        if (!initialPool) {
+          initialPool = new Set();
+          for (const cards of Object.values(m.card_options)) {
+            for (const c of cards) initialPool.add(c);
+          }
+          cardsPerPlayer.count = initialPool.size / pids.length;
+        }
+
+        // Auto-draft forced picks (1 card remaining)
+        for (const [pid, cards] of Object.entries(m.card_options)) {
+          if (cards.length === 1) {
+            if (!players[pid]?.drafted.includes(cards[0])) {
+              players[pid]?.drafted.push(cards[0]);
+            }
+            currentHand.set(pid, []);
+          }
+        }
+
+        // Detect direction from second card_options move
         if (!firstOptions) {
           firstOptions = new Map();
           for (const [pid, cards] of Object.entries(m.card_options)) {
@@ -427,40 +460,17 @@ export function GameReplayPage() {
         } else {
           const pidList = Object.keys(m.card_options);
           if (pidList.length >= 2) {
-            // Check if player[1]'s current options came from player[0]'s previous options
             const cur1 = new Set(m.card_options[pidList[1]] ?? []);
             const prev0 = firstOptions.get(pidList[0]);
             if (prev0 && [...cur1].every(c => prev0.has(c))) {
               direction = 'right';
             } else {
-              // Check reverse: player[last]'s current options came from player[0]
               const curLast = new Set(m.card_options[pidList[pidList.length - 1]] ?? []);
               if (prev0 && [...curLast].every(c => prev0.has(c))) {
                 direction = 'left';
               }
             }
           }
-        }
-      }
-
-      // When card_options has only 1 card per player, it's a forced pick — auto-draft it
-      if (m.card_options) {
-        for (const [pid, cards] of Object.entries(m.card_options)) {
-          if (cards.length === 1) {
-            const card = cards[0];
-            if (!draftedPerPlayer.get(pid)?.has(card)) {
-              players[pid]?.drafted.push(card);
-              draftedPerPlayer.get(pid)?.add(card);
-            }
-          }
-        }
-      }
-
-      // Skip card_drafted on keep moves (it repeats the previous pick)
-      if (m.card_drafted && m.player_id && !m.cards_kept) {
-        if (!draftedPerPlayer.get(m.player_id)?.has(m.card_drafted)) {
-          players[m.player_id]?.drafted.push(m.card_drafted);
-          draftedPerPlayer.get(m.player_id)?.add(m.card_drafted);
         }
       }
 
@@ -471,11 +481,30 @@ export function GameReplayPage() {
       }
     }
 
-    // Set current options = latest options minus already-drafted cards
+    // Infer missing draft picks from the initial pool, but only once all
+    // forced picks are done (every player should have cardsPerPlayer drafted)
+    if (initialPool && cardsPerPlayer.count > 0) {
+      const totalDrafted = pids.reduce((sum, pid) => sum + players[pid].drafted.length, 0);
+      const expectedTotal = initialPool.size;
+      // Only infer if we're close to done (at least N-1 cards per player drafted)
+      if (totalDrafted >= expectedTotal - pids.length) {
+        const allDrafted = new Set<string>();
+        for (const pid of pids) {
+          for (const c of players[pid].drafted) allDrafted.add(c);
+        }
+        const missing = [...initialPool].filter(c => !allDrafted.has(c));
+        for (const card of missing) {
+          const shortPlayer = pids.find(pid => players[pid].drafted.length < cardsPerPlayer.count);
+          if (shortPlayer) {
+            players[shortPlayer].drafted.push(card);
+          }
+        }
+      }
+    }
+
+    // Set options = current hand (cards in front of the player, not yet picked)
     for (const pid of pids) {
-      const opts = latestOptions.get(pid) ?? [];
-      const drafted = draftedPerPlayer.get(pid) ?? new Set();
-      players[pid].options = opts.filter(c => !drafted.has(c));
+      players[pid].options = currentHand.get(pid) ?? [];
     }
 
     return {
