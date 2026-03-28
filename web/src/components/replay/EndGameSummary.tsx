@@ -2,9 +2,11 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Trophy, Award, Flag, Trees, Building2, Layers } from 'lucide-react';
 import type { PlayerVictoryPoints } from '@/types/gamelog';
-import { getCubeImage } from './replayShared';
+import { getCubeImage, resourceIcons, getIcon } from './replayShared';
 
 import trImg from '/assets/tr.png';
+
+const mcImg = getIcon(resourceIcons, 'mc') ?? '';
 
 export interface PlayerSummary {
   playerId: string;
@@ -13,6 +15,7 @@ export interface PlayerSummary {
   corporation: string;
   vp: PlayerVictoryPoints | undefined;
   finalVp: number | null;
+  mcRemaining?: number | null;
 }
 
 interface EndGameSummaryProps {
@@ -23,9 +26,9 @@ interface EndGameSummaryProps {
 
 const VP_CATEGORIES: { key: keyof NonNullable<PlayerVictoryPoints['total_details']>; label: string; icon: typeof Trophy }[] = [
   { key: 'tr', label: 'TR', icon: Trophy },
+  { key: 'milestones', label: 'Miles.', icon: Flag },
   { key: 'awards', label: 'Awards', icon: Award },
-  { key: 'milestones', label: 'Milestones', icon: Flag },
-  { key: 'greeneries', label: 'Greeneries', icon: Trees },
+  { key: 'greeneries', label: 'Green.', icon: Trees },
   { key: 'cities', label: 'Cities', icon: Building2 },
   { key: 'cards', label: 'Cards', icon: Layers },
 ];
@@ -44,9 +47,13 @@ export function EndGameSummary({ players, winner, onClose }: EndGameSummaryProps
     return bVp - aVp;
   });
 
+  // Detect VP tie for tiebreaker display
+  const topVp = sorted[0]?.vp?.total ?? sorted[0]?.finalVp ?? 0;
+  const hasTie = sorted.filter(p => (p.vp?.total ?? p.finalVp ?? 0) === topVp).length > 1;
+
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="glass-panel rounded-2xl p-5 w-[560px] max-w-[90vw] shadow-2xl" onClick={e => e.stopPropagation()}>
+      <div className="glass-panel rounded-2xl p-5 w-[740px] max-w-[90vw] shadow-2xl" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="text-center flex-1">
@@ -63,22 +70,23 @@ export function EndGameSummary({ players, winner, onClose }: EndGameSummaryProps
         {/* Scoreboard */}
         <div className="space-y-0">
           {/* Header row */}
-          <div className="flex items-center gap-1 px-2 py-1.5 text-[10px] uppercase tracking-wider text-slate-500">
-            <div className="w-6 text-center">#</div>
+          <div className="flex items-center px-2 py-1.5 text-xs uppercase tracking-wider text-slate-500">
+            <div className="w-7 text-center">#</div>
             <div className="flex-1">Player</div>
             {VP_CATEGORIES.map(cat => {
               const Icon = cat.icon;
               return (
-                <div key={cat.key} className="w-12 text-center" title={cat.label}>
+                <div key={cat.key} className="w-16 text-center flex flex-col items-center gap-0.5">
+                  <span>{cat.label}</span>
                   {cat.key === 'tr' ? (
-                    <img src={trImg} alt="TR" className="w-4 h-4 mx-auto" />
+                    <img src={trImg} alt="TR" className="w-5 h-5" />
                   ) : (
-                    <Icon size={12} className="mx-auto" />
+                    <Icon size={14} />
                   )}
                 </div>
               );
             })}
-            <div className="w-14 text-center font-bold">Total</div>
+            <div className="w-16 text-center font-bold">Total</div>
           </div>
 
           {/* Player rows */}
@@ -87,17 +95,18 @@ export function EndGameSummary({ players, winner, onClose }: EndGameSummaryProps
             const total = p.vp?.total ?? p.finalVp ?? 0;
             const isWinner = p.playerName === winner || (idx === 0 && !winner);
             const details = p.vp?.total_details;
+            const showTiebreaker = hasTie && total === topVp && p.mcRemaining != null;
 
             return (
               <div
                 key={p.playerId}
-                className={`flex items-center gap-1 px-2 py-2 rounded-lg ${
+                className={`flex items-center px-2 py-2 rounded-lg ${
                   isWinner
                     ? 'bg-amber-500/10 border border-amber-500/20'
                     : 'border border-transparent'
                 }`}
               >
-                <div className="w-6 text-center text-sm font-bold text-slate-500">
+                <div className="w-7 text-center text-base font-bold text-slate-500">
                   {idx + 1}
                 </div>
                 <div className="flex-1 flex items-center gap-2 min-w-0">
@@ -107,10 +116,10 @@ export function EndGameSummary({ players, winner, onClose }: EndGameSummaryProps
                     <span className="inline-block w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
                   )}
                   <div className="min-w-0">
-                    <span className={`text-sm font-bold truncate block ${isWinner ? 'text-amber-300' : 'text-white'}`}>
+                    <span className={`text-base font-bold truncate block ${isWinner ? 'text-amber-300' : 'text-white'}`}>
                       {p.playerName}
                     </span>
-                    <span className="text-[10px] text-slate-500 truncate block">{p.corporation}</span>
+                    <span className="text-xs text-slate-500 truncate block">{p.corporation}</span>
                   </div>
                 </div>
                 {VP_CATEGORIES.map(cat => {
@@ -118,7 +127,7 @@ export function EndGameSummary({ players, winner, onClose }: EndGameSummaryProps
                   return (
                     <div
                       key={cat.key}
-                      className={`w-12 text-center text-sm ${
+                      className={`w-16 text-center text-base ${
                         val != null && val > 0 ? 'text-slate-200 font-medium' : 'text-slate-600'
                       }`}
                     >
@@ -126,8 +135,14 @@ export function EndGameSummary({ players, winner, onClose }: EndGameSummaryProps
                     </div>
                   );
                 })}
-                <div className={`w-14 text-center text-lg font-bold ${isWinner ? 'text-amber-400 glow-amber' : 'text-white glow-white'}`}>
-                  {total}
+                <div className={`w-16 text-center ${isWinner ? 'text-amber-400 glow-amber' : 'text-white glow-white'}`}>
+                  <span className="text-xl font-bold">{total}</span>
+                  {showTiebreaker && (
+                    <div className="flex items-center justify-center gap-1 mt-0.5">
+                      <span className="text-xs text-slate-400 font-medium">{p.mcRemaining}</span>
+                      {mcImg && <img src={mcImg} alt="M€" className="w-4 h-4" />}
+                    </div>
+                  )}
                 </div>
               </div>
             );

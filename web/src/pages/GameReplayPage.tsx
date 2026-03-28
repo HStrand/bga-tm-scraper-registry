@@ -905,6 +905,7 @@ export function GameReplayPage() {
             corporation: playerCorporations[pid] ?? '',
             vp: gameState.player_vp?.[pid],
             finalVp: gameLog.players[pid].final_vp,
+            mcRemaining: gameState.player_trackers?.[pid]?.['M€'] ?? null,
           }))}
           winner={gameLog.winner}
           onClose={() => setEndGameOpen(false)}
