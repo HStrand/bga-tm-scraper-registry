@@ -1,4 +1,5 @@
 import { memo, useState, useRef, useEffect } from 'react';
+import { Info } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { GameLogMove } from '@/types/gamelog';
 import { getCubeImage } from './replayShared';
@@ -24,15 +25,27 @@ const MoveEntry = memo(function MoveEntry({ move, moveIndex, isCurrent, isExpand
     >
       <div className="flex items-center gap-2 mb-0.5">
         <span className="text-xs font-mono text-slate-500 flex-shrink-0">#{moveIndex + 1}</span>
-        {cubeImg ? (
-          <img src={cubeImg} alt="" className="w-4 h-4 flex-shrink-0" />
-        ) : (
-          <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: playerColor }} />
-        )}
-        <span className="font-bold text-white text-xs">{move.player_name}</span>
-        <span className="text-[10px] text-slate-500">{move.action_type}</span>
+        {move.action_type === 'game_state_change' ? (<>
+          <span className="text-xs text-slate-500 italic">Game State Change</span>
+          <span className="relative group flex-shrink-0">
+            <Info className="w-3 h-3 text-slate-600 cursor-help" />
+            <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 hidden group-hover:block z-50 bg-slate-800 text-white text-[10px] rounded-lg px-2.5 py-1.5 shadow-lg whitespace-nowrap border border-slate-700 leading-relaxed">
+              BGA stores internal game state changes in logs.<br />These moves have no effect and are shown for completeness.
+            </span>
+          </span>
+        </>) : (<>
+          {cubeImg ? (
+            <img src={cubeImg} alt="" className="w-4 h-4 flex-shrink-0" />
+          ) : (
+            <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: playerColor }} />
+          )}
+          <span className="font-bold text-white text-xs">{move.player_name}</span>
+          <span className="text-[10px] text-slate-500">{move.action_type}</span>
+        </>)}
       </div>
-      <p className="text-[11px] text-slate-300 leading-relaxed">{move.description}</p>
+      {move.action_type !== 'game_state_change' && (
+        <p className="text-[11px] text-slate-300 leading-relaxed">{move.description}</p>
+      )}
       {move.tile_placed && move.tile_location && (
         <p className="text-[10px] text-slate-400 mt-0.5">
           Placed {move.tile_placed} at {move.tile_location}
