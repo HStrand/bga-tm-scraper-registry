@@ -14,6 +14,7 @@ import { PlayerTableau } from '@/components/replay/PlayerTableau';
 import { DiscardPileModal } from '@/components/replay/DiscardPileModal';
 import { StartingHandModal, type StartingHandPlayerData } from '@/components/replay/StartingHandModal';
 import { DraftModal, type DraftData, type DraftPlayerData } from '@/components/replay/DraftModal';
+import { EndGameSummary } from '@/components/replay/EndGameSummary';
 import type { GameLog } from '@/types/gamelog';
 
 export function GameReplayPage() {
@@ -31,6 +32,7 @@ export function GameReplayPage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [startingHandOpen, setStartingHandOpen] = useState(false);
   const [draftOpen, setDraftOpen] = useState(false);
+  const [endGameOpen, setEndGameOpen] = useState(false);
   const prevDraftGen = useRef<number | null>(null);
   const [mapScale, setMapScale] = useState(1);
   const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
@@ -533,6 +535,7 @@ export function GameReplayPage() {
     prevDraftGen.current = draftData?.generation ?? null;
   }, [draftData?.generation]);
 
+
   // Track which action cards have been activated this generation
   const activatedCards = useMemo(() => {
     if (!gameLog) return new Map<string, Set<string>>();
@@ -611,6 +614,15 @@ export function GameReplayPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [gameLog, currentStep, resolveStep]);
 
+  // Auto-open end game summary when reaching the last move
+  const lastMoveState = gameLog?.moves[gameLog.moves.length - 1]?.game_state;
+  const isAtLastMove = gameLog ? currentStep === gameLog.moves.length - 1 : false;
+  useEffect(() => {
+    if (isAtLastMove && lastMoveState?.player_vp) {
+      setEndGameOpen(true);
+    }
+  }, [isAtLastMove, lastMoveState?.player_vp]);
+
   // --- render ---
   if (loading) {
     return (
@@ -631,6 +643,7 @@ export function GameReplayPage() {
 
   const currentMove = gameLog.moves[currentStep];
   const gameState = currentMove?.game_state;
+  const isLastMove = currentStep === gameLog.moves.length - 1;
 
   return (
     <div>
@@ -880,6 +893,21 @@ export function GameReplayPage() {
         <DraftModal
           draft={draftData}
           onClose={() => setDraftOpen(false)}
+        />
+      )}
+
+      {endGameOpen && isLastMove && gameState?.player_vp && gameLog && (
+        <EndGameSummary
+          players={Object.keys(gameLog.players).map(pid => ({
+            playerId: pid,
+            playerName: gameLog.players[pid].player_name,
+            color: playerColors[pid] ?? '#888',
+            corporation: playerCorporations[pid] ?? '',
+            vp: gameState.player_vp?.[pid],
+            finalVp: gameLog.players[pid].final_vp,
+          }))}
+          winner={gameLog.winner}
+          onClose={() => setEndGameOpen(false)}
         />
       )}
 
