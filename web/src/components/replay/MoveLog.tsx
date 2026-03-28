@@ -1,4 +1,5 @@
-import { memo, useState, useRef, useEffect } from 'react';
+import { memo, useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Info, MapPin } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { GameLogMove } from '@/types/gamelog';
@@ -6,6 +7,32 @@ import { getCubeImage, getIcon, tileIcons, resourceIcons } from './replayShared'
 import cityTileImage from '/assets/tiles/city tile.png';
 import greeneryTileImage from '/assets/tiles/greenery tile.png';
 import oceanTileImage from '/assets/tiles/ocean tile.png';
+import temperatureImg from '/assets/temperature.png';
+import temperatureMiniImg from '/assets/temperature mini.png';
+
+const milestoneImages = import.meta.glob('../../../assets/milestones/*.png', { eager: true }) as Record<string, { default: string }>;
+const awardImages = import.meta.glob('../../../assets/awards/*.png', { eager: true }) as Record<string, { default: string }>;
+
+function getMilestoneImage(name: string): string | undefined {
+  const slug = name.toLowerCase().replace(/\s+/g, '_');
+  const entry = Object.entries(milestoneImages).find(([key]) => {
+    const base = key.replace(/^.*[\\/]/, '').toLowerCase().replace('.png', '');
+    return base === slug || base === name.toLowerCase().replace(/\s+/g, '');
+  });
+  return entry?.[1].default;
+}
+
+function getAwardImage(name: string): string | undefined {
+  const slug = name.toLowerCase().replace(/\s+/g, '_');
+  const entry = Object.entries(awardImages).find(([key]) => {
+    const base = key.replace(/^.*[\\/]/, '').toLowerCase().replace('.png', '');
+    return base === slug || base === name.toLowerCase().replace(/\s+/g, '');
+  });
+  return entry?.[1].default;
+}
+import oxygenImg from '/assets/oxygen.png';
+import oceanImg from '/assets/ocean.png';
+import trImg from '/assets/tr.png';
 
 const specialTileImages = import.meta.glob('../../../assets/tiles/*.png', { eager: true }) as Record<string, { default: string }>;
 
@@ -35,9 +62,9 @@ interface MoveLogProps {
   onJump: (step: number) => void;
 }
 
-const MoveEntry = memo(function MoveEntry({ move, moveIndex, isCurrent, isExpanded, cubeImg, playerColor, onClick, onHover, onLeave }: {
+const MoveEntry = memo(function MoveEntry({ move, moveIndex, isCurrent, isExpanded, cubeImg, playerColor, allPlayerNames, onClick, onHover, onLeave }: {
   move: GameLogMove; moveIndex: number; isCurrent: boolean; isExpanded: boolean;
-  cubeImg: string | undefined; playerColor: string; onClick: () => void; onHover: () => void; onLeave: () => void;
+  cubeImg: string | undefined; playerColor: string; allPlayerNames: string[]; onClick: () => void; onHover: () => void; onLeave: () => void;
 }) {
   return (
     <div
@@ -70,12 +97,9 @@ const MoveEntry = memo(function MoveEntry({ move, moveIndex, isCurrent, isExpand
       ) : (() => {
         const payments = move.action_type !== 'game_state_change' ? parsePayments(move.description) : null;
         if (payments) return <ResourcePayment playerName={move.player_name} payments={payments} />;
-        if (move.action_type !== 'game_state_change') return <p className="text-[11px] text-slate-300 leading-relaxed">{move.description}</p>;
+        if (move.action_type !== 'game_state_change') return <RichDescription text={move.description} playerName={move.player_name} playerNames={allPlayerNames} />;
         return null;
       })()}
-      {isExpanded && move.card_played && (
-        <CardPreview cardName={move.card_played} cardCost={move.card_cost} />
-      )}
     </div>
   );
 });
@@ -185,6 +209,263 @@ function ResourcePayment({ playerName, payments }: { playerName: string; payment
   );
 }
 
+const INLINE_ICONS: Record<string, string> = {
+  'Heat': getIcon(resourceIcons, 'heat') ?? '',
+  'Plant': getIcon(resourceIcons, 'plant') ?? '',
+  'Steel': getIcon(resourceIcons, 'steel') ?? '',
+  'Titanium': getIcon(resourceIcons, 'titanium') ?? '',
+  'Energy': getIcon(resourceIcons, 'energy') ?? '',
+  'M€': getIcon(resourceIcons, 'mc') ?? '',
+  'MC': getIcon(resourceIcons, 'mc') ?? '',
+  'TR': trImg,
+  'Temperature': temperatureImg,
+  'Oxygen': oxygenImg,
+  'Oxygen Level': oxygenImg,
+  'Oceans': oceanImg,
+};
+
+// Build a regex that matches "N Resource" patterns for inline icon replacement
+// Sort keys longest-first so "Oxygen Level" matches before "Oxygen"
+const ICON_KEYS_SORTED = Object.keys(INLINE_ICONS).sort((a, b) => b.length - a.length);
+const ICON_PATTERN = new RegExp(
+  `(\\d+)\\s+(${ICON_KEYS_SORTED.join('|')})(?![a-zA-Z])`,
+  'g'
+);
+
+// Rewrite verbose segments into cleaner JSX
+function rewriteSegment(seg: string, key: number): JSX.Element | null | undefined {
+  // "Player increases Temperature by X step/s to a value of Y"
+  const tempMatch = seg.match(/^(.+?) increases Temperature by (\d+) step\/s to a value of (-?\d+)/i);
+  if (tempMatch) return (
+    <p key={key} className="flex items-center gap-0.5 flex-wrap">
+      <span className="font-bold text-white">{tempMatch[1]}</span>
+      <span> increases </span>
+      <span className="font-bold text-white">temperature</span>
+      <img src={temperatureMiniImg} alt="temperature" className="w-3.5 h-3.5" />
+      <span> to </span>
+      <span className="font-bold text-white">{tempMatch[3]}°C</span>
+    </p>
+  );
+
+  // "Player increases Oxygen Level by X step/s to a value of Y"
+  const oxyMatch = seg.match(/^(.+?) increases Oxygen(?: Level)? by (\d+) step\/s to a value of (\d+)/i);
+  if (oxyMatch) return (
+    <p key={key} className="flex items-center gap-0.5 flex-wrap">
+      <span className="font-bold text-white">{oxyMatch[1]}</span>
+      <span> increases </span>
+      <span className="font-bold text-white">oxygen</span>
+      <img src={oxygenImg} alt="oxygen" className="w-3.5 h-3.5" />
+      <span> to </span>
+      <span className="font-bold text-white">{oxyMatch[3]}%</span>
+    </p>
+  );
+
+  // "Player increases Oceans by X step/s to a value of Y"
+  const oceanMatch = seg.match(/^(.+?) increases Oceans by (\d+) step\/s to a value of (\d+)/i);
+  if (oceanMatch) return (
+    <p key={key} className="flex items-center gap-0.5 flex-wrap">
+      <span className="font-bold text-white">{oceanMatch[1]}</span>
+      <span> increases </span>
+      <span className="font-bold text-white">oceans</span>
+      <img src={oceanImg} alt="oceans" className="w-3.5 h-3.5" />
+      <span> to </span>
+      <span className="font-bold text-white">{oceanMatch[3]}/9</span>
+    </p>
+  );
+
+  // "Player increases/reduces X Production by N"
+  const prodMatch = seg.match(/^(.+?) (increases|reduces) (\S+(?:\s*€)?) Production by (\d+)/i);
+  if (prodMatch) {
+    const verb = prodMatch[2].toLowerCase();
+    const resName = prodMatch[3];
+    const amount = prodMatch[4];
+    const iconKey = RESOURCE_ICON_MAP[resName.toLowerCase()];
+    const icon = iconKey ? getIcon(resourceIcons, iconKey) : null;
+    // Capture any trailing text like "(immediate effect of X)"
+    const rest = seg.slice(prodMatch[0].length);
+    return (
+      <p key={key} className="flex items-center gap-0.5 flex-wrap">
+        <span className="font-bold text-white">{prodMatch[1]}</span>
+        <span> {verb} </span>
+        <span>{resName} Production</span>
+        {icon && <img src={icon} alt={resName} className="w-3.5 h-3.5" />}
+        <span> by </span>
+        <span className="font-bold text-white">{amount}</span>
+        {rest && <span>{rest}</span>}
+      </p>
+    );
+  }
+
+  // "Player plays card CardName"
+  const playsMatch = seg.match(/^(.+?) plays card (.+)$/i);
+  if (playsMatch) {
+    const cardName = playsMatch[2];
+    const cardImg = getCardImage(cardName) ?? getCardPlaceholderImage();
+    return (
+      <p key={key} className="flex items-center gap-1 flex-wrap">
+        <span className="font-bold text-white">{playsMatch[1]}</span>
+        <span> plays </span>
+        <InlineCard cardName={cardName} cardImg={cardImg} />
+      </p>
+    );
+  }
+
+  // "Player claims milestone X"
+  const msMatch = seg.match(/^(.+?) claims milestone (.+)$/i);
+  if (msMatch) {
+    return (
+      <p key={key}>
+        <span className="font-bold text-white">{msMatch[1]}</span>
+        {' claims milestone '}
+        <span className="font-bold text-green-400">{msMatch[2].trim()}</span>
+      </p>
+    );
+  }
+
+  // "Player funds X award"
+  const awMatch = seg.match(/^(.+?) funds (.+?) award$/i);
+  if (awMatch) {
+    return (
+      <p key={key}>
+        <span className="font-bold text-white">{awMatch[1]}</span>
+        {' funds '}
+        <span className="font-bold text-amber-400">{awMatch[2].trim()}</span>
+        {' award'}
+      </p>
+    );
+  }
+
+  // "Player plays standard project X"
+  const stdMatch = seg.match(/^(.+?) plays standard project (.+)$/i);
+  if (stdMatch) return (
+    <p key={key}>
+      <span className="font-bold text-white">{stdMatch[1]}</span>
+      {' plays standard project '}
+      <span className="font-bold text-white">{stdMatch[2]}</span>
+    </p>
+  );
+
+  // "Parameter Temperature increase triggers a bonus" → skip
+  if (/^Parameter .+ triggers a bonus$/i.test(seg)) return null;
+
+  // "Player moves X into tableau_" → skip (internal)
+  if (/moves .+ into tableau_/i.test(seg)) return null;
+
+  return undefined; // not matched — use default rendering
+}
+
+function RichDescription({ text, playerName, playerNames }: { text: string; playerName: string; playerNames: string[] }) {
+  // Replace "You verb" with "playerName verbs" (conjugate to third person)
+  const normalized = text.replace(/\bYou (\w+)/g, (_match, verb: string) => {
+    const v = verb.toLowerCase();
+    if (v.endsWith('s') || v.endsWith('x') || v.endsWith('sh') || v.endsWith('ch')) return `${playerName} ${verb}es`;
+    if (v.endsWith('y') && !/[aeiou]y$/i.test(v)) return `${playerName} ${verb.slice(0, -1)}ies`;
+    return `${playerName} ${verb}s`;
+  });
+  const parts = normalized.split('|').map(s => s.trim());
+
+  return (
+    <div className="text-[11px] text-slate-300 leading-relaxed space-y-0.5">
+      {parts.map((part, i) => {
+        // Try segment-level rewrites
+        const rewrite = rewriteSegment(part, i);
+        if (rewrite === null) return null; // skip this segment
+        if (rewrite !== undefined) return rewrite;
+
+        // Default: apply inline icon replacement + bold player names
+        return <p key={i}>{boldPlayerNames(renderInlineIcons(part), playerNames)}</p>;
+      })}
+    </div>
+  );
+}
+
+function boldPlayerNames(elements: (string | JSX.Element)[], playerNames: string[]): (string | JSX.Element)[] {
+  if (playerNames.length === 0) return elements;
+  const namePattern = new RegExp(`(${playerNames.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g');
+  const result: (string | JSX.Element)[] = [];
+  let keyIdx = 0;
+  for (const el of elements) {
+    if (typeof el !== 'string') { result.push(el); continue; }
+    let lastIdx = 0;
+    let match: RegExpExecArray | null;
+    namePattern.lastIndex = 0;
+    while ((match = namePattern.exec(el)) !== null) {
+      if (match.index > lastIdx) result.push(el.slice(lastIdx, match.index));
+      result.push(<span key={`pn-${keyIdx++}`} className="font-bold text-white">{match[1]}</span>);
+      lastIdx = match.index + match[0].length;
+    }
+    if (lastIdx === 0) result.push(el);
+    else if (lastIdx < el.length) result.push(el.slice(lastIdx));
+  }
+  return result;
+}
+
+function renderInlineIcons(text: string): (string | JSX.Element)[] {
+  const elements: (string | JSX.Element)[] = [];
+  let lastIdx = 0;
+  let match: RegExpExecArray | null;
+  ICON_PATTERN.lastIndex = 0;
+  while ((match = ICON_PATTERN.exec(text)) !== null) {
+    if (match.index > lastIdx) elements.push(text.slice(lastIdx, match.index));
+    const icon = INLINE_ICONS[match[2]];
+    const showLabel = match[2] === 'TR';
+    elements.push(
+      <span key={match.index} className="inline-flex items-center gap-0.5 mx-0.5">
+        <span className="font-bold text-white">{match[1]}</span>
+        {showLabel && <span className="font-bold text-white">{match[2]}</span>}
+        {icon ? <img src={icon} alt={match[2]} className="w-3.5 h-3.5 inline-block align-text-bottom" /> : (
+          !showLabel && <span>{match[2]}</span>
+        )}
+      </span>
+    );
+    lastIdx = match.index + match[0].length;
+  }
+  if (lastIdx < text.length) elements.push(text.slice(lastIdx));
+  return elements.length > 0 ? elements : [text];
+}
+
+function InlineCard({ cardName, cardImg }: { cardName: string; cardImg: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [hover, setHover] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+
+  const onEnter = useCallback(() => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      const previewH = 400;
+      const previewW = 280;
+      let top = rect.top - previewH - 8;
+      if (top < 8) top = rect.bottom + 8;
+      let left = rect.left + rect.width / 2 - previewW / 2;
+      if (left < 8) left = 8;
+      if (left + previewW > window.innerWidth - 8) left = window.innerWidth - previewW - 8;
+      setPos({ x: left, y: top });
+    }
+    setHover(true);
+  }, []);
+
+  return (
+    <span
+      ref={ref}
+      className="inline-flex items-center gap-1 cursor-pointer"
+      onMouseEnter={onEnter}
+      onMouseLeave={() => setHover(false)}
+    >
+      <img src={cardImg} alt={cardName} className="w-5 h-7 rounded-sm object-cover" />
+      <span className="font-bold text-white">{cardName}</span>
+      {hover && createPortal(
+        <img
+          src={cardImg}
+          alt={cardName}
+          className="rounded-lg shadow-2xl shadow-black/70 pointer-events-none"
+          style={{ position: 'fixed', left: pos.x, top: pos.y, width: 280, zIndex: 9999 }}
+        />,
+        document.body
+      )}
+    </span>
+  );
+}
+
 function CardPreview({ cardName, cardCost }: { cardName: string; cardCost?: number | null }) {
   const img = getCardImage(cardName) ?? getCardPlaceholderImage();
   return (
@@ -215,6 +496,13 @@ export function MoveLog({ moves, currentStep, generationBoundaries, playerColors
   const startIdx = bounds?.start ?? currentStep;
   const endIdx = Math.min(bounds?.end ?? currentStep, currentStep);
 
+  // Collect all unique player names for bolding in descriptions
+  const allPlayerNames = useMemo(() => {
+    const names = new Set<string>();
+    for (const m of moves) names.add(m.player_name);
+    return [...names];
+  }, [moves]);
+
   return (
     <div className="glass-panel rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 22rem)' }}>
       <div ref={scrollRef} className="overflow-y-auto scrollbar-subtle py-2 space-y-1">
@@ -231,6 +519,7 @@ export function MoveLog({ moves, currentStep, generationBoundaries, playerColors
                 isExpanded={isCurrent || hoveredIdx === idx}
                 cubeImg={getCubeImage(color)}
                 playerColor={color}
+                allPlayerNames={allPlayerNames}
                 onClick={() => onJump(idx)}
                 onHover={() => setHoveredIdx(idx)}
                 onLeave={() => setHoveredIdx(null)}

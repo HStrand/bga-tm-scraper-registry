@@ -29,7 +29,7 @@ export function GameReplayPage() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareIncludeMove, setShareIncludeMove] = useState(true);
   const [shareCopied, setShareCopied] = useState(false);
-  const [startingHandOpen, setStartingHandOpen] = useState(true);
+  const [startingHandOpen, setStartingHandOpen] = useState(false);
   const [draftOpen, setDraftOpen] = useState(false);
   const prevDraftGen = useRef<number | null>(null);
   const [mapScale, setMapScale] = useState(1);
@@ -526,13 +526,9 @@ export function GameReplayPage() {
     };
   }, [gameLog, currentStep, playerColors]);
 
-  // Auto-open draft dialog when entering a new draft sequence
+  // Track draft generation changes (no auto-open)
   useEffect(() => {
-    const gen = draftData?.generation ?? null;
-    if (gen != null && gen !== prevDraftGen.current) {
-      setDraftOpen(true);
-    }
-    prevDraftGen.current = gen;
+    prevDraftGen.current = draftData?.generation ?? null;
   }, [draftData?.generation]);
 
   // Track which action cards have been activated this generation
