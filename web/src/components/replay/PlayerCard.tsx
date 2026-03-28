@@ -389,7 +389,7 @@ export const PlayerCard = memo(function PlayerCard({
           maxWidth: customSize ? undefined : '900px',
           height: customSize ? `${customSize.h}px` : undefined,
           maxHeight: isExpanded ? (customSize ? undefined : '85vh') : '0px',
-          transition: (resizing.current || dragging.current) ? 'opacity 200ms ease' : 'width 500ms cubic-bezier(0.4,0,0.2,1), max-height 500ms cubic-bezier(0.4,0,0.2,1), opacity 400ms ease',
+          transition: (resizing.current || dragging.current) ? 'opacity 200ms ease' : 'width 800ms cubic-bezier(0.25,0.1,0.25,1), max-height 800ms cubic-bezier(0.25,0.1,0.25,1), opacity 500ms ease',
         }}
       >
         {/* Header — drag handle */}
