@@ -49,6 +49,7 @@ export interface GameLogMove {
   tile_location?: string;
   cards_kept?: Record<string, string[]>;
   card_options?: Record<string, string[]> | null;
+  reason?: string | null;
   cards_sold?: string[] | null;
   cards_discarded?: string[] | null;
   game_state?: GameState;

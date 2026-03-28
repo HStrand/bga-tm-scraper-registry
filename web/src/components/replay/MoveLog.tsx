@@ -1,8 +1,31 @@
 import { memo, useState, useRef, useEffect } from 'react';
-import { Info } from 'lucide-react';
+import { Info, MapPin } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { GameLogMove } from '@/types/gamelog';
-import { getCubeImage } from './replayShared';
+import { getCubeImage, getIcon, tileIcons } from './replayShared';
+import cityTileImage from '/assets/tiles/city tile.png';
+import greeneryTileImage from '/assets/tiles/greenery tile.png';
+import oceanTileImage from '/assets/tiles/ocean tile.png';
+
+const specialTileImages = import.meta.glob('../../../assets/tiles/*.png', { eager: true }) as Record<string, { default: string }>;
+
+const TILE_ALIASES: Record<string, string> = {
+  'mining area': 'mining',
+  'mining rights': 'mining',
+};
+
+function getTileImage(tileType: string): string | undefined {
+  const norm = tileType.toLowerCase();
+  if (norm === 'city') return cityTileImage;
+  if (norm === 'greenery' || norm === 'forest') return greeneryTileImage;
+  if (norm === 'ocean') return oceanTileImage;
+  const slug = TILE_ALIASES[norm] ?? norm;
+  const entry = Object.entries(specialTileImages).find(([key]) => {
+    const base = key.replace(/^.*[\\/]/, '').toLowerCase().replace('.png', '');
+    return base === slug;
+  });
+  return entry?.[1].default;
+}
 
 interface MoveLogProps {
   moves: GameLogMove[];
@@ -43,20 +66,68 @@ const MoveEntry = memo(function MoveEntry({ move, moveIndex, isCurrent, isExpand
           <span className="text-[10px] text-slate-500">{move.action_type}</span>
         </>)}
       </div>
-      {move.action_type !== 'game_state_change' && (
+      {move.action_type === 'place_tile' && move.tile_placed && move.tile_location ? (
+        <TilePlacement move={move} />
+      ) : move.action_type !== 'game_state_change' ? (
         <p className="text-[11px] text-slate-300 leading-relaxed">{move.description}</p>
-      )}
-      {move.tile_placed && move.tile_location && (
-        <p className="text-[10px] text-slate-400 mt-0.5">
-          Placed {move.tile_placed} at {move.tile_location}
-        </p>
-      )}
+      ) : null}
       {isExpanded && move.card_played && (
         <CardPreview cardName={move.card_played} cardCost={move.card_cost} />
       )}
     </div>
   );
 });
+
+function resolveTileName(move: GameLogMove): string {
+  // 1. Use reason if available
+  if (move.tile_placed === 'tile' && move.reason) return move.reason;
+  // 2. Look up special_tiles from game_state
+  if (move.tile_placed === 'tile' && move.game_state?.special_tiles) {
+    const playerTiles = move.game_state.special_tiles[move.player_id];
+    if (playerTiles) {
+      // Find the special tile whose location matches this move's tile_location
+      for (const [name, loc] of Object.entries(playerTiles)) {
+        if (move.tile_location && loc.includes(move.tile_location.replace(/^Hex at /, 'Hex '))) return name;
+        // Also try matching by coordinates
+        const coordMatch = move.tile_location?.match(/\((\d+,\d+)\)/);
+        if (coordMatch && loc.includes(coordMatch[1])) return name;
+      }
+      // If only one special tile for this player, use it
+      const entries = Object.keys(playerTiles);
+      if (entries.length === 1) return entries[0];
+    }
+  }
+  // 3. Fall back to tile_placed
+  return move.tile_placed!;
+}
+
+function TilePlacement({ move }: { move: GameLogMove }) {
+  const tileName = resolveTileName(move);
+  const tileImg = getTileImage(tileName);
+  // Parse location name from "Pavonis Mons (2,4)" → name="Pavonis Mons", coords="2,4"
+  const locMatch = move.tile_location?.match(/^(.+?)\s*\((\d+,\d+)\)$/);
+  const locName = locMatch ? locMatch[1].trim() : move.tile_location;
+  const locCoords = locMatch ? locMatch[2] : null;
+
+  return (
+    <div className="flex items-center gap-2.5 mt-1">
+      {tileImg && (
+        <img src={tileImg} alt={tileName} className="w-10 h-10 flex-shrink-0 drop-shadow" />
+      )}
+      <div className="min-w-0">
+        <p className="text-xs font-semibold text-white">{tileName}</p>
+        <p className="text-[10px] text-slate-400 flex items-center gap-1">
+          <MapPin size={10} className="flex-shrink-0" />
+          {locName}
+          {locCoords && <span className="text-slate-500">({locCoords})</span>}
+        </p>
+        {move.reason && move.reason !== tileName && move.reason !== move.tile_placed && (
+          <p className="text-[10px] text-slate-500 italic">{move.reason}</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function CardPreview({ cardName, cardCost }: { cardName: string; cardCost?: number | null }) {
   const img = getCardImage(cardName) ?? getCardPlaceholderImage();
