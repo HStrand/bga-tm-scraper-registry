@@ -718,27 +718,6 @@ export function GameReplayPage() {
 
         {/* Center: Map + controls */}
         <div className="flex-1 min-w-0 flex flex-col items-center relative">
-          {/* Floating call-to-action buttons */}
-          {(startingHandData && !startingHandOpen || draftData && !draftOpen) && (
-            <div className="absolute left-1/2 -translate-x-1/2 top-[30%] z-40 flex gap-2 pointer-events-none">
-              {startingHandData && !startingHandOpen && (
-                <button
-                  onClick={() => setStartingHandOpen(true)}
-                  className="glass-panel rounded-xl px-5 py-2.5 text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-breathe cursor-pointer border border-white/30 pointer-events-auto"
-                >
-                  Starting Hands
-                </button>
-              )}
-              {draftData && !draftOpen && (
-                <button
-                  onClick={() => setDraftOpen(true)}
-                  className="glass-panel rounded-xl px-5 py-2.5 text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-breathe cursor-pointer border border-white/30 pointer-events-auto"
-                >
-                  Draft (Gen {draftData.generation})
-                </button>
-              )}
-            </div>
-          )}
           <div
             className="relative inline-flex flex-col items-center"
             style={{
@@ -785,7 +764,28 @@ export function GameReplayPage() {
               <button onClick={() => { setMapScale(1); setMapOffset({ x: 0, y: 0 }); }} className="text-xs text-slate-500 hover:text-slate-300 ml-1" title="Reset map zoom">↺</button>
             </div>
 
-            <div style={{ width: `${mapScale * 100}%` }}>
+            <div style={{ width: `${mapScale * 100}%` }} className="relative">
+              {/* Floating call-to-action buttons */}
+              {(startingHandData && !startingHandOpen || draftData && !draftOpen) && (
+                <div className="absolute left-1/2 -translate-x-1/2 top-[30%] z-40 flex gap-2 pointer-events-none">
+                  {startingHandData && !startingHandOpen && (
+                    <button
+                      onClick={() => setStartingHandOpen(true)}
+                      className="glass-panel rounded-xl px-5 py-2.5 text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-breathe cursor-pointer border border-white/30 pointer-events-auto"
+                    >
+                      Starting Hands
+                    </button>
+                  )}
+                  {draftData && !draftOpen && (
+                    <button
+                      onClick={() => setDraftOpen(true)}
+                      className="glass-panel rounded-xl px-5 py-2.5 text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-breathe cursor-pointer border border-white/30 pointer-events-auto"
+                    >
+                      Draft (Gen {draftData.generation})
+                    </button>
+                  )}
+                </div>
+              )}
               {mapDefinition ? (
                 <ReplayMap
                   mapDefinition={mapDefinition}
