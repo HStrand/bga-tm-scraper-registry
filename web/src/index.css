@@ -156,6 +156,15 @@
   background: rgba(255,255,255,0.25);
 }
 
+/* ── Breathing scale pulse ── */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+.animate-breathe {
+  animation: breathe 2.5s ease-in-out infinite;
+}
+
 /* ── Glossy metallic panel ── */
 .glass-panel {
   position: relative;

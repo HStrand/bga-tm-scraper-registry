@@ -634,7 +634,7 @@ export function GameReplayPage() {
     <div>
       {/* Header */}
       <div className="mb-5">
-        <div className="flex items-center gap-3 mb-1 h-10">
+        <div className="flex items-center gap-3 mb-1">
           <h1 className="text-2xl font-bold text-white tracking-tight glow-white">
             Table {tableId}
             {mapDefinition && (
@@ -648,22 +648,6 @@ export function GameReplayPage() {
           >
             <Share2 size={18} />
           </button>
-          {startingHandData && !startingHandOpen && (
-            <button
-              onClick={() => setStartingHandOpen(true)}
-              className="text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-pulse cursor-pointer px-4 py-1.5 border border-white/30 rounded-lg"
-            >
-              Starting Hands
-            </button>
-          )}
-          {draftData && !draftOpen && (
-            <button
-              onClick={() => setDraftOpen(true)}
-              className="text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-pulse cursor-pointer px-4 py-1.5 border border-white/30 rounded-lg"
-            >
-              Draft (Gen {draftData.generation})
-            </button>
-          )}
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
           {gameLog.game_date && <span>{gameLog.game_date}</span>}
@@ -733,7 +717,28 @@ export function GameReplayPage() {
         </div>
 
         {/* Center: Map + controls */}
-        <div className="flex-1 min-w-0 flex flex-col items-center">
+        <div className="flex-1 min-w-0 flex flex-col items-center relative">
+          {/* Floating call-to-action buttons */}
+          {(startingHandData && !startingHandOpen || draftData && !draftOpen) && (
+            <div className="absolute left-1/2 -translate-x-1/2 top-[30%] z-40 flex gap-2 pointer-events-none">
+              {startingHandData && !startingHandOpen && (
+                <button
+                  onClick={() => setStartingHandOpen(true)}
+                  className="glass-panel rounded-xl px-5 py-2.5 text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-breathe cursor-pointer border border-white/30 pointer-events-auto"
+                >
+                  Starting Hands
+                </button>
+              )}
+              {draftData && !draftOpen && (
+                <button
+                  onClick={() => setDraftOpen(true)}
+                  className="glass-panel rounded-xl px-5 py-2.5 text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-breathe cursor-pointer border border-white/30 pointer-events-auto"
+                >
+                  Draft (Gen {draftData.generation})
+                </button>
+              )}
+            </div>
+          )}
           <div
             className="relative inline-flex flex-col items-center"
             style={{
