@@ -634,7 +634,7 @@ export function GameReplayPage() {
     <div>
       {/* Header */}
       <div className="mb-5">
-        <div className="flex items-center gap-3 mb-1">
+        <div className="flex items-center gap-3 mb-1 h-10">
           <h1 className="text-2xl font-bold text-white tracking-tight glow-white">
             Table {tableId}
             {mapDefinition && (
@@ -648,6 +648,22 @@ export function GameReplayPage() {
           >
             <Share2 size={18} />
           </button>
+          {startingHandData && !startingHandOpen && (
+            <button
+              onClick={() => setStartingHandOpen(true)}
+              className="text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-pulse cursor-pointer px-4 py-1.5 border border-white/30 rounded-lg"
+            >
+              Starting Hands
+            </button>
+          )}
+          {draftData && !draftOpen && (
+            <button
+              onClick={() => setDraftOpen(true)}
+              className="text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-pulse cursor-pointer px-4 py-1.5 border border-white/30 rounded-lg"
+            >
+              Draft (Gen {draftData.generation})
+            </button>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
           {gameLog.game_date && <span>{gameLog.game_date}</span>}
@@ -665,22 +681,6 @@ export function GameReplayPage() {
           ))}
           {gameLog.winner && currentStep === gameLog.moves.length - 1 && (
             <span className="font-medium text-amber-400 glow-amber">Winner: {gameLog.winner}</span>
-          )}
-          {startingHandData && !startingHandOpen && (
-            <button
-              onClick={() => setStartingHandOpen(true)}
-              className="text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-pulse cursor-pointer px-4 py-1.5 border border-white/30 rounded-lg"
-            >
-              Starting Hands
-            </button>
-          )}
-          {draftData && !draftOpen && (
-            <button
-              onClick={() => setDraftOpen(true)}
-              className="text-lg font-bold text-white glow-white hover:text-white/80 transition-colors animate-pulse cursor-pointer px-4 py-1.5 border border-white/30 rounded-lg"
-            >
-              Draft (Gen {draftData.generation})
-            </button>
           )}
         </div>
       </div>
