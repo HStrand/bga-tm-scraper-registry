@@ -2,7 +2,7 @@ import { memo, useState, useRef, useEffect } from 'react';
 import { Info, MapPin } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import type { GameLogMove } from '@/types/gamelog';
-import { getCubeImage, getIcon, tileIcons } from './replayShared';
+import { getCubeImage, getIcon, tileIcons, resourceIcons } from './replayShared';
 import cityTileImage from '/assets/tiles/city tile.png';
 import greeneryTileImage from '/assets/tiles/greenery tile.png';
 import oceanTileImage from '/assets/tiles/ocean tile.png';
@@ -46,7 +46,7 @@ const MoveEntry = memo(function MoveEntry({ move, moveIndex, isCurrent, isExpand
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
     >
-      <div className="flex items-center gap-2 mb-0.5">
+      <div className="flex items-center gap-2 mb-1">
         <span className="text-xs font-mono text-slate-500 flex-shrink-0">#{moveIndex + 1}</span>
         {move.action_type === 'game_state_change' ? (<>
           <span className="text-xs text-slate-500 italic">Game State Change</span>
@@ -63,14 +63,16 @@ const MoveEntry = memo(function MoveEntry({ move, moveIndex, isCurrent, isExpand
             <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: playerColor }} />
           )}
           <span className="font-bold text-white text-xs">{move.player_name}</span>
-          <span className="text-[10px] text-slate-500">{move.action_type}</span>
         </>)}
       </div>
       {move.action_type === 'place_tile' && move.tile_placed && move.tile_location ? (
         <TilePlacement move={move} />
-      ) : move.action_type !== 'game_state_change' ? (
-        <p className="text-[11px] text-slate-300 leading-relaxed">{move.description}</p>
-      ) : null}
+      ) : (() => {
+        const payments = move.action_type !== 'game_state_change' ? parsePayments(move.description) : null;
+        if (payments) return <ResourcePayment playerName={move.player_name} payments={payments} />;
+        if (move.action_type !== 'game_state_change') return <p className="text-[11px] text-slate-300 leading-relaxed">{move.description}</p>;
+        return null;
+      })()}
       {isExpanded && move.card_played && (
         <CardPreview cardName={move.card_played} cardCost={move.card_cost} />
       )}
@@ -125,6 +127,60 @@ function TilePlacement({ move }: { move: GameLogMove }) {
           <p className="text-[10px] text-slate-500 italic">{move.reason}</p>
         )}
       </div>
+    </div>
+  );
+}
+
+const RESOURCE_ICON_MAP: Record<string, string> = {
+  'plant': 'plant',
+  'heat': 'heat',
+  'steel': 'steel',
+  'titanium': 'titanium',
+  'energy': 'energy',
+  'm€': 'mc',
+  'mc': 'mc',
+};
+
+interface PaymentInfo {
+  amount: number;
+  resource: string;
+  iconName: string;
+}
+
+function parsePayments(description: string): PaymentInfo[] | null {
+  // Match patterns like "PlayerName pays X Resource" separated by |
+  const parts = description.split('|').map(s => s.trim());
+  const payments: PaymentInfo[] = [];
+  for (const part of parts) {
+    const match = part.match(/pays (\d+) (\S+(?:\s*€)?)/i);
+    if (!match) return null; // Not a pure payment description
+    const amount = parseInt(match[1], 10);
+    const resource = match[2];
+    const iconName = RESOURCE_ICON_MAP[resource.toLowerCase()];
+    if (!iconName) return null;
+    payments.push({ amount, resource, iconName });
+  }
+  return payments.length > 0 ? payments : null;
+}
+
+function ResourcePayment({ playerName, payments }: { playerName: string; payments: PaymentInfo[] }) {
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-slate-300">
+      <span>{playerName} pays</span>
+      {payments.map((p, i) => {
+        const icon = getIcon(resourceIcons, p.iconName);
+        return (
+          <span key={i} className="inline-flex items-center gap-1">
+            {i > 0 && <span className="text-slate-500 mx-0.5">+</span>}
+            <span className="font-bold text-white">{p.amount}</span>
+            {icon ? (
+              <img src={icon} alt={p.resource} className="w-4 h-4" />
+            ) : (
+              <span className="text-slate-400">{p.resource}</span>
+            )}
+          </span>
+        );
+      })}
     </div>
   );
 }
