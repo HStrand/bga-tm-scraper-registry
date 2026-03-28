@@ -419,6 +419,7 @@ export function GameReplayPage() {
     const cardsPerPlayer = { count: 0 };
 
     let direction: 'left' | 'right' = 'right';
+    let directionDetected = false;
     let firstOptions: Map<string, Set<string>> | null = null;
 
     for (let i = activeSeq.startIdx; i <= Math.min(currentStep, activeSeq.endIdx); i++) {
@@ -463,13 +464,14 @@ export function GameReplayPage() {
           }
         }
 
-        // Detect direction from second card_options move
+        // Detect direction from second card_options move (only once)
         if (!firstOptions) {
           firstOptions = new Map();
           for (const [pid, cards] of Object.entries(m.card_options)) {
             firstOptions.set(pid, new Set(cards));
           }
-        } else {
+        } else if (!directionDetected) {
+          directionDetected = true;
           const pidList = Object.keys(m.card_options);
           if (pidList.length >= 2) {
             const cur1 = new Set(m.card_options[pidList[1]] ?? []);

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, GripHorizontal, Eye, EyeOff, ArrowRight, ArrowLeft } from 'lucide-react';
+import { X, GripHorizontal, Eye, EyeOff, ChevronsRight, ChevronsLeft } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import { getCubeImage } from './replayShared';
 
@@ -27,11 +27,12 @@ interface DraftModalProps {
   onClose: () => void;
 }
 
-function DraftCardGroup({ title, cards, keptCards, cardSize }: {
+function DraftCardGroup({ title, cards, keptCards, cardSize, slideClass }: {
   title: string;
   cards: string[];
   keptCards?: Set<string> | null;
   cardSize: number;
+  slideClass?: string;
 }) {
   if (cards.length === 0) return null;
   return (
@@ -44,7 +45,7 @@ function DraftCardGroup({ title, cards, keptCards, cardSize }: {
           const img = getCardImage(card) ?? getCardPlaceholderImage();
           const dimmed = keptCards != null && !keptCards.has(card);
           return (
-            <div key={`${card}-${i}`} className="group relative" style={{ width: cardSize }}>
+            <div key={`${card}-${i}`} className={`group relative ${slideClass ?? ''}`} style={{ width: cardSize }}>
               <img
                 src={img}
                 alt={card}
@@ -103,7 +104,46 @@ export function DraftModal({ draft, onClose }: DraftModalProps) {
   }, []);
 
   const pids = Object.keys(draft.players);
-  const DirectionIcon = draft.direction === 'right' ? ArrowRight : ArrowLeft;
+  const slideClass = draft.direction === 'right' ? 'draft-slide-right' : 'draft-slide-left';
+  const FlowIcon = draft.direction === 'right' ? ChevronsRight : ChevronsLeft;
+
+  // Track previous options to detect pass vs draft
+  const prevOptionsRef = useRef<Record<string, string[]>>({});
+
+  // Determine which players received new cards via a pass (not just drafted one away)
+  const passedPlayers = new Set<string>();
+  const optionsKeys: Record<string, string> = {};
+  for (const pid of pids) {
+    const curr = draft.players[pid].options;
+    const prev = prevOptionsRef.current[pid];
+    optionsKeys[pid] = curr.join(',');
+
+    if (prev && prev.length > 0 && curr.length > 0) {
+      // If current options are NOT a subset of previous (i.e. new cards appeared), it's a pass
+      const prevSet = new Set(prev);
+      const isSubset = curr.every(c => prevSet.has(c));
+      if (!isSubset) {
+        passedPlayers.add(pid);
+      }
+    }
+  }
+  // Update ref after computing
+  prevOptionsRef.current = Object.fromEntries(
+    pids.map(pid => [pid, [...draft.players[pid].options]])
+  );
+
+  // Compute pass targets: who does each player pass their remaining cards to?
+  const passTargets: Record<string, { name: string; color: string }> = {};
+  for (let i = 0; i < pids.length; i++) {
+    const targetIdx = draft.direction === 'right'
+      ? (i + 1) % pids.length
+      : (i - 1 + pids.length) % pids.length;
+    const targetPid = pids[targetIdx];
+    passTargets[pids[i]] = {
+      name: draft.players[targetPid].playerName,
+      color: draft.players[targetPid].color,
+    };
+  }
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
@@ -121,10 +161,6 @@ export function DraftModal({ draft, onClose }: DraftModalProps) {
             <GripHorizontal size={16} className="text-slate-500" />
             <h2 className="text-lg font-bold text-white">Draft</h2>
             <span className="text-sm text-slate-400">Gen {draft.generation}</span>
-            <span className="flex items-center gap-1 text-xs text-slate-500 ml-2" title={`Passing ${draft.direction}`}>
-              <DirectionIcon size={14} />
-              {draft.direction}
-            </span>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
@@ -158,9 +194,12 @@ export function DraftModal({ draft, onClose }: DraftModalProps) {
 
             const keptSet = p.keptCards ? new Set(p.keptCards) : null;
             const keptCount = p.keptCards?.length;
+            const target = passTargets[pid];
+            const targetCube = getCubeImage(target.color);
+            const shouldAnimate = passedPlayers.has(pid);
 
             return (
-              <div key={pid} className={idx > 0 ? 'border-t border-white/5 mt-2 pt-2' : ''}>
+              <div key={pid} className={idx > 0 ? 'border-t border-white/5' : ''}>
                 {/* Player header */}
                 <div className="flex items-center gap-2 px-4 py-2">
                   {cube ? (
@@ -175,6 +214,19 @@ export function DraftModal({ draft, onClose }: DraftModalProps) {
                       : `drafted ${p.drafted.length}`
                     }
                   </span>
+                  {/* Pass target inline */}
+                  {!p.keptCards && p.options.length > 0 && (
+                    <div className={`flex items-center gap-1.5 text-xs text-slate-400 ml-1 ${draft.direction === 'right' ? 'draft-flow-right' : 'draft-flow-left'}`}>
+                      <FlowIcon size={14} className="text-slate-500" />
+                      <span>passing to</span>
+                      {targetCube ? (
+                        <img src={targetCube} alt="" className="w-4 h-4" />
+                      ) : (
+                        <span className="inline-block w-3.5 h-3.5 rounded-full" style={{ backgroundColor: target.color }} />
+                      )}
+                      <span className="font-medium text-slate-300">{target.name}</span>
+                    </div>
+                  )}
                   <button onClick={toggleHidden} className="p-1 rounded text-slate-500 hover:text-slate-300 transition-colors ml-auto" title={isHidden ? 'Show cards' : 'Hide cards'}>
                     {isHidden ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
@@ -184,9 +236,11 @@ export function DraftModal({ draft, onClose }: DraftModalProps) {
                   {/* Options — cards currently offered (not yet drafted) */}
                   {p.options.length > 0 && !p.keptCards && (
                     <DraftCardGroup
+                      key={shouldAnimate ? optionsKeys[pid] : undefined}
                       title="Options"
                       cards={p.options}
                       cardSize={cardSize}
+                      slideClass={shouldAnimate ? slideClass : undefined}
                     />
                   )}
 
