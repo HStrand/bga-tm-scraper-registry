@@ -50,8 +50,7 @@ The backend lives in the project root. It stores player and game data in Azure S
 ### Running locally
 
 1. Configure `local.settings.json` with your connection strings (`SqlConnectionString`, `BlobStorageConnectionString`)
-2. Run the database setup script (`database_setup.sql`) to create required table types
-3. Start the Functions host:
+2. Start the Functions host:
 
 ```bash
 dotnet restore
