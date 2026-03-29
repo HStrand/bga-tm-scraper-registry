@@ -97,7 +97,25 @@ const MoveEntry = memo(function MoveEntry({ move, moveIndex, isCurrent, isExpand
       ) : (() => {
         const payments = move.action_type !== 'game_state_change' ? parsePayments(move.description) : null;
         if (payments) return <ResourcePayment playerName={move.player_name} payments={payments} />;
-        if (move.action_type !== 'game_state_change') return <RichDescription text={move.description} playerName={move.player_name} playerNames={allPlayerNames} />;
+        if (move.action_type !== 'game_state_change') {
+          // Show inline card images only for explicit discard/sell actions (not drafts, starting hands, or keeps)
+          const isDiscardAction = /discards?\s+(a\s+)?card/i.test(move.description);
+          const isSellAction = /sells?\s+(a\s+)?card/i.test(move.description);
+          const cardList = isDiscardAction && move.cards_discarded?.length ? move.cards_discarded
+            : isSellAction && move.cards_sold?.length ? move.cards_sold
+            : null;
+          return (<>
+            <RichDescription text={move.description} playerName={move.player_name} playerNames={allPlayerNames} />
+            {cardList && (
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap text-[11px] text-slate-300">
+                {cardList.map((card, i) => {
+                  const img = getCardImage(card) ?? getCardPlaceholderImage();
+                  return <InlineCard key={`${card}-${i}`} cardName={card} cardImg={img} />;
+                })}
+              </div>
+            )}
+          </>);
+        }
         return null;
       })()}
     </div>
@@ -305,6 +323,20 @@ function rewriteSegment(seg: string, key: number): JSX.Element | null | undefine
       <p key={key} className="flex items-center gap-1 flex-wrap">
         <span className="font-bold text-white">{playsMatch[1]}</span>
         <span> plays </span>
+        <InlineCard cardName={cardName} cardImg={cardImg} />
+      </p>
+    );
+  }
+
+  // "Player keeps CardName"
+  const keepsMatch = seg.match(/^(.+?) keeps (\S.+)$/i);
+  if (keepsMatch && !keepsMatch[2].match(/^\d+ cards?/i)) {
+    const cardName = keepsMatch[2];
+    const cardImg = getCardImage(cardName) ?? getCardPlaceholderImage();
+    return (
+      <p key={key} className="flex items-center gap-1 flex-wrap">
+        <span className="font-bold text-white">{keepsMatch[1]}</span>
+        <span> keeps </span>
         <InlineCard cardName={cardName} cardImg={cardImg} />
       </p>
     );
