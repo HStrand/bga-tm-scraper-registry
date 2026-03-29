@@ -387,9 +387,9 @@ export const PlayerCard = memo(function PlayerCard({
           left: dragPos ? `${dragPos.x}px` : 0,
           width: isExpanded ? (customSize ? `${customSize.w}px` : 'calc(100vw - 14rem)') : '100%',
           maxWidth: customSize ? undefined : '900px',
-          height: customSize ? `${customSize.h}px` : undefined,
-          maxHeight: isExpanded ? (customSize ? undefined : '85vh') : '0px',
-          transition: (resizing.current || dragging.current) ? 'opacity 200ms ease' : 'width 800ms cubic-bezier(0.25,0.1,0.25,1), max-height 800ms cubic-bezier(0.25,0.1,0.25,1), opacity 500ms ease',
+          height: customSize && isExpanded ? `${customSize.h}px` : undefined,
+          maxHeight: isExpanded ? (customSize ? `${customSize.h}px` : '85vh') : '0px',
+          transition: (resizing.current || dragging.current) ? 'opacity 200ms ease' : 'width 800ms cubic-bezier(0.25,0.1,0.25,1), max-height 800ms cubic-bezier(0.25,0.1,0.25,1), height 800ms cubic-bezier(0.25,0.1,0.25,1), opacity 500ms ease',
         }}
       >
         {/* Header — drag handle */}
