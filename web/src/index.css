@@ -285,6 +285,48 @@
   box-shadow: 0 0 6px rgba(34, 197, 94, 0.7), 0 0 14px rgba(34, 197, 94, 0.35);
 }
 
+/* ── Card play popup ── */
+@keyframes card-popup-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotateY(30deg);
+    filter: blur(8px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08) rotateY(-3deg);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+    filter: blur(0);
+  }
+}
+@keyframes card-popup-out {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.85) translateY(20px);
+  }
+}
+@keyframes card-popup-shimmer {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.08); }
+}
+.card-popup-enter {
+  animation: card-popup-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.card-popup-hold {
+  animation: card-popup-shimmer 1.5s ease-in-out infinite;
+}
+.card-popup-exit {
+  animation: card-popup-out 0.4s ease-in both;
+}
+
 /* ── Draft card slide-in animations ── */
 @keyframes slide-in-right {
   0% { opacity: 0; transform: translateX(40px) scale(0.92); }

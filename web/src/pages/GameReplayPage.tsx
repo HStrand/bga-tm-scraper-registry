@@ -15,6 +15,7 @@ import { DiscardPileModal } from '@/components/replay/DiscardPileModal';
 import { StartingHandModal, type StartingHandPlayerData } from '@/components/replay/StartingHandModal';
 import { DraftModal, type DraftData, type DraftPlayerData } from '@/components/replay/DraftModal';
 import { EndGameSummary } from '@/components/replay/EndGameSummary';
+import { CardPlayPopup, computeTrackerDeltas, type TrackerDelta } from '@/components/replay/CardPlayPopup';
 import type { GameLog } from '@/types/gamelog';
 
 export function GameReplayPage() {
@@ -33,6 +34,8 @@ export function GameReplayPage() {
   const [startingHandOpen, setStartingHandOpen] = useState(false);
   const [draftOpen, setDraftOpen] = useState(false);
   const [endGameOpen, setEndGameOpen] = useState(false);
+  const [cardPopup, setCardPopup] = useState<{ card: string; player: string; color: string; deltas: TrackerDelta[] } | null>(null);
+  const prevStepRef = useRef<number>(-1);
   const prevDraftGen = useRef<number | null>(null);
   const [mapScale, setMapScale] = useState(1);
   const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
@@ -614,6 +617,31 @@ export function GameReplayPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [gameLog, currentStep, resolveStep]);
 
+  // Trigger card play popup when stepping forward to a move with card_played
+  useEffect(() => {
+    if (!gameLog || currentStep === prevStepRef.current) return;
+    const isForward = currentStep > prevStepRef.current;
+    prevStepRef.current = currentStep;
+    if (!isForward) { setCardPopup(null); return; }
+    const move = gameLog.moves[currentStep];
+    if (move?.card_played && move.action_type !== 'draft') {
+      // Compute resource/production deltas from tracker snapshots
+      const prevTrackers = currentStep > 0
+        ? gameLog.moves[currentStep - 1]?.game_state?.player_trackers?.[move.player_id]
+        : undefined;
+      const currTrackers = move.game_state?.player_trackers?.[move.player_id];
+      const deltas = computeTrackerDeltas(prevTrackers, currTrackers);
+      setCardPopup({
+        card: move.card_played,
+        player: move.player_name,
+        color: playerColors[move.player_id] ?? '#888',
+        deltas,
+      });
+    } else {
+      setCardPopup(null);
+    }
+  }, [gameLog, currentStep, playerColors]);
+
   // Auto-open end game summary when reaching the last move
   const lastMoveState = gameLog?.moves[gameLog.moves.length - 1]?.game_state;
   const isAtLastMove = gameLog ? currentStep === gameLog.moves.length - 1 : false;
@@ -780,6 +808,18 @@ export function GameReplayPage() {
             </div>
 
             <div style={{ width: `${mapScale * 100}%` }} className="relative">
+              {/* Card play popup */}
+              {cardPopup && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
+                  <CardPlayPopup
+                    cardName={cardPopup.card}
+                    playerName={cardPopup.player}
+                    playerColor={cardPopup.color}
+                    deltas={cardPopup.deltas}
+                    onDone={() => setCardPopup(null)}
+                  />
+                </div>
+              )}
               {/* Floating call-to-action buttons */}
               {(startingHandData && !startingHandOpen || draftData && !draftOpen) && (
                 <div className="absolute left-1/2 -translate-x-1/2 top-[30%] z-40 flex gap-2 pointer-events-none">
@@ -911,6 +951,7 @@ export function GameReplayPage() {
           onClose={() => setEndGameOpen(false)}
         />
       )}
+
 
       {showShareDialog && (() => {
         const url = new URL(window.location.origin + `/replay/${tableId}`);
