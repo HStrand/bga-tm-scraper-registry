@@ -2,6 +2,9 @@ import { useEffect, useState, useRef } from 'react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import { getCubeImage, resourceIcons, getIcon, RESOURCES } from './replayShared';
 
+const milestoneIcons = import.meta.glob('../../../assets/milestones/*.png', { eager: true }) as Record<string, { default: string }>;
+const awardIcons = import.meta.glob('../../../assets/awards/*.png', { eager: true }) as Record<string, { default: string }>;
+
 export interface TrackerDelta {
   key: string;
   label: string;
@@ -10,20 +13,37 @@ export interface TrackerDelta {
   isProduction: boolean;
 }
 
+export type PopupType = 'card' | 'milestone' | 'award';
+
 interface CardPlayPopupProps {
-  cardName: string;
+  type: PopupType;
+  name: string;
   playerName: string;
   playerColor: string;
   deltas: TrackerDelta[];
   onDone: () => void;
 }
 
-export function CardPlayPopup({ cardName, playerName, playerColor, deltas, onDone }: CardPlayPopupProps) {
+function getPopupImage(type: PopupType, name: string): string | undefined {
+  if (type === 'card') return getCardImage(name) ?? getCardPlaceholderImage();
+  if (type === 'milestone') return getIcon(milestoneIcons, name.toLowerCase());
+  if (type === 'award') return getIcon(awardIcons, name.toLowerCase());
+  return undefined;
+}
+
+const POPUP_CONFIG: Record<PopupType, { verb: string; accent: string }> = {
+  card: { verb: 'plays', accent: 'text-amber-300' },
+  milestone: { verb: 'claims milestone', accent: 'text-green-400' },
+  award: { verb: 'funds award', accent: 'text-amber-400' },
+};
+
+export function CardPlayPopup({ type, name, playerName, playerColor, deltas, onDone }: CardPlayPopupProps) {
   const [phase, setPhase] = useState<'enter' | 'hold' | 'exit'>('enter');
-  const cardImg = getCardImage(cardName) ?? getCardPlaceholderImage();
+  const img = getPopupImage(type, name);
   const cubeImg = getCubeImage(playerColor);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
+  const config = POPUP_CONFIG[type];
 
   useEffect(() => {
     setPhase('enter');
@@ -31,7 +51,7 @@ export function CardPlayPopup({ cardName, playerName, playerColor, deltas, onDon
     const t2 = setTimeout(() => setPhase('exit'), 2800);
     const t3 = setTimeout(() => onDoneRef.current(), 3200);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [cardName]);
+  }, [name, type]);
 
   const handleClick = () => {
     if (phase !== 'exit') {
@@ -49,23 +69,27 @@ export function CardPlayPopup({ cardName, playerName, playerColor, deltas, onDon
   const prodGained = deltas.filter(d => d.delta > 0 && d.isProduction);
   const prodLost = deltas.filter(d => d.delta < 0 && d.isProduction);
 
+  const isCard = type === 'card';
+
   return (
     <div
       className={`pointer-events-auto cursor-pointer ${animClass}`}
       onClick={handleClick}
     >
       <div className="glass-panel rounded-2xl p-4 flex flex-col items-center gap-3">
-        {/* Card image */}
-        <img
-          src={cardImg}
-          alt={cardName}
-          className="w-64 rounded-xl"
-          style={{
-            boxShadow: `0 0 12px ${playerColor}44, 0 4px 16px rgba(0,0,0,0.5)`,
-          }}
-        />
+        {/* Image */}
+        {img && (
+          <img
+            src={img}
+            alt={name}
+            className={isCard ? 'w-64 rounded-xl' : 'w-28 h-28 object-contain'}
+            style={{
+              boxShadow: isCard ? `0 0 12px ${playerColor}44, 0 4px 16px rgba(0,0,0,0.5)` : undefined,
+            }}
+          />
+        )}
 
-        {/* Player tag */}
+        {/* Player + verb + name */}
         <div className="flex items-center gap-2 whitespace-nowrap">
           {cubeImg ? (
             <img src={cubeImg} alt="" className="w-5 h-5" />
@@ -76,10 +100,10 @@ export function CardPlayPopup({ cardName, playerName, playerColor, deltas, onDon
             {playerName}
           </span>
           <span className="text-sm text-slate-400">
-            plays
+            {config.verb}
           </span>
-          <span className="text-sm font-bold text-amber-300">
-            {cardName}
+          <span className={`text-sm font-bold ${config.accent}`}>
+            {name}
           </span>
         </div>
 

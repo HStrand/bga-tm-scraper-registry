@@ -15,7 +15,7 @@ import { DiscardPileModal } from '@/components/replay/DiscardPileModal';
 import { StartingHandModal, type StartingHandPlayerData } from '@/components/replay/StartingHandModal';
 import { DraftModal, type DraftData, type DraftPlayerData } from '@/components/replay/DraftModal';
 import { EndGameSummary } from '@/components/replay/EndGameSummary';
-import { CardPlayPopup, computeTrackerDeltas, type TrackerDelta } from '@/components/replay/CardPlayPopup';
+import { CardPlayPopup, computeTrackerDeltas, type TrackerDelta, type PopupType } from '@/components/replay/CardPlayPopup';
 import type { GameLog } from '@/types/gamelog';
 
 export function GameReplayPage() {
@@ -34,7 +34,7 @@ export function GameReplayPage() {
   const [startingHandOpen, setStartingHandOpen] = useState(false);
   const [draftOpen, setDraftOpen] = useState(false);
   const [endGameOpen, setEndGameOpen] = useState(false);
-  const [cardPopup, setCardPopup] = useState<{ card: string; player: string; color: string; deltas: TrackerDelta[] } | null>(null);
+  const [cardPopup, setCardPopup] = useState<{ type: PopupType; name: string; player: string; color: string; deltas: TrackerDelta[] } | null>(null);
   const prevStepRef = useRef<number>(-1);
   const prevDraftGen = useRef<number | null>(null);
   const [mapScale, setMapScale] = useState(1);
@@ -617,26 +617,33 @@ export function GameReplayPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [gameLog, currentStep, resolveStep]);
 
-  // Trigger card play popup when stepping forward to a move with card_played
+  // Trigger popup when stepping forward to a card play, milestone, or award move
   useEffect(() => {
     if (!gameLog || currentStep === prevStepRef.current) return;
     const isForward = currentStep > prevStepRef.current;
     prevStepRef.current = currentStep;
     if (!isForward) { setCardPopup(null); return; }
     const move = gameLog.moves[currentStep];
-    if (move?.card_played && move.action_type !== 'draft') {
-      // Compute resource/production deltas from tracker snapshots
-      const prevTrackers = currentStep > 0
-        ? gameLog.moves[currentStep - 1]?.game_state?.player_trackers?.[move.player_id]
-        : undefined;
-      const currTrackers = move.game_state?.player_trackers?.[move.player_id];
-      const deltas = computeTrackerDeltas(prevTrackers, currTrackers);
-      setCardPopup({
-        card: move.card_played,
-        player: move.player_name,
-        color: playerColors[move.player_id] ?? '#888',
-        deltas,
-      });
+    if (!move) { setCardPopup(null); return; }
+
+    const prevTrackers = currentStep > 0
+      ? gameLog.moves[currentStep - 1]?.game_state?.player_trackers?.[move.player_id]
+      : undefined;
+    const currTrackers = move.game_state?.player_trackers?.[move.player_id];
+    const deltas = computeTrackerDeltas(prevTrackers, currTrackers);
+
+    if (move.card_played && move.action_type !== 'draft') {
+      setCardPopup({ type: 'card', name: move.card_played, player: move.player_name, color: playerColors[move.player_id] ?? '#888', deltas });
+    } else if (move.action_type === 'claim_milestone') {
+      const match = move.description.match(/claims milestone (.+?)(?:\s*\||\s*$)/i);
+      if (match) {
+        setCardPopup({ type: 'milestone', name: match[1].trim(), player: move.player_name, color: playerColors[move.player_id] ?? '#888', deltas });
+      } else { setCardPopup(null); }
+    } else if (move.action_type === 'fund_award') {
+      const match = move.description.match(/funds (.+?) award/i);
+      if (match) {
+        setCardPopup({ type: 'award', name: match[1].trim(), player: move.player_name, color: playerColors[move.player_id] ?? '#888', deltas });
+      } else { setCardPopup(null); }
     } else {
       setCardPopup(null);
     }
@@ -812,7 +819,8 @@ export function GameReplayPage() {
               {cardPopup && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
                   <CardPlayPopup
-                    cardName={cardPopup.card}
+                    type={cardPopup.type}
+                    name={cardPopup.name}
                     playerName={cardPopup.player}
                     playerColor={cardPopup.color}
                     deltas={cardPopup.deltas}
