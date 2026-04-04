@@ -16,10 +16,11 @@ export function parseMilestonesAndAwards(
   for (let i = 0; i <= currentStep; i++) {
     const move = moves[i];
     const gen = move.game_state?.generation ?? 0;
-    if (move.action_type === 'claim_milestone') {
+    if (move.action_type === 'claim_milestone' || move.description.match(/claims milestone /i)) {
       const match = move.description.match(/claims milestone (.+?)(?:\s*\||\s*$)/i);
       if (match) claimed.set(match[1].trim().toUpperCase(), { playerId: move.player_id, playerName: move.player_name, generation: gen });
-    } else if (move.action_type === 'fund_award') {
+    }
+    if (move.action_type === 'fund_award' || move.description.match(/funds .+? award/i)) {
       const match = move.description.match(/funds (.+?) award/i);
       if (match) funded.set(match[1].trim().toLowerCase(), { playerId: move.player_id, playerName: move.player_name, generation: gen });
     }

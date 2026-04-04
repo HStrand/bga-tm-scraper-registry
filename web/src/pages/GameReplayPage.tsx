@@ -670,18 +670,18 @@ export function GameReplayPage() {
     const currTrackers = move.game_state?.player_trackers?.[move.player_id];
     const deltas = computeTrackerDeltas(prevTrackers, currTrackers);
 
-    if (move.card_played && move.action_type !== 'draft') {
-      setCardPopup({ type: 'card', name: move.card_played, player: move.player_name, color: playerColors[move.player_id] ?? '#888', deltas });
-    } else if (move.action_type === 'claim_milestone') {
+    if (move.action_type === 'claim_milestone' || move.description.match(/claims milestone /i)) {
       const match = move.description.match(/claims milestone (.+?)(?:\s*\||\s*$)/i);
       if (match) {
         setCardPopup({ type: 'milestone', name: match[1].trim(), player: move.player_name, color: playerColors[move.player_id] ?? '#888', deltas });
       } else { setCardPopup(null); }
-    } else if (move.action_type === 'fund_award') {
+    } else if (move.action_type === 'fund_award' || move.description.match(/funds .+? award/i)) {
       const match = move.description.match(/funds (.+?) award/i);
       if (match) {
         setCardPopup({ type: 'award', name: match[1].trim(), player: move.player_name, color: playerColors[move.player_id] ?? '#888', deltas });
       } else { setCardPopup(null); }
+    } else if (move.card_played && move.action_type !== 'draft') {
+      setCardPopup({ type: 'card', name: move.card_played, player: move.player_name, color: playerColors[move.player_id] ?? '#888', deltas });
     } else {
       setCardPopup(null);
     }

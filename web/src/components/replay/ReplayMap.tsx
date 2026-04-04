@@ -122,6 +122,7 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
           const isOcean = tileNorm === 'ocean';
           const isCity = tileNorm === 'city';
           const isGreenery = tileNorm === 'greenery' || tileNorm === 'forest';
+          const isLandClaim = tileNorm === 'land_claim' || tileNorm === 'land claim';
 
           const tileImg = isCity ? cityTileImage
             : isGreenery ? greeneryTileImage
@@ -136,9 +137,9 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
             <g key={`${hex.col},${hex.row}`}>
               {tileImg ? (
                 <image href={tileImg} x={cx - imgSize / 2} y={cy - imgSize / 2} width={imgSize} height={imgSize} />
-              ) : (
+              ) : !isLandClaim ? (
                 <polygon points={points} fill={isOcean ? 'rgba(59, 130, 246, 0.7)' : color} stroke="rgba(255,255,255,0.3)" strokeWidth={1} />
-              )}
+              ) : null}
               {!isOcean && (getCubeImage(color) ? (
                 <image href={getCubeImage(color)!} x={cx - cubeSize / 2} y={cy - cubeSize / 2} width={cubeSize} height={cubeSize} />
               ) : (
