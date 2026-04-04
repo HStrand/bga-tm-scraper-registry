@@ -595,10 +595,17 @@ export function GameReplayPage() {
   const discardPile = useMemo(() => {
     if (!gameLog) return [];
     const cards: string[] = [];
+    const revealRejectRe = /reveals ([^:]+): it does not have a /gi;
     for (let i = 0; i <= currentStep; i++) {
       const move = gameLog.moves[i];
       if (move?.cards_discarded) cards.push(...move.cards_discarded);
       if (move?.cards_sold) cards.push(...move.cards_sold);
+      if (move?.description) {
+        let m: RegExpExecArray | null;
+        while ((m = revealRejectRe.exec(move.description)) !== null) {
+          cards.push(m[1].trim());
+        }
+      }
     }
     return cards;
   }, [gameLog, currentStep]);
