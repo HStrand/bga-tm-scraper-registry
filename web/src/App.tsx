@@ -18,6 +18,7 @@ import { CombinationDetailPage } from "@/pages/CombinationDetailPage";
 import { MapPage } from "@/pages/MapPage";
 import { GameReplayPage } from "@/pages/GameReplayPage";
 import { ResourcesPage } from "@/pages/ResourcesPage";
+import { ReplayLandingPage } from "@/pages/ReplayLandingPage";
 
 export default function App() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
               <Route path="/awards" element={<AwardsOverviewPage />} />
               <Route path="/leaderboards" element={<LeaderboardsPage />} />
               <Route path="/maps" element={<MapPage />} />
+              <Route path="/replay" element={<ReplayLandingPage />} />
               <Route path="/resources" element={<ResourcesPage />} />
             </Routes>
           </Layout>

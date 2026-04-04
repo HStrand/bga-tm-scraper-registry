@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Info,
+  Play,
 } from "lucide-react";
 
 interface LayoutProps {
@@ -41,6 +42,7 @@ const navItems: NavLinkItem[] = [
   { to: "/milestones", label: "Milestones", icon: Flag },
   { to: "/awards", label: "Awards", icon: Award },
   { to: "/leaderboards", label: "Leaderboards", icon: Trophy },
+  { to: "/replay", label: "Replay Viewer", icon: Play },
   { to: "/resources", label: "Resources", icon: Info },
 ];
 

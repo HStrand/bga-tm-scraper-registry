@@ -702,7 +702,10 @@ export function GameReplayPage() {
   if (error || !gameLog) {
     return (
       <div className="bg-red-900/20 border border-red-800/40 rounded-lg p-4 text-red-300">
-        <p>{error ?? 'Game not found.'}</p>
+        <p className="font-medium">{error ?? 'Game not found.'}</p>
+        <p className="mt-2 text-sm text-slate-400">
+          You can scrape this game by entering the player ID to view the replay from their perspective. Scraping takes about 20 seconds.
+        </p>
         <div className="mt-3 flex items-center gap-2">
           <input
             type="text"
@@ -721,7 +724,6 @@ export function GameReplayPage() {
           </button>
         </div>
         {scrapeError && <p className="mt-2 text-sm text-red-400">{scrapeError}</p>}
-        {scrapeSuccess && <p className="mt-2 text-sm text-green-400">Scrape completed successfully.</p>}
       </div>
     );
   }
@@ -790,7 +792,6 @@ export function GameReplayPage() {
             {scraping ? 'Scraping...' : 'Re-scrape'}
           </button>
           {scrapeError && <span className="text-xs text-red-400">{scrapeError}</span>}
-          {scrapeSuccess && <span className="text-xs text-green-400">Done! Reload to see changes.</span>}
         </div>
       )}
 
@@ -1057,6 +1058,22 @@ export function GameReplayPage() {
           </div>
         );
       })()}
+
+      {scrapeSuccess && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60" onClick={() => setScrapeSuccess(false)}>
+          <div className="glass-panel rounded-xl p-5 w-[400px] max-w-[90vw] shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+            <Check className="mx-auto mb-3 text-green-400" size={36} />
+            <h2 className="text-lg font-bold text-white mb-1">Re-scrape complete</h2>
+            <p className="text-sm text-slate-400 mb-4">The game was successfully re-scraped and reloaded.</p>
+            <button
+              onClick={() => setScrapeSuccess(false)}
+              className="px-4 py-1.5 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-500 text-white transition-colors"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
