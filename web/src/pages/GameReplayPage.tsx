@@ -158,14 +158,20 @@ export function GameReplayPage() {
     if (!gameLog) return new Map<string, PlacedTile>();
     const map = new Map<string, PlacedTile>();
     for (let i = 0; i <= currentStep; i++) {
-      const placement = extractTilePlacement(gameLog.moves[i]);
+      const move = gameLog.moves[i];
+      const placement = extractTilePlacement(move);
       if (placement) {
         map.set(placement.dbKey, {
           dbKey: placement.dbKey,
           tileType: placement.tileType,
-          playerId: gameLog.moves[i].player_id,
+          playerId: move.player_id,
           moveIndex: i,
         });
+      }
+      // Land Claim has tile_location but no tile_placed
+      if (!placement && move.tile_location && move.card_played?.toLowerCase() === 'land claim') {
+        const dbKey = parseTileLocationToDbKey(move.tile_location);
+        map.set(dbKey, { dbKey, tileType: 'Land Claim', playerId: move.player_id, moveIndex: i });
       }
       // Merge special tiles from game_state
       const specialTiles = gameLog.moves[i]?.game_state?.special_tiles;
