@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Info, Share2, Check, Copy } from 'lucide-react';
+import { Info, Share2, Check, Copy, RefreshCw } from 'lucide-react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
 import { fetchGameLog, extractTilePlacement, parseTileLocationToDbKey, assignPlayerColors } from '@/lib/gameLog';
@@ -42,6 +42,37 @@ export function GameReplayPage() {
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
   const collapseTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const [scraping, setScraping] = useState(false);
+  const [scrapeError, setScrapeError] = useState<string | null>(null);
+  const [scrapeSuccess, setScrapeSuccess] = useState(false);
+  const [scrapePlayerId, setScrapePlayerId] = useState('');
+
+  const handleRescrape = useCallback(async (playerPerspective?: string) => {
+    if (!tableId) return;
+    const perspective = playerPerspective || scrapePlayerId;
+    if (!perspective) return;
+    setScraping(true);
+    setScrapeError(null);
+    setScrapeSuccess(false);
+    try {
+      const res = await fetch('/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableId, playerPerspective: perspective }),
+      });
+      if (!res.ok) throw new Error(`Scrape failed (${res.status})`);
+      setScrapeSuccess(true);
+      // Re-fetch the game log after successful scrape
+      const data = await fetchGameLog(tableId);
+      setGameLog(data);
+      setError(null);
+      setCurrentStep(0);
+    } catch (e) {
+      setScrapeError(e instanceof Error ? e.message : 'Scrape failed');
+    } finally {
+      setScraping(false);
+    }
+  }, [tableId, scrapePlayerId]);
 
   const handlePlayerExpand = useCallback((pid: string) => {
     const existing = collapseTimeouts.current.get(pid);
@@ -671,7 +702,26 @@ export function GameReplayPage() {
   if (error || !gameLog) {
     return (
       <div className="bg-red-900/20 border border-red-800/40 rounded-lg p-4 text-red-300">
-        {error ?? 'Game not found.'}
+        <p>{error ?? 'Game not found.'}</p>
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Player ID"
+            value={scrapePlayerId}
+            onChange={e => setScrapePlayerId(e.target.value)}
+            className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-white placeholder-slate-500 w-36 focus:outline-none focus:border-slate-400"
+          />
+          <button
+            onClick={() => handleRescrape()}
+            disabled={scraping || !scrapePlayerId}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-sm font-medium bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <RefreshCw size={14} className={scraping ? 'animate-spin' : ''} />
+            {scraping ? 'Scraping...' : 'Re-scrape'}
+          </button>
+        </div>
+        {scrapeError && <p className="mt-2 text-sm text-red-400">{scrapeError}</p>}
+        {scrapeSuccess && <p className="mt-2 text-sm text-green-400">Scrape completed successfully.</p>}
       </div>
     );
   }
@@ -731,6 +781,16 @@ export function GameReplayPage() {
               </ul>
             </div>
           </div>
+          <button
+            onClick={() => handleRescrape(gameLog.player_perspective)}
+            disabled={scraping}
+            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-medium bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <RefreshCw size={12} className={scraping ? 'animate-spin' : ''} />
+            {scraping ? 'Scraping...' : 'Re-scrape'}
+          </button>
+          {scrapeError && <span className="text-xs text-red-400">{scrapeError}</span>}
+          {scrapeSuccess && <span className="text-xs text-green-400">Done! Reload to see changes.</span>}
         </div>
       )}
 
