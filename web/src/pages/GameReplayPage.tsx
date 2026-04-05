@@ -65,27 +65,20 @@ export function GameReplayPage() {
     setScrapeError(null);
     setScrapeSuccess(false);
     try {
-      const res = await fetch('/api/scrape', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableId, playerPerspective: perspective }),
-      });
-      if (!res.ok) {
-        if (res.status === 429) {
-          setDailyLimitReached(true);
-          const body = await res.json().catch(() => null);
-          throw new Error(body?.detail ?? 'Daily replay limit reached');
-        }
-        throw new Error(`Scrape failed (${res.status})`);
-      }
+      await api.post('/api/scrape', { tableId, playerPerspective: perspective });
       setScrapeSuccess(true);
       // Re-fetch the game log after successful scrape
       const data = await fetchGameLog(tableId);
       setGameLog(data);
       setError(null);
       setCurrentStep(0);
-    } catch (e) {
-      setScrapeError(e instanceof Error ? e.message : 'Scrape failed');
+    } catch (e: any) {
+      if (e?.response?.status === 429) {
+        setDailyLimitReached(true);
+        setScrapeError(e.response.data?.detail ?? 'Daily replay limit reached');
+      } else {
+        setScrapeError(e?.response?.data?.detail ?? e?.message ?? 'Scrape failed');
+      }
     } finally {
       setScraping(false);
     }
@@ -166,8 +159,8 @@ export function GameReplayPage() {
       })
       .catch(() => setError('Game not found.'))
       .finally(() => setLoading(false));
-    fetch('/health').then(r => r.json()).then(h => {
-      if (h.dailyLimitReached) setDailyLimitReached(true);
+    api.get('/api/scrape-health').then(r => {
+      if (r.data.dailyLimitReached) setDailyLimitReached(true);
     }).catch(() => {});
   }, [tableId]);
 
