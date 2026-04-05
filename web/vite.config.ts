@@ -19,10 +19,6 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_API_BASE_URL || 'http://localhost:7184',
           changeOrigin: true,
         },
-        '/scrape': {
-          target: 'http://20.82.3.63:8000',
-          changeOrigin: true,
-        },
       },
     },
   };
