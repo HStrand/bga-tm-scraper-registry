@@ -1148,7 +1148,7 @@ export function GameReplayPage() {
 
       {showShareDialog && (() => {
         const url = new URL(window.location.origin + `/replay/${tableId}`);
-        if (shareIncludeMove && currentStep > 0) url.searchParams.set('move', String(currentStep));
+        if (shareIncludeMove && currentStep > 0) url.searchParams.set('move', String(currentStep + 1));
         const shareUrl = url.toString();
         return (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60" onClick={() => setShowShareDialog(false)}>
@@ -1176,7 +1176,7 @@ export function GameReplayPage() {
                   onChange={e => { setShareIncludeMove(e.target.checked); setShareCopied(false); }}
                   className="rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500/30"
                 />
-                Include current move ({currentStep})
+                Include current move ({currentStep + 1})
               </label>
             </div>
           </div>
