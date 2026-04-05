@@ -46,6 +46,7 @@ export function GameReplayPage() {
   const [scrapeError, setScrapeError] = useState<string | null>(null);
   const [scrapeSuccess, setScrapeSuccess] = useState(false);
   const [scrapePlayerId, setScrapePlayerId] = useState('');
+  const [dailyLimitReached, setDailyLimitReached] = useState(false);
 
   const handleRescrape = useCallback(async (playerPerspective?: string) => {
     if (!tableId) return;
@@ -60,7 +61,14 @@ export function GameReplayPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tableId, playerPerspective: perspective }),
       });
-      if (!res.ok) throw new Error(`Scrape failed (${res.status})`);
+      if (!res.ok) {
+        if (res.status === 429) {
+          setDailyLimitReached(true);
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.detail ?? 'Daily replay limit reached');
+        }
+        throw new Error(`Scrape failed (${res.status})`);
+      }
       setScrapeSuccess(true);
       // Re-fetch the game log after successful scrape
       const data = await fetchGameLog(tableId);
@@ -116,6 +124,9 @@ export function GameReplayPage() {
       })
       .catch(() => setError('Game not found.'))
       .finally(() => setLoading(false));
+    fetch('/health').then(r => r.json()).then(h => {
+      if (h.dailyLimitReached) setDailyLimitReached(true);
+    }).catch(() => {});
   }, [tableId]);
 
   // --- derived state ---
@@ -716,27 +727,33 @@ export function GameReplayPage() {
     return (
       <div className="bg-red-900/20 border border-red-800/40 rounded-lg p-4 text-red-300">
         <p className="font-medium">{error ?? 'Game not found.'}</p>
-        <p className="mt-2 text-sm text-slate-400">
-          You can scrape this game by entering the player ID to view the replay from their perspective. Scraping takes about 20 seconds.
-        </p>
-        <div className="mt-3 flex items-center gap-2">
-          <input
-            type="text"
-            placeholder="Player ID"
-            value={scrapePlayerId}
-            onChange={e => setScrapePlayerId(e.target.value)}
-            className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-white placeholder-slate-500 w-36 focus:outline-none focus:border-slate-400"
-          />
-          <button
-            onClick={() => handleRescrape()}
-            disabled={scraping || !scrapePlayerId}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-sm font-medium bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <RefreshCw size={14} className={scraping ? 'animate-spin' : ''} />
-            {scraping ? 'Scraping...' : 'Re-scrape'}
-          </button>
-        </div>
-        {scrapeError && <p className="mt-2 text-sm text-red-400">{scrapeError}</p>}
+        {dailyLimitReached ? (
+          <p className="mt-2 text-sm text-amber-400">Daily replay limit reached. Scraping is temporarily unavailable.</p>
+        ) : (
+          <>
+            <p className="mt-2 text-sm text-slate-400">
+              You can scrape this game by entering the player ID to view the replay from their perspective. Scraping takes about 20 seconds.
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Player ID"
+                value={scrapePlayerId}
+                onChange={e => setScrapePlayerId(e.target.value)}
+                className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-white placeholder-slate-500 w-36 focus:outline-none focus:border-slate-400"
+              />
+              <button
+                onClick={() => handleRescrape()}
+                disabled={scraping || !scrapePlayerId}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-sm font-medium bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <RefreshCw size={14} className={scraping ? 'animate-spin' : ''} />
+                {scraping ? 'Scraping...' : 'Re-scrape'}
+              </button>
+            </div>
+            {scrapeError && <p className="mt-2 text-sm text-red-400">{scrapeError}</p>}
+          </>
+        )}
       </div>
     );
   }
@@ -796,14 +813,18 @@ export function GameReplayPage() {
               </ul>
             </div>
           </div>
-          <button
-            onClick={() => handleRescrape(gameLog.player_perspective)}
-            disabled={scraping}
-            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-medium bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <RefreshCw size={12} className={scraping ? 'animate-spin' : ''} />
-            {scraping ? 'Scraping...' : 'Re-scrape'}
-          </button>
+          {dailyLimitReached ? (
+            <span className="text-xs text-amber-400">Re-scrape unavailable — daily replay limit reached.</span>
+          ) : (
+            <button
+              onClick={() => handleRescrape(gameLog.player_perspective)}
+              disabled={scraping}
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-medium bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <RefreshCw size={12} className={scraping ? 'animate-spin' : ''} />
+              {scraping ? 'Scraping...' : 'Re-scrape'}
+            </button>
+          )}
           {scrapeError && <span className="text-xs text-red-400">{scrapeError}</span>}
         </div>
       )}
