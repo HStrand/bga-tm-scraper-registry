@@ -1,4 +1,4 @@
-import { ExternalLink, Github, Download, Youtube, MessageCircle } from "lucide-react";
+import { ExternalLink, Github, Download, Youtube, MessageCircle, Trophy } from "lucide-react";
 
 export function ResourcesPage() {
   return (
@@ -9,9 +9,10 @@ export function ResourcesPage() {
           Resources
         </h1>
         <p className="mt-3 text-lg text-slate-600 dark:text-slate-400">
-          This site is built on data from a data collection project I started in May
-          2025, scraping and analyzing Terraforming Mars games played on
-          BoardGameArena. Below you'll find the tools, content, and community
+          This site is built on data from an open-source data collection project
+          I started in May 2025, scraping and analyzing Terraforming Mars games
+          played on BoardGameArena. All data and tools are made freely available
+          to the community. Below you'll find the tools, content, and community
           behind it.
         </p>
       </div>
@@ -76,6 +77,44 @@ export function ResourcesPage() {
             allowFullScreen
           />
         </div>
+      </section>
+
+      {/* TFM Top 100 */}
+      <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80 backdrop-blur-sm p-6 shadow-sm space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-300 border border-amber-100/70 dark:border-amber-800">
+            <Trophy className="w-5 h-5" />
+          </div>
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+            Terraforming Mars Top 100
+          </h2>
+        </div>
+        <p className="text-slate-600 dark:text-slate-400">
+          A website made by anthracite with player profiles of the top 100
+          players on BGA based on the data collected by this project.
+        </p>
+        <a
+          href="https://tfm-data.xyz/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow"
+        >
+          <img
+            src="/tfm-top100-preview.png"
+            alt="Terraforming Mars Top 100 player profile preview"
+            className="w-full"
+          />
+        </a>
+        <a
+          href="https://tfm-data.xyz/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors border border-amber-200/60 dark:border-amber-700/40"
+        >
+          <Trophy className="w-4 h-4" />
+          Visit TFM Top 100
+          <ExternalLink className="w-3 h-3" />
+        </a>
       </section>
 
       {/* Community */}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Info, Share2, Check, Copy, RefreshCw } from 'lucide-react';
+import { Info, Share2, Check, Copy, RefreshCw, MessageSquare, Send } from 'lucide-react';
+import { api } from '@/lib/api';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
 import { fetchGameLog, extractTilePlacement, parseTileLocationToDbKey, assignPlayerColors } from '@/lib/gameLog';
@@ -46,6 +47,14 @@ export function GameReplayPage() {
   const [scrapeError, setScrapeError] = useState<string | null>(null);
   const [scrapeSuccess, setScrapeSuccess] = useState(false);
   const [scrapePlayerId, setScrapePlayerId] = useState('');
+
+  // Comments
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<{ id: number; tableId: string; username: string; body: string; createdAt: string }[]>([]);
+  const [commentBody, setCommentBody] = useState('');
+  const [commentUsername, setCommentUsername] = useState('');
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
   const [dailyLimitReached, setDailyLimitReached] = useState(false);
 
   const handleRescrape = useCallback(async (playerPerspective?: string) => {
@@ -81,6 +90,39 @@ export function GameReplayPage() {
       setScraping(false);
     }
   }, [tableId, scrapePlayerId]);
+
+  const fetchComments = useCallback(async () => {
+    if (!tableId) return;
+    try {
+      const res = await api.get(`/api/comments/${tableId}`);
+      setComments(res.data);
+    } catch {
+      // silently fail on fetch
+    }
+  }, [tableId]);
+
+  useEffect(() => {
+    if (gameLog && tableId) fetchComments();
+  }, [gameLog, tableId, fetchComments]);
+
+  const handleCommentSubmit = useCallback(async () => {
+    if (!commentBody.trim() || !tableId) return;
+    setCommentSubmitting(true);
+    setCommentError(null);
+    try {
+      await api.post('/api/comments', {
+        tableId,
+        username: commentUsername.trim() || null,
+        body: commentBody.trim(),
+      });
+      setCommentBody('');
+      await fetchComments();
+    } catch {
+      setCommentError('Failed to submit comment. Please try again.');
+    } finally {
+      setCommentSubmitting(false);
+    }
+  }, [tableId, commentBody, commentUsername, fetchComments]);
 
   const handlePlayerExpand = useCallback((pid: string) => {
     const existing = collapseTimeouts.current.get(pid);
@@ -798,8 +840,63 @@ export function GameReplayPage() {
           {gameLog.winner && currentStep === gameLog.moves.length - 1 && (
             <span className="font-medium text-amber-400 glow-amber">Winner: {gameLog.winner}</span>
           )}
+          <button
+            onClick={() => setShowComments(prev => !prev)}
+            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <MessageSquare size={16} />
+            <span>Comments{comments.length > 0 ? ` (${comments.length})` : ''}</span>
+          </button>
         </div>
       </div>
+
+      {showComments && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowComments(false)}>
+          <div className="glass-panel rounded-xl p-5 w-[520px] max-w-[90vw] shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-white mb-4">Comments</h2>
+            {comments.length > 0 ? (
+              <div className="space-y-3 mb-4 max-h-72 overflow-y-auto pr-1">
+                {comments.map(c => (
+                  <div key={c.id} className="text-sm">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-medium text-slate-200">{c.username}</span>
+                      <span className="text-xs text-slate-500">{new Date(c.createdAt).toLocaleString()}</span>
+                    </div>
+                    <p className="text-slate-300 mt-0.5 whitespace-pre-wrap">{c.body}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 mb-4">No comments yet. Be the first!</p>
+            )}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Name (optional)"
+                value={commentUsername}
+                onChange={e => setCommentUsername(e.target.value)}
+                className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white placeholder-slate-500 w-36 focus:outline-none focus:border-slate-400"
+              />
+              <input
+                type="text"
+                placeholder="Write a comment..."
+                value={commentBody}
+                onChange={e => setCommentBody(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && commentBody.trim()) handleCommentSubmit(); }}
+                className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white placeholder-slate-500 flex-1 focus:outline-none focus:border-slate-400"
+              />
+              <button
+                onClick={handleCommentSubmit}
+                disabled={commentSubmitting || !commentBody.trim()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Send size={14} />
+              </button>
+            </div>
+            {commentError && <p className="mt-2 text-sm text-red-400">{commentError}</p>}
+          </div>
+        </div>
+      )}
 
       {missingFeatures.length > 0 && (
         <div className="mb-4 w-fit bg-amber-900/20 border border-amber-800/40 rounded-lg px-3 py-2 text-sm text-amber-300 flex items-center gap-2">
