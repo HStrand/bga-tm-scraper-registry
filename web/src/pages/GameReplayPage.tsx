@@ -65,7 +65,7 @@ export function GameReplayPage() {
     setScrapeError(null);
     setScrapeSuccess(false);
     try {
-      const res = await fetch('/scrape', {
+      const res = await fetch('http://20.82.3.63:8000/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tableId, playerPerspective: perspective }),
