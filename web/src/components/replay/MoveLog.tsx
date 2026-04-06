@@ -328,6 +328,20 @@ function rewriteSegment(seg: string, key: number): JSX.Element | null | undefine
     );
   }
 
+  // "Player draws/drafts/activates/reveals CardName"
+  const verbMatch = seg.match(/^(.+?) (draws|drafts|activates|reveals) (.+)$/i);
+  if (verbMatch && !verbMatch[3].match(/^\d+ cards?/i)) {
+    const cardName = verbMatch[3];
+    const cardImg = getCardImage(cardName) ?? getCardPlaceholderImage();
+    return (
+      <p key={key} className="flex items-center gap-1 flex-wrap">
+        <span className="font-bold text-white">{verbMatch[1]}</span>
+        <span> {verbMatch[2]} </span>
+        <InlineCard cardName={cardName} cardImg={cardImg} />
+      </p>
+    );
+  }
+
   // "Player keeps CardName"
   const keepsMatch = seg.match(/^(.+?) keeps (\S.+)$/i);
   if (keepsMatch && !keepsMatch[2].match(/^\d+ cards?/i)) {
