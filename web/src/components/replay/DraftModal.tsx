@@ -25,6 +25,10 @@ export interface DraftData {
 interface DraftModalProps {
   draft: DraftData;
   onClose: () => void;
+  cardSize: number;
+  onCardSizeChange: (size: number) => void;
+  hiddenPlayers: Set<string>;
+  onHiddenPlayersChange: (hidden: Set<string>) => void;
 }
 
 function DraftCardGroup({ title, cards, keptCards, cardSize, slideClass }: {
@@ -64,9 +68,7 @@ function DraftCardGroup({ title, cards, keptCards, cardSize, slideClass }: {
   );
 }
 
-export function DraftModal({ draft, onClose }: DraftModalProps) {
-  const [cardSize, setCardSize] = useState(160);
-  const [hiddenPlayers, setHiddenPlayers] = useState<Set<string>>(new Set());
+export function DraftModal({ draft, onClose, cardSize, onCardSizeChange: setCardSize, hiddenPlayers, onHiddenPlayersChange: setHiddenPlayers }: DraftModalProps) {
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const dragging = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -186,11 +188,11 @@ export function DraftModal({ draft, onClose }: DraftModalProps) {
             const p = draft.players[pid];
             const cube = getCubeImage(p.color);
             const isHidden = hiddenPlayers.has(pid);
-            const toggleHidden = () => setHiddenPlayers(prev => {
-              const next = new Set(prev);
+            const toggleHidden = () => {
+              const next = new Set(hiddenPlayers);
               if (next.has(pid)) next.delete(pid); else next.add(pid);
-              return next;
-            });
+              setHiddenPlayers(next);
+            };
 
             const keptSet = p.keptCards ? new Set(p.keptCards) : null;
             const keptCount = p.keptCards?.length;

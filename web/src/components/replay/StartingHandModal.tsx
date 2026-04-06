@@ -22,6 +22,10 @@ export interface StartingHandPlayerData {
 interface StartingHandModalProps {
   players: Record<string, StartingHandPlayerData>;
   onClose: () => void;
+  cardSize: number;
+  onCardSizeChange: (size: number) => void;
+  hiddenPlayers: Set<string>;
+  onHiddenPlayersChange: (hidden: Set<string>) => void;
 }
 
 function CardGroup({ title, cards, keptCards, hasKept, cardSize }: {
@@ -61,9 +65,7 @@ function CardGroup({ title, cards, keptCards, hasKept, cardSize }: {
   );
 }
 
-export function StartingHandModal({ players, onClose }: StartingHandModalProps) {
-  const [cardSize, setCardSize] = useState(110);
-  const [hiddenPlayers, setHiddenPlayers] = useState<Set<string>>(new Set());
+export function StartingHandModal({ players, onClose, cardSize, onCardSizeChange: setCardSize, hiddenPlayers, onHiddenPlayersChange: setHiddenPlayers }: StartingHandModalProps) {
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const dragging = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -144,11 +146,11 @@ export function StartingHandModal({ players, onClose }: StartingHandModalProps) 
             const cube = getCubeImage(p.color);
             const sh = p.startingHand;
             const isHidden = hiddenPlayers.has(pid);
-            const toggleHidden = () => setHiddenPlayers(prev => {
-              const next = new Set(prev);
+            const toggleHidden = () => {
+              const next = new Set(hiddenPlayers);
               if (next.has(pid)) next.delete(pid); else next.add(pid);
-              return next;
-            });
+              setHiddenPlayers(next);
+            };
             return (
               <div key={pid} className={idx > 0 ? 'border-t border-white/5 mt-2 pt-2' : ''}>
                 {/* Player header */}

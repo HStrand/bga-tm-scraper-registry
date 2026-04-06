@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Info, Share2, Check, Copy, RefreshCw, MessageSquare, Send, Link, Unlink } from 'lucide-react';
+import { Info, Share2, Check, Copy, RefreshCw, MessageSquare, Send, Link, Unlink, GripHorizontal } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
@@ -33,7 +33,11 @@ export function GameReplayPage() {
   const [shareIncludeMove, setShareIncludeMove] = useState(true);
   const [shareCopied, setShareCopied] = useState(false);
   const [startingHandOpen, setStartingHandOpen] = useState(false);
+  const [startingHandCardSize, setStartingHandCardSize] = useState(110);
+  const [startingHandHidden, setStartingHandHidden] = useState<Set<string>>(new Set());
   const [draftOpen, setDraftOpen] = useState(false);
+  const [draftCardSize, setDraftCardSize] = useState(160);
+  const [draftHidden, setDraftHidden] = useState<Set<string>>(new Set());
   const [endGameOpen, setEndGameOpen] = useState(false);
   const [cardPopup, setCardPopup] = useState<{ type: PopupType; name: string; player: string; color: string; deltas: TrackerDelta[] } | null>(null);
   const prevStepRef = useRef<number>(-1);
@@ -47,6 +51,11 @@ export function GameReplayPage() {
   const [controlsOffset, setControlsOffset] = useState({ x: 0, y: 0 });
   const [isDraggingControls, setIsDraggingControls] = useState(false);
   const controlsDragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
+
+  const [logPosition, setLogPosition] = useState<{ top: number; left: number } | null>(null);
+  const [isDraggingLog, setIsDraggingLog] = useState(false);
+  const logDragStart = useRef({ x: 0, y: 0, top: 0, left: 0 });
+  const logContainerRef = useRef<HTMLDivElement>(null);
 
   const [scraping, setScraping] = useState(false);
   const [scrapeError, setScrapeError] = useState<string | null>(null);
@@ -1148,7 +1157,39 @@ export function GameReplayPage() {
         {/* Right: Global params + Move log */}
         <div className="w-[380px] flex-shrink-0 space-y-3 lg:self-start lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-hidden">
           <GlobalParamsBar gameState={gameState} onOpenDiscardPile={() => setShowDiscardPile(true)} />
-          <MoveLog moves={gameLog.moves} currentStep={currentStep} generationBoundaries={generationBoundaries} playerColors={playerColors} onJump={jumpTo} />
+          <div
+            ref={logContainerRef}
+            className={logPosition ? 'fixed z-50 w-[380px]' : ''}
+            style={logPosition ? { top: logPosition.top, left: logPosition.left } : undefined}
+          >
+            <div
+              className="flex items-center justify-center py-1 cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 transition-colors"
+              onMouseDown={e => {
+                if (e.button !== 0) return;
+                setIsDraggingLog(true);
+                const rect = logContainerRef.current!.getBoundingClientRect();
+                const pos = logPosition ?? { top: rect.top, left: rect.left };
+                logDragStart.current = { x: e.clientX, y: e.clientY, top: pos.top, left: pos.left };
+                const onMove = (ev: MouseEvent) => {
+                  setLogPosition({
+                    top: logDragStart.current.top + (ev.clientY - logDragStart.current.y),
+                    left: logDragStart.current.left + (ev.clientX - logDragStart.current.x),
+                  });
+                };
+                const onUp = () => {
+                  setIsDraggingLog(false);
+                  window.removeEventListener('mousemove', onMove);
+                  window.removeEventListener('mouseup', onUp);
+                };
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onUp);
+              }}
+              title="Drag to reposition"
+            >
+              <GripHorizontal className="w-5 h-5" />
+            </div>
+            <MoveLog moves={gameLog.moves} currentStep={currentStep} generationBoundaries={generationBoundaries} playerColors={playerColors} onJump={jumpTo} />
+          </div>
         </div>
       </div>
 
@@ -1174,6 +1215,10 @@ export function GameReplayPage() {
         <StartingHandModal
           players={startingHandData}
           onClose={() => setStartingHandOpen(false)}
+          cardSize={startingHandCardSize}
+          onCardSizeChange={setStartingHandCardSize}
+          hiddenPlayers={startingHandHidden}
+          onHiddenPlayersChange={setStartingHandHidden}
         />
       )}
 
@@ -1181,6 +1226,10 @@ export function GameReplayPage() {
         <DraftModal
           draft={draftData}
           onClose={() => setDraftOpen(false)}
+          cardSize={draftCardSize}
+          onCardSizeChange={setDraftCardSize}
+          hiddenPlayers={draftHidden}
+          onHiddenPlayersChange={setDraftHidden}
         />
       )}
 
