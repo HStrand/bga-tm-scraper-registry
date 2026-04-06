@@ -112,7 +112,7 @@ export function MapOverlaysSvg(props: MapOverlaysProps) {
           : key === 'oxygen' ? `${val}%`
           : String(val);
         return (
-          <text key={`tracker-${key}`} x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={28} fontWeight="bold" style={{ filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.5))' }}>
+          <text key={`tracker-${key}`} x={cx} y={cy - 2} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={42} fontWeight="bold" style={{ filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.5))' }}>
             {label}
           </text>
         );
