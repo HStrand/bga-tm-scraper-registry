@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, SkipBack, SkipForward } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, SkipBack, SkipForward, Link, Unlink } from 'lucide-react';
 import type { GameState } from '@/types/gamelog';
 
 interface ReplayControlsProps {
@@ -11,11 +11,14 @@ interface ReplayControlsProps {
   onNext: () => void;
   onJump: (target: number) => void;
   generationBoundaries: Map<number, { start: number; end: number }>;
+  unlinked: boolean;
+  onToggleUnlink: () => void;
 }
 
 export function ReplayControls({
   currentStep, totalMoves, gameState, isAnimating,
   onPrev, onNext, onJump, generationBoundaries,
+  unlinked, onToggleUnlink,
 }: ReplayControlsProps) {
   const [sliderHover, setSliderHover] = useState<{ value: number; pct: number } | null>(null);
   const [showGenPicker, setShowGenPicker] = useState(false);
@@ -94,7 +97,20 @@ export function ReplayControls({
   const genBtn = "nav-btn flex items-center justify-center px-3 h-8 rounded-lg text-xs font-medium text-slate-400";
 
   return (
-    <div className="mt-4 controls-panel rounded-2xl px-5 py-4 space-y-3 max-w-3xl mx-auto">
+    <div className="mt-4 controls-panel rounded-2xl px-5 py-4 space-y-3 max-w-3xl mx-auto relative">
+      {/* Unlink / link toggle */}
+      <button
+        onClick={onToggleUnlink}
+        className={`absolute top-2 right-2 p-1.5 rounded-lg transition-colors cursor-pointer ${
+          unlinked
+            ? 'text-amber-400 hover:text-amber-300 bg-amber-400/10 border border-amber-400/30'
+            : 'text-slate-400 hover:text-amber-300'
+        }`}
+        title={unlinked ? 'Re-link controls to map' : 'Unlink controls from map'}
+      >
+        {unlinked ? <Link className="w-3.5 h-3.5" /> : <Unlink className="w-3.5 h-3.5" />}
+      </button>
+
       {/* Move info */}
       <div className="flex items-center justify-center gap-4 text-sm">
         <span className="text-slate-400">

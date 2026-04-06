@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Info, Share2, Check, Copy, RefreshCw, MessageSquare, Send } from 'lucide-react';
+import { Info, Share2, Check, Copy, RefreshCw, MessageSquare, Send, Link, Unlink } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
@@ -43,6 +43,11 @@ export function GameReplayPage() {
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
   const collapseTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const [controlsUnlinked, setControlsUnlinked] = useState(false);
+  const [controlsOffset, setControlsOffset] = useState({ x: 0, y: 0 });
+  const [isDraggingControls, setIsDraggingControls] = useState(false);
+  const controlsDragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
+
   const [scraping, setScraping] = useState(false);
   const [scrapeError, setScrapeError] = useState<string | null>(null);
   const [scrapeSuccess, setScrapeSuccess] = useState(false);
@@ -1077,17 +1082,67 @@ export function GameReplayPage() {
               )}
             </div>
 
-            <ReplayControls
-              currentStep={currentStep}
-              totalMoves={gameLog.moves.length}
-              gameState={gameState}
-              isAnimating={false}
-              onPrev={() => setCurrentStep(s => resolveStep(s - 1, 'backward'))}
-              onNext={() => setCurrentStep(s => resolveStep(s + 1, 'forward'))}
-              onJump={jumpTo}
-              generationBoundaries={generationBoundaries}
-            />
+            {!controlsUnlinked && (
+              <ReplayControls
+                currentStep={currentStep}
+                totalMoves={gameLog.moves.length}
+                gameState={gameState}
+                isAnimating={false}
+                onPrev={() => setCurrentStep(s => resolveStep(s - 1, 'backward'))}
+                onNext={() => setCurrentStep(s => resolveStep(s + 1, 'forward'))}
+                onJump={jumpTo}
+                generationBoundaries={generationBoundaries}
+                unlinked={false}
+                onToggleUnlink={() => setControlsUnlinked(true)}
+              />
+            )}
           </div>
+
+          {controlsUnlinked && (
+            <div
+              className="absolute z-40"
+              style={{
+                bottom: '1rem',
+                left: '50%',
+                transform: `translate(calc(-50% + ${controlsOffset.x}px), ${controlsOffset.y}px)`,
+                cursor: isDraggingControls ? 'grabbing' : 'grab',
+                userSelect: 'none',
+              }}
+              onMouseDown={e => {
+                if (e.button !== 0) return;
+                const target = e.target as HTMLElement;
+                if (target.closest('button, input[type="range"]')) return;
+                setIsDraggingControls(true);
+                controlsDragStart.current = { x: e.clientX, y: e.clientY, ox: controlsOffset.x, oy: controlsOffset.y };
+                const onMove = (ev: MouseEvent) => {
+                  setControlsOffset({
+                    x: controlsDragStart.current.ox + (ev.clientX - controlsDragStart.current.x),
+                    y: controlsDragStart.current.oy + (ev.clientY - controlsDragStart.current.y),
+                  });
+                };
+                const onUp = () => {
+                  setIsDraggingControls(false);
+                  window.removeEventListener('mousemove', onMove);
+                  window.removeEventListener('mouseup', onUp);
+                };
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onUp);
+              }}
+            >
+              <ReplayControls
+                currentStep={currentStep}
+                totalMoves={gameLog.moves.length}
+                gameState={gameState}
+                isAnimating={false}
+                onPrev={() => setCurrentStep(s => resolveStep(s - 1, 'backward'))}
+                onNext={() => setCurrentStep(s => resolveStep(s + 1, 'forward'))}
+                onJump={jumpTo}
+                generationBoundaries={generationBoundaries}
+                unlinked={true}
+                onToggleUnlink={() => { setControlsUnlinked(false); setControlsOffset({ x: 0, y: 0 }); }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Right: Global params + Move log */}
