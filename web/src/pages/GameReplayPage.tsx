@@ -330,6 +330,11 @@ export function GameReplayPage() {
         allPlayed.get(move.player_id)?.push(move.card_played);
       }
     }
+    // Track the first time each card is seen in a player's hand for stable ordering
+    const handFirstSeen = new Map<string, Map<string, number>>();
+    for (const id of Object.keys(gameLog.players)) handFirstSeen.set(id, new Map());
+    let seenCounter = 0;
+
     for (let i = 0; i <= currentStep; i++) {
       const move = gameLog.moves[i];
       // Use the hand snapshot when available (keyed by player id in game_state)
@@ -337,7 +342,13 @@ export function GameReplayPage() {
       if (playerHands) {
         for (const [pid, hand] of Object.entries(playerHands)) {
           const entry = map.get(pid);
-          if (entry) entry.hand = [...hand];
+          if (entry) {
+            entry.hand = [...hand];
+            const seen = handFirstSeen.get(pid)!;
+            for (const card of hand) {
+              if (!seen.has(card)) seen.set(card, seenCounter++);
+            }
+          }
         }
       }
       // Seed hand from cards_kept — add any cards not already tracked
@@ -346,8 +357,10 @@ export function GameReplayPage() {
           const entry = map.get(pid);
           if (entry) {
             const existing = new Set([...entry.hand, ...entry.headquarters]);
+            const seen = handFirstSeen.get(pid)!;
             for (const card of cards) {
               if (!existing.has(card)) entry.hand.push(card);
+              if (!seen.has(card)) seen.set(card, seenCounter++);
             }
           }
         }
@@ -404,6 +417,13 @@ export function GameReplayPage() {
             entry.played.push(card);
           }
         }
+      }
+    }
+    // Sort hands by first-seen order so card positions stay stable across steps
+    for (const [pid, entry] of map) {
+      const seen = handFirstSeen.get(pid);
+      if (seen && seen.size > 0) {
+        entry.hand.sort((a, b) => (seen.get(a) ?? Infinity) - (seen.get(b) ?? Infinity));
       }
     }
     return map;
