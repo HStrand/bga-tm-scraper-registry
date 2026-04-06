@@ -216,7 +216,7 @@ export function DraftModal({ draft, onClose }: DraftModalProps) {
                   </span>
                   {/* Pass target inline */}
                   {!p.keptCards && p.options.length > 0 && (
-                    <div className={`flex items-center gap-1.5 text-xs text-slate-400 ml-1 ${draft.direction === 'right' ? 'draft-flow-right' : 'draft-flow-left'}`}>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 ml-1">
                       <FlowIcon size={14} className="text-slate-500" />
                       <span>passing to</span>
                       {targetCube ? (
