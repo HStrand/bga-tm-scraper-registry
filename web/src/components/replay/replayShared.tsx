@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import startingPlayerImg from '/assets/starting player.png';
 import temperatureImg from '/assets/temperature.png';
 import oxygenImg from '/assets/oxygen.png';
@@ -104,20 +106,22 @@ function ResourceCell({ icon, value, prodValue, title, resourceKey }: { icon?: s
   const bg = RESOURCE_COLORS[resourceKey] ?? '#334155';
   return (
     <div className="flex flex-col items-center w-14 rounded-lg overflow-hidden" title={title}>
-      {/* Icon on colored background */}
-      <div className="w-full flex items-center justify-center h-10" style={{ background: bg }}>
+      {/* Icon on colored background with overlaid count */}
+      <div className="relative w-full flex items-center justify-center h-10" style={{ background: bg }}>
         {icon ? (
-          <img src={icon} alt={title} className="w-7 h-7 object-contain drop-shadow-md" />
+          <img src={icon} alt={title} className="w-8 h-8 object-contain drop-shadow-md" />
         ) : (
-          <div className="w-7 h-7 rounded-full bg-white/20" />
+          <div className="w-8 h-8 rounded-full bg-white/20" />
         )}
-      </div>
-      {/* Count */}
-      <div className="w-full text-center py-0.5" style={{ background: 'rgba(255,255,255,0.08)' }}>
-        <span className="text-base font-bold text-white">{value}</span>
+        <span
+          className="absolute inset-0 flex items-center justify-center text-base font-bold text-white pointer-events-none"
+          style={{ textShadow: '0 0 3px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.85), 1px 1px 2px rgba(0,0,0,0.95)' }}
+        >
+          {value}
+        </span>
       </div>
       {/* Production */}
-      <div className="w-full text-center py-0.5" style={{ background: 'rgba(0,0,0,0.2)' }}>
+      <div className="w-full text-center py-0.5" style={{ background: 'rgba(255,255,255,0.12)' }}>
         <span
           className={`text-base font-bold ${prodValue >= 0 ? 'text-green-400' : 'text-red-400'}`}
           style={{ textShadow: prodValue !== 0 ? (prodValue > 0 ? '0 0 6px rgba(74,222,128,0.4)' : '0 0 6px rgba(248,113,113,0.4)') : undefined }}
@@ -147,46 +151,93 @@ const TAG_COLORS: Record<string, string> = {
 function TagCell({ icon, value, title, large }: { icon?: string; value: number; title: string; large?: boolean }) {
   const bg = TAG_COLORS[title] ?? '#334155';
   return (
-    <div className="flex flex-col items-center w-14 rounded-lg overflow-hidden" title={title}>
-      <div className="w-full flex items-center justify-center h-10" style={{ background: bg }}>
+    <div className="flex items-center justify-center w-12" title={title}>
+      <div
+        className="relative flex items-center justify-center w-11 h-11 rounded-full"
+        style={{ background: bg, boxShadow: 'inset 0 0 0 2px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.4)' }}
+      >
         {icon ? (
-          <img src={icon} alt={title} className={`${large ? 'w-8 h-8' : 'w-7 h-7'} object-contain drop-shadow-md`} />
+          <img src={icon} alt={title} className={`${large ? 'w-9 h-9' : 'w-8 h-8'} object-contain drop-shadow-md`} />
         ) : (
-          <div className={`${large ? 'w-8 h-8' : 'w-7 h-7'} rounded-full bg-white/20`} />
+          <div className={`${large ? 'w-9 h-9' : 'w-8 h-8'} rounded-full bg-white/20`} />
         )}
-      </div>
-      <div className="w-full text-center py-0.5" style={{ background: 'rgba(255,255,255,0.08)' }}>
-        <span className="text-sm font-bold text-white">{value}</span>
+        <span
+          className="absolute inset-0 flex items-center justify-center text-base font-bold text-white pointer-events-none"
+          style={{ textShadow: '0 0 3px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.85), 1px 1px 2px rgba(0,0,0,0.95)' }}
+        >
+          {value}
+        </span>
       </div>
     </div>
   );
 }
 
 export function PlayerTrackers({ trackers, tileCounts, inline }: { trackers: Record<string, number>; tileCounts?: { cities: number; greeneries: number; total: number }; inline?: boolean }) {
+  const [showResources, setShowResources] = useState(true);
+  const [showTags, setShowTags] = useState(true);
+  const [resourcesZoom, setResourcesZoom] = useState(1);
+  const [tagsZoom, setTagsZoom] = useState(1);
+
   if (inline) {
+    const toggleBtn = "p-1 rounded transition-colors";
+    const activeToggle = "text-amber-400 hover:text-amber-300";
+    const inactiveToggle = "text-slate-500 hover:text-slate-300";
     // Render as separate fragments so parent flex-wrap controls the flow
     return (
       <>
+        {/* Toolbar — always full width, sits above the rows */}
+        <div className="basis-full flex items-center gap-3 text-xs text-slate-500 mb-1">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowResources(v => !v)}
+              className={`${toggleBtn} ${showResources ? activeToggle : inactiveToggle}`}
+              title={showResources ? 'Hide resources' : 'Show resources'}
+            >
+              {showResources ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+            </button>
+            <span>Resources</span>
+            {showResources && (
+              <input type="range" min={0.6} max={1.4} step={0.05} value={resourcesZoom} onChange={e => setResourcesZoom(Number(e.target.value))} className="w-16 h-1.5 accent-amber-500" title="Resource size" />
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowTags(v => !v)}
+              className={`${toggleBtn} ${showTags ? activeToggle : inactiveToggle}`}
+              title={showTags ? 'Hide tags' : 'Show tags'}
+            >
+              {showTags ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+            </button>
+            <span>Tags</span>
+            {showTags && (
+              <input type="range" min={0.6} max={1.4} step={0.05} value={tagsZoom} onChange={e => setTagsZoom(Number(e.target.value))} className="w-16 h-1.5 accent-amber-500" title="Tag size" />
+            )}
+          </div>
+        </div>
+        <div className="basis-full h-0" />
         {/* Resources as one block */}
-        <div className="flex gap-1 flex-shrink-0">
-          {RESOURCES.map(r => (
-            <ResourceCell key={r.key} resourceKey={r.key} icon={getIcon(resourceIcons, r.icon)} value={trackers[r.key] ?? 0} prodValue={trackers[r.prodKey] ?? 0} title={`${r.label}: ${trackers[r.key] ?? 0} (prod: ${trackers[r.prodKey] ?? 0})`} />
-          ))}
-        </div>
-        {/* Tag row 1 as one block */}
-        <div className="flex gap-1 flex-shrink-0">
-          {TAG_ROWS[0].map(t => {
-            const altKey = 'altKey' in t ? t.altKey : undefined;
-            return <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={getTracker(trackers, t.key, altKey)} title={t.key} />;
-          })}
-        </div>
-        {/* Tag row 2 as one block */}
-        <div className="flex gap-1 flex-shrink-0">
-          {TAG_ROWS[1].map(t => {
-            const altKey = 'altKey' in t ? t.altKey : undefined;
-            return <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={getTracker(trackers, t.key, altKey)} title={t.key} />;
-          })}
-        </div>
+        {showResources && (
+          <div className="flex gap-1 flex-shrink-0" style={{ zoom: resourcesZoom }}>
+            {RESOURCES.map(r => (
+              <ResourceCell key={r.key} resourceKey={r.key} icon={getIcon(resourceIcons, r.icon)} value={trackers[r.key] ?? 0} prodValue={trackers[r.prodKey] ?? 0} title={`${r.label}: ${trackers[r.key] ?? 0} (prod: ${trackers[r.prodKey] ?? 0})`} />
+            ))}
+          </div>
+        )}
+        {/* Force tags onto a new row below resources */}
+        {showResources && showTags && <div className="basis-full h-0" />}
+        {/* Tags can wrap against each other */}
+        {showTags && (
+          <div className="flex gap-1 flex-wrap" style={{ zoom: tagsZoom }}>
+            {TAG_ROWS[0].map(t => {
+              const altKey = 'altKey' in t ? t.altKey : undefined;
+              return <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={getTracker(trackers, t.key, altKey)} title={t.key} />;
+            })}
+            {TAG_ROWS[1].map(t => {
+              const altKey = 'altKey' in t ? t.altKey : undefined;
+              return <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={getTracker(trackers, t.key, altKey)} title={t.key} />;
+            })}
+          </div>
+        )}
       </>
     );
   }
@@ -198,6 +249,7 @@ export function PlayerTrackers({ trackers, tileCounts, inline }: { trackers: Rec
           <ResourceCell key={r.key} resourceKey={r.key} icon={getIcon(resourceIcons, r.icon)} value={trackers[r.key] ?? 0} prodValue={trackers[r.prodKey] ?? 0} title={`${r.label}: ${trackers[r.key] ?? 0} (prod: ${trackers[r.prodKey] ?? 0})`} />
         ))}
       </div>
+      <div className="border-t border-white/10 !mt-3 !mb-2" />
       <div className="flex flex-wrap gap-1">
         {TAG_ROWS[0].map(t => {
           const altKey = 'altKey' in t ? t.altKey : undefined;
