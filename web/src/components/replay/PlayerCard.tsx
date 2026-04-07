@@ -1,6 +1,7 @@
 import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { X, Pin, PinOff, Grid3X3, Layers, List, EyeOff, GripHorizontal } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
+import { computeCardCost } from '@/data/cardDiscounts';
 import type { PlayerVictoryPoints } from '@/types/gamelog';
 import { getCubeImage, startingPlayerImg, PlayerTrackers, getIcon, resourceIcons } from './replayShared';
 import trImg from '/assets/tr.png';
@@ -54,9 +55,50 @@ function ResourceBadge({ card, count, size = 'normal' }: { card: string; count: 
   );
 }
 
+// --- Cost badge (shows discounted cost as MC icon overlay below card's built-in cost) ---
+type CostContext = { played: readonly string[]; corporation: string };
+
+const mcIcon = getIcon(resourceIcons, 'mc');
+
+function CostBadge({ card, costContext, cardSize, size = 'normal' }: { card: string; costContext: CostContext; cardSize: number; size?: 'normal' | 'small' }) {
+  const cost = computeCardCost(card, costContext.played, costContext.corporation);
+  if (!cost || cost.discount <= 0) return null;
+  // Sit directly below the card's built-in cost number in the upper-left corner.
+  // Card cost glyphs occupy roughly the top ~14% of the card height, so anchor
+  // by percentage so the badge tracks with the card image regardless of size.
+  const widthFrac = size === 'small' ? 0.16 : 0.18;
+  const fontSize = Math.max(9, Math.round(cardSize * widthFrac * 0.62));
+  return (
+    <span
+      className="absolute z-10 pointer-events-none"
+      style={{ top: '14%', left: '3%', width: `${widthFrac * 100}%`, aspectRatio: '1 / 1' }}
+      title={`Cost ${cost.effective} (base ${cost.base}, -${cost.discount} discount)`}
+    >
+      {mcIcon && (
+        <img
+          src={mcIcon}
+          alt=""
+          className="w-full h-full object-contain"
+          style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.7))' }}
+        />
+      )}
+      <span
+        className="absolute inset-0 flex items-center justify-center font-bold"
+        style={{
+          color: '#1a0f00',
+          fontSize: `${fontSize}px`,
+          textShadow: '0 1px 0 rgba(255,255,255,0.45)',
+        }}
+      >
+        {cost.effective}
+      </span>
+    </span>
+  );
+}
+
 // --- Card view components (dark-themed) ---
 
-const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize, activatedCards }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string> }) {
+const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize, activatedCards, costContext }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string>; costContext?: CostContext }) {
   return (
     <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${cardSize}px, 1fr))` }}>
       {cards.map((card, i) => {
@@ -67,6 +109,7 @@ const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize, activa
           <div key={`${card}-${i}`} className="group/card relative">
             <div className="relative">
               <img src={img} alt={card} className={`w-full rounded shadow-sm group-hover/card:scale-110 group-hover/card:shadow-lg group-hover/card:z-10 relative transition-transform duration-150 ${used ? 'opacity-40 grayscale' : ''}`} />
+              {costContext && <CostBadge card={card} costContext={costContext} cardSize={cardSize} />}
               {res != null && res > 0 && <ResourceBadge card={card} count={res} />}
             </div>
             <p className={`text-[9px] text-center truncate mt-0.5 ${used ? 'text-slate-600' : 'text-slate-500'}`}>{card}</p>
@@ -77,7 +120,7 @@ const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize, activa
   );
 });
 
-const CardStack = memo(function CardStack({ cards, cardResources, cardSize, activatedCards }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string> }) {
+const CardStack = memo(function CardStack({ cards, cardResources, cardSize, activatedCards, costContext }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string>; costContext?: CostContext }) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   if (cards.length === 0) return null;
 
@@ -111,6 +154,7 @@ const CardStack = memo(function CardStack({ cards, cardResources, cardSize, acti
                   <div className="absolute inset-0 rounded" style={{ background: 'rgba(10, 15, 30, 0.65)' }} />
                 )}
                 </div>
+                {costContext && <CostBadge card={card} costContext={costContext} cardSize={cardWidth} size="small" />}
                 {res != null && res > 0 && <ResourceBadge card={card} count={res} size="small" />}
               </div>
             );
@@ -155,8 +199,8 @@ const CardSynthetic = memo(function CardSynthetic({ cards, cardResources, cardSi
   );
 });
 
-const CardSection = memo(function CardSection({ cards, title, color, cardResources, defaultViewMode = 'grid', defaultCardSize = 140, activatedCards }: {
-  cards: string[]; title: string; color: string; cardResources?: Record<string, number>; defaultViewMode?: ViewMode; defaultCardSize?: number; activatedCards?: Set<string>;
+const CardSection = memo(function CardSection({ cards, title, color, cardResources, defaultViewMode = 'grid', defaultCardSize = 140, activatedCards, costContext }: {
+  cards: string[]; title: string; color: string; cardResources?: Record<string, number>; defaultViewMode?: ViewMode; defaultCardSize?: number; activatedCards?: Set<string>; costContext?: CostContext;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
   const [cardSize, setCardSize] = useState(defaultCardSize);
@@ -192,11 +236,11 @@ const CardSection = memo(function CardSection({ cards, title, color, cardResourc
         <div className="h-px flex-1 bg-white/10" />
       </div>
       {viewMode === 'hidden' ? null : viewMode === 'stack' ? (
-        <CardStack cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} />
+        <CardStack cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} costContext={costContext} />
       ) : viewMode === 'synthetic' ? (
         <CardSynthetic cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} />
       ) : (
-        <CardGrid cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} />
+        <CardGrid cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} costContext={costContext} />
       )}
     </div>
   );
@@ -501,7 +545,7 @@ export const PlayerCard = memo(function PlayerCard({
         <div className="overflow-y-auto scrollbar-subtle flex-1 min-h-0 mr-2">
           <div className="px-3 py-2.5 space-y-3 border-t border-white/10">
             <CardSection cards={allHQ} title="Headquarters" color={color} defaultViewMode="grid" defaultCardSize={180} />
-            <CardSection cards={hand} title="Hand" color={color} defaultViewMode="grid" defaultCardSize={130} />
+            <CardSection cards={hand} title="Hand" color={color} defaultViewMode="grid" defaultCardSize={130} costContext={{ played: [...allHQ, ...played], corporation }} />
             <CardSection cards={actions} title="Actions" color="#60a5fa" cardResources={cardResources} defaultViewMode="grid" activatedCards={activatedCards} />
             <CardSection cards={effects} title="Effects" color="#60a5fa" cardResources={cardResources} defaultViewMode="stack" />
             <CardSection cards={automated} title="Automated" color="#4ade80" cardResources={cardResources} defaultViewMode="synthetic" />
