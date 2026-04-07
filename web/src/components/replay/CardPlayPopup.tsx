@@ -1,9 +1,21 @@
 import { useEffect, useState, useRef } from 'react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
-import { getCubeImage, resourceIcons, getIcon, RESOURCES } from './replayShared';
+import { getCubeImage, resourceIcons, getIcon, RESOURCES, temperatureImg } from './replayShared';
+import cityTileImage from '/assets/tiles/city tile.png';
+import greeneryTileImage from '/assets/tiles/greenery tile.png';
+import oceanTileImage from '/assets/tiles/ocean tile.png';
 
 const milestoneIcons = import.meta.glob('../../../assets/milestones/*.png', { eager: true }) as Record<string, { default: string }>;
 const awardIcons = import.meta.glob('../../../assets/awards/*.png', { eager: true }) as Record<string, { default: string }>;
+
+const STANDARD_PROJECT_IMAGES: Record<string, string | undefined> = {
+  'sell patents': getCardPlaceholderImage(),
+  'greenery':     greeneryTileImage,
+  'city':         cityTileImage,
+  'aquifer':      oceanTileImage,
+  'power plant':  getIcon(resourceIcons, 'energy'),
+  'asteroid':     temperatureImg,
+};
 
 export interface TrackerDelta {
   key: string;
@@ -42,7 +54,7 @@ function getPopupImage(type: PopupType, name: string): string | undefined {
   if (type === 'award') return getIcon(awardIcons, name.toLowerCase());
   if (type === 'convert_heat') return getIcon(resourceIcons, 'heat');
   if (type === 'convert_plants') return getIcon(resourceIcons, 'plant');
-  // standard_project: no specific image
+  if (type === 'standard_project') return STANDARD_PROJECT_IMAGES[name.toLowerCase()];
   return undefined;
 }
 
