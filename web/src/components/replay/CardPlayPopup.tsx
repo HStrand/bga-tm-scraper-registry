@@ -13,7 +13,15 @@ export interface TrackerDelta {
   isProduction: boolean;
 }
 
-export type PopupType = 'card' | 'milestone' | 'award';
+export type PopupType =
+  | 'card'
+  | 'milestone'
+  | 'award'
+  | 'standard_project'
+  | 'activate_card'
+  | 'draw'
+  | 'convert_heat'
+  | 'convert_plants';
 
 interface CardPlayPopupProps {
   type: PopupType;
@@ -22,22 +30,34 @@ interface CardPlayPopupProps {
   playerColor: string;
   deltas: TrackerDelta[];
   onDone: () => void;
+  /** Optional secondary line (e.g. "+ 3 more" for multi-card draws). */
+  subtitle?: string;
 }
 
 function getPopupImage(type: PopupType, name: string): string | undefined {
-  if (type === 'card') return getCardImage(name) ?? getCardPlaceholderImage();
+  if (type === 'card' || type === 'activate_card' || type === 'draw') {
+    return getCardImage(name) ?? getCardPlaceholderImage();
+  }
   if (type === 'milestone') return getIcon(milestoneIcons, name.toLowerCase());
   if (type === 'award') return getIcon(awardIcons, name.toLowerCase());
+  if (type === 'convert_heat') return getIcon(resourceIcons, 'heat');
+  if (type === 'convert_plants') return getIcon(resourceIcons, 'plant');
+  // standard_project: no specific image
   return undefined;
 }
 
 const POPUP_CONFIG: Record<PopupType, { verb: string; accent: string }> = {
-  card: { verb: 'plays', accent: 'text-amber-300' },
-  milestone: { verb: 'claims milestone', accent: 'text-green-400' },
-  award: { verb: 'funds award', accent: 'text-amber-400' },
+  card:             { verb: 'plays',                  accent: 'text-amber-300' },
+  milestone:        { verb: 'claims milestone',       accent: 'text-green-400' },
+  award:            { verb: 'funds award',            accent: 'text-amber-400' },
+  standard_project: { verb: 'plays standard project', accent: 'text-sky-300'   },
+  activate_card:    { verb: 'activates',              accent: 'text-cyan-300'  },
+  draw:             { verb: 'draws',                  accent: 'text-slate-200' },
+  convert_heat:     { verb: 'converts',               accent: 'text-red-400'   },
+  convert_plants:   { verb: 'converts',               accent: 'text-green-400' },
 };
 
-export function CardPlayPopup({ type, name, playerName, playerColor, deltas, onDone }: CardPlayPopupProps) {
+export function CardPlayPopup({ type, name, playerName, playerColor, deltas, onDone, subtitle }: CardPlayPopupProps) {
   const [phase, setPhase] = useState<'enter' | 'hold' | 'exit'>('enter');
   const img = getPopupImage(type, name);
   const cubeImg = getCubeImage(playerColor);
@@ -69,7 +89,7 @@ export function CardPlayPopup({ type, name, playerName, playerColor, deltas, onD
   const prodGained = deltas.filter(d => d.delta > 0 && d.isProduction);
   const prodLost = deltas.filter(d => d.delta < 0 && d.isProduction);
 
-  const isCard = type === 'card';
+  const isCard = type === 'card' || type === 'activate_card' || type === 'draw';
 
   return (
     <div
@@ -90,21 +110,28 @@ export function CardPlayPopup({ type, name, playerName, playerColor, deltas, onD
         )}
 
         {/* Player + verb + name */}
-        <div className="flex items-center gap-2 whitespace-nowrap">
-          {cubeImg ? (
-            <img src={cubeImg} alt="" className="w-5 h-5" />
-          ) : (
-            <span className="inline-block w-4 h-4 rounded-full" style={{ backgroundColor: playerColor }} />
+        <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            {cubeImg ? (
+              <img src={cubeImg} alt="" className="w-5 h-5" />
+            ) : (
+              <span className="inline-block w-4 h-4 rounded-full" style={{ backgroundColor: playerColor }} />
+            )}
+            <span className="text-sm font-bold text-white">
+              {playerName}
+            </span>
+            <span className="text-sm text-slate-400">
+              {config.verb}
+            </span>
+            {name && (
+              <span className={`text-sm font-bold ${config.accent}`}>
+                {name}
+              </span>
+            )}
+          </div>
+          {subtitle && (
+            <span className="text-xs text-slate-400">{subtitle}</span>
           )}
-          <span className="text-sm font-bold text-white">
-            {playerName}
-          </span>
-          <span className="text-sm text-slate-400">
-            {config.verb}
-          </span>
-          <span className={`text-sm font-bold ${config.accent}`}>
-            {name}
-          </span>
         </div>
 
         {/* Resource deltas */}

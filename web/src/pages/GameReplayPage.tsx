@@ -39,7 +39,7 @@ export function GameReplayPage() {
   const [draftCardSize, setDraftCardSize] = useState(160);
   const [draftHidden, setDraftHidden] = useState<Set<string>>(new Set());
   const [endGameOpen, setEndGameOpen] = useState(false);
-  const [cardPopup, setCardPopup] = useState<{ type: PopupType; name: string; player: string; color: string; deltas: TrackerDelta[] } | null>(null);
+  const [cardPopup, setCardPopup] = useState<{ type: PopupType; name: string; player: string; color: string; deltas: TrackerDelta[]; subtitle?: string } | null>(null);
   const prevStepRef = useRef<number>(-1);
   const prevDraftGen = useRef<number | null>(null);
   const [mapScale, setMapScale] = useState(1);
@@ -756,18 +756,47 @@ export function GameReplayPage() {
     const currTrackers = move.game_state?.player_trackers?.[move.player_id];
     const deltas = computeTrackerDeltas(prevTrackers, currTrackers);
 
+    const color = playerColors[move.player_id] ?? '#888';
+    const base = { player: move.player_name, color, deltas };
+
     if (move.action_type === 'claim_milestone' || move.description.match(/claims milestone /i)) {
       const match = move.description.match(/claims milestone (.+?)(?:\s*\||\s*$)/i);
       if (match) {
-        setCardPopup({ type: 'milestone', name: match[1].trim(), player: move.player_name, color: playerColors[move.player_id] ?? '#888', deltas });
+        setCardPopup({ ...base, type: 'milestone', name: match[1].trim() });
       } else { setCardPopup(null); }
     } else if (move.action_type === 'fund_award' || move.description.match(/funds .+? award/i)) {
       const match = move.description.match(/funds (.+?) award/i);
       if (match) {
-        setCardPopup({ type: 'award', name: match[1].trim(), player: move.player_name, color: playerColors[move.player_id] ?? '#888', deltas });
+        setCardPopup({ ...base, type: 'award', name: match[1].trim() });
       } else { setCardPopup(null); }
+    } else if (move.action_type === 'standard_project') {
+      const match = move.description.match(/plays standard project (.+?)(?:\s*\||\s*$)/i);
+      setCardPopup({ ...base, type: 'standard_project', name: match ? match[1].trim() : '' });
+    } else if (move.action_type === 'activate_card') {
+      const match = move.description.match(/activates (.+?)(?:\s*\||\s*$)/i);
+      setCardPopup({ ...base, type: 'activate_card', name: match ? match[1].trim() : '' });
+    } else if (move.action_type === 'draw') {
+      // "draws CardName" or "draws N cards: Name1, Name2, ..."
+      const multi = move.description.match(/draws \d+ cards?:\s*(.+?)(?:\s*\||\s*$)/i);
+      if (multi) {
+        const names = multi[1].split(',').map(s => s.trim()).filter(Boolean);
+        const first = names[0] ?? '';
+        const subtitle = names.length > 1 ? `+ ${names.length - 1} more` : undefined;
+        setCardPopup({ ...base, type: 'draw', name: first, subtitle });
+      } else {
+        const single = move.description.match(/draws (.+?)(?:\s*\||\s*$)/i);
+        setCardPopup({ ...base, type: 'draw', name: single ? single[1].trim() : '' });
+      }
+    } else if (/\bpays 8 Heat\b/i.test(move.description)) {
+      // BGA's `convert_heat` action_type is misleading — it's used for ANY
+      // temperature increase, including card effects. The literal "pays 8 Heat"
+      // string is the reliable signal for an actual heat-to-temperature
+      // conversion.
+      setCardPopup({ ...base, type: 'convert_heat', name: 'heat → temperature' });
+    } else if (/\bpays 8 Plant\b/i.test(move.description)) {
+      setCardPopup({ ...base, type: 'convert_plants', name: 'plants → greenery' });
     } else if (move.card_played && move.action_type !== 'draft') {
-      setCardPopup({ type: 'card', name: move.card_played, player: move.player_name, color: playerColors[move.player_id] ?? '#888', deltas });
+      setCardPopup({ ...base, type: 'card', name: move.card_played });
     } else {
       setCardPopup(null);
     }
@@ -1043,6 +1072,7 @@ export function GameReplayPage() {
                     playerName={cardPopup.player}
                     playerColor={cardPopup.color}
                     deltas={cardPopup.deltas}
+                    subtitle={cardPopup.subtitle}
                     onDone={() => setCardPopup(null)}
                   />
                 </div>
