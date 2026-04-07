@@ -20,7 +20,7 @@ function CardGrid({ cards, cardSize }: { cards: string[]; cardSize: number }) {
             <img
               src={img}
               alt={card}
-              className="w-full rounded shadow-sm group-hover:scale-110 group-hover:shadow-lg group-hover:z-10 relative transition-transform duration-150"
+              className="w-full rounded shadow-sm group-hover:brightness-125 group-hover:shadow-lg relative transition-[filter,box-shadow] duration-150"
             />
             <p className="text-[10px] text-center text-slate-500 truncate mt-0.5">{card}</p>
           </div>

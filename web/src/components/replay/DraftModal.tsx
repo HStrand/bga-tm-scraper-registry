@@ -53,7 +53,7 @@ function DraftCardGroup({ title, cards, keptCards, cardSize, slideClass }: {
               <img
                 src={img}
                 alt={card}
-                className={`w-full rounded shadow-sm group-hover:scale-110 group-hover:shadow-lg group-hover:z-10 relative transition-transform duration-150 ${
+                className={`w-full rounded shadow-sm group-hover:brightness-125 group-hover:shadow-lg relative transition-[filter,box-shadow] duration-150 ${
                   dimmed ? 'opacity-35 grayscale' : ''
                 }`}
               />
