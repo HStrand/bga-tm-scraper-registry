@@ -79,16 +79,16 @@ export function CardPlayPopup({ type, name, playerName, playerColor, deltas, onD
 
   useEffect(() => {
     setPhase('enter');
-    const t1 = setTimeout(() => setPhase('hold'), 500);
-    const t2 = setTimeout(() => setPhase('exit'), 2800);
-    const t3 = setTimeout(() => onDoneRef.current(), 3200);
+    const t1 = setTimeout(() => setPhase('hold'), 800);
+    const t2 = setTimeout(() => setPhase('exit'), 2000);
+    const t3 = setTimeout(() => onDoneRef.current(), 3000);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [name, type]);
 
   const handleClick = () => {
     if (phase !== 'exit') {
       setPhase('exit');
-      setTimeout(onDone, 400);
+      setTimeout(onDone, 700);
     }
   };
 
