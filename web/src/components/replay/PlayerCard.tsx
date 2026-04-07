@@ -108,7 +108,7 @@ const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize, activa
         return (
           <div key={`${card}-${i}`} className="group/card relative">
             <div className="relative">
-              <img src={img} alt={card} className={`w-full rounded shadow-sm group-hover/card:scale-110 group-hover/card:shadow-lg group-hover/card:z-10 relative transition-transform duration-150 ${used ? 'opacity-40 grayscale' : ''}`} />
+              <img src={img} alt={card} className={`w-full rounded shadow-sm group-hover/card:brightness-125 group-hover/card:shadow-lg relative transition-[filter,box-shadow] duration-150 ${used ? 'opacity-40 grayscale' : ''}`} />
               {costContext && <CostBadge card={card} costContext={costContext} cardSize={cardSize} />}
               {res != null && res > 0 && <ResourceBadge card={card} count={res} />}
             </div>
@@ -149,7 +149,7 @@ const CardStack = memo(function CardStack({ cards, cardResources, cardSize, acti
             return (
               <div key={`${card}-${globalIdx}`} className="absolute left-0 transition-all duration-150 ease-out" style={{ top: `${top}px`, zIndex: isHovered ? 100 : i, width: `${cardWidth}px` }} onMouseEnter={() => setHoveredKey(hoverKey)} onMouseLeave={() => setHoveredKey(null)}>
                 <div className="relative">
-                <img src={img} alt={card} className={`rounded shadow-sm transition-transform duration-150 ${isHovered ? 'scale-[1.15] shadow-lg' : ''} ${activatedCards?.has(card) ? 'grayscale' : ''}`} style={{ width: `${cardWidth}px` }} />
+                <img src={img} alt={card} className={`rounded shadow-sm transition-[filter,box-shadow] duration-150 ${isHovered ? 'brightness-125 shadow-lg' : ''} ${activatedCards?.has(card) ? 'grayscale' : ''}`} style={{ width: `${cardWidth}px` }} />
                 {activatedCards?.has(card) && (
                   <div className="absolute inset-0 rounded" style={{ background: 'rgba(10, 15, 30, 0.65)' }} />
                 )}
