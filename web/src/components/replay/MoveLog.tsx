@@ -328,16 +328,20 @@ function rewriteSegment(seg: string, key: number): JSX.Element | null | undefine
     );
   }
 
-  // "Player draws/drafts/activates/reveals CardName"
+  // "Player draws/drafts/activates/reveals CardName" — optionally followed by
+  // ": trailing context" (e.g. "reveals Fuel Factory: it does not have a Plant tag").
   const verbMatch = seg.match(/^(.+?) (draws|drafts|activates|reveals) (.+)$/i);
   if (verbMatch && !verbMatch[3].match(/^\d+ cards?/i)) {
-    const cardName = verbMatch[3];
+    const colonIdx = verbMatch[3].indexOf(':');
+    const cardName = (colonIdx >= 0 ? verbMatch[3].slice(0, colonIdx) : verbMatch[3]).trim();
+    const trailing = colonIdx >= 0 ? verbMatch[3].slice(colonIdx + 1).trim() : '';
     const cardImg = getCardImage(cardName) ?? getCardPlaceholderImage();
     return (
       <p key={key} className="flex items-center gap-1 flex-wrap">
         <span className="font-bold text-white">{verbMatch[1]}</span>
         <span> {verbMatch[2]} </span>
         <InlineCard cardName={cardName} cardImg={cardImg} />
+        {trailing && <span className="text-slate-400">: {trailing}</span>}
       </p>
     );
   }
