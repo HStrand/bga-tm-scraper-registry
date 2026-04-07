@@ -691,6 +691,20 @@
     "vp": "1"
   },
   {
+    "number": 58,
+    "name": "Beam from a Thorium Asteroid",
+    "type": "automated",
+    "cost": 32,
+    "tags": [
+      "space",
+      "jovian",
+      "power"
+    ],
+    "has_requirements": true,
+    "expansion": "base",
+    "vp": "1"
+  },
+  {
     "number": 59,
     "name": "Mangrove",
     "type": "automated",
@@ -713,6 +727,15 @@
     "has_requirements": true,
     "expansion": "base",
     "vp": "1"
+  },
+  {
+    "number": 61,
+    "name": "Great Escarpment Consortium",
+    "type": "automated",
+    "cost": 6,
+    "tags": [],
+    "has_requirements": true,
+    "expansion": "corporate_era"
   },
   {
     "number": 62,
@@ -1971,6 +1994,17 @@
     "has_requirements": true,
     "expansion": "base",
     "vp": "2"
+  },
+  {
+    "number": 170,
+    "name": "Aerobraked Ammonia Asteroid",
+    "type": "event",
+    "cost": 26,
+    "tags": [
+      "space"
+    ],
+    "has_requirements": false,
+    "expansion": "base"
   },
   {
     "number": 171,
