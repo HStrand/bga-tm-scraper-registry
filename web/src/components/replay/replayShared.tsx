@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import startingPlayerImg from '/assets/starting player.png';
 import temperatureImg from '/assets/temperature.png';
@@ -102,10 +103,38 @@ const RESOURCE_COLORS: Record<string, string> = {
   'Heat': '#b91c1c',
 };
 
+function CellTooltip({ icon, label, sublabel, children }: { icon?: string; label: string; sublabel?: string; children: React.ReactNode }) {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const onMove = useCallback((e: React.MouseEvent) => setPos({ x: e.clientX, y: e.clientY }), []);
+  const onLeave = useCallback(() => setPos(null), []);
+  return (
+    <>
+      <div onMouseEnter={onMove} onMouseMove={onMove} onMouseLeave={onLeave}>
+        {children}
+      </div>
+      {pos && createPortal(
+        <div className="fixed z-[9999] pointer-events-none" style={{ left: pos.x + 14, top: pos.y + 14 }}>
+          <div className="glass-panel rounded-lg shadow-xl px-3 py-2 flex items-center gap-2.5">
+            {icon && (
+              <img src={icon} alt="" className="w-8 h-8 object-contain flex-shrink-0 drop-shadow-md" />
+            )}
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-white whitespace-nowrap">{label}</span>
+              {sublabel && <span className="text-xs text-slate-400 whitespace-nowrap">{sublabel}</span>}
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
+
 function ResourceCell({ icon, value, prodValue, title, resourceKey }: { icon?: string; value: number; prodValue: number; title: string; resourceKey: string }) {
   const bg = RESOURCE_COLORS[resourceKey] ?? '#334155';
   return (
-    <div className="flex flex-col items-center w-14 rounded-lg overflow-hidden" title={title}>
+    <CellTooltip icon={icon} label={resourceKey} sublabel={`${value} (production ${prodValue >= 0 ? '+' : ''}${prodValue})`}>
+    <div className="flex flex-col items-center w-14 rounded-lg overflow-hidden">
       {/* Icon on colored background with overlaid count */}
       <div className="relative w-full flex items-center justify-center h-10" style={{ background: bg }}>
         {icon ? (
@@ -130,6 +159,7 @@ function ResourceCell({ icon, value, prodValue, title, resourceKey }: { icon?: s
         </span>
       </div>
     </div>
+    </CellTooltip>
   );
 }
 
@@ -150,8 +180,11 @@ const TAG_COLORS: Record<string, string> = {
 
 function TagCell({ icon, value, title, large }: { icon?: string; value: number; title: string; large?: boolean }) {
   const bg = TAG_COLORS[title] ?? '#334155';
+  // Normalize titles like "Count of Science tags" → "Science tag"
+  const cleanTitle = title.replace(/^Count of /i, '').replace(/tags$/i, 'tag').replace(/^(.)/, c => c.toUpperCase());
   return (
-    <div className="flex items-center justify-center w-12" title={title}>
+    <CellTooltip icon={icon} label={cleanTitle} sublabel={`Count: ${value}`}>
+    <div className="flex items-center justify-center w-12">
       <div
         className="relative flex items-center justify-center w-11 h-11 rounded-full"
         style={{ background: bg, boxShadow: 'inset 0 0 0 2px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.4)' }}
@@ -169,6 +202,7 @@ function TagCell({ icon, value, title, large }: { icon?: string; value: number; 
         </span>
       </div>
     </div>
+    </CellTooltip>
   );
 }
 
