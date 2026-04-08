@@ -31,23 +31,26 @@ interface PlayerCardProps {
 type ViewMode = 'grid' | 'stack' | 'synthetic' | 'hidden';
 
 // --- Resource badge with icon ---
-function ResourceBadge({ card, count, size = 'normal' }: { card: string; count: number; size?: 'normal' | 'small' }) {
+function ResourceBadge({ card, count, cardSize, size = 'normal' }: { card: string; count: number; cardSize: number; size?: 'normal' | 'small' }) {
   if (count <= 0) return null;
   const resType = getCardResourceType(card);
   const resIcon = resType ? getIcon(resourceIcons, resType) : undefined;
-  const sz = size === 'small' ? 'w-7 h-7' : 'w-9 h-9';
-  const textSz = size === 'small' ? 'text-sm' : 'text-base';
+  // Scale badge with the card so it tracks resizing the same way CostBadge does.
+  const widthFrac = size === 'small' ? 0.22 : 0.26;
+  const dim = Math.max(14, Math.round(cardSize * widthFrac));
+  const fontSize = Math.max(9, Math.round(dim * 0.55));
+  const sizeStyle = { width: `${dim}px`, height: `${dim}px` };
   return (
-    <span className={`absolute top-0.5 right-0.5 flex items-center justify-center ${sz} shadow z-10`}>
+    <span className="absolute top-0.5 right-0.5 flex items-center justify-center shadow z-10" style={sizeStyle}>
       {resIcon ? (
-        <span className="relative">
-          <img src={resIcon} alt={resType} className={`${sz} object-contain drop-shadow`} />
-          <span className={`absolute inset-0 flex items-center justify-center ${textSz} font-bold text-white`} style={{ textShadow: '0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.5)' }}>
+        <span className="relative" style={sizeStyle}>
+          <img src={resIcon} alt={resType} className="object-contain drop-shadow" style={sizeStyle} />
+          <span className="absolute inset-0 flex items-center justify-center font-bold text-white" style={{ fontSize: `${fontSize}px`, textShadow: '0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.5)' }}>
             {count}
           </span>
         </span>
       ) : (
-        <span className={`bg-amber-500 text-white ${textSz} font-bold rounded-full ${sz} flex items-center justify-center`}>
+        <span className="bg-amber-500 text-white font-bold rounded-full flex items-center justify-center" style={{ ...sizeStyle, fontSize: `${fontSize}px` }}>
           {count}
         </span>
       )}
@@ -110,7 +113,7 @@ const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize, activa
             <div className="relative">
               <img src={img} alt={card} className={`w-full rounded shadow-sm group-hover/card:brightness-125 group-hover/card:shadow-lg relative transition-[filter,box-shadow] duration-150 ${used ? 'opacity-40 grayscale' : ''}`} />
               {costContext && <CostBadge card={card} costContext={costContext} cardSize={cardSize} />}
-              {res != null && res > 0 && <ResourceBadge card={card} count={res} />}
+              {res != null && res > 0 && <ResourceBadge card={card} count={res} cardSize={cardSize} />}
             </div>
             <p className={`text-[9px] text-center truncate mt-0.5 ${used ? 'text-slate-600' : 'text-slate-500'}`}>{card}</p>
           </div>
@@ -155,7 +158,7 @@ const CardStack = memo(function CardStack({ cards, cardResources, cardSize, acti
                 )}
                 </div>
                 {costContext && <CostBadge card={card} costContext={costContext} cardSize={cardWidth} size="small" />}
-                {res != null && res > 0 && <ResourceBadge card={card} count={res} size="small" />}
+                {res != null && res > 0 && <ResourceBadge card={card} count={res} cardSize={cardWidth} size="small" />}
               </div>
             );
           })}
