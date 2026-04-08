@@ -242,6 +242,8 @@ export function GameReplayPage() {
             if (!map.has(dbKey)) {
               map.set(dbKey, { dbKey, tileType: tileName, playerId: pid, moveIndex: i });
             } else {
+              // Land Claim is just a reservation marker — never overwrite a real tile with it.
+              if (tileName === 'Land Claim') continue;
               // Update existing tile with special type info
               const existing = map.get(dbKey)!;
               existing.tileType = tileName;
