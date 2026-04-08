@@ -52,6 +52,9 @@
   * {
     @apply border-border;
   }
+  html {
+    scrollbar-gutter: stable;
+  }
   body {
     @apply antialiased bg-background text-foreground;
   }
