@@ -42,7 +42,7 @@ export function GameReplayPage() {
   const [cardPopup, setCardPopup] = useState<{ type: PopupType; name: string; player: string; color: string; deltas: TrackerDelta[]; subtitle?: string } | null>(null);
   const prevStepRef = useRef<number>(-1);
   const prevDraftGen = useRef<number | null>(null);
-  const [mapScale, setMapScale] = useState(1);
+  const [mapScale, setMapScale] = useState(0.8);
   const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
@@ -503,6 +503,10 @@ export function GameReplayPage() {
     for (let i = 0; i < gameLog.moves.length; i++) {
       const m = gameLog.moves[i];
       if (m.action_type !== 'draft') {
+        // Takeback/cancelled moves can appear mid-draft (a player undoes a pick).
+        // Treat them as transparent so they don't terminate the sequence and
+        // collapse the draft window before the draft is actually resolved.
+        if (m.action_type === 'cancelled' || m.action_type === 'takeback') continue;
         if (seqStart != null) {
           sequences.push({ startIdx: seqStart, endIdx: lastKeptIdx >= seqStart ? lastKeptIdx : i - 1, generation: seqGen });
           seqStart = null;
@@ -1061,7 +1065,7 @@ export function GameReplayPage() {
               />
               <span className="text-xs text-slate-500">+</span>
               <span className="text-xs text-slate-400 w-10 text-center">{Math.round(mapScale * 100)}%</span>
-              <button onClick={() => { setMapScale(1); setMapOffset({ x: 0, y: 0 }); }} className="text-xs text-slate-500 hover:text-slate-300 ml-1" title="Reset map zoom">↺</button>
+              <button onClick={() => { setMapScale(0.8); setMapOffset({ x: 0, y: 0 }); }} className="text-xs text-slate-500 hover:text-slate-300 ml-1" title="Reset map zoom">↺</button>
             </div>
 
             <div style={{ width: `${mapScale * 100}%` }} className="relative">
