@@ -549,7 +549,7 @@ export function MoveLog({ moves, currentStep, generationBoundaries, playerColors
   // Collect all unique player names for bolding in descriptions
   const allPlayerNames = useMemo(() => {
     const names = new Set<string>();
-    for (const m of moves) names.add(m.player_name);
+    for (const m of moves) if (m.player_name) names.add(m.player_name);
     return [...names];
   }, [moves]);
 
