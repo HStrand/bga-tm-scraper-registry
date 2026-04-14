@@ -1,0 +1,15 @@
+[Unit]
+Description=tfmstats FastAPI (DuckDB over Parquet)
+After=network.target
+
+[Service]
+Type=simple
+User=azureuser
+WorkingDirectory=/opt/tfmstats-api
+Environment=PARQUET_DATA_DIR=/opt/tfmstats-api/data
+ExecStart=/opt/tfmstats-api/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8001
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

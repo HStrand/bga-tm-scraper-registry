@@ -1,5 +1,10 @@
+import axios from 'axios';
 import { api } from '@/lib/api';
 import { AllCorporationPlayerStatsRow } from '@/types/corporation';
+
+const VM_API_BASE = import.meta.env.VITE_VM_API_BASE as string | undefined;
+
+
 
 // Cache configuration
 const TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -64,6 +69,11 @@ function saveToLocalStorage(data: AllCorporationPlayerStatsRow[]): void {
  * Fetch fresh data from API
  */
 async function fetchFromAPI(): Promise<AllCorporationPlayerStatsRow[]> {
+  if (VM_API_BASE) {
+    const base = VM_API_BASE.endsWith('/') ? VM_API_BASE.slice(0, -1) : VM_API_BASE;
+    const response = await axios.get<AllCorporationPlayerStatsRow[]>(`${base}/api/corporations/playerstats`);
+    return response.data;
+  }
   const response = await api.get<AllCorporationPlayerStatsRow[]>('/api/corporations/playerstats');
   return response.data;
 }
@@ -183,8 +193,8 @@ function buildRankingsQuery(filters: CorporationFilters): string {
  */
 export async function getCorporationRankings(filters: CorporationFilters): Promise<CorporationOverviewRow[]> {
   const qs = buildRankingsQuery(filters);
-  const url = `/api/corporations/rankings${qs ? `?${qs}` : ''}`;
-  const res = await api.get<CorporationRankingsApiRow[]>(url);
+  const path = `/api/corporations/rankings-vm${qs ? `?${qs}` : ''}`;
+  const res = await api.get<CorporationRankingsApiRow[]>(path);
   const rows = res.data;
 
   // Map API rows to UI shape; convert corporation to slug and winRate to fraction

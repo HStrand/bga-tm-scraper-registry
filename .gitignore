@@ -273,3 +273,7 @@ web/.env.local
 web/.env.production
 web/package-lock.json
 testdata/
+parquet_api/data/
+parquet_api/db_config.json
+id_rsa
+vm connection details.txt
