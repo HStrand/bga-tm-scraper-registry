@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -15,6 +16,19 @@ namespace BgaTmScraperRegistry.Services
     public class CardStatsService
     {
         private static readonly MemoryCache Cache = new MemoryCache(new MemoryCacheOptions());
+        private static readonly HttpClient ParquetApiClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(120)
+        };
+        private static readonly string[] ExcludedCards =
+        {
+            "City",
+            "Greenery",
+            "Aquifer",
+            "Sell patents",
+            "Undo (no undo beyond this point)",
+            "(no undo beyond this point)",
+        };
         private const string AllCardStatsCacheKey = "AllCardStats:v2";
         private const string CacheContainerName = "cache";
         private const string CardStatsBlobName = "card-stats.json";
@@ -137,42 +151,7 @@ namespace BgaTmScraperRegistry.Services
 
         private async Task<List<CardBasicStatsRow>> ComputeAllCardStatsFromDbAsync()
         {
-            var sql = @"
-SELECT
-    gc.Card,
-    COUNT_BIG(*) AS TimesPlayed,
-    ROUND(AVG(CASE WHEN gp.Position = 1 THEN 1.0 ELSE 0.0 END), 3) AS WinRate,
-    ROUND(AVG(CAST(gp.Elo AS float)), 2) AS AvgElo,
-    ROUND(AVG(CAST(gp.EloChange AS float)), 2) AS AvgEloChange
-FROM dbo.GameCards gc WITH (NOLOCK)
-JOIN dbo.GamePlayers_Canonical gp WITH (NOLOCK)
-  ON gp.TableId  = gc.TableId
- AND gp.PlayerId = gc.PlayerId
-WHERE
-    gc.PlayedGen IS NOT NULL
-GROUP BY
-    gc.Card";
-
-            using var conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
-            var rows = await conn.QueryAsync<CardBasicStatsRow>(sql, commandTimeout: 300); // 5 minutes
-
-            rows = rows.Where(c => !
-            new List<string>
-            {
-                    "City",
-                    "Greenery",
-                    "Aquifer",
-                    "Sell patents",
-                    "Undo (no undo beyond this point)",
-                    "(no undo beyond this point)",
-            }            
-            .Contains(c.Card) &&
-            !c.Card.Contains("a card ") &&
-            !c.Card.StartsWith("card "))
-            .ToList();
-
-            return rows.ToList();
+            return await FetchFromParquetApiAsync("/api/cards/stats");
         }
 
         private async Task<List<CardBasicStatsRow>> TryReadFromBlobAsync()
@@ -239,43 +218,33 @@ GROUP BY
 
         private async Task<List<CardBasicStatsRow>> ComputeAllCardOptionStatsFromDbAsync()
         {
-            var sql = @"
-SELECT
-    gc.Card,
-    COUNT_BIG(*) AS TimesPlayed,
-    ROUND(AVG(CASE WHEN gp.Position = 1 THEN 1.0 ELSE 0.0 END), 3) AS WinRate,
-    ROUND(AVG(CAST(gp.Elo AS float)), 2) AS AvgElo,
-    ROUND(AVG(CAST(gp.EloChange AS float)), 2) AS AvgEloChange
-FROM dbo.GameCards gc WITH (NOLOCK)
-JOIN dbo.GamePlayers_Canonical gp WITH (NOLOCK)
-  ON gp.TableId  = gc.TableId
- AND gp.PlayerId = gc.PlayerId
-WHERE
-    gc.DrawnGen IS NOT NULL
-GROUP BY
-    gc.Card";
+            return await FetchFromParquetApiAsync("/api/cards/option-stats");
+        }
 
-            using var conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
+        private async Task<List<CardBasicStatsRow>> FetchFromParquetApiAsync(string path)
+        {
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "http://20.82.3.63:8001").TrimEnd('/');
+            var url = $"{baseUrl}{path}";
 
-            var rows = await conn.QueryAsync<CardBasicStatsRow>(sql, commandTimeout: 540); // 9 minutes
-
-            rows = rows.Where(c => !
-            new List<string>
+            var response = await ParquetApiClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var rows = JsonSerializer.Deserialize<List<CardBasicStatsRow>>(json, new JsonSerializerOptions
             {
-                    "City",
-                    "Greenery",
-                    "Aquifer",
-                    "Sell patents",
-                    "Undo (no undo beyond this point)",
-                    "(no undo beyond this point)",
-            }
-            .Contains(c.Card) &&
-            !c.Card.Contains("a card ") &&
-            !c.Card.StartsWith("card "))
-            .ToList();
+                PropertyNameCaseInsensitive = true
+            }) ?? new List<CardBasicStatsRow>();
 
-            return rows.ToList();
+            return rows
+                .Where(c => !string.IsNullOrEmpty(c.Card)
+                    && !ExcludedCards.Contains(c.Card)
+                    && !c.Card.Contains("a card ")
+                    && !c.Card.StartsWith("card ")
+                    && !c.Card.StartsWith("card_main_")
+                    && !c.Card.StartsWith("card_prelude_")
+                    && !c.Card.StartsWith("10 cards:")
+                    && !c.Card.StartsWith("10 cards:")
+					&& !c.Card.StartsWith("Gaillean"))
+                .ToList();
         }
 
         private async Task<List<CardBasicStatsRow>> TryReadOptionFromBlobAsync()
