@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using BgaTmScraperRegistry.Models;
 using Dapper;
@@ -15,6 +17,10 @@ namespace BgaTmScraperRegistry.Services
         private readonly string _connectionString;
         private readonly ILogger _logger;
         private const int BatchSize = 1000;
+        private static readonly HttpClient ParquetApiClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(60)
+        };
 
         public GameDatabaseService(string connectionString, ILogger logger)
         {
@@ -728,76 +734,19 @@ namespace BgaTmScraperRegistry.Services
 
         public async Task<GlobalStatistics> GetGlobalStatisticsAsync()
         {
-            using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "http://20.82.3.63:8001").TrimEnd('/');
 
-            // Get total indexed games
-            var totalGamesQuery = "SELECT COUNT(*) FROM Games";
-            var totalGames = await connection.QuerySingleAsync<int>(totalGamesQuery);
-
-            // Get scraped games total
-            var scrapedGamesTotalQuery = "SELECT COUNT(*) FROM Games WHERE ScrapedAt IS NOT NULL";
-            var scrapedGamesTotal = await connection.QuerySingleAsync<int>(scrapedGamesTotalQuery);
-
-            // Get average Elo in scraped games
-            var averageEloQuery = @"
-                SELECT AVG(CAST(gp.Elo AS FLOAT))
-                FROM GamePlayers_Canonical gp
-                INNER JOIN Games g ON gp.TableId = g.TableId
-                WHERE g.ScrapedAt IS NOT NULL";
-            var averageEloDouble = await connection.QuerySingleOrDefaultAsync<double?>(averageEloQuery);
-            var averageElo = averageEloDouble.HasValue ? (int?)Math.Round(averageEloDouble.Value) : null;
-
-            // Get table row counts using sys.partitions
-            var tableRowCountsQuery = @"
-                SELECT 
-                    t.name AS TableName,
-                    SUM(p.rows) AS TableRowCount
-                FROM sys.partitions p
-                JOIN sys.tables t 
-                    ON t.object_id = p.object_id
-                WHERE p.index_id IN (0,1)   -- heap or clustered index
-                    AND t.name IN ('Players', 'GameCards', 'GamePlayerTrackerChanges', 'GameGreeneryLocations', 
-                                   'GameCityLocations', 'GameMilestones', 'ParameterChanges')
-                GROUP BY t.name";
-
-            var tableRowCounts = await connection.QueryAsync<RowCount>(tableRowCountsQuery);
-            var rowCountDict = tableRowCounts.ToDictionary(x => x.TableName, x => x.TableRowCount);
-
-            // Get unique awards count with specific query
-            var totalNumberOfAwardsQuery = @"
-                SELECT COUNT(*) AS UniquePairs
-                FROM (
-                    SELECT DISTINCT TableId, Award
-                    FROM GamePlayerAwards
-                ) x";
-            var totalNumberOfAwards = await connection.QuerySingleAsync<int>(totalNumberOfAwardsQuery);
-
-            // Extract individual counts with defaults
-            var totalPlayers = rowCountDict.GetValueOrDefault("Players", 0);
-            var totalCardDraws = rowCountDict.GetValueOrDefault("GameCards", 0);
-            var totalPlayerTrackerChanges = rowCountDict.GetValueOrDefault("GamePlayerTrackerChanges", 0);
-            var totalNumberOfGreeneries = rowCountDict.GetValueOrDefault("GameGreeneryLocations", 0);
-            var totalNumberOfCities = rowCountDict.GetValueOrDefault("GameCityLocations", 0);
-            var totalNumberOfMilestones = rowCountDict.GetValueOrDefault("GameMilestones", 0);
-            var totalNumberOfGlobalParameterIncreases = rowCountDict.GetValueOrDefault("ParameterChanges", 0);
-
-            _logger.LogInformation($"Retrieved global statistics: {totalGames} total indexed games, {scrapedGamesTotal} scraped games, {totalPlayers} total players");
-            
-            return new GlobalStatistics
+            var response = await ParquetApiClient.GetAsync($"{baseUrl}/api/statistics/global");
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var stats = JsonSerializer.Deserialize<GlobalStatistics>(json, new JsonSerializerOptions
             {
-                TotalIndexedGames = totalGames,
-                ScrapedGamesTotal = scrapedGamesTotal,
-                TotalPlayers = totalPlayers,
-                AverageEloInScrapedGames = averageElo,
-                TotalCardDraws = totalCardDraws,
-                TotalPlayerTrackerChanges = totalPlayerTrackerChanges,
-                TotalNumberOfGreeneries = totalNumberOfGreeneries,
-                TotalNumberOfCities = totalNumberOfCities,
-                TotalNumberOfAwards = totalNumberOfAwards,
-                TotalNumberOfMilestones = totalNumberOfMilestones,
-                TotalNumberOfGlobalParameterIncreases = totalNumberOfGlobalParameterIncreases
-            };
+                PropertyNameCaseInsensitive = true
+            }) ?? new GlobalStatistics();
+
+            _logger.LogInformation($"Retrieved global statistics: {stats.TotalIndexedGames} total indexed games, {stats.ScrapedGamesTotal} scraped games, {stats.TotalPlayers} total players");
+
+            return stats;
         }
 
         public async Task<List<GameMetadata>> GetAllGamesMetadataAsync()

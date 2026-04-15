@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { getGlobalStatistics, GlobalStatistics } from "@/lib/stats";
-import { Users, Database, Download, Gauge, LineChart, BarChart3, TreePine, Building, Trophy, Target, Activity, Zap } from "lucide-react";
+import { Users, Database, Download, Gauge, LineChart, TreePine, Building, Trophy, Target, Activity } from "lucide-react";
 
 
 function useCountUp(target: number, durationMs = 900) {
@@ -148,13 +148,10 @@ export default function HomePage() {
   const totalGamesAnim = useCountUp(totalGames);
   const scrapedAnim = useCountUp(scrapedGames);
   const cardDrawsAnim = useCountUp(stats?.totalCardDraws ?? 0);
-  const trackerChangesAnim = useCountUp(stats?.totalPlayerTrackerChanges ?? 0);
   const greeneriesAnim = useCountUp(stats?.totalNumberOfGreeneries ?? 0);
   const citiesAnim = useCountUp(stats?.totalNumberOfCities ?? 0);
   const awardsAnim = useCountUp(stats?.totalNumberOfAwards ?? 0);
   const milestonesAnim = useCountUp(stats?.totalNumberOfMilestones ?? 0);
-  const parameterIncreasesAnim = useCountUp(stats?.totalNumberOfGlobalParameterIncreases ?? 0);
-
   const handleDownload = async () => {
     try {
       setDownloading(true);
@@ -350,15 +347,6 @@ export default function HomePage() {
               value={playersAnim.toLocaleString()}
             />
             <BigStat
-              title="Average Elo in scraped games"
-              icon={<BarChart3 className="w-5 h-5" />}
-              value={
-                stats.averageEloInScrapedGames != null
-                  ? Math.round(stats.averageEloInScrapedGames).toLocaleString()
-                  : "N/A"
-              }
-            />
-            <BigStat
               title="Cards seen"
               icon={<LineChart className="w-5 h-5" />}
               value={cardDrawsAnim.toLocaleString()}
@@ -382,11 +370,6 @@ export default function HomePage() {
               title="Milestones claimed"
               icon={<Target className="w-5 h-5" />}
               value={milestonesAnim.toLocaleString()}
-            />
-            <BigStat
-              title="Global Parameters Increased"
-              icon={<Zap className="w-5 h-5" />}
-              value={parameterIncreasesAnim.toLocaleString()}
             />
           </div>
         ) : null}

@@ -13,14 +13,11 @@ export interface GlobalStatistics {
   totalIndexedGames: number;
   scrapedGamesTotal: number;
   totalPlayers: number;
-  averageEloInScrapedGames?: number | null;
   totalCardDraws: number;
-  totalPlayerTrackerChanges: number;
   totalNumberOfGreeneries: number;
   totalNumberOfCities: number;
   totalNumberOfAwards: number;
   totalNumberOfMilestones: number;
-  totalNumberOfGlobalParameterIncreases: number;
 }
 
 // Default email used for the GetStatistics endpoint (not shown in UI)
@@ -53,13 +50,10 @@ export async function getGlobalStatistics(): Promise<GlobalStatistics> {
     totalIndexedGames: raw.totalIndexedGames ?? raw.TotalIndexedGames ?? 0,
     scrapedGamesTotal: raw.scrapedGamesTotal ?? raw.ScrapedGamesTotal ?? 0,
     totalPlayers: raw.totalPlayers ?? raw.TotalPlayers ?? 0,
-    averageEloInScrapedGames: raw.averageEloInScrapedGames ?? raw.AverageEloInScrapedGames ?? null,
     totalCardDraws: raw.totalCardDraws ?? raw.TotalCardDraws ?? 0,
-    totalPlayerTrackerChanges: raw.totalPlayerTrackerChanges ?? raw.TotalPlayerTrackerChanges ?? 0,
     totalNumberOfGreeneries: raw.totalNumberOfGreeneries ?? raw.TotalNumberOfGreeneries ?? 0,
     totalNumberOfCities: raw.totalNumberOfCities ?? raw.TotalNumberOfCities ?? 0,
     totalNumberOfAwards: raw.totalNumberOfAwards ?? raw.TotalNumberOfAwards ?? 0,
     totalNumberOfMilestones: raw.totalNumberOfMilestones ?? raw.TotalNumberOfMilestones ?? 0,
-    totalNumberOfGlobalParameterIncreases: raw.totalNumberOfGlobalParameterIncreases ?? raw.TotalNumberOfGlobalParameterIncreases ?? 0,
   };
 }

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import open_connection
-from app.routes import awards, cards, corporations
+from app.routes import awards, cards, corporations, statistics
 
 
 @asynccontextmanager
@@ -33,6 +33,7 @@ app.add_middleware(
 app.include_router(corporations.router)
 app.include_router(cards.router)
 app.include_router(awards.router)
+app.include_router(statistics.router)
 
 
 @app.get("/health")
