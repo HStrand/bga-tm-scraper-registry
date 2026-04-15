@@ -158,82 +158,22 @@ namespace BgaTmScraperRegistry.Services
                 return cached;
             }
 
-            var rows = await GetAllAwardRowsAsync();
-            IEnumerable<AwardRow> q = rows;
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "http://20.82.3.63:8001").TrimEnd('/');
+            var query = BuildOverviewQueryString(filter);
+            var url = $"{baseUrl}/api/awards/overview{query}";
 
-            if (filter != null)
+            var response = await ParquetApiClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var list = JsonSerializer.Deserialize<List<AwardOverview>>(json, new JsonSerializerOptions
             {
-                if (filter.Maps != null && filter.Maps.Length > 0)
-                    q = q.Where(r => !string.IsNullOrEmpty(r.Map) && filter.Maps.Contains(r.Map));
-                if (filter.PreludeOn.HasValue)
-                    q = q.Where(r => r.PreludeOn == filter.PreludeOn.Value);
-                if (filter.ColoniesOn.HasValue)
-                    q = q.Where(r => r.ColoniesOn == filter.ColoniesOn.Value);
-                if (filter.DraftOn.HasValue)
-                    q = q.Where(r => r.DraftOn == filter.DraftOn.Value);
-                if (filter.Modes != null && filter.Modes.Length > 0)
-                    q = q.Where(r => !string.IsNullOrEmpty(r.GameMode) && filter.Modes.Contains(r.GameMode));
-                if (filter.Speeds != null && filter.Speeds.Length > 0)
-                    q = q.Where(r => !string.IsNullOrEmpty(r.GameSpeed) && filter.Speeds.Contains(r.GameSpeed));
-                if (filter.PlayerCounts != null && filter.PlayerCounts.Length > 0)
-                    q = q.Where(r => r.PlayerCount.HasValue && filter.PlayerCounts.Contains(r.PlayerCount.Value));
-                if (filter.EloMin.HasValue)
-                    q = q.Where(r => r.Elo.HasValue && r.Elo.Value >= filter.EloMin.Value);
-                if (filter.EloMax.HasValue)
-                    q = q.Where(r => r.Elo.HasValue && r.Elo.Value <= filter.EloMax.Value);
-                if (filter.GenerationsMin.HasValue)
-                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value >= filter.GenerationsMin.Value);
-                if (filter.GenerationsMax.HasValue)
-                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value <= filter.GenerationsMax.Value);
-                if (!string.IsNullOrWhiteSpace(filter.PlayerName))
-                    q = q.Where(r => !string.IsNullOrEmpty(r.PlayerName) && r.PlayerName.Contains(filter.PlayerName, StringComparison.OrdinalIgnoreCase));
-                if (!string.IsNullOrWhiteSpace(filter.Corporation))
-                    q = q.Where(r => !string.IsNullOrEmpty(r.Corporation) && r.Corporation.Equals(filter.Corporation, StringComparison.OrdinalIgnoreCase));
-                if (filter.FundedGenMin.HasValue)
-                    q = q.Where(r => r.FundedGen >= filter.FundedGenMin.Value);
-                if (filter.FundedGenMax.HasValue)
-                    q = q.Where(r => r.FundedGen <= filter.FundedGenMax.Value);
-            }
+                PropertyNameCaseInsensitive = true
+            }) ?? new List<AwardOverview>();
 
-            // Group by award; only consider rows where the player actually funded the award
-            var grouped = q.GroupBy(r => r.Award);
-
-            var list = new List<AwardOverview>();
-            foreach (var g in grouped)
+            foreach (var row in list)
             {
-                var fundedRows = g.Where(r =>
-                    r.PlayerId == r.FundedBy ||
-                    (r.PlayerCounter.HasValue && r.PlayerCounter.Value == r.FundedBy)).ToList();
-
-                var n = fundedRows.Count;
-                if (n == 0) continue;
-
-                var wins = fundedRows.Count(r => r.Position == 1);
-                var awardFirsts = fundedRows.Count(r => r.PlayerPlace == 1);
-
-                var avgEloGain = fundedRows.Select(r => (double)(r.EloChange ?? 0)).DefaultIfEmpty(0).Average();
-                var avgElo = fundedRows.Select(r => (double)(r.Elo ?? 0)).DefaultIfEmpty(0).Average();
-                var avgFundedGen = fundedRows.Select(r => (double)r.FundedGen).DefaultIfEmpty(0).Average();
-
-                var overview = new AwardOverview
-                {
-                    Award = g.Key,
-                    TimesFunded = n,
-                    WinRate = n == 0 ? 0 : (double)wins / n,
-                    AvgEloGain = avgEloGain,
-                    AvgFundedGen = avgFundedGen,
-                    AvgElo = avgElo,
-                    FlipRate = n == 0 ? 0 : 1.0 - ((double)awardFirsts / n),
-                };
-
-                list.Add(overview);
+                row.Award = FormatAwardName(row.Award);
             }
-
-            // Apply times funded filter after aggregation
-            if (filter?.TimesPlayedMin.HasValue == true)
-                list = list.Where(r => r.TimesFunded >= filter.TimesPlayedMin.Value).ToList();
-            if (filter?.TimesPlayedMax.HasValue == true)
-                list = list.Where(r => r.TimesFunded <= filter.TimesPlayedMax.Value).ToList();
 
             Cache.Set(cacheKey, list, new MemoryCacheEntryOptions
             {
@@ -244,6 +184,53 @@ namespace BgaTmScraperRegistry.Services
             return list;
         }
 
+        private static string BuildOverviewQueryString(AwardFilter f)
+        {
+            if (f == null) return string.Empty;
+
+            var parts = new List<string>();
+            void AddMulti(string key, IEnumerable<string> values)
+            {
+                if (values == null) return;
+                foreach (var v in values)
+                {
+                    if (!string.IsNullOrWhiteSpace(v))
+                        parts.Add($"{key}={Uri.EscapeDataString(v)}");
+                }
+            }
+            void AddMultiInt(string key, IEnumerable<int> values)
+            {
+                if (values == null) return;
+                foreach (var v in values)
+                    parts.Add($"{key}={v}");
+            }
+            void AddScalar(string key, string value)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                    parts.Add($"{key}={Uri.EscapeDataString(value)}");
+            }
+
+            AddMulti("maps", f.Maps);
+            AddMulti("modes", f.Modes);
+            AddMulti("speeds", f.Speeds);
+            AddMultiInt("playerCounts", f.PlayerCounts);
+            if (f.PreludeOn.HasValue) parts.Add($"preludeOn={(f.PreludeOn.Value ? "true" : "false")}");
+            if (f.ColoniesOn.HasValue) parts.Add($"coloniesOn={(f.ColoniesOn.Value ? "true" : "false")}");
+            if (f.DraftOn.HasValue) parts.Add($"draftOn={(f.DraftOn.Value ? "true" : "false")}");
+            if (f.EloMin.HasValue) parts.Add($"eloMin={f.EloMin.Value}");
+            if (f.EloMax.HasValue) parts.Add($"eloMax={f.EloMax.Value}");
+            if (f.GenerationsMin.HasValue) parts.Add($"generationsMin={f.GenerationsMin.Value}");
+            if (f.GenerationsMax.HasValue) parts.Add($"generationsMax={f.GenerationsMax.Value}");
+            if (f.FundedGenMin.HasValue) parts.Add($"fundedGenMin={f.FundedGenMin.Value}");
+            if (f.FundedGenMax.HasValue) parts.Add($"fundedGenMax={f.FundedGenMax.Value}");
+            if (f.TimesPlayedMin.HasValue) parts.Add($"timesPlayedMin={f.TimesPlayedMin.Value}");
+            if (f.TimesPlayedMax.HasValue) parts.Add($"timesPlayedMax={f.TimesPlayedMax.Value}");
+            AddScalar("playerName", f.PlayerName);
+            AddScalar("corporation", f.Corporation);
+
+            return parts.Count == 0 ? string.Empty : "?" + string.Join("&", parts);
+        }
+
         public async Task<AwardsFilterOptions> GetAwardsFilterOptionsAsync()
         {
             const string key = "AwardsFilterOptions:v1";
@@ -252,22 +239,17 @@ namespace BgaTmScraperRegistry.Services
                 return cached;
             }
 
-            var rows = await GetAllAwardRowsAsync();
-            var gens = rows.Select(r => r.FundedGen).ToList();
-
-            var min = gens.Count > 0 ? gens.Min() : 0;
-            var max = gens.Count > 0 ? gens.Max() : 0;
-
-            var corporations = rows.Select(r => r.Corporation)
-                                   .Where(s => !string.IsNullOrWhiteSpace(s) && !string.Equals(s, "Unknown", StringComparison.OrdinalIgnoreCase))
-                                   .Distinct(StringComparer.OrdinalIgnoreCase)
-                                   .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
-                                   .ToArray();
-
-            var options = new AwardsFilterOptions
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "http://20.82.3.63:8001").TrimEnd('/');
+            var response = await ParquetApiClient.GetAsync($"{baseUrl}/api/awards/filter-options");
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var options = JsonSerializer.Deserialize<AwardsFilterOptions>(json, new JsonSerializerOptions
             {
-                FundedGenRange = new AwardsFilterOptions.Range { Min = min, Max = max },
-                Corporations = corporations
+                PropertyNameCaseInsensitive = true
+            }) ?? new AwardsFilterOptions
+            {
+                FundedGenRange = new AwardsFilterOptions.Range { Min = 0, Max = 0 },
+                Corporations = Array.Empty<string>()
             };
 
             Cache.Set(key, options, new MemoryCacheEntryOptions
