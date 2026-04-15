@@ -19,6 +19,7 @@ namespace BgaTmScraperRegistry.Functions
             public int Total { get; set; }
         }
 
+        [Disable]
         [FunctionName(nameof(GetPreludePlayerRows))]
         public static async System.Threading.Tasks.Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "preludes/{cardName}/playerrows")] HttpRequest req,

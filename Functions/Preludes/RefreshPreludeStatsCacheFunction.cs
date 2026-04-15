@@ -8,7 +8,8 @@ namespace BgaTmScraperRegistry.Functions
 {
     public static class RefreshPreludeStatsCache
     {
-        [Disable("disableTriggers")]
+        //[Disable("disableTriggers")]
+        [Disable]
         [FunctionName(nameof(RefreshPreludeStatsCache))]
         public static async Task Run(
             [TimerTrigger("0 */45 * * * *")] TimerInfo timer,

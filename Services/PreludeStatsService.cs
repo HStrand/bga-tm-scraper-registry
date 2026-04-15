@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
@@ -20,6 +21,10 @@ namespace BgaTmScraperRegistry.Services
     public class PreludeStatsService
     {
         private static readonly MemoryCache Cache = new MemoryCache(new MemoryCacheOptions());
+        private static readonly HttpClient ParquetApiClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(120)
+        };
 
         private const string AllPreludePlayerRowsCacheKey = "AllPreludePlayerRows:v2";
         private const string OptionsCacheKey = "PreludeFilterOptions:v1";
@@ -232,58 +237,22 @@ ORDER BY shp.TableId DESC;";
                 return cached;
             }
 
-            var rows = await GetAllPreludePlayerRowsAsync();
-
-            var maps = rows.Where(r => !string.IsNullOrWhiteSpace(r.Map))
-                           .Select(r => r.Map)
-                           .Distinct()
-                           .OrderBy(x => x)
-                           .ToArray();
-
-            var modes = rows.Where(r => !string.IsNullOrWhiteSpace(r.GameMode))
-                            .Select(r => r.GameMode)
-                            .Distinct()
-                            .OrderBy(x => x)
-                            .ToArray();
-
-            var speeds = rows.Where(r => !string.IsNullOrWhiteSpace(r.GameSpeed))
-                             .Select(r => r.GameSpeed)
-                             .Distinct()
-                             .OrderBy(x => x)
-                             .ToArray();
-
-            var playerCounts = rows.Where(r => r.PlayerCount.HasValue)
-                                   .Select(r => r.PlayerCount!.Value)
-                                   .Distinct()
-                                   .OrderBy(x => x)
-                                   .ToArray();
-
-            var eloVals = rows.Where(r => r.Elo.HasValue && r.Elo.Value > 0).Select(r => r.Elo!.Value).ToArray();
-            var genVals = rows.Where(r => r.Generations.HasValue).Select(r => r.Generations!.Value).ToArray();
-
-            var corporations = rows.Where(r => !string.IsNullOrWhiteSpace(r.Corporation))
-                                   .Select(r => r.Corporation)
-                                   .Distinct(StringComparer.OrdinalIgnoreCase)
-                                   .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-                                   .ToArray();
-
-            var options = new PreludeFilterOptions
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com").TrimEnd('/');
+            var response = await ParquetApiClient.GetAsync($"{baseUrl}/api/preludes/filter-options");
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var options = JsonSerializer.Deserialize<PreludeFilterOptions>(json, new JsonSerializerOptions
             {
-                Maps = maps,
-                GameModes = modes,
-                GameSpeeds = speeds,
-                PlayerCounts = playerCounts,
-                EloRange = new PreludeFilterOptions.Range
-                {
-                    Min = eloVals.Length > 0 ? eloVals.Min() : 0,
-                    Max = eloVals.Length > 0 ? eloVals.Max() : 0
-                },
-                GenerationsRange = new PreludeFilterOptions.Range
-                {
-                    Min = genVals.Length > 0 ? genVals.Min() : 0,
-                    Max = genVals.Length > 0 ? genVals.Max() : 0
-                },
-                Corporations = corporations
+                PropertyNameCaseInsensitive = true
+            }) ?? new PreludeFilterOptions
+            {
+                Maps = Array.Empty<string>(),
+                GameModes = Array.Empty<string>(),
+                GameSpeeds = Array.Empty<string>(),
+                PlayerCounts = Array.Empty<int>(),
+                EloRange = new PreludeFilterOptions.Range(),
+                GenerationsRange = new PreludeFilterOptions.Range(),
+                Corporations = Array.Empty<string>()
             };
 
             Cache.Set(OptionsCacheKey, options, new MemoryCacheEntryOptions
@@ -291,7 +260,7 @@ ORDER BY shp.TableId DESC;";
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
             });
 
-            _logger.LogInformation("Computed and cached prelude filter options");
+            _logger.LogInformation("Fetched and cached prelude filter options from parquet API");
             return options;
         }
 
@@ -304,77 +273,63 @@ ORDER BY shp.TableId DESC;";
                 return cached;
             }
 
-            var rows = await GetAllPreludePlayerRowsAsync();
-            IEnumerable<PreludePlayerRow> q = rows;
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com").TrimEnd('/');
+            var url = $"{baseUrl}/api/preludes/rankings{BuildRankingsQueryString(filter)}";
 
-            if (filter != null)
+            var response = await ParquetApiClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var list = JsonSerializer.Deserialize<List<PreludeRanking>>(json, new JsonSerializerOptions
             {
-                if (filter.Maps != null && filter.Maps.Length > 0)
-                    q = q.Where(r => !string.IsNullOrEmpty(r.Map) && filter.Maps.Contains(r.Map));
-                if (filter.PreludeOn.HasValue)
-                    q = q.Where(r => r.PreludeOn.HasValue && r.PreludeOn.Value == filter.PreludeOn.Value);
-                if (filter.ColoniesOn.HasValue)
-                    q = q.Where(r => r.ColoniesOn.HasValue && r.ColoniesOn.Value == filter.ColoniesOn.Value);
-                if (filter.DraftOn.HasValue)
-                    q = q.Where(r => r.DraftOn.HasValue && r.DraftOn.Value == filter.DraftOn.Value);
-                if (filter.Modes != null && filter.Modes.Length > 0)
-                    q = q.Where(r => !string.IsNullOrEmpty(r.GameMode) && filter.Modes.Contains(r.GameMode));
-                if (filter.Speeds != null && filter.Speeds.Length > 0)
-                    q = q.Where(r => !string.IsNullOrEmpty(r.GameSpeed) && filter.Speeds.Contains(r.GameSpeed));
-                if (filter.PlayerCounts != null && filter.PlayerCounts.Length > 0)
-                    q = q.Where(r => r.PlayerCount.HasValue && filter.PlayerCounts.Contains(r.PlayerCount.Value));
-                if (filter.EloMin.HasValue)
-                    q = q.Where(r => r.Elo.HasValue && r.Elo.Value > 0 && r.Elo.Value >= filter.EloMin.Value);
-                if (filter.EloMax.HasValue)
-                    q = q.Where(r => r.Elo.HasValue && r.Elo.Value > 0 && r.Elo.Value <= filter.EloMax.Value);
-                if (filter.GenerationsMin.HasValue)
-                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value >= filter.GenerationsMin.Value);
-                if (filter.GenerationsMax.HasValue)
-                    q = q.Where(r => r.Generations.HasValue && r.Generations.Value <= filter.GenerationsMax.Value);
-                if (!string.IsNullOrWhiteSpace(filter.PlayerName))
-                    q = q.Where(r => !string.IsNullOrEmpty(r.PlayerName) && r.PlayerName.Contains(filter.PlayerName, StringComparison.OrdinalIgnoreCase));
-                if (!string.IsNullOrWhiteSpace(filter.Corporation))
-                    q = q.Where(r => !string.IsNullOrEmpty(r.Corporation) && string.Equals(r.Corporation, filter.Corporation, StringComparison.OrdinalIgnoreCase));
-            }
+                PropertyNameCaseInsensitive = true
+            }) ?? new List<PreludeRanking>();
 
-            var grouped = q
-                .GroupBy(r => r.Prelude)
-                .Select(g =>
-                {
-                    var games = g.Count();
-                    var wins = g.Count(r => r.Position == 1);
-                    var avgEloGain = g.Select(r => (double)(r.EloChange ?? 0)).DefaultIfEmpty(0).Average();
-                    var avgElo = g.Select(r => (double)(r.Elo ?? 0)).DefaultIfEmpty(0).Average();
-
-                    return new PreludeRanking
-                    {
-                        Prelude = g.Key,
-                        WinRate = games == 0 ? 0.0 : (double)wins / games * 100.0,
-                        AvgEloGain = avgEloGain,
-                        GamesPlayed = games,
-                        AvgElo = avgElo
-                    };
-                })
-                .ToList();
-
-            if (filter?.TimesPlayedMin.HasValue == true)
-                grouped = grouped.Where(r => r.GamesPlayed >= filter.TimesPlayedMin.Value).ToList();
-            if (filter?.TimesPlayedMax.HasValue == true)
-                grouped = grouped.Where(r => r.GamesPlayed <= filter.TimesPlayedMax.Value).ToList();
-
-            // Default sort similar to corporations: by WinRate desc then GamesPlayed desc
-            grouped = grouped
-                .OrderByDescending(r => r.WinRate)
-                .ThenByDescending(r => r.GamesPlayed)
-                .ToList();
-
-            Cache.Set(cacheKey, grouped, new MemoryCacheEntryOptions
+            Cache.Set(cacheKey, list, new MemoryCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
             });
 
-            _logger.LogInformation("Computed and cached {count} prelude rankings for key {key}", grouped.Count, cacheKey);
-            return grouped;
+            _logger.LogInformation("Fetched and cached {count} prelude rankings for key {key}", list.Count, cacheKey);
+            return list;
+        }
+
+        private static string BuildRankingsQueryString(PreludeFilter f)
+        {
+            if (f == null) return string.Empty;
+            var parts = new List<string>();
+            void AddMulti(string key, IEnumerable<string> values)
+            {
+                if (values == null) return;
+                foreach (var v in values)
+                    if (!string.IsNullOrWhiteSpace(v)) parts.Add($"{key}={Uri.EscapeDataString(v)}");
+            }
+            void AddMultiInt(string key, IEnumerable<int> values)
+            {
+                if (values == null) return;
+                foreach (var v in values) parts.Add($"{key}={v}");
+            }
+            void AddScalar(string key, string value)
+            {
+                if (!string.IsNullOrWhiteSpace(value)) parts.Add($"{key}={Uri.EscapeDataString(value)}");
+            }
+
+            AddMulti("maps", f.Maps);
+            AddMulti("modes", f.Modes);
+            AddMulti("speeds", f.Speeds);
+            AddMultiInt("playerCounts", f.PlayerCounts);
+            if (f.PreludeOn.HasValue) parts.Add($"preludeOn={(f.PreludeOn.Value ? "true" : "false")}");
+            if (f.ColoniesOn.HasValue) parts.Add($"coloniesOn={(f.ColoniesOn.Value ? "true" : "false")}");
+            if (f.DraftOn.HasValue) parts.Add($"draftOn={(f.DraftOn.Value ? "true" : "false")}");
+            if (f.EloMin.HasValue) parts.Add($"eloMin={f.EloMin.Value}");
+            if (f.EloMax.HasValue) parts.Add($"eloMax={f.EloMax.Value}");
+            if (f.GenerationsMin.HasValue) parts.Add($"generationsMin={f.GenerationsMin.Value}");
+            if (f.GenerationsMax.HasValue) parts.Add($"generationsMax={f.GenerationsMax.Value}");
+            if (f.TimesPlayedMin.HasValue) parts.Add($"timesPlayedMin={f.TimesPlayedMin.Value}");
+            if (f.TimesPlayedMax.HasValue) parts.Add($"timesPlayedMax={f.TimesPlayedMax.Value}");
+            AddScalar("playerName", f.PlayerName);
+            AddScalar("corporation", f.Corporation);
+
+            return parts.Count == 0 ? string.Empty : "?" + string.Join("&", parts);
         }
 
         // ── Blob helpers ─────────────────────────────────────
