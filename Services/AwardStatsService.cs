@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using Microsoft.Data.SqlClient;
-using Dapper;
 using System.Text.Json;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
@@ -16,6 +15,10 @@ namespace BgaTmScraperRegistry.Services
     public class AwardStatsService
     {
         private static readonly MemoryCache Cache = new MemoryCache(new MemoryCacheOptions());
+        private static readonly HttpClient ParquetApiClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(300)
+        };
         private const string AwardRowsCacheKey = "AwardRows:v2";
         private const string CacheContainerName = "cache";
         private const string AwardRowsBlobName = "award-rows-v2.json";
@@ -277,67 +280,17 @@ namespace BgaTmScraperRegistry.Services
 
         private async Task<List<AwardRow>> ComputeAwardRowsFromDbAsync()
         {
-            var sql = @"
-WITH best_gps AS (
-    SELECT gps.TableId, gps.PlayerId, gps.Corporation,
-           rn = ROW_NUMBER() OVER (
-               PARTITION BY gps.TableId, gps.PlayerId
-               ORDER BY gps.UpdatedAt DESC            -- pick latest GamePlayerStats per player in game
-           )
-    FROM GamePlayerStats gps
-),
-best_gpa AS (
-    SELECT gpa.TableId, gpa.PlayerId, gpa.Award, gpa.FundedBy, gpa.FundedGen, gpa.PlayerCounter, gpa.PlayerPlace,
-           rn = ROW_NUMBER() OVER (
-               PARTITION BY gpa.TableId, gpa.PlayerId, gpa.Award
-               ORDER BY gpa.UpdatedAt DESC            -- pick latest GamePlayerAward per player per award per game
-           )
-    FROM GamePlayerAwards gpa
-)
-SELECT
-    gpa.TableId,
-    g.Map,
-    g.PreludeOn,
-    g.ColoniesOn,
-    g.DraftOn,
-    g.GameMode,
-    g.GameSpeed,
-    gs.PlayerCount,
-    gs.DurationMinutes,
-    gs.Generations,    
-    gpa.Award,
-    gpa.FundedBy,
-    gpa.FundedGen,
-    gpa.PlayerId,
-    gp.PlayerName,
-    gp.Elo,
-    gp.EloChange,
-    gp.Position,
-    gpa.PlayerCounter,
-    gpa.PlayerPlace,
-    gps.Corporation
-FROM best_gpa gpa
-JOIN Games_Canonical g
-  ON g.TableId = gpa.TableId
-JOIN GamePlayers_Canonical gp
-  ON gp.TableId = gpa.TableId
- AND gp.PlayerId = gpa.PlayerId
-JOIN best_gps gps
-  ON gps.TableId = gpa.TableId
- AND gps.PlayerId = gpa.PlayerId
- AND gps.rn = 1
-JOIN GameStats gs
-  ON gs.TableId = gpa.TableId
-WHERE gpa.Award IS NOT NULL AND gpa.Award <> '' AND gpa.rn = 1
-ORDER BY gpa.TableId DESC;";
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "http://20.82.3.63:8001").TrimEnd('/');
+            var url = $"{baseUrl}/api/awards/rows";
 
-            using var conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
+            var response = await ParquetApiClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<List<AwardRow>>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            }) ?? new List<AwardRow>();
 
-            var rows = await conn.QueryAsync<AwardRow>(sql, commandTimeout: 300); // 5 minutes
-            var result = rows.ToList();
-
-            // Apply name formatting in C# after fetching data
             foreach (var award in result)
             {
                 award.Award = FormatAwardName(award.Award);
