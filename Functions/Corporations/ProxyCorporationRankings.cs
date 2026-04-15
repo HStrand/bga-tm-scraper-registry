@@ -21,7 +21,7 @@ namespace BgaTmScraperRegistry.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "corporations/rankings-vm")] HttpRequest req,
             ILogger log)
         {
-            var baseUrl = Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "http://20.82.3.63:8001";
+            var baseUrl = Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com";
             var target = $"{baseUrl.TrimEnd('/')}/api/corporations/rankings{req.QueryString.Value}";
 
             try

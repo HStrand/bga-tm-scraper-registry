@@ -158,7 +158,7 @@ namespace BgaTmScraperRegistry.Services
                 return cached;
             }
 
-            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "http://20.82.3.63:8001").TrimEnd('/');
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com").TrimEnd('/');
             var query = BuildOverviewQueryString(filter);
             var url = $"{baseUrl}/api/awards/overview{query}";
 
@@ -239,7 +239,7 @@ namespace BgaTmScraperRegistry.Services
                 return cached;
             }
 
-            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "http://20.82.3.63:8001").TrimEnd('/');
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com").TrimEnd('/');
             var response = await ParquetApiClient.GetAsync($"{baseUrl}/api/awards/filter-options");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
@@ -262,7 +262,7 @@ namespace BgaTmScraperRegistry.Services
 
         private async Task<List<AwardRow>> ComputeAwardRowsFromDbAsync()
         {
-            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "http://20.82.3.63:8001").TrimEnd('/');
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com").TrimEnd('/');
             var url = $"{baseUrl}/api/awards/rows";
 
             var response = await ParquetApiClient.GetAsync(url);

@@ -223,7 +223,7 @@ namespace BgaTmScraperRegistry.Services
 
         private async Task<List<CardBasicStatsRow>> FetchFromParquetApiAsync(string path)
         {
-            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "http://20.82.3.63:8001").TrimEnd('/');
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com").TrimEnd('/');
             var url = $"{baseUrl}{path}";
 
             var response = await ParquetApiClient.GetAsync(url);

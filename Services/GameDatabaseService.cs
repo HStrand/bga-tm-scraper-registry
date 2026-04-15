@@ -734,7 +734,7 @@ namespace BgaTmScraperRegistry.Services
 
         public async Task<GlobalStatistics> GetGlobalStatisticsAsync()
         {
-            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "http://20.82.3.63:8001").TrimEnd('/');
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com").TrimEnd('/');
 
             var response = await ParquetApiClient.GetAsync($"{baseUrl}/api/statistics/global");
             response.EnsureSuccessStatusCode();

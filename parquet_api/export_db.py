@@ -118,4 +118,17 @@ for _, row in tables_df.iterrows():
     print(f"{total_rows} rows")
 
 conn.close()
+
+import zipfile
+
+BUNDLE_PATH = os.path.join(OUTPUT_DIR, "tfmstats_db.zip")
+bundle_tmp = BUNDLE_PATH + ".tmp"
+print(f"Building bundle {BUNDLE_PATH} ... ", end="", flush=True)
+with zipfile.ZipFile(bundle_tmp, "w", compression=zipfile.ZIP_STORED, allowZip64=True) as zf:
+    for entry in sorted(os.listdir(OUTPUT_DIR)):
+        if entry.endswith(".parquet"):
+            zf.write(os.path.join(OUTPUT_DIR, entry), arcname=entry)
+os.replace(bundle_tmp, BUNDLE_PATH)
+print(f"{os.path.getsize(BUNDLE_PATH) / 1024 / 1024:.1f} MB")
+
 print("Done!")
