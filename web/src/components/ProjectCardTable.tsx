@@ -1,91 +1,45 @@
-import { useState, useMemo } from 'react';
 import { ProjectCardPlayerStatsRow } from '@/types/projectcard';
 import { Button } from '@/components/ui/button';
 
 interface ProjectCardTableProps {
   data: ProjectCardPlayerStatsRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  loading?: boolean;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
 }
 
 type SortField = keyof ProjectCardPlayerStatsRow;
-type SortDirection = 'asc' | 'desc' | null;
 
-export function ProjectCardTable({ data }: ProjectCardTableProps) {
-  const [sortField, setSortField] = useState<SortField | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+export function ProjectCardTable({
+  data,
+  total,
+  page,
+  pageSize,
+  loading = false,
+  onPageChange,
+  onPageSizeChange,
+}: ProjectCardTableProps) {
+  const currentPage = page;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const startRow = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endRow = Math.min(currentPage * pageSize, total);
 
-  // Sort data based on current sort settings
-  const sortedData = useMemo(() => {
-    if (!sortField || !sortDirection) return data;
-
-    return [...data].sort((a, b) => {
-      const aVal = a[sortField];
-      const bVal = b[sortField];
-
-      // Handle null/undefined values - always put them at the end
-      if (aVal == null && bVal == null) return 0;
-      if (aVal == null) return 1;  // Always put nulls at end
-      if (bVal == null) return -1; // Always put nulls at end
-
-      // Numeric comparison
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-
-      // String comparison
-      const aStr = String(aVal).toLowerCase();
-      const bStr = String(bVal).toLowerCase();
-      if (aStr < bStr) return sortDirection === 'asc' ? -1 : 1;
-      if (aStr > bStr) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [data, sortField, sortDirection]);
-
-  // Paginate the sorted data
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return sortedData.slice(startIndex, endIndex);
-  }, [sortedData, currentPage, pageSize]);
-
-  // Calculate pagination info
-  const totalPages = Math.ceil(sortedData.length / pageSize);
-  const startRow = (currentPage - 1) * pageSize + 1;
-  const endRow = Math.min(currentPage * pageSize, sortedData.length);
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      // Cycle through: asc -> desc -> null
-      if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else if (sortDirection === 'desc') {
-        setSortField(null);
-        setSortDirection(null);
-      }
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-    // Reset to first page when sorting changes
-    setCurrentPage(1);
+  const handleSort = (_field: SortField) => {
+    // Sorting is server-driven; clicks are no-ops for now
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  const handlePageChange = (p: number) => {
+    onPageChange(Math.max(1, Math.min(p, totalPages)));
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setCurrentPage(1); // Reset to first page when page size changes
+    onPageSizeChange(newPageSize);
   };
 
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return '↕️';
-    if (sortDirection === 'asc') return '↑';
-    if (sortDirection === 'desc') return '↓';
-    return '↕️';
-  };
+  const getSortIcon = (_field: SortField) => '↕️';
 
   const getPositionDisplay = (position?: number) => {
     if (!position) return 'N/A';
@@ -111,7 +65,7 @@ export function ProjectCardTable({ data }: ProjectCardTableProps) {
     );
   };
 
-  if (data.length === 0) {
+  if (total === 0 && !loading) {
     return (
       <div className="bg-white/90 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl border border-zinc-200 dark:border-slate-700 p-8 shadow-sm text-center">
         <p className="text-slate-600 dark:text-slate-400">No games match the current filters.</p>
@@ -128,7 +82,8 @@ export function ProjectCardTable({ data }: ProjectCardTableProps) {
               Project Card Game Details
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-              Showing {startRow.toLocaleString()}-{endRow.toLocaleString()} of {sortedData.length.toLocaleString()} games
+              Showing {startRow.toLocaleString()}-{endRow.toLocaleString()} of {total.toLocaleString()} games
+              {loading ? ' (loading...)' : ''}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -138,10 +93,10 @@ export function ProjectCardTable({ data }: ProjectCardTableProps) {
               onChange={(e) => handlePageSizeChange(Number(e.target.value))}
               className="px-2 py-1 text-sm border border-zinc-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
             >
-              <option value={10}>10</option>
               <option value={25}>25</option>
               <option value={50}>50</option>
               <option value={100}>100</option>
+              <option value={250}>250</option>
             </select>
           </div>
         </div>
@@ -214,7 +169,7 @@ export function ProjectCardTable({ data }: ProjectCardTableProps) {
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-            {paginatedData.map((row, index) => (
+            {data.map((row, index) => (
               <tr 
                 key={`${row.tableId}-${row.playerId}-${index}`}
                 onClick={() => window.open(`https://boardgamearena.com/table?table=${row.tableId}`, '_blank')}

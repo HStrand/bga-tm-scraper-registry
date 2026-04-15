@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Data.SqlClient;
-using Dapper;
 using System.Text.Json;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
@@ -17,7 +16,10 @@ namespace BgaTmScraperRegistry.Services
         private const string CacheContainerName = "cache";
         private const string CardPlayerStatsBlobPrefix = "card-player-stats/";
         private static readonly TimeSpan CacheExpiry = TimeSpan.FromDays(3);
-        private const int QueryTimeoutSeconds = 60;
+        private static readonly HttpClient ParquetApiClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(120)
+        };
 
         private readonly string _connectionString;
         private readonly ILogger _logger;
@@ -54,6 +56,158 @@ namespace BgaTmScraperRegistry.Services
             public int? PlayerCount { get; set; }
         }
 
+        public class CardFilter
+        {
+            public string[] Maps { get; set; }
+            public string[] Modes { get; set; }
+            public string[] Speeds { get; set; }
+            public int[] PlayerCounts { get; set; }
+            public bool? PreludeOn { get; set; }
+            public bool? ColoniesOn { get; set; }
+            public bool? DraftOn { get; set; }
+            public int? EloMin { get; set; }
+            public int? EloMax { get; set; }
+            public int? PlayedGenMin { get; set; }
+            public int? PlayedGenMax { get; set; }
+            public string PlayerName { get; set; }
+        }
+
+        public class CardStats
+        {
+            public int TotalGames { get; set; }
+            public double WinRate { get; set; }
+            public double AvgElo { get; set; }
+            public double AvgEloChange { get; set; }
+            public double AvgVpScored { get; set; }
+        }
+
+        public class GenerationDatum
+        {
+            public int Generation { get; set; }
+            public int GameCount { get; set; }
+            public double WinRate { get; set; }
+            public double AvgEloChange { get; set; }
+        }
+
+        public class GenerationDistributionDatum
+        {
+            public int Generation { get; set; }
+            public int Count { get; set; }
+            public double Percentage { get; set; }
+        }
+
+        public class HistogramBin
+        {
+            public double Min { get; set; }
+            public double Max { get; set; }
+            public int Count { get; set; }
+            public string Label { get; set; }
+        }
+
+        public class CardFilterOptions
+        {
+            public string[] Maps { get; set; }
+            public string[] GameModes { get; set; }
+            public string[] GameSpeeds { get; set; }
+            public int[] PlayerCounts { get; set; }
+            public Range EloRange { get; set; }
+            public Range PlayedGenRange { get; set; }
+
+            public class Range
+            {
+                public int Min { get; set; }
+                public int Max { get; set; }
+            }
+        }
+
+        public class CardSummary
+        {
+            public CardStats Stats { get; set; }
+            public List<GenerationDatum> GenerationData { get; set; }
+            public List<GenerationDistributionDatum> GenerationDistribution { get; set; }
+            public List<HistogramBin> EloHistogram { get; set; }
+            public List<HistogramBin> EloChangeHistogram { get; set; }
+            public CardFilterOptions FilterOptions { get; set; }
+        }
+
+        public class CardGamesPage
+        {
+            public int Total { get; set; }
+            public int Page { get; set; }
+            public int PageSize { get; set; }
+            public List<ProjectCardPlayerStatsRow> Rows { get; set; }
+        }
+
+        public async Task<CardSummary> GetCardSummaryAsync(string cardName, CardFilter filter)
+        {
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com").TrimEnd('/');
+            var url = $"{baseUrl}/api/cards/{Uri.EscapeDataString(cardName)}/summary{BuildCardQueryString(filter)}";
+
+            var response = await ParquetApiClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<CardSummary>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            }) ?? new CardSummary();
+        }
+
+        public async Task<CardGamesPage> GetCardGamesAsync(string cardName, CardFilter filter, int page, int pageSize, string sort, string sortDir)
+        {
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com").TrimEnd('/');
+            var extra = new List<string>();
+            if (page > 0) extra.Add($"page={page}");
+            if (pageSize > 0) extra.Add($"pageSize={pageSize}");
+            if (!string.IsNullOrWhiteSpace(sort)) extra.Add($"sort={Uri.EscapeDataString(sort)}");
+            if (!string.IsNullOrWhiteSpace(sortDir)) extra.Add($"sortDir={Uri.EscapeDataString(sortDir)}");
+
+            var filterQs = BuildCardQueryString(filter);
+            var url = $"{baseUrl}/api/cards/{Uri.EscapeDataString(cardName)}/games{filterQs}";
+            if (extra.Count > 0)
+            {
+                url += (filterQs.Length == 0 ? "?" : "&") + string.Join("&", extra);
+            }
+
+            var response = await ParquetApiClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<CardGamesPage>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            }) ?? new CardGamesPage { Rows = new List<ProjectCardPlayerStatsRow>() };
+        }
+
+        private static string BuildCardQueryString(CardFilter f)
+        {
+            if (f == null) return string.Empty;
+            var parts = new List<string>();
+            void AddMulti(string key, IEnumerable<string> values)
+            {
+                if (values == null) return;
+                foreach (var v in values)
+                    if (!string.IsNullOrWhiteSpace(v)) parts.Add($"{key}={Uri.EscapeDataString(v)}");
+            }
+            void AddMultiInt(string key, IEnumerable<int> values)
+            {
+                if (values == null) return;
+                foreach (var v in values) parts.Add($"{key}={v}");
+            }
+            AddMulti("maps", f.Maps);
+            AddMulti("modes", f.Modes);
+            AddMulti("speeds", f.Speeds);
+            AddMultiInt("playerCounts", f.PlayerCounts);
+            if (f.PreludeOn.HasValue) parts.Add($"preludeOn={(f.PreludeOn.Value ? "true" : "false")}");
+            if (f.ColoniesOn.HasValue) parts.Add($"coloniesOn={(f.ColoniesOn.Value ? "true" : "false")}");
+            if (f.DraftOn.HasValue) parts.Add($"draftOn={(f.DraftOn.Value ? "true" : "false")}");
+            if (f.EloMin.HasValue) parts.Add($"eloMin={f.EloMin.Value}");
+            if (f.EloMax.HasValue) parts.Add($"eloMax={f.EloMax.Value}");
+            if (f.PlayedGenMin.HasValue) parts.Add($"playedGenMin={f.PlayedGenMin.Value}");
+            if (f.PlayedGenMax.HasValue) parts.Add($"playedGenMax={f.PlayedGenMax.Value}");
+            if (!string.IsNullOrWhiteSpace(f.PlayerName)) parts.Add($"playerName={Uri.EscapeDataString(f.PlayerName)}");
+
+            return parts.Count == 0 ? string.Empty : "?" + string.Join("&", parts);
+        }
+
         public async Task<List<ProjectCardPlayerStatsRow>> GetCardPlayerStatsAsync(string cardName)
         {
             // Try to read from blob cache first
@@ -77,35 +231,16 @@ namespace BgaTmScraperRegistry.Services
 
         private async Task<List<ProjectCardPlayerStatsRow>> QueryCardPlayerStatsFromDbAsync(string cardName)
         {
-            var sql = @"
-SELECT
-    gc.TableId,
-    gc.PlayerId,
-    g.Map, g.GameMode, g.GameSpeed, g.PreludeOn, g.ColoniesOn, g.DraftOn,
-    gc.SeenGen, gc.DrawnGen, gc.KeptGen, gc.DraftedGen, gc.BoughtGen,
-    gc.PlayedGen, gc.DrawType, gc.DrawReason, gc.VpScored,
-    gp.PlayerName, gp.Elo, gp.EloChange, gp.Position,
-    gs.PlayerCount
-FROM GameCards gc WITH (NOLOCK)
-JOIN GamePlayers_Canonical gp WITH (NOLOCK)
-  ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
-JOIN Games_Canonical g WITH (NOLOCK)
-  ON g.TableId = gc.TableId
-JOIN GameStats gs WITH (NOLOCK)
-  ON gs.TableId = gc.TableId
-WHERE gc.Card = (@CardName)
-  AND gc.PlayedGen IS NOT NULL;";
+            var baseUrl = (Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com").TrimEnd('/');
+            var url = $"{baseUrl}/api/cards/{Uri.EscapeDataString(cardName)}/playerstats";
 
-            using var conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
-
-            var rows = await conn.QueryAsync<ProjectCardPlayerStatsRow>(
-                sql,
-                new { CardName = cardName },
-                commandTimeout: QueryTimeoutSeconds
-            );
-
-            return rows.AsList();
+            var response = await ParquetApiClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<List<ProjectCardPlayerStatsRow>>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            }) ?? new List<ProjectCardPlayerStatsRow>();
         }
 
         private async Task<List<ProjectCardPlayerStatsRow>> TryReadFromBlobAsync(string cardName)

@@ -2,7 +2,17 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useCookieState } from '@/hooks/useCookieState';
 import { useParams } from 'react-router-dom';
 import { api } from '@/lib/api';
-import { ProjectCardPlayerStatsRow, ProjectCardStats, ProjectCardFilters, GenerationData, HistogramBin, GenerationDistributionData } from '@/types/projectcard';
+import {
+  ProjectCardPlayerStatsRow,
+  ProjectCardStats,
+  ProjectCardFilters,
+  GenerationData,
+  HistogramBin,
+  GenerationDistributionData,
+  CardSummary,
+  CardGamesPage,
+  CardFilterOptions,
+} from '@/types/projectcard';
 import { ProjectCardHeader } from '@/components/ProjectCardHeader';
 import { FiltersPanel } from '@/components/FiltersPanel';
 import { EloHistogram } from '@/components/charts/EloHistogram';
@@ -13,14 +23,53 @@ import { ProjectCardTable } from '@/components/ProjectCardTable';
 import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/BackButton';
 
+const EMPTY_STATS: ProjectCardStats = {
+  totalGames: 0,
+  winRate: 0,
+  avgElo: 0,
+  avgEloChange: 0,
+  avgVpScored: 0,
+};
+
+function buildFilterQuery(filters: ProjectCardFilters): string {
+  const params = new URLSearchParams();
+  const pushCsv = (key: string, arr?: (string | number)[]) => {
+    if (arr && arr.length > 0) params.set(key, arr.join(','));
+  };
+  pushCsv('maps', filters.maps);
+  pushCsv('modes', filters.gameModes);
+  pushCsv('speeds', filters.gameSpeeds);
+  pushCsv('playerCounts', filters.playerCounts);
+  if (filters.preludeOn !== undefined) params.set('preludeOn', String(filters.preludeOn));
+  if (filters.coloniesOn !== undefined) params.set('coloniesOn', String(filters.coloniesOn));
+  if (filters.draftOn !== undefined) params.set('draftOn', String(filters.draftOn));
+  if (filters.eloMin !== undefined) params.set('eloMin', String(filters.eloMin));
+  if (filters.eloMax !== undefined) params.set('eloMax', String(filters.eloMax));
+  if (filters.playedGenMin !== undefined) params.set('playedGenMin', String(filters.playedGenMin));
+  if (filters.playedGenMax !== undefined) params.set('playedGenMax', String(filters.playedGenMax));
+  if (filters.playerName) params.set('playerName', filters.playerName);
+  return params.toString();
+}
+
 export function ProjectCardStatsPage() {
   const { name } = useParams<{ name: string }>();
-  const [data, setData] = useState<ProjectCardPlayerStatsRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  const [error, setError] = useState<string | null>(null);
 
-  // Initialize filters with all options selected (persisted per page via cookie)
+  const [stats, setStats] = useState<ProjectCardStats>(EMPTY_STATS);
+  const [generationData, setGenerationData] = useState<GenerationData[]>([]);
+  const [generationDistribution, setGenerationDistribution] = useState<GenerationDistributionData[]>([]);
+  const [eloHistogram, setEloHistogram] = useState<HistogramBin[]>([]);
+  const [eloChangeHistogram, setEloChangeHistogram] = useState<HistogramBin[]>([]);
+  const [filterOptions, setFilterOptions] = useState<CardFilterOptions | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+
+  const [games, setGames] = useState<ProjectCardPlayerStatsRow[]>([]);
+  const [gamesTotal, setGamesTotal] = useState(0);
+  const [gamesPage, setGamesPage] = useState(1);
+  const [gamesPageSize, setGamesPageSize] = useState(50);
+  const [gamesLoading, setGamesLoading] = useState(false);
+
   const [filters, setFilters, , meta] = useCookieState<ProjectCardFilters>(
     'tm_filters_project_card_details_v1',
     {
@@ -34,290 +83,109 @@ export function ProjectCardStatsPage() {
     }
   );
 
-  // Decode the card name from the URL parameter
   const cardName = useMemo(() => (name ? decodeURIComponent(name) : ''), [name]);
 
-  // Fetch data
+  // Initialize default filters from the first summary response (once).
+  const [defaultsApplied, setDefaultsApplied] = useState(false);
+
+  // Fetch summary (stats + charts + filter options) whenever filters change
   useEffect(() => {
-    if (!name) return;
-
-    const fetchData = async () => {
+    if (!cardName) return;
+    let cancelled = false;
+    const run = async () => {
       try {
-        setLoading(true);
+        setSummaryLoading(true);
         setError(null);
-        const response = await api.get<ProjectCardPlayerStatsRow[]>(`/api/cards/${encodeURIComponent(cardName)}/playerstats`);
-        setData(response.data);
+        const qs = buildFilterQuery(filters);
+        const url = `/api/cards/${encodeURIComponent(cardName)}/summary${qs ? `?${qs}` : ''}`;
+        const res = await api.get<CardSummary>(url);
+        if (cancelled) return;
+        const s = res.data;
+        setStats(s.stats);
+        setGenerationData(s.generationData);
+        setGenerationDistribution(s.generationDistribution);
+        setEloHistogram(s.eloHistogram);
+        setEloChangeHistogram(s.eloChangeHistogram);
+        setFilterOptions(s.filterOptions);
 
-        // Initialize filters with all available options
-        const maps = [...new Set(response.data.map(row => row.map).filter(Boolean))].sort() as string[];
-        const gameModes = [...new Set(response.data.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-        const gameSpeeds = [...new Set(response.data.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
-        const playerCounts = [...new Set(response.data.map(row => row.playerCount).filter((c): c is number => !!c))].sort((a, b) => a - b) as number[];
-
-        setFilters(prev => {
-          // If we already loaded a stored value, don't override with defaults
-          if (meta.hasStoredValue) return prev;
-
-          // Apply defaults only if previous filters were effectively empty (fresh load)
-          if (
-            prev.playerCounts.length === 0 &&
-            prev.maps.length === 0 &&
-            prev.gameModes.length === 0 &&
-            prev.gameSpeeds.length === 0 &&
-            prev.preludeOn === undefined &&
-            prev.coloniesOn === undefined &&
-            prev.draftOn === undefined &&
-            !prev.playerName &&
-            prev.eloMin === undefined &&
-            prev.eloMax === undefined &&
-            prev.playedGenMin === undefined &&
-            prev.playedGenMax === undefined
-          ) {
+        if (!defaultsApplied) {
+          setDefaultsApplied(true);
+          setFilters(prev => {
+            if (meta.hasStoredValue) return prev;
+            const effectivelyEmpty =
+              prev.playerCounts.length === 0 &&
+              prev.maps.length === 0 &&
+              prev.gameModes.length === 0 &&
+              prev.gameSpeeds.length === 0 &&
+              prev.preludeOn === undefined &&
+              prev.coloniesOn === undefined &&
+              prev.draftOn === undefined &&
+              !prev.playerName &&
+              prev.eloMin === undefined &&
+              prev.eloMax === undefined &&
+              prev.playedGenMin === undefined &&
+              prev.playedGenMax === undefined;
+            if (!effectivelyEmpty) return prev;
             return {
-              playerCounts,
-              maps,
-              gameModes,
-              gameSpeeds,
+              playerCounts: s.filterOptions.playerCounts,
+              maps: s.filterOptions.maps,
+              gameModes: s.filterOptions.gameModes,
+              gameSpeeds: s.filterOptions.gameSpeeds,
               preludeOn: undefined,
               coloniesOn: undefined,
               draftOn: undefined,
             };
-          }
-          return prev;
-        });
+          });
+        }
       } catch (err) {
-        console.error('Error fetching project card stats:', err);
-        setError('Failed to load project card statistics. Please try again.');
+        console.error('Error fetching card summary:', err);
+        if (!cancelled) setError('Failed to load project card statistics. Please try again.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setSummaryLoading(false);
       }
     };
+    run();
+    return () => { cancelled = true; };
+  }, [cardName, filters]);
 
-    fetchData();
-  }, [cardName]);
+  // Reset to first page when filters change
+  useEffect(() => { setGamesPage(1); }, [filters]);
 
-  // Get available options for filters
-  const availablePlayerCounts = useMemo(() => {
-    return [...new Set(data.map(row => row.playerCount).filter((c): c is number => !!c))].sort((a, b) => a - b);
-  }, [data]);
-
-  const availableMaps = useMemo(() => {
-    return [...new Set(data.map(row => row.map).filter(Boolean))].sort() as string[];
-  }, [data]);
-
-  const availableGameModes = useMemo(() => {
-    return [...new Set(data.map(row => row.gameMode).filter(Boolean))].sort() as string[];
-  }, [data]);
-
-  const availableGameSpeeds = useMemo(() => {
-    return [...new Set(data.map(row => row.gameSpeed).filter(Boolean))].sort() as string[];
-  }, [data]);
-
-  const availablePlayerNames = useMemo(() => {
-    return [...new Set(data.map(row => row.playerName).filter(Boolean))].sort() as string[];
-  }, [data]);
-
-  const eloRange = useMemo(() => {
-    const elos = data.map(row => row.elo).filter(Boolean) as number[];
-    return {
-      min: Math.min(...elos) || 0,
-      max: Math.max(...elos) || 2000,
-    };
-  }, [data]);
-
-  // Range of played generations present in the dataset (optional)
-  const playedGenRange = useMemo(() => {
-    const gens = data.map(row => row.playedGen).filter((g): g is number => g != null) as number[];
-    if (gens.length === 0) return undefined;
-    return {
-      min: Math.min(...gens),
-      max: Math.max(...gens),
-    };
-  }, [data]);
-
-  // Filter data based on current filters
-  const filteredData = useMemo(() => {
-    return data.filter(row => {
-      // Elo range filter
-      if (filters.eloMin && (!row.elo || row.elo < filters.eloMin)) return false;
-      if (filters.eloMax && (!row.elo || row.elo > filters.eloMax)) return false;
-
-      // Player name filter
-      if (filters.playerName && row.playerName !== filters.playerName) return false;
-
-      // Player count filter
-      if (row.playerCount && !filters.playerCounts.includes(row.playerCount)) return false;
-
-      // Map filter
-      if (row.map && !filters.maps.includes(row.map)) return false;
-
-      // Game mode filter
-      if (row.gameMode && !filters.gameModes.includes(row.gameMode)) return false;
-
-      // Game speed filter
-      if (row.gameSpeed && !filters.gameSpeeds.includes(row.gameSpeed)) return false;
-
-      // Expansion filters
-      if (filters.preludeOn !== undefined && row.preludeOn !== filters.preludeOn) return false;
-      if (filters.coloniesOn !== undefined && row.coloniesOn !== filters.coloniesOn) return false;
-      if (filters.draftOn !== undefined && row.draftOn !== filters.draftOn) return false;
-
-      // Played generation filter (apply only when at least one bound is set)
-      if (filters.playedGenMin !== undefined || filters.playedGenMax !== undefined) {
-        if (row.playedGen == null) return false;
-        if (filters.playedGenMin !== undefined && row.playedGen < filters.playedGenMin) return false;
-        if (filters.playedGenMax !== undefined && row.playedGen > filters.playedGenMax) return false;
+  // Fetch games only when Table view is active
+  useEffect(() => {
+    if (viewMode !== 'table' || !cardName) return;
+    let cancelled = false;
+    const run = async () => {
+      try {
+        setGamesLoading(true);
+        const qs = buildFilterQuery(filters);
+        const extra = `page=${gamesPage}&pageSize=${gamesPageSize}&sort=TableId&sortDir=desc`;
+        const url = `/api/cards/${encodeURIComponent(cardName)}/games?${qs ? `${qs}&` : ''}${extra}`;
+        const res = await api.get<CardGamesPage>(url);
+        if (cancelled) return;
+        setGames(res.data.rows);
+        setGamesTotal(res.data.total);
+      } catch (err) {
+        console.error('Error fetching card games:', err);
+      } finally {
+        if (!cancelled) setGamesLoading(false);
       }
-
-      return true;
-    });
-  }, [data, filters]);
-
-  // Compute statistics
-  const stats = useMemo((): ProjectCardStats => {
-    const validData = filteredData.filter(row => row.position != null);
-    const totalGames = validData.length;
-
-    if (totalGames === 0) {
-      return {
-        totalGames: 0,
-        winRate: 0,
-        avgElo: 0,
-        avgEloChange: 0,
-        avgVpScored: 0,
-      };
-    }
-
-    const wins = validData.filter(row => row.position === 1).length;
-    const winRate = wins / totalGames;
-
-    const avgElo = validData.reduce((sum, row) => sum + (row.elo || 0), 0) / totalGames;
-    const avgEloChange = validData.reduce((sum, row) => sum + (row.eloChange || 0), 0) / totalGames;
-    const avgVpScored = validData.reduce((sum, row) => sum + (row.vpScored || 0), 0) / totalGames;
-
-    return {
-      totalGames,
-      winRate,
-      avgElo,
-      avgEloChange,
-      avgVpScored,
     };
-  }, [filteredData]);
-
-  // Compute generation data for line charts
-  const generationData = useMemo((): GenerationData[] => {
-    const playedData = filteredData.filter(row => row.playedGen != null && row.position != null);
-    
-    if (playedData.length === 0) return [];
-
-    const generationMap = new Map<number, { wins: number; totalGames: number; eloChangeSum: number }>();
-
-    playedData.forEach(row => {
-      const gen = row.playedGen!;
-      const existing = generationMap.get(gen) || { wins: 0, totalGames: 0, eloChangeSum: 0 };
-      
-      existing.totalGames++;
-      if (row.position === 1) existing.wins++;
-      existing.eloChangeSum += row.eloChange || 0;
-      
-      generationMap.set(gen, existing);
-    });
-
-    const result: GenerationData[] = [];
-    generationMap.forEach((value, generation) => {
-      // Only include generations with at least 3 games for statistical relevance
-      if (value.totalGames >= 3) {
-        result.push({
-          generation,
-          winRate: value.wins / value.totalGames,
-          avgEloChange: value.eloChangeSum / value.totalGames,
-          gameCount: value.totalGames,
-        });
-      }
-    });
-
-    return result.sort((a, b) => a.generation - b.generation);
-  }, [filteredData]);
-
-  // Compute histogram data for Elo
-  const eloHistogramData = useMemo((): HistogramBin[] => {
-    const elos = filteredData.map(row => row.elo).filter(Boolean) as number[];
-    if (elos.length === 0) return [];
-
-    const min = Math.min(...elos);
-    const max = Math.max(...elos);
-    const binCount = Math.min(12, Math.max(5, Math.ceil(elos.length / 20)));
-    const binSize = (max - min) / binCount;
-
-    const bins: HistogramBin[] = [];
-    for (let i = 0; i < binCount; i++) {
-      const binMin = min + i * binSize;
-      const binMax = i === binCount - 1 ? max : min + (i + 1) * binSize;
-      const count = elos.filter(elo => elo >= binMin && elo < binMax).length;
-      
-      bins.push({
-        min: binMin,
-        max: binMax,
-        count,
-        label: `${Math.round(binMin)}-${Math.round(binMax)}`,
-      });
-    }
-
-    return bins;
-  }, [filteredData]);
-
-  // Compute histogram data for Elo Change
-  const eloChangeHistogramData = useMemo((): HistogramBin[] => {
-    const eloChanges = filteredData.map(row => row.eloChange).filter(Boolean) as number[];
-    if (eloChanges.length === 0) return [];
-
-    const min = -20;
-    const max = 20;
-    const binCount = 20;
-    const binSize = (max - min) / binCount;
-
-    const bins: HistogramBin[] = [];
-    for (let i = 0; i < binCount; i++) {
-      const binMin = min + i * binSize;
-      const binMax = min + (i + 1) * binSize;
-      const count = eloChanges.filter(change => change >= min && change <= max && change >= binMin && change < binMax).length;
-      
-      bins.push({
-        min: binMin,
-        max: binMax,
-        count,
-        label: `${Math.round(binMin)}-${Math.round(binMax)}`,
-      });
-    }
-
-    return bins;
-  }, [filteredData]);
-
-  // Compute generation distribution data
-  const generationDistributionData = useMemo((): GenerationDistributionData[] => {
-    const playedData = filteredData.filter(row => row.playedGen != null);
-    if (playedData.length === 0) return [];
-
-    const generationCounts = new Map<number, number>();
-    
-    playedData.forEach(row => {
-      const gen = row.playedGen!;
-      generationCounts.set(gen, (generationCounts.get(gen) || 0) + 1);
-    });
-    
-    const total = playedData.length;
-    const result: GenerationDistributionData[] = Array.from(generationCounts.entries()).map(([generation, count]) => ({
-      generation,
-      count,
-      percentage: (count / total) * 100
-    }));
-    
-    return result.sort((a, b) => a.generation - b.generation);
-  }, [filteredData]);
+    run();
+    return () => { cancelled = true; };
+  }, [viewMode, cardName, filters, gamesPage, gamesPageSize]);
 
   const handleFiltersChange = useCallback((newFilters: ProjectCardFilters) => {
     setFilters(newFilters);
-  }, []);
+  }, [setFilters]);
+
+  const availablePlayerCounts = filterOptions?.playerCounts ?? [];
+  const availableMaps = filterOptions?.maps ?? [];
+  const availableGameModes = filterOptions?.gameModes ?? [];
+  const availableGameSpeeds = filterOptions?.gameSpeeds ?? [];
+  const availablePlayerNames: string[] = [];
+  const eloRange = filterOptions?.eloRange ?? { min: 0, max: 0 };
+  const playedGenRange = filterOptions?.playedGenRange;
 
   if (!name) {
     return (
@@ -341,9 +209,7 @@ export function ProjectCardStatsPage() {
           <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">
             Error Loading Data
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mb-4">
-            {error}
-          </p>
+          <p className="text-slate-600 dark:text-slate-400 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
@@ -355,31 +221,28 @@ export function ProjectCardStatsPage() {
     );
   }
 
+  const initialLoading = summaryLoading && !defaultsApplied;
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Back + Header */}
         <div className="flex items-center justify-between mb-3">
           <BackButton fallbackPath="/cards" />
         </div>
         <div className="mb-8">
-          <ProjectCardHeader cardName={cardName} stats={stats} isLoading={loading} />
+          <ProjectCardHeader cardName={cardName} stats={stats} isLoading={initialLoading} />
         </div>
 
-        {/* Main content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Filters sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              {loading ? (
+              {initialLoading || !filterOptions ? (
                 <div className="bg-white/90 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl border border-zinc-200 dark:border-slate-700 p-6 shadow-sm">
                   <div className="animate-pulse space-y-5">
                     <div className="flex items-center justify-between">
                       <div className="h-5 w-28 bg-slate-300 dark:bg-slate-600 rounded" />
                       <div className="h-6 w-16 bg-slate-300 dark:bg-slate-600 rounded" />
                     </div>
-
-                    {/* Elo Range */}
                     <div className="space-y-3">
                       <div className="h-4 w-24 bg-slate-300 dark:bg-slate-600 rounded" />
                       <div className="grid grid-cols-2 gap-2">
@@ -387,43 +250,12 @@ export function ProjectCardStatsPage() {
                         <div className="h-9 bg-slate-200 dark:bg-slate-700 rounded" />
                       </div>
                     </div>
-
-                    {/* Player Count */}
                     <div className="space-y-3">
                       <div className="h-4 w-28 bg-slate-300 dark:bg-slate-600 rounded" />
                       <div className="flex flex-wrap gap-2">
                         {Array.from({ length: 6 }).map((_, i) => (
                           <div key={i} className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded" />
                         ))}
-                      </div>
-                    </div>
-
-                    {/* Maps */}
-                    <div className="space-y-3">
-                      <div className="h-4 w-20 bg-slate-300 dark:bg-slate-600 rounded" />
-                      <div className="flex flex-wrap gap-2">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                          <div key={i} className="h-8 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Game Modes */}
-                    <div className="space-y-3">
-                      <div className="h-4 w-28 bg-slate-300 dark:bg-slate-600 rounded" />
-                      <div className="flex flex-wrap gap-2">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <div key={i} className="h-8 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Played Gen */}
-                    <div className="space-y-3">
-                      <div className="h-4 w-32 bg-slate-300 dark:bg-slate-600 rounded" />
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="h-9 bg-slate-200 dark:bg-slate-700 rounded" />
-                        <div className="h-9 bg-slate-200 dark:bg-slate-700 rounded" />
                       </div>
                     </div>
                   </div>
@@ -444,9 +276,8 @@ export function ProjectCardStatsPage() {
             </div>
           </div>
 
-          {/* Charts area */}
           <div className="lg:col-span-3">
-            {loading ? (
+            {initialLoading ? (
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
@@ -457,7 +288,6 @@ export function ProjectCardStatsPage() {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* View toggle */}
                 <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg w-fit mx-auto">
                   <Button
                     variant={viewMode === 'chart' ? 'default' : 'ghost'}
@@ -476,20 +306,16 @@ export function ProjectCardStatsPage() {
                     Table View
                   </Button>
                 </div>
-                
-                {/* Conditional content based on view mode */}
+
                 <div className="w-full">
                   {viewMode === 'chart' ? (
                     <div className="space-y-6">
-                      {/* Top row - 2x2 grid */}
                       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                        <EloHistogram data={eloHistogramData} />
-                        <EloHistogram data={eloChangeHistogramData} title="Elo Change Distribution" useRedGreenColors={true} />
-                        <GenerationDistribution data={generationDistributionData} />
+                        <EloHistogram data={eloHistogram} />
+                        <EloHistogram data={eloChangeHistogram} title="Elo Change Distribution" useRedGreenColors={true} />
+                        <GenerationDistribution data={generationDistribution} />
                         <WinRateByGeneration data={generationData} />
                       </div>
-                      
-                      {/* Bottom row - single chart centered */}
                       <div className="flex justify-center">
                         <div className="w-full max-w-md">
                           <EloGainByGeneration data={generationData} />
@@ -497,7 +323,15 @@ export function ProjectCardStatsPage() {
                       </div>
                     </div>
                   ) : (
-                    <ProjectCardTable data={filteredData} />
+                    <ProjectCardTable
+                      data={games}
+                      total={gamesTotal}
+                      page={gamesPage}
+                      pageSize={gamesPageSize}
+                      loading={gamesLoading}
+                      onPageChange={setGamesPage}
+                      onPageSizeChange={(size) => { setGamesPageSize(size); setGamesPage(1); }}
+                    />
                   )}
                 </div>
               </div>

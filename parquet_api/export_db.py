@@ -119,14 +119,38 @@ for _, row in tables_df.iterrows():
 
 conn.close()
 
+# Produce a card-sorted copy of gamecards for fast per-card API queries.
+# Kept separate from gamecards.parquet so the analyst bundle stays compact.
+import duckdb
+SORTED_TMP_DIR = "/mnt/duckdb-tmp"
+os.makedirs(SORTED_TMP_DIR, exist_ok=True)
+src = os.path.join(OUTPUT_DIR, "gamecards.parquet")
+dst = os.path.join(OUTPUT_DIR, "gamecards_by_card.parquet")
+tmp = dst + ".tmp"
+print(f"Sorting {src} by Card -> {dst} ... ", end="", flush=True)
+dk = duckdb.connect()
+dk.execute("SET memory_limit='1500MB'")
+dk.execute("SET threads=1")
+dk.execute(f"SET temp_directory='{SORTED_TMP_DIR}'")
+dk.execute(
+    f"""
+    COPY (SELECT * FROM read_parquet('{src}') ORDER BY Card, TableId)
+    TO '{tmp}' (FORMAT PARQUET, COMPRESSION SNAPPY, ROW_GROUP_SIZE 50000)
+    """
+)
+dk.close()
+os.replace(tmp, dst)
+print(f"{os.path.getsize(dst) / 1024 / 1024:.1f} MB")
+
 import zipfile
 
 BUNDLE_PATH = os.path.join(OUTPUT_DIR, "tfmstats_db.zip")
 bundle_tmp = BUNDLE_PATH + ".tmp"
 print(f"Building bundle {BUNDLE_PATH} ... ", end="", flush=True)
+BUNDLE_EXCLUDE = {"gamecards_by_card.parquet"}  # API-only sorted copy
 with zipfile.ZipFile(bundle_tmp, "w", compression=zipfile.ZIP_STORED, allowZip64=True) as zf:
     for entry in sorted(os.listdir(OUTPUT_DIR)):
-        if entry.endswith(".parquet"):
+        if entry.endswith(".parquet") and entry not in BUNDLE_EXCLUDE:
             zf.write(os.path.join(OUTPUT_DIR, entry), arcname=entry)
 os.replace(bundle_tmp, BUNDLE_PATH)
 print(f"{os.path.getsize(BUNDLE_PATH) / 1024 / 1024:.1f} MB")

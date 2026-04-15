@@ -91,3 +91,28 @@ export interface ProjectCardOverviewFilters {
 }
 
 export type CardStatsMode = 'played' | 'option';
+
+export interface CardFilterOptions {
+  maps: string[];
+  gameModes: string[];
+  gameSpeeds: string[];
+  playerCounts: number[];
+  eloRange: { min: number; max: number };
+  playedGenRange: { min: number; max: number };
+}
+
+export interface CardSummary {
+  stats: ProjectCardStats;
+  generationData: GenerationData[];
+  generationDistribution: GenerationDistributionData[];
+  eloHistogram: HistogramBin[];
+  eloChangeHistogram: HistogramBin[];
+  filterOptions: CardFilterOptions;
+}
+
+export interface CardGamesPage {
+  total: number;
+  page: number;
+  pageSize: number;
+  rows: ProjectCardPlayerStatsRow[];
+}
