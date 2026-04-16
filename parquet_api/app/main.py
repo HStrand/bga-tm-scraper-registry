@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import open_connection
-from app.routes import awards, bundle, cards, combinations, corporations, preludes, statistics
+from app.routes import awards, bundle, cards, combinations, corporations, preludes, startinghands, statistics
 
 
 @asynccontextmanager
@@ -37,6 +37,7 @@ app.include_router(statistics.router)
 app.include_router(bundle.router)
 app.include_router(preludes.router)
 app.include_router(combinations.router)
+app.include_router(startinghands.router)
 
 
 @app.get("/health")
