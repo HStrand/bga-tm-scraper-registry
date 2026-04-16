@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from app.db import parquet_path
+from app.sql_fixups import normalized_card_expr
 
 router = APIRouter(prefix="/api/startinghands", tags=["startinghands"])
 
@@ -21,7 +22,7 @@ def _stats_sql() -> str:
           AND gs.PlayerCount = 2
     ),
     card_offers AS (
-        SELECT DISTINCT TableId, PlayerId, Card, Kept
+        SELECT DISTINCT TableId, PlayerId, {normalized_card_expr("Card")} AS Card, Kept
         FROM read_parquet('{parquet_path("startinghandcards")}')
     )
     SELECT

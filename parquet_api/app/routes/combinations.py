@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.db import parquet_path
+from app.sql_fixups import normalized_card_expr
 
 router = APIRouter(prefix="/api/combinations", tags=["combinations"])
 
@@ -20,6 +21,16 @@ def _eligible_players_cte_body() -> str:
           AND gc.ColoniesOn = FALSE
           AND gc.PreludeOn = TRUE
           AND gc.DraftOn = TRUE
+    )
+    """
+
+
+def _normalized_cards_cte_body() -> str:
+    return f"""
+    normalized_cards AS (
+        SELECT TableId, PlayerId, Kept,
+            {normalized_card_expr("Card")} AS Card
+        FROM read_parquet('{parquet_path("startinghandcards")}')
     )
     """
 
@@ -58,6 +69,22 @@ def _baseline_sql_generic(source_parquet: str, item_column: str) -> str:
     """
 
 
+def _baseline_cards_sql() -> str:
+    return f"""
+    {_with_ctes(_eligible_players_cte_body(), _normalized_cards_cte_body())}
+    SELECT
+        sh.Card                                                            AS name,
+        count(*)                                                           AS gameCount,
+        avg(CAST(ep.EloChange AS DOUBLE))                                  AS avgEloChange,
+        avg(CASE WHEN ep.Position = 1 THEN 1.0 ELSE 0.0 END)               AS winRate
+    FROM eligible_players ep
+    JOIN normalized_cards sh
+      ON sh.TableId = ep.TableId AND sh.PlayerId = ep.PlayerId AND sh.Kept = TRUE
+    GROUP BY sh.Card
+    ORDER BY avgEloChange DESC, gameCount DESC
+    """
+
+
 def _baseline_preludes_sql() -> str:
     return f"""
     {_with_ctes(_eligible_players_cte_body(), _normalized_preludes_cte_body())}
@@ -77,7 +104,7 @@ def _baseline_preludes_sql() -> str:
 @router.get("/baselines")
 def get_combination_baselines(request: Request):
     db = request.app.state.db.cursor()
-    cards = db.execute(_baseline_sql_generic("startinghandcards", "Card")).fetch_arrow_table().to_pylist()
+    cards = db.execute(_baseline_cards_sql()).fetch_arrow_table().to_pylist()
     corporations = db.execute(_baseline_sql_generic("startinghandcorporations", "Corporation")).fetch_arrow_table().to_pylist()
     preludes = db.execute(_baseline_preludes_sql()).fetch_arrow_table().to_pylist()
     return JSONResponse(content={
@@ -91,6 +118,7 @@ def _combo_sql(combo_type: str) -> str:
     min_games = 100
     ep_cte = _eligible_players_cte_body()
     np_cte = _normalized_preludes_cte_body()
+    nc_cte = _normalized_cards_cte_body()
 
     if combo_type == "corp-prelude":
         return f"""
@@ -113,7 +141,7 @@ def _combo_sql(combo_type: str) -> str:
 
     if combo_type == "corp-card":
         return f"""
-        {_with_ctes(ep_cte)}
+        {_with_ctes(ep_cte, nc_cte)}
         SELECT
             shcorp.Corporation                                             AS name1,
             shc.Card                                                       AS name2,
@@ -123,7 +151,7 @@ def _combo_sql(combo_type: str) -> str:
         FROM eligible_players ep
         JOIN read_parquet('{parquet_path("startinghandcorporations")}') shcorp
           ON shcorp.TableId = ep.TableId AND shcorp.PlayerId = ep.PlayerId AND shcorp.Kept = TRUE
-        JOIN read_parquet('{parquet_path("startinghandcards")}') shc
+        JOIN normalized_cards shc
           ON shc.TableId = ep.TableId AND shc.PlayerId = ep.PlayerId AND shc.Kept = TRUE
         GROUP BY shcorp.Corporation, shc.Card
         HAVING count(*) >= {min_games}
@@ -155,7 +183,7 @@ def _combo_sql(combo_type: str) -> str:
 
     if combo_type == "prelude-card":
         return f"""
-        {_with_ctes(ep_cte, np_cte)}
+        {_with_ctes(ep_cte, np_cte, nc_cte)}
         SELECT
             shp.Prelude                                                    AS name1,
             shc.Card                                                       AS name2,
@@ -165,7 +193,7 @@ def _combo_sql(combo_type: str) -> str:
         FROM eligible_players ep
         JOIN normalized_preludes shp
           ON shp.TableId = ep.TableId AND shp.PlayerId = ep.PlayerId AND shp.Kept = TRUE
-        JOIN read_parquet('{parquet_path("startinghandcards")}') shc
+        JOIN normalized_cards shc
           ON shc.TableId = ep.TableId AND shc.PlayerId = ep.PlayerId AND shc.Kept = TRUE
         GROUP BY shp.Prelude, shc.Card
         HAVING count(*) >= {min_games}
@@ -174,11 +202,11 @@ def _combo_sql(combo_type: str) -> str:
 
     if combo_type == "card-card":
         return f"""
-        {_with_ctes(ep_cte)},
+        {_with_ctes(ep_cte, nc_cte)},
         eligible_cards AS (
             SELECT ep.TableId, ep.PlayerId, shc.Card, ep.EloChange, ep.Position
             FROM eligible_players ep
-            JOIN read_parquet('{parquet_path("startinghandcards")}') shc
+            JOIN normalized_cards shc
               ON shc.TableId = ep.TableId AND shc.PlayerId = ep.PlayerId AND shc.Kept = TRUE
         )
         SELECT

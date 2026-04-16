@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.db import parquet_path
+from app.sql_fixups import card_variants, normalize_card_name, normalized_card_expr
 
 router = APIRouter(prefix="/api/cards", tags=["cards"])
 
@@ -18,12 +19,15 @@ _filter_options_lock = threading.Lock()
 
 
 def _get_card_filter_options(db, card_name: str) -> dict:
+    card_name = normalize_card_name(card_name)
     now = time.time()
     with _filter_options_lock:
         cached = _filter_options_cache.get(card_name)
         if cached and now - cached[0] < _FILTER_OPTIONS_TTL_SECONDS:
             return cached[1]
 
+    variants = card_variants(card_name)
+    placeholders = ",".join(["?"] * len(variants))
     sql = f"""
     WITH base AS (
         SELECT
@@ -37,7 +41,7 @@ def _get_card_filter_options(db, card_name: str) -> dict:
           ON g.TableId = gc.TableId
         JOIN read_parquet('{parquet_path("gamestats")}') gs
           ON gs.TableId = gc.TableId
-        WHERE gc.Card = ? AND gc.PlayedGen IS NOT NULL
+        WHERE gc.Card IN ({placeholders}) AND gc.PlayedGen IS NOT NULL
     )
     SELECT
         (SELECT list(DISTINCT Map ORDER BY Map) FROM base WHERE Map IS NOT NULL) AS maps,
@@ -49,7 +53,7 @@ def _get_card_filter_options(db, card_name: str) -> dict:
         (SELECT min(PlayedGen) FROM base) AS gen_min,
         (SELECT max(PlayedGen) FROM base) AS gen_max
     """
-    row = db.execute(sql, [card_name]).fetchone()
+    row = db.execute(sql, variants).fetchone()
     options = {
         "maps": list(row[0] or []),
         "gameModes": list(row[1] or []),
@@ -113,6 +117,7 @@ def _parse_int(s):
 
 
 def _card_filtered_cte(card_name: str, qp) -> Tuple[str, list]:
+    card_name = normalize_card_name(card_name)
     """Build a `WITH filtered AS (...)` CTE applying all query-param filters.
 
     Returns (sql_cte, params). The CTE always includes `gc.PlayedGen IS NOT NULL`
@@ -131,8 +136,10 @@ def _card_filtered_cte(card_name: str, qp) -> Tuple[str, list]:
     played_gen_max = _parse_int(_first(qp, "playedGenMax"))
     player_name = _first(qp, "playerName")
 
-    where = ["gc.Card = ?", "gc.PlayedGen IS NOT NULL"]
-    params = [card_name]
+    variants = card_variants(card_name)
+    placeholders = ",".join(["?"] * len(variants))
+    where = [f"gc.Card IN ({placeholders})", "gc.PlayedGen IS NOT NULL"]
+    params = list(variants)
 
     def _in_clause(col, values):
         where.append(f"{col} IN ({','.join(['?'] * len(values))})")
@@ -371,6 +378,9 @@ def get_card_games(card_name: str, request: Request):
 
 @router.get("/{card_name}/playerstats")
 def get_card_player_stats(card_name: str, request: Request):
+    card_name = normalize_card_name(card_name)
+    variants = card_variants(card_name)
+    placeholders = ",".join(["?"] * len(variants))
     sql = f"""
     SELECT
         gc.TableId       AS TableId,
@@ -402,17 +412,17 @@ def get_card_player_stats(card_name: str, request: Request):
       ON g.TableId = gc.TableId
     JOIN read_parquet('{parquet_path("gamestats")}') gs
       ON gs.TableId = gc.TableId
-    WHERE gc.Card = ?
+    WHERE gc.Card IN ({placeholders})
       AND gc.PlayedGen IS NOT NULL
     """
-    arrow_table = request.app.state.db.cursor().execute(sql, [card_name]).fetch_arrow_table()
+    arrow_table = request.app.state.db.cursor().execute(sql, variants).fetch_arrow_table()
     return JSONResponse(content=arrow_table.to_pylist())
 
 
 def _card_stats_sql(gen_column: str) -> str:
     return f"""
     SELECT
-        gc.Card                                                              AS card,
+        {normalized_card_expr("gc.Card")}                                    AS card,
         count(*)                                                             AS timesPlayed,
         round(avg(CASE WHEN gp.Position = 1 THEN 1.0 ELSE 0.0 END), 3)       AS winRate,
         round(avg(CAST(gp.Elo AS DOUBLE)), 2)                                AS avgElo,
@@ -421,7 +431,7 @@ def _card_stats_sql(gen_column: str) -> str:
     JOIN read_parquet('{parquet_path("gameplayers_canonical")}') gp
       ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
     WHERE gc.{gen_column} IS NOT NULL
-    GROUP BY gc.Card
+    GROUP BY {normalized_card_expr("gc.Card")}
     """
 
 

@@ -6,6 +6,7 @@ import { StartingHandStatsRow, StartingHandOverviewRow, StartingHandOverviewFilt
 import { Button } from '@/components/ui/button';
 import { getStartingHandStatsCached, clearStartingHandStatsCache } from '@/lib/startingHandCache';
 import { getCardImage, getCardPlaceholderImage, cardNameToSlug } from '@/lib/card';
+import { getTier, TIER_ORDER } from '@/lib/startingHandTier';
 
 type SortField = keyof StartingHandOverviewRow;
 type SortDirection = 'asc' | 'desc' | null;
@@ -19,9 +20,17 @@ export function StartingHandOverviewPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [viewMode, setViewMode] = useCookieState<'table' | 'tier'>('tm_startinghand_view_v1', 'table');
 
   // Hover preview tooltip state
-  const [hoveredCard, setHoveredCard] = useState<{ slug: string; imageSrc: string; name: string } | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<{
+    slug: string;
+    imageSrc: string;
+    name: string;
+    avgEloChangeKept: number | null;
+    keepRate: number | null;
+    offeredGames: number;
+  } | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const desiredMidYRef = useRef(0);
@@ -132,24 +141,24 @@ export function StartingHandOverviewPage() {
     };
   }, [hoveredCard, updateTooltipPosition]);
 
-  // Apply filters and sort data
-  const sortedData = useMemo(() => {
-    let filteredOverview = cardOverview;
-
+  // Apply filters
+  const filteredCards = useMemo(() => {
+    let filtered = cardOverview;
     if (filters.offeredGamesMin) {
-      filteredOverview = filteredOverview.filter(card => card.offeredGames >= filters.offeredGamesMin!);
+      filtered = filtered.filter(card => card.offeredGames >= filters.offeredGamesMin!);
     }
-
     if (filters.searchTerm) {
       const searchLower = filters.searchTerm.toLowerCase();
-      filteredOverview = filteredOverview.filter(card =>
-        card.name.toLowerCase().includes(searchLower)
-      );
+      filtered = filtered.filter(card => card.name.toLowerCase().includes(searchLower));
     }
+    return filtered;
+  }, [cardOverview, filters]);
 
-    if (!sortField || !sortDirection) return filteredOverview;
+  // Sort filtered data for the table view
+  const sortedData = useMemo(() => {
+    if (!sortField || !sortDirection) return filteredCards;
 
-    return [...filteredOverview].sort((a, b) => {
+    return [...filteredCards].sort((a, b) => {
       const aVal = a[sortField];
       const bVal = b[sortField];
 
@@ -167,7 +176,22 @@ export function StartingHandOverviewPage() {
       if (aStr > bStr) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [cardOverview, sortField, sortDirection, filters]);
+  }, [filteredCards, sortField, sortDirection]);
+
+  // Group cards by tier for the tier list view
+  const tierGroups = useMemo(() => {
+    const groups = new Map<string, StartingHandOverviewRow[]>();
+    for (const t of TIER_ORDER) groups.set(t.label, []);
+    groups.set('?', []);
+    for (const card of filteredCards) {
+      const t = getTier(card.avgEloChangeKept);
+      groups.get(t.label)!.push(card);
+    }
+    for (const [, arr] of groups) {
+      arr.sort((a, b) => (b.avgEloChangeKept ?? -Infinity) - (a.avgEloChangeKept ?? -Infinity));
+    }
+    return groups;
+  }, [filteredCards]);
 
   // Paginate the sorted data
   const paginatedData = useMemo(() => {
@@ -349,8 +373,28 @@ export function StartingHandOverviewPage() {
             </div>
           </div>
 
-          {/* Table area */}
-          <div className="lg:col-span-3">
+          {/* Table / tier-list area */}
+          <div className="lg:col-span-3 space-y-6">
+            {!loading && (
+              <div className="flex items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg w-fit mx-auto">
+                <Button
+                  variant={viewMode === 'table' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('table')}
+                  className="px-4 py-2"
+                >
+                  Table View
+                </Button>
+                <Button
+                  variant={viewMode === 'tier' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('tier')}
+                  className="px-4 py-2"
+                >
+                  Tier List
+                </Button>
+              </div>
+            )}
             {loading ? (
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
                 <div className="h-6 w-48 bg-slate-300 dark:bg-slate-600 rounded animate-pulse mb-4"></div>
@@ -360,7 +404,7 @@ export function StartingHandOverviewPage() {
                   ))}
                 </div>
               </div>
-            ) : (
+            ) : viewMode === 'table' ? (
               <div className="bg-white/90 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl border border-zinc-200 dark:border-slate-700 shadow-sm overflow-visible">
                 <div className="p-6 border-b border-zinc-200 dark:border-slate-700">
                   <div className="flex items-center justify-between">
@@ -447,7 +491,12 @@ export function StartingHandOverviewPage() {
                                   const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
                                   desiredMidYRef.current = rect.top + rect.height / 2;
                                   triggerRectRef.current = rect;
-                                  setHoveredCard({ slug: row.card, imageSrc, name: row.name });
+                                  setHoveredCard({
+                                    slug: row.card, imageSrc, name: row.name,
+                                    avgEloChangeKept: row.avgEloChangeKept,
+                                    keepRate: row.keepRate,
+                                    offeredGames: row.offeredGames,
+                                  });
                                   setTooltipPos({ left: rect.right + 16, top: desiredMidYRef.current });
                                 }}
                                 onMouseLeave={() => setHoveredCard(null)}
@@ -487,32 +536,6 @@ export function StartingHandOverviewPage() {
                     </tbody>
                   </table>
                 </div>
-
-                {/* Hover image tooltip */}
-                {hoveredCard && createPortal(
-                  <div
-                    ref={tooltipRef}
-                    className="fixed z-50 pointer-events-none"
-                    style={{ top: tooltipPos.top, left: tooltipPos.left, maxWidth: 'calc(100vw - 32px)' }}
-                  >
-                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-2">
-                      <img
-                        src={hoveredCard.imageSrc}
-                        alt={hoveredCard.name}
-                        className="rounded max-w-full max-h-[80vh] h-auto w-auto"
-                        onLoad={updateTooltipPosition}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = getCardPlaceholderImage();
-                        }}
-                      />
-                      <div className="text-center mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {hoveredCard.name}
-                      </div>
-                    </div>
-                  </div>,
-                  document.body
-                )}
 
                 {/* Pagination controls */}
                 {totalPages > 1 && (
@@ -588,10 +611,151 @@ export function StartingHandOverviewPage() {
                   </div>
                 )}
               </div>
+            ) : (
+              <div className="bg-white/90 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl border border-zinc-200 dark:border-slate-700 shadow-sm overflow-visible">
+                <div className="p-6 border-b border-zinc-200 dark:border-slate-700">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    Tier List
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                    {filteredCards.length.toLocaleString()} cards grouped by Avg Elo Gain when kept
+                  </p>
+                </div>
+                <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                  {[...TIER_ORDER, { label: '?', color: 'text-slate-500', bg: 'bg-slate-100 dark:bg-slate-700', border: 'border-slate-300 dark:border-slate-600' }].map(tier => {
+                    const cardsInTier = tierGroups.get(tier.label) ?? [];
+                    if (cardsInTier.length === 0) return null;
+                    return (
+                      <div key={tier.label} className="flex items-stretch">
+                        <div className={`flex items-center justify-center w-20 flex-shrink-0 border-r-2 ${tier.border} ${tier.bg}`}>
+                          <span className={`text-2xl md:text-3xl font-black tracking-tight ${tier.color}`}>
+                            {tier.label}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-3 p-3 flex-1">
+                          {cardsInTier.map(card => {
+                            const imageSrc = getCardImage(card.name) || getCardPlaceholderImage();
+                            return (
+                              <button
+                                key={card.card}
+                                onClick={() => handleRowClick(card.name)}
+                                onMouseEnter={(e) => {
+                                  const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                                  desiredMidYRef.current = rect.top + rect.height / 2;
+                                  triggerRectRef.current = rect;
+                                  setHoveredCard({
+                                    slug: card.card, imageSrc, name: card.name,
+                                    avgEloChangeKept: card.avgEloChangeKept,
+                                    keepRate: card.keepRate,
+                                    offeredGames: card.offeredGames,
+                                  });
+                                  setTooltipPos({ left: rect.right + 16, top: desiredMidYRef.current });
+                                }}
+                                onMouseLeave={() => setHoveredCard(null)}
+                                className="flex flex-col items-center w-20 group cursor-pointer"
+                                aria-label={`${card.name} — ${card.avgEloChangeKept != null ? card.avgEloChangeKept.toFixed(2) : 'N/A'} avg elo kept`}
+                              >
+                                <img
+                                  src={imageSrc}
+                                  alt={card.name}
+                                  className="w-16 h-auto rounded ring-1 ring-slate-200 dark:ring-slate-600 group-hover:ring-2 group-hover:ring-amber-400 transition"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = getCardPlaceholderImage();
+                                  }}
+                                />
+                                <span className="mt-1 text-[11px] leading-tight text-center text-slate-700 dark:text-slate-300 line-clamp-2 w-full">
+                                  {card.name}
+                                </span>
+                                {card.avgEloChangeKept != null && (
+                                  <span className={`text-[10px] font-medium ${
+                                    card.avgEloChangeKept > 0
+                                      ? 'text-green-600 dark:text-green-400'
+                                      : card.avgEloChangeKept < 0
+                                        ? 'text-red-600 dark:text-red-400'
+                                        : 'text-slate-500'
+                                  }`}>
+                                    {card.avgEloChangeKept > 0 ? '+' : ''}{card.avgEloChangeKept.toFixed(2)}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
         </div>
       </div>
+
+      {hoveredCard && createPortal(
+        <div
+          ref={tooltipRef}
+          className="fixed z-50 pointer-events-none"
+          style={{ top: tooltipPos.top, left: tooltipPos.left, maxWidth: 'calc(100vw - 32px)' }}
+        >
+          <div className="w-72 rounded-2xl overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.25)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)] ring-1 ring-black/10 dark:ring-white/10">
+            <div className="relative bg-slate-900">
+              <img
+                src={hoveredCard.imageSrc}
+                alt={hoveredCard.name}
+                className="w-full h-auto block"
+                onLoad={updateTooltipPosition}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = getCardPlaceholderImage();
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+              <div className="absolute top-2.5 left-2.5">
+                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm bg-sky-500/20 text-sky-200 ring-1 ring-sky-400/30">
+                  Project Card
+                </span>
+              </div>
+              <div className="absolute bottom-0 inset-x-0 px-3.5 pb-3 pt-8">
+                <div className="text-white text-base font-bold leading-tight drop-shadow-md">{hoveredCard.name}</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 divide-x bg-sky-50 dark:bg-sky-950/40 divide-sky-200/50 dark:divide-sky-800/30">
+              {[
+                {
+                  label: 'Avg Elo (Kept)',
+                  value: hoveredCard.avgEloChangeKept != null
+                    ? `${hoveredCard.avgEloChangeKept > 0 ? '+' : ''}${hoveredCard.avgEloChangeKept.toFixed(2)}`
+                    : 'N/A',
+                  color: hoveredCard.avgEloChangeKept != null && hoveredCard.avgEloChangeKept > 0
+                    ? 'text-green-600 dark:text-green-400'
+                    : hoveredCard.avgEloChangeKept != null && hoveredCard.avgEloChangeKept < 0
+                      ? 'text-red-500 dark:text-red-400'
+                      : 'text-slate-400',
+                },
+                {
+                  label: 'Keep Rate',
+                  value: hoveredCard.keepRate != null
+                    ? `${(hoveredCard.keepRate * 100).toFixed(1)}%`
+                    : 'N/A',
+                  color: 'text-slate-800 dark:text-slate-100',
+                },
+                {
+                  label: 'Offered',
+                  value: hoveredCard.offeredGames.toLocaleString(),
+                  color: 'text-slate-800 dark:text-slate-100',
+                },
+              ].map(stat => (
+                <div key={stat.label} className="py-2.5 px-2 text-center">
+                  <div className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold mb-0.5">{stat.label}</div>
+                  <div className={`text-sm font-bold ${stat.color}`}>{stat.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

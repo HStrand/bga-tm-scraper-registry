@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { StartingHandStatsRow } from '@/types/startinghand';
 import { getStartingHandStatsCached } from '@/lib/startingHandCache';
 import { getCardImage, getCardPlaceholderImage, slugToCardName } from '@/lib/card';
+import { getTier } from '@/lib/startingHandTier';
 import { BackButton } from '@/components/BackButton';
 
 export function StartingHandStatsPage() {
@@ -71,19 +72,6 @@ export function StartingHandStatsPage() {
   }, []);
 
   const imageSrc = cardName ? (getCardImage(cardName) || getCardPlaceholderImage()) : getCardPlaceholderImage();
-
-  const getTier = (eloChange: number | null): { label: string; color: string; bg: string; border: string } => {
-    if (eloChange == null) return { label: '?', color: 'text-slate-500', bg: 'bg-slate-100 dark:bg-slate-700', border: 'border-slate-300 dark:border-slate-600' };
-    if (eloChange > 1.75) return { label: 'S+', color: 'text-yellow-600 dark:text-yellow-300', bg: 'bg-yellow-50 dark:bg-yellow-900/30', border: 'border-yellow-400 dark:border-yellow-600' };
-    if (eloChange > 1.25) return { label: 'S', color: 'text-amber-600 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-400 dark:border-amber-600' };
-    if (eloChange > 0.75) return { label: 'A', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/30', border: 'border-green-400 dark:border-green-600' };
-    if (eloChange > 0.25) return { label: 'B', color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-900/30', border: 'border-teal-400 dark:border-teal-600' };
-    if (eloChange >= -0.25) return { label: 'C', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/30', border: 'border-blue-400 dark:border-blue-600' };
-    if (eloChange >= -0.75) return { label: 'D', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/30', border: 'border-orange-400 dark:border-orange-600' };
-    if (eloChange >= -1.25) return { label: 'E', color: 'text-red-500 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/30', border: 'border-red-400 dark:border-red-600' };
-    if (eloChange >= -1.75) return { label: 'F', color: 'text-red-700 dark:text-red-500', bg: 'bg-red-100 dark:bg-red-900/40', border: 'border-red-500 dark:border-red-700' };
-    return { label: 'F-', color: 'text-red-900 dark:text-red-400', bg: 'bg-red-200 dark:bg-red-900/50', border: 'border-red-700 dark:border-red-800' };
-  };
 
   const tier = useMemo(() => {
     return cardData ? getTier(cardData.avgEloChangeKept) : getTier(null);
