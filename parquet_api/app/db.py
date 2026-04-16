@@ -8,6 +8,9 @@ DATA_DIR = os.environ.get(
 
 
 def open_connection() -> duckdb.DuckDBPyConnection:
+    # Handlers must call .cursor() on app.state.db before executing — query state lives
+    # on the connection, so sharing it across FastAPI's thread pool races and returns
+    # empty/wrong results. One cursor per request (or per query) is isolation enough.
     return duckdb.connect(database=":memory:", read_only=False)
 
 

@@ -107,7 +107,7 @@ def _award_rows_sql() -> str:
 
 @router.get("/rows")
 def get_all_award_rows(request: Request):
-    arrow_table = request.app.state.db.execute(_award_rows_sql()).fetch_arrow_table()
+    arrow_table = request.app.state.db.cursor().execute(_award_rows_sql()).fetch_arrow_table()
     return JSONResponse(content=arrow_table.to_pylist())
 
 
@@ -218,13 +218,13 @@ def get_awards_overview(request: Request):
     {having_sql}
     """
 
-    arrow_table = request.app.state.db.execute(sql, params).fetch_arrow_table()
+    arrow_table = request.app.state.db.cursor().execute(sql, params).fetch_arrow_table()
     return JSONResponse(content=arrow_table.to_pylist())
 
 
 @router.get("/filter-options")
 def get_awards_filter_options(request: Request):
-    db = request.app.state.db
+    db = request.app.state.db.cursor()
 
     gen_row = db.execute(
         f"""

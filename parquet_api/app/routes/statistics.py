@@ -8,7 +8,7 @@ router = APIRouter(prefix="/api/statistics", tags=["statistics"])
 
 @router.get("/global")
 def get_global_statistics(request: Request):
-    db = request.app.state.db
+    db = request.app.state.db.cursor()
 
     total_indexed_games = db.execute(
         f"SELECT count(*) FROM read_parquet('{parquet_path('games')}')"

@@ -49,7 +49,7 @@ def _base_select() -> str:
 @router.get("/playerstats")
 def get_all_corporation_player_stats(request: Request):
     sql = f"{_base_select()} ORDER BY gs.TableId DESC"
-    arrow_table = request.app.state.db.execute(sql).fetch_arrow_table()
+    arrow_table = request.app.state.db.cursor().execute(sql).fetch_arrow_table()
     return JSONResponse(content=arrow_table.to_pylist())
 
 
@@ -184,5 +184,5 @@ def get_corporation_rankings(request: Request):
     ORDER BY winRate DESC, gamesPlayed DESC
     """
 
-    arrow_table = request.app.state.db.execute(sql, params).fetch_arrow_table()
+    arrow_table = request.app.state.db.cursor().execute(sql, params).fetch_arrow_table()
     return JSONResponse(content=arrow_table.to_pylist())

@@ -196,7 +196,7 @@ def _card_filtered_cte(card_name: str, qp) -> Tuple[str, list]:
 @router.get("/{card_name}/summary")
 def get_card_summary(card_name: str, request: Request):
     qp = request.query_params
-    db = request.app.state.db
+    db = request.app.state.db.cursor()
 
     cte, params = _card_filtered_cte(card_name, qp)
 
@@ -327,7 +327,7 @@ _ALLOWED_SORT_FIELDS = {
 @router.get("/{card_name}/games")
 def get_card_games(card_name: str, request: Request):
     qp = request.query_params
-    db = request.app.state.db
+    db = request.app.state.db.cursor()
 
     page = max(1, _parse_int(_first(qp, "page")) or 1)
     page_size = max(1, min(500, _parse_int(_first(qp, "pageSize")) or 50))
@@ -405,7 +405,7 @@ def get_card_player_stats(card_name: str, request: Request):
     WHERE gc.Card = ?
       AND gc.PlayedGen IS NOT NULL
     """
-    arrow_table = request.app.state.db.execute(sql, [card_name]).fetch_arrow_table()
+    arrow_table = request.app.state.db.cursor().execute(sql, [card_name]).fetch_arrow_table()
     return JSONResponse(content=arrow_table.to_pylist())
 
 
@@ -427,11 +427,11 @@ def _card_stats_sql(gen_column: str) -> str:
 
 @router.get("/stats")
 def get_all_card_stats(request: Request):
-    arrow_table = request.app.state.db.execute(_card_stats_sql("PlayedGen")).fetch_arrow_table()
+    arrow_table = request.app.state.db.cursor().execute(_card_stats_sql("PlayedGen")).fetch_arrow_table()
     return JSONResponse(content=arrow_table.to_pylist())
 
 
 @router.get("/option-stats")
 def get_all_card_option_stats(request: Request):
-    arrow_table = request.app.state.db.execute(_card_stats_sql("DrawnGen")).fetch_arrow_table()
+    arrow_table = request.app.state.db.cursor().execute(_card_stats_sql("DrawnGen")).fetch_arrow_table()
     return JSONResponse(content=arrow_table.to_pylist())

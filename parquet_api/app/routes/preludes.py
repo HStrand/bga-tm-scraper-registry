@@ -192,13 +192,13 @@ def get_prelude_rankings(request: Request):
     ORDER BY winRate DESC, gamesPlayed DESC
     """
 
-    arrow_table = request.app.state.db.execute(sql, params).fetch_arrow_table()
+    arrow_table = request.app.state.db.cursor().execute(sql, params).fetch_arrow_table()
     return JSONResponse(content=arrow_table.to_pylist())
 
 
 @router.get("/filter-options")
 def get_prelude_filter_options(request: Request):
-    db = request.app.state.db
+    db = request.app.state.db.cursor()
 
     rows_sql = f"WITH base AS ({_base_prelude_rows_sql()})"
 
