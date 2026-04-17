@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Trophy, Leaf, TrendingUp, Flag, Award } from 'lucide-react';
+import { Trophy, Leaf, TrendingUp, Flag, Award, Gamepad2, Medal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FiltersPanel } from '@/components/FiltersPanel';
 import { useCookieState } from '@/hooks/useCookieState';
@@ -10,6 +10,8 @@ import type {
   PlayerParameterStats,
   PlayerMilestoneStats,
   PlayerAwardStats,
+  PlayerMostGamesStats,
+  PlayerHighestEloStats,
   MilestoneType,
   AwardType
 } from '@/types/leaderboard';
@@ -19,26 +21,22 @@ import {
   getPlayerParameterStats,
   getPlayerMilestoneStats,
   getPlayerAwardStats,
+  getPlayerMostGames,
+  getPlayerHighestElo,
   getTopGreeneries,
   getTopParameters,
   getTopMilestones,
-  getTopAwards
+  getTopAwards,
+  getTopMostGames,
+  getTopHighestElo
 } from '@/lib/leaderboard';
 import { getHighScores, getLeaderboardScoreOptions, type ScoreFilterOptions } from '@/lib/scores';
-
-// Import images
-import vpImage from '/assets/vp.png';
-import greeneryImage from '/assets/greenery.png';
-import trImage from '/assets/tr.png';
-import milestonesImage from '/assets/milestones/milestones.png';
-import awardsImage from '/assets/awards/awards.png';
 
 interface ViewConfig {
   id: LeaderboardView;
   title: string;
   description: string;
   icon: React.ElementType;
-  image: string;
 }
 
 const viewConfigs: ViewConfig[] = [
@@ -47,35 +45,42 @@ const viewConfigs: ViewConfig[] = [
     title: 'High Scores',
     description: 'Highest scoring games',
     icon: Trophy,
-    image: vpImage
   },
   {
     id: 'greeneries',
     title: 'Greeneries',
     description: 'Most greeneries placed',
     icon: Leaf,
-    image: greeneryImage
   },
   {
     id: 'parameters',
     title: 'Global Parameters',
     description: 'Most parameter increases',
     icon: TrendingUp,
-    image: trImage
   },
   {
     id: 'milestones',
     title: 'Milestones',
     description: 'Top milestone claim rates',
     icon: Flag,
-    image: milestonesImage
   },
   {
     id: 'awards',
     title: 'Awards',
     description: 'Top award win rates',
     icon: Award,
-    image: awardsImage
+  },
+  {
+    id: 'mostGames',
+    title: 'Most Games',
+    description: 'Most games in the database',
+    icon: Gamepad2,
+  },
+  {
+    id: 'highestElo',
+    title: 'Highest Elo',
+    description: 'Highest Elo rating achieved',
+    icon: Medal,
   }
 ];
 
@@ -123,6 +128,8 @@ export function LeaderboardsPage() {
   const [parameterStats, setParameterStats] = useState<PlayerParameterStats[]>([]);
   const [milestoneStats, setMilestoneStats] = useState<PlayerMilestoneStats[]>([]);
   const [awardStats, setAwardStats] = useState<PlayerAwardStats[]>([]);
+  const [mostGamesStats, setMostGamesStats] = useState<PlayerMostGamesStats[]>([]);
+  const [highestEloStats, setHighestEloStats] = useState<PlayerHighestEloStats[]>([]);
   const [scoreOptions, setScoreOptions] = useState<ScoreFilterOptions | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -202,6 +209,18 @@ export function LeaderboardsPage() {
               setAwardStats(stats);
             }
             break;
+          case 'mostGames':
+            if (mostGamesStats.length === 0) {
+              const stats = await getPlayerMostGames();
+              setMostGamesStats(stats);
+            }
+            break;
+          case 'highestElo':
+            if (highestEloStats.length === 0) {
+              const stats = await getPlayerHighestElo();
+              setHighestEloStats(stats);
+            }
+            break;
         }
       } catch (err) {
         console.error('Error loading leaderboard data:', err);
@@ -212,7 +231,7 @@ export function LeaderboardsPage() {
     };
 
     loadData();
-  }, [currentView, scoreOptions, greeneryStats.length, parameterStats.length, milestoneStats.length, awardStats.length]);
+  }, [currentView, scoreOptions, greeneryStats.length, parameterStats.length, milestoneStats.length, awardStats.length, mostGamesStats.length, highestEloStats.length]);
 
   // Get available options for filters
   const availablePlayerCounts = useMemo(() => {
@@ -286,10 +305,14 @@ export function LeaderboardsPage() {
         return getTopMilestones(milestoneStats, selectedMilestone); // Top 25 (default)
       case 'awards':
         return getTopAwards(awardStats, selectedAward); // Top 25 (default)
+      case 'mostGames':
+        return getTopMostGames(mostGamesStats); // Top 25 (default)
+      case 'highestElo':
+        return getTopHighestElo(highestEloStats); // Top 25 (default)
       default:
         return [];
     }
-  }, [currentView, playerScores, greeneryStats, parameterStats, milestoneStats, awardStats, selectedMilestone, selectedAward, greenerySortBy]);
+  }, [currentView, playerScores, greeneryStats, parameterStats, milestoneStats, awardStats, mostGamesStats, highestEloStats, selectedMilestone, selectedAward, greenerySortBy]);
 
   const handleFiltersChange = useCallback((newFilters: CorporationFilters) => {
     setFilters(newFilters);
@@ -411,6 +434,16 @@ export function LeaderboardsPage() {
                     </th>
                   </>
                 )}
+                {currentView === 'mostGames' && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Games
+                  </th>
+                )}
+                {currentView === 'highestElo' && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Highest Elo
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
@@ -522,6 +555,16 @@ export function LeaderboardsPage() {
                       </td>
                     </>
                   )}
+                  {currentView === 'mostGames' && (
+                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                      {(item as PlayerMostGamesStats).gameCount}
+                    </td>
+                  )}
+                  {currentView === 'highestElo' && (
+                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                      {(item as PlayerHighestEloStats).highestElo}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -540,7 +583,7 @@ export function LeaderboardsPage() {
             Leaderboards
           </h1>
           <p className="text-slate-600 dark:text-slate-400">
-            Explore top performers across different game statistics
+            Explore all-time records in different categories
           </p>
         </div>
 
@@ -555,24 +598,19 @@ export function LeaderboardsPage() {
                 key={config.id}
                 onClick={() => setCurrentView(config.id)}
                 className={`
-                  relative p-4 rounded-lg border-2 transition-all text-left
-                  ${isActive 
-                    ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/25' 
+                  relative p-3 rounded-lg border-2 transition-all text-left
+                  ${isActive
+                    ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/25'
                     : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600'
                   }
                 `}
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <img
-                    src={config.image}
-                    alt={config.title}
-                    className="w-8 h-8 rounded object-cover"
-                  />
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500'}`} />
+                <div className="flex items-center gap-2 mb-1">
+                  <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500'}`} />
+                  <h3 className={`font-semibold ${isActive ? 'text-amber-900 dark:text-amber-100' : 'text-slate-900 dark:text-slate-100'}`}>
+                    {config.title}
+                  </h3>
                 </div>
-                <h3 className={`font-semibold mb-1 ${isActive ? 'text-amber-900 dark:text-amber-100' : 'text-slate-900 dark:text-slate-100'}`}>
-                  {config.title}
-                </h3>
                 <p className={`text-sm ${isActive ? 'text-amber-700 dark:text-amber-300' : 'text-slate-600 dark:text-slate-400'}`}>
                   {config.description}
                 </p>

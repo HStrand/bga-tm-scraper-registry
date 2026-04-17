@@ -275,6 +275,56 @@ def get_player_parameter_stats(request: Request):
     return JSONResponse(content=arrow.to_pylist())
 
 
+@router.get("/GetPlayerHighestElo")
+def get_player_highest_elo(request: Request):
+    sql = f"""
+    WITH agg AS (
+        SELECT PlayerId,
+               max(Elo) AS HighestElo
+        FROM read_parquet('{parquet_path("gameplayers")}')
+        WHERE Elo IS NOT NULL AND Elo > 0
+        GROUP BY PlayerId
+    )
+    SELECT
+        CAST(a.PlayerId AS BIGINT)      AS playerId,
+        p.Name                          AS playerName,
+        CAST(a.HighestElo AS BIGINT)    AS highestElo
+    FROM agg a
+    JOIN read_parquet('{parquet_path("players")}') p
+      ON p.PlayerId = a.PlayerId
+    WHERE p.Name IS NOT NULL
+    ORDER BY a.HighestElo DESC
+    LIMIT 25
+    """
+    arrow = request.app.state.db.cursor().execute(sql).fetch_arrow_table()
+    return JSONResponse(content=arrow.to_pylist())
+
+
+@router.get("/GetPlayerMostGames")
+def get_player_most_games(request: Request):
+    sql = f"""
+    WITH agg AS (
+        SELECT PlayerPerspective AS PlayerId,
+               CAST(count(*) AS BIGINT) AS GameCount
+        FROM read_parquet('{parquet_path("games")}')
+        WHERE PlayerPerspective IS NOT NULL
+        GROUP BY PlayerPerspective
+    )
+    SELECT
+        CAST(a.PlayerId AS BIGINT) AS playerId,
+        p.Name                     AS playerName,
+        a.GameCount                AS gameCount
+    FROM agg a
+    JOIN read_parquet('{parquet_path("players")}') p
+      ON p.PlayerId = a.PlayerId
+    WHERE p.Name IS NOT NULL
+    ORDER BY a.GameCount DESC
+    LIMIT 25
+    """
+    arrow = request.app.state.db.cursor().execute(sql).fetch_arrow_table()
+    return JSONResponse(content=arrow.to_pylist())
+
+
 @router.get("/GetPlayerAwardStats")
 def get_player_award_stats(request: Request):
     sql = f"""

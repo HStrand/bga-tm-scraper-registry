@@ -72,8 +72,22 @@ export interface PlayerAwardStats {
   totalAwardRate: number;
 }
 
+// Player Most Games types
+export interface PlayerMostGamesStats {
+  playerId: number;
+  playerName: string;
+  gameCount: number;
+}
+
+// Player Highest Elo types
+export interface PlayerHighestEloStats {
+  playerId: number;
+  playerName: string;
+  highestElo: number;
+}
+
 // Leaderboard view types
-export type LeaderboardView = 'scores' | 'greeneries' | 'parameters' | 'milestones' | 'awards';
+export type LeaderboardView = 'scores' | 'greeneries' | 'parameters' | 'milestones' | 'awards' | 'mostGames' | 'highestElo';
 
 export type MilestoneType = 'terraformer' | 'gardener' | 'builder' | 'mayor' | 'planner' | 'total';
 export type AwardType = 'thermalist' | 'banker' | 'scientist' | 'miner' | 'landlord' | 'total';

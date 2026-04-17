@@ -4,7 +4,9 @@ import type {
   PlayerGreeneryStats,
   PlayerParameterStats,
   PlayerMilestoneStats,
-  PlayerAwardStats
+  PlayerAwardStats,
+  PlayerMostGamesStats,
+  PlayerHighestEloStats
 } from '@/types/leaderboard';
 
 // API functions for leaderboard data
@@ -31,6 +33,28 @@ export async function getPlayerMilestoneStats(): Promise<PlayerMilestoneStats[]>
 export async function getPlayerAwardStats(): Promise<PlayerAwardStats[]> {
   const response = await api.get('/api/GetPlayerAwardStats');
   return response.data;
+}
+
+export async function getPlayerMostGames(): Promise<PlayerMostGamesStats[]> {
+  const response = await api.get('/api/GetPlayerMostGames');
+  return response.data;
+}
+
+export function getTopMostGames(stats: PlayerMostGamesStats[], limit: number = 25): PlayerMostGamesStats[] {
+  return [...stats]
+    .sort((a, b) => b.gameCount - a.gameCount)
+    .slice(0, limit);
+}
+
+export async function getPlayerHighestElo(): Promise<PlayerHighestEloStats[]> {
+  const response = await api.get('/api/GetPlayerHighestElo');
+  return response.data;
+}
+
+export function getTopHighestElo(stats: PlayerHighestEloStats[], limit: number = 25): PlayerHighestEloStats[] {
+  return [...stats]
+    .sort((a, b) => b.highestElo - a.highestElo)
+    .slice(0, limit);
 }
 
 // Helper functions for data processing
