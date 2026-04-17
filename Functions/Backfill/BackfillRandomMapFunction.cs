@@ -15,6 +15,7 @@ namespace BgaTmScraperRegistry
 {
     public static class BackfillRandomMapFunction
     {
+
         [FunctionName("BackfillRandomMap")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "backfill-random-map")] HttpRequest req,
@@ -165,18 +166,19 @@ namespace BgaTmScraperRegistry
                             continue;
                         }
 
-                        // Extract map field
-                        if (string.IsNullOrWhiteSpace(gameLogData.Map))
+                        var rawMap = GameLogMapResolver.ResolveMap(gameLogData, log);
+                        if (string.IsNullOrWhiteSpace(rawMap) ||
+                            string.Equals(rawMap, "Random", StringComparison.OrdinalIgnoreCase))
                         {
                             missingMapField++;
-                            log.LogWarning($"Map field is null or empty in game log for TableId={item.TableId}, PlayerId={item.PlayerId}");
+                            log.LogWarning($"Could not determine map for TableId={item.TableId}, PlayerId={item.PlayerId}");
                             failures.Add(new { item.TableId, item.PlayerId, reason = "map_field_missing" });
                             if (stopOnError) break;
                             continue;
                         }
 
                         // Normalize the map name to English
-                        var normalizedMap = MapNameNormalizer.NormalizeMapName(gameLogData.Map, log);
+                        var normalizedMap = MapNameNormalizer.NormalizeMapName(rawMap, log);
 
                         // Update the database
                         try
@@ -185,7 +187,7 @@ namespace BgaTmScraperRegistry
                             if (success)
                             {
                                 updated++;
-                                log.LogInformation($"Updated map to '{gameLogData.Map}' for TableId={item.TableId}, PlayerId={item.PlayerId}");
+                                log.LogInformation($"Updated map to '{normalizedMap}' for TableId={item.TableId}, PlayerId={item.PlayerId}");
                             }
                             else
                             {

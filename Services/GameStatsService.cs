@@ -38,6 +38,7 @@ namespace BgaTmScraperRegistry.Services
             var gameCards = parser.ParseGameCards(gameLogData);
             var cityLocations = parser.ParseGameCityLocations(gameLogData);
             var greeneryLocations = parser.ParseGameGreeneryLocations(gameLogData);
+            var resolvedMap = GameLogMapResolver.ResolveMap(gameLogData, _logger);
 
             _logger.LogInformation($"Upserting GameStats for TableId {gameStats.TableId}: Generations={gameStats.Generations}, DurationMinutes={gameStats.DurationMinutes}");
 
@@ -47,7 +48,7 @@ namespace BgaTmScraperRegistry.Services
             using var transaction = connection.BeginTransaction();
             try
             {
-				await UpdateGameMapIfRandomAsync(connection, transaction, gameStats.TableId, gameLogData.Map);
+				await UpdateGameMapIfRandomAsync(connection, transaction, gameStats.TableId, resolvedMap);
 				await UpsertGameStatsAsync(connection, transaction, gameStats);
                 await UpsertGamePlayerStatsAsync(connection, transaction, playerStats);
                 await UpsertStartingHandCorporationsAsync(connection, transaction, startingHandCorporations);

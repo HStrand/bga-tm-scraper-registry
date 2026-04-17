@@ -44,6 +44,8 @@ def get_global_statistics(request: Request):
         SELECT count(*) FROM (
             SELECT DISTINCT TableId, Award
             FROM read_parquet('{parquet_path('gameplayerawards')}')
+            WHERE Award IS NOT NULL AND Award <> ''
+              AND NOT regexp_matches(Award, '^award_\\d+$')
         )
         """
     ).fetchone()[0]

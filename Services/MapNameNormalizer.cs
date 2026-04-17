@@ -13,7 +13,9 @@ namespace BgaTmScraperRegistry.Services
             { "Hellas", "Hellas" },
             { "Elysium", "Elysium" },
             { "Vastitas Borealis", "Vastitas Borealis" },
+            { "Vastitas", "Vastitas Borealis" },
             { "Amazonis Planitia", "Amazonis Planitia" },
+            { "Amazonis", "Amazonis Planitia" },
             
             // Russian
             { "Ваститас Бореалис", "Vastitas Borealis" },

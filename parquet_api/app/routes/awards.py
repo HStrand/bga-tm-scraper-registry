@@ -101,6 +101,7 @@ def _award_rows_sql() -> str:
     JOIN read_parquet('{parquet_path("gamestats")}') gs
       ON gs.TableId = gpa.TableId
     WHERE gpa.Award IS NOT NULL AND gpa.Award <> '' AND gpa.rn = 1
+      AND NOT regexp_matches(gpa.Award, '^award_\d+$')
     ORDER BY gpa.TableId DESC
     """
 
@@ -231,6 +232,7 @@ def get_awards_filter_options(request: Request):
         SELECT min(FundedGen) AS min_gen, max(FundedGen) AS max_gen
         FROM read_parquet('{parquet_path("gameplayerawards")}')
         WHERE Award IS NOT NULL AND Award <> ''
+          AND NOT regexp_matches(Award, '^award_\d+$')
         """
     ).fetchone()
     min_gen = gen_row[0] if gen_row and gen_row[0] is not None else 0
