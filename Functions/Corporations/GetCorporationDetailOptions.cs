@@ -1,48 +1,35 @@
 using System;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using BgaTmScraperRegistry.Services;
 
 namespace BgaTmScraperRegistry.Functions
 {
     public static class GetCorporationDetailOptions
     {
+        private static readonly HttpClient _httpClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(60)
+        };
+
         [FunctionName(nameof(GetCorporationDetailOptions))]
-        public static async System.Threading.Tasks.Task<IActionResult> Run(
+        public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "corporations/{corporation}/options")] HttpRequest req,
             string corporation,
             ILogger log)
         {
-            corporation = corporation?.Replace("_", " ");
-            log.LogInformation("GetCorporationDetailOptions for {corp}", corporation);
-
-            try
+            if (string.IsNullOrWhiteSpace(corporation))
             {
-                var connectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
-                if (string.IsNullOrEmpty(connectionString))
-                {
-                    log.LogError("SqlConnectionString environment variable is not set");
-                    return new StatusCodeResult(500);
-                }
-
-                if (string.IsNullOrWhiteSpace(corporation))
-                {
-                    return new BadRequestObjectResult("Corporation parameter is required");
-                }
-
-                var service = new CorporationStatsService(connectionString, log);
-                var options = await service.GetCorporationDetailOptionsAsync(corporation);
-
-                return new OkObjectResult(options);
+                return new BadRequestObjectResult("Corporation parameter is required");
             }
-            catch (Exception ex)
-            {
-                log.LogError(ex, "Error occurred while getting corporation detail options for {corp}", corporation);
-                return new StatusCodeResult(500);
-            }
+
+            var baseUrl = Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com";
+            var target = $"{baseUrl.TrimEnd('/')}/api/corporations/{Uri.EscapeDataString(corporation)}/options{req.QueryString.Value}";
+            return await CorporationProxyHelpers.ProxyGet(_httpClient, target, "corporation detail options", log);
         }
     }
 }

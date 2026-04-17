@@ -1,42 +1,61 @@
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using BgaTmScraperRegistry.Services;
 
 namespace BgaTmScraperRegistry.Functions
 {
     public static class GetAllCorporationStats
     {
+        private static readonly HttpClient _httpClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(60)
+        };
+
         [FunctionName(nameof(GetAllCorporationStats))]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "corporations/playerstats")] HttpRequest req,
             ILogger log)
         {
-            log.LogInformation("GetAllCorporationStats function processed a request");
+            var baseUrl = Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com";
+            var target = $"{baseUrl.TrimEnd('/')}/api/corporations/playerstats{req.QueryString.Value}";
+            return await CorporationProxyHelpers.ProxyGet(_httpClient, target, "corporation playerstats", log);
+        }
+    }
 
+    internal static class CorporationProxyHelpers
+    {
+        public static async Task<IActionResult> ProxyGet(HttpClient client, string target, string label, ILogger log)
+        {
             try
             {
-                var connectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
-                if (string.IsNullOrEmpty(connectionString))
+                var response = await client.GetAsync(target);
+                var body = await response.Content.ReadAsStringAsync();
+                return new ContentResult
                 {
-                    log.LogError("SqlConnectionString environment variable is not set");
-                    return new StatusCodeResult(500);
-                }
-
-                var service = new CorporationStatsService(connectionString, log);
-                var rows = await service.GetAllCorporationPlayerStatsAsync();
-
-                log.LogInformation($"Returning {rows.Count} corporation player stats rows");
-                return new OkObjectResult(rows);
+                    Content = body,
+                    ContentType = "application/json",
+                    StatusCode = (int)response.StatusCode
+                };
+            }
+            catch (TaskCanceledException)
+            {
+                log.LogError("{Label} proxy request timed out ({Target})", label, target);
+                return new ContentResult
+                {
+                    Content = "{\"detail\":\"Upstream timed out\"}",
+                    ContentType = "application/json",
+                    StatusCode = 504
+                };
             }
             catch (Exception ex)
             {
-                log.LogError(ex, "Error occurred while getting all corporation player stats");
-                return new StatusCodeResult(500);
+                log.LogError(ex, "Error proxying {Label} request to {Target}", label, target);
+                return new StatusCodeResult(502);
             }
         }
     }
