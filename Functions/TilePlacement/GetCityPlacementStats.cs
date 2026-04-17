@@ -1,82 +1,76 @@
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using BgaTmScraperRegistry.Services;
-using static BgaTmScraperRegistry.Services.TilePlacementService;
 
 namespace BgaTmScraperRegistry.Functions
 {
     public static class GetTilePlacementStats
     {
+        private static readonly HttpClient _httpClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(60)
+        };
+
         [FunctionName("GetCityPlacementOverview")]
         public static Task<IActionResult> CityOverview(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tile-stats/city/overview")] HttpRequest req,
             ILogger log)
-            => RunOverview(TileType.City, log);
+            => ProxyTileStats(req, "city", "overview", log);
 
         [FunctionName("GetCityPlacementByGen")]
         public static Task<IActionResult> CityByGen(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tile-stats/city/by-gen")] HttpRequest req,
             ILogger log)
-            => RunByGen(TileType.City, log);
+            => ProxyTileStats(req, "city", "by-gen", log);
 
         [FunctionName("GetGreeneryPlacementOverview")]
         public static Task<IActionResult> GreeneryOverview(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tile-stats/greenery/overview")] HttpRequest req,
             ILogger log)
-            => RunOverview(TileType.Greenery, log);
+            => ProxyTileStats(req, "greenery", "overview", log);
 
         [FunctionName("GetGreeneryPlacementByGen")]
         public static Task<IActionResult> GreeneryByGen(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tile-stats/greenery/by-gen")] HttpRequest req,
             ILogger log)
-            => RunByGen(TileType.Greenery, log);
+            => ProxyTileStats(req, "greenery", "by-gen", log);
 
-        private static async Task<IActionResult> RunOverview(TileType tileType, ILogger log)
+        private static async Task<IActionResult> ProxyTileStats(HttpRequest req, string tileType, string kind, ILogger log)
         {
+            var baseUrl = Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com";
+            var target = $"{baseUrl.TrimEnd('/')}/api/tile-stats/{tileType}/{kind}{req.QueryString.Value}";
+
             try
             {
-                var connectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
-                if (string.IsNullOrEmpty(connectionString))
-                {
-                    log.LogError("SqlConnectionString environment variable is not set");
-                    return new StatusCodeResult(500);
-                }
+                var response = await _httpClient.GetAsync(target);
+                var body = await response.Content.ReadAsStringAsync();
 
-                var service = new TilePlacementService(connectionString, log);
-                var results = await service.GetAllOverviewsAsync(tileType);
-                return new OkObjectResult(results);
+                return new ContentResult
+                {
+                    Content = body,
+                    ContentType = "application/json",
+                    StatusCode = (int)response.StatusCode
+                };
+            }
+            catch (TaskCanceledException)
+            {
+                log.LogError("Tile placement proxy request timed out ({Target})", target);
+                return new ContentResult
+                {
+                    Content = "{\"detail\":\"Upstream timed out\"}",
+                    ContentType = "application/json",
+                    StatusCode = 504
+                };
             }
             catch (Exception ex)
             {
-                log.LogError(ex, "Error getting {tileType} placement overview", tileType);
-                return new StatusCodeResult(500);
-            }
-        }
-
-        private static async Task<IActionResult> RunByGen(TileType tileType, ILogger log)
-        {
-            try
-            {
-                var connectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
-                if (string.IsNullOrEmpty(connectionString))
-                {
-                    log.LogError("SqlConnectionString environment variable is not set");
-                    return new StatusCodeResult(500);
-                }
-
-                var service = new TilePlacementService(connectionString, log);
-                var results = await service.GetAllByGenAsync(tileType);
-                return new OkObjectResult(results);
-            }
-            catch (Exception ex)
-            {
-                log.LogError(ex, "Error getting {tileType} placement by-gen stats", tileType);
-                return new StatusCodeResult(500);
+                log.LogError(ex, "Error proxying tile placement request to {Target}", target);
+                return new StatusCodeResult(502);
             }
         }
     }
