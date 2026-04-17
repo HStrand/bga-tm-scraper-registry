@@ -1,114 +1,67 @@
 using System;
-using System.Linq;
-using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using BgaTmScraperRegistry.Services;
 
 namespace BgaTmScraperRegistry.Functions
 {
     public static class GetPreludeDetailOptions
     {
-        public class PreludeDetailOptionsDto
+        private static readonly HttpClient _httpClient = new HttpClient
         {
-            public string[] Maps { get; set; }
-            public string[] GameModes { get; set; }
-            public string[] GameSpeeds { get; set; }
-            public int[] PlayerCounts { get; set; }
-            public string[] Corporations { get; set; }
-            public RangeDto EloRange { get; set; }
-
-            public class RangeDto
-            {
-                public int Min { get; set; }
-                public int Max { get; set; }
-            }
-        }
+            Timeout = TimeSpan.FromSeconds(60)
+        };
 
         [FunctionName(nameof(GetPreludeDetailOptions))]
-        public static async System.Threading.Tasks.Task<IActionResult> Run(
+        public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "preludes/{cardName}/options")] HttpRequest req,
             string cardName,
             ILogger log)
         {
-            cardName = cardName?.Replace("_", " ");
-            log.LogInformation("GetPreludeDetailOptions for {prelude}", cardName);
+            if (string.IsNullOrWhiteSpace(cardName))
+            {
+                return new BadRequestObjectResult("Prelude parameter is required");
+            }
 
+            var baseUrl = Environment.GetEnvironmentVariable("ParquetApiUrl") ?? "https://api.tfmstats.com";
+            var target = $"{baseUrl.TrimEnd('/')}/api/preludes/{Uri.EscapeDataString(cardName)}/options{req.QueryString.Value}";
+            return await PreludeProxyHelpers.ProxyGet(_httpClient, target, "prelude detail options", log);
+        }
+    }
+
+    internal static class PreludeProxyHelpers
+    {
+        public static async Task<IActionResult> ProxyGet(HttpClient client, string target, string label, ILogger log)
+        {
             try
             {
-                var connectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
-                if (string.IsNullOrEmpty(connectionString))
+                var response = await client.GetAsync(target);
+                var body = await response.Content.ReadAsStringAsync();
+                return new ContentResult
                 {
-                    log.LogError("SqlConnectionString environment variable is not set");
-                    return new StatusCodeResult(500);
-                }
-
-                if (string.IsNullOrWhiteSpace(cardName))
-                {
-                    return new BadRequestObjectResult("Prelude parameter is required");
-                }
-
-                var service = new PreludeStatsService(connectionString, log);
-                var rows = await service.GetAllPreludePlayerRowsAsync();
-                var filtered = rows.Where(r => string.Equals(r.Prelude, cardName, StringComparison.OrdinalIgnoreCase)).ToList();
-
-                var maps = filtered.Where(r => !string.IsNullOrWhiteSpace(r.Map))
-                                   .Select(r => r.Map)
-                                   .Distinct()
-                                   .OrderBy(x => x)
-                                   .ToArray();
-
-                var modes = filtered.Where(r => !string.IsNullOrWhiteSpace(r.GameMode))
-                                    .Select(r => r.GameMode)
-                                    .Distinct()
-                                    .OrderBy(x => x)
-                                    .ToArray();
-
-                var speeds = filtered.Where(r => !string.IsNullOrWhiteSpace(r.GameSpeed))
-                                     .Select(r => r.GameSpeed)
-                                     .Distinct()
-                                     .OrderBy(x => x)
-                                     .ToArray();
-
-                var playerCounts = filtered.Where(r => r.PlayerCount.HasValue)
-                                           .Select(r => r.PlayerCount!.Value)
-                                           .Distinct()
-                                           .OrderBy(x => x)
-                                           .ToArray();
-
-                var corporations = filtered.Where(r => !string.IsNullOrWhiteSpace(r.Corporation))
-                                           .Select(r => r.Corporation)
-                                           .Distinct(StringComparer.OrdinalIgnoreCase)
-                                           .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-                                           .ToArray();
-
-                var eloVals = filtered.Where(r => r.Elo.HasValue && r.Elo.Value > 0)
-                                      .Select(r => r.Elo!.Value)
-                                      .ToArray();
-
-                var dto = new PreludeDetailOptionsDto
-                {
-                    Maps = maps,
-                    GameModes = modes,
-                    GameSpeeds = speeds,
-                    PlayerCounts = playerCounts,
-                    Corporations = corporations,
-                    EloRange = new PreludeDetailOptionsDto.RangeDto
-                    {
-                        Min = eloVals.Length > 0 ? eloVals.Min() : 0,
-                        Max = eloVals.Length > 0 ? eloVals.Max() : 0
-                    }
+                    Content = body,
+                    ContentType = "application/json",
+                    StatusCode = (int)response.StatusCode
                 };
-
-                return new OkObjectResult(dto);
+            }
+            catch (TaskCanceledException)
+            {
+                log.LogError("{Label} proxy request timed out ({Target})", label, target);
+                return new ContentResult
+                {
+                    Content = "{\"detail\":\"Upstream timed out\"}",
+                    ContentType = "application/json",
+                    StatusCode = 504
+                };
             }
             catch (Exception ex)
             {
-                log.LogError(ex, "Error occurred while getting prelude detail options for {prelude}", cardName);
-                return new StatusCodeResult(500);
+                log.LogError(ex, "Error proxying {Label} request to {Target}", label, target);
+                return new StatusCodeResult(502);
             }
         }
     }
