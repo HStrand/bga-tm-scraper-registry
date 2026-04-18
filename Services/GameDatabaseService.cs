@@ -520,31 +520,33 @@ namespace BgaTmScraperRegistry.Services
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            using var transaction = connection.BeginTransaction();
-            try
-            {
-                // First, get the games to assign
-                var selectQuery = @"
-                    SELECT TOP (@count)
-                        g.Id,
-                        g.TableId,
-                        g.PlayerPerspective,
-                        g.VersionId,
-                        g.GameMode,
-                        g.ParsedDateTime as PlayedAt,
-                        g.Map,
-                        g.PreludeOn,
-                        g.ColoniesOn,
-                        g.CorporateEraOn,
-                        g.DraftOn,
-                        g.BeginnersCorporationsOn,
-                        g.GameSpeed,
-                        p.Name as PlayerName
+            // Atomically pick candidates, mark them assigned, and capture the assigned
+            // rows in a table variable so we can JOIN against it instead of sending a
+            // 199-element IN list back to the server.
+            var assignSql = @"
+                DECLARE @Assigned TABLE (
+                    TableId int NOT NULL PRIMARY KEY,
+                    PlayerPerspective int NOT NULL,
+                    VersionId nvarchar(max) NULL,
+                    GameMode nvarchar(max) NULL,
+                    PlayedAt datetime2 NULL,
+                    Map nvarchar(max) NULL,
+                    PreludeOn bit NULL,
+                    ColoniesOn bit NULL,
+                    CorporateEraOn bit NULL,
+                    DraftOn bit NULL,
+                    BeginnersCorporationsOn bit NULL,
+                    GameSpeed nvarchar(max) NULL,
+                    MapPriority int NOT NULL
+                );
+
+                ;WITH Candidates AS (
+                    SELECT TOP (@count) g.Id
                     FROM Games g
                     INNER JOIN Players p ON g.PlayerPerspective = p.PlayerId
                     WHERE g.ScrapedAt IS NULL
-                    AND (g.ReplayDeleted IS NULL OR g.ReplayDeleted = 0)
-                    AND (g.AssignedTo IS NULL OR g.AssignedAt < DATEADD(hour, -24, GETUTCDATE()))
+                      AND (g.ReplayDeleted IS NULL OR g.ReplayDeleted = 0)
+                      AND (g.AssignedTo IS NULL OR g.AssignedAt < DATEADD(hour, -24, GETUTCDATE()))
                     ORDER BY CASE g.Map
                         WHEN 'Vastitas Borealis' THEN 1
                         WHEN 'Elysium' THEN 2
@@ -553,103 +555,110 @@ namespace BgaTmScraperRegistry.Services
                         WHEN 'Tharsis' THEN 5
                         WHEN 'Amazonis Planitia' THEN 6
                         ELSE 7
-                        END;";
+                        END
+                )
+                UPDATE g
+                SET AssignedTo = @assignedTo, AssignedAt = GETUTCDATE()
+                OUTPUT
+                    inserted.TableId,
+                    inserted.PlayerPerspective,
+                    inserted.VersionId,
+                    inserted.GameMode,
+                    inserted.ParsedDateTime,
+                    inserted.Map,
+                    inserted.PreludeOn,
+                    inserted.ColoniesOn,
+                    inserted.CorporateEraOn,
+                    inserted.DraftOn,
+                    inserted.BeginnersCorporationsOn,
+                    inserted.GameSpeed,
+                    CASE inserted.Map
+                        WHEN 'Vastitas Borealis' THEN 1
+                        WHEN 'Elysium' THEN 2
+                        WHEN 'Random' THEN 3
+                        WHEN 'Hellas' THEN 4
+                        WHEN 'Tharsis' THEN 5
+                        WHEN 'Amazonis Planitia' THEN 6
+                        ELSE 7
+                        END
+                INTO @Assigned
+                FROM Games g
+                INNER JOIN Candidates c ON g.Id = c.Id;
 
-                var games = await connection.QueryAsync<GameAssignmentDetails>(
-                    selectQuery, 
-                    new { count }, 
-                    transaction);
+                SELECT
+                    a.TableId,
+                    a.PlayerPerspective,
+                    a.VersionId,
+                    a.GameMode,
+                    a.PlayedAt,
+                    a.Map,
+                    a.PreludeOn,
+                    a.ColoniesOn,
+                    a.CorporateEraOn,
+                    a.DraftOn,
+                    a.BeginnersCorporationsOn,
+                    a.GameSpeed,
+                    p.Name AS PlayerName
+                FROM @Assigned a
+                INNER JOIN Players p ON a.PlayerPerspective = p.PlayerId
+                ORDER BY a.MapPriority, a.TableId;
 
-                var gameList = games.ToList();
-                
-                if (!gameList.Any())
-                {
-                    transaction.Rollback();
-                    return gameList;
-                }
+                SELECT
+                    gp.TableId,
+                    gp.PlayerId,
+                    gp.PlayerName,
+                    gp.Elo,
+                    gp.EloChange,
+                    gp.ArenaPoints,
+                    gp.ArenaPointsChange,
+                    gp.Position
+                FROM GamePlayers_Canonical gp
+                INNER JOIN @Assigned a ON a.TableId = gp.TableId
+                ORDER BY gp.TableId, gp.Position;";
 
-                // Get the game IDs to update
-                var gameIds = gameList.Select(g => g.TableId).ToList();
+            using var multi = await connection.QueryMultipleAsync(assignSql, new { count, assignedTo });
 
-                // Mark these games as assigned
-                var updateQuery = @"
-                    UPDATE Games 
-                    SET AssignedTo = @assignedTo, AssignedAt = GETUTCDATE()
-                    WHERE TableId IN @gameIds 
-                    AND ScrapedAt IS NULL
-                    AND (ReplayDeleted IS NULL OR ReplayDeleted = 0)
-                    AND (AssignedTo IS NULL OR AssignedAt < DATEADD(hour, -24, GETUTCDATE()))";
+            var gameList = (await multi.ReadAsync<GameAssignmentDetails>()).ToList();
 
-                var updatedRows = await connection.ExecuteAsync(
-                    updateQuery, 
-                    new { assignedTo, gameIds }, 
-                    transaction);
-
-                _logger.LogInformation($"Assigned {updatedRows} games to {assignedTo}");
-
-                // Get all player information for all games in a single query
-                var gameTableIds = gameList.Select(g => g.TableId).ToList();
-                var gamePlayerPerspectives = gameList.Select(g => g.PlayerPerspective).ToList();
-
-                var playersQuery = @"
-                    SELECT
-                        gp.TableId,
-                        gp.PlayerId,
-                        gp.PlayerName,
-                        gp.Elo,
-                        gp.EloChange,
-                        gp.ArenaPoints,
-                        gp.ArenaPointsChange,
-                        gp.Position
-                    FROM GamePlayers_Canonical gp
-                    WHERE gp.TableId IN @tableIds
-                    ORDER BY gp.TableId, gp.Position";
-
-                var allPlayers = await connection.QueryAsync<GamePlayerInfoWithKeys>(
-                    playersQuery,
-                    new { tableIds = gameTableIds },
-                    transaction);
-
-                // Group players by TableId and assign to the corresponding games
-                var playersByGame = allPlayers
-                    .GroupBy(p => p.TableId)
-                    .ToDictionary(
-                        g => g.Key,
-                        g => g.Select(p => new GamePlayerInfo
-                        {
-                            PlayerId = p.PlayerId,
-                            PlayerName = p.PlayerName,
-                            Elo = p.Elo,
-                            EloChange = p.EloChange ?? 0,
-                            ArenaPoints = p.ArenaPoints,
-                            ArenaPointsChange = p.ArenaPointsChange,
-                            Position = p.Position
-                        }).ToList()
-                    );
-
-                // Assign players to their respective games
-                foreach (var game in gameList)
-                {
-                    if (playersByGame.TryGetValue(game.TableId, out var players))
-                    {
-                        game.Players = players;
-                    }
-                    else
-                    {
-                        game.Players = new List<GamePlayerInfo>();
-                        _logger.LogWarning($"No players found for game TableId {game.TableId}, PlayerPerspective {game.PlayerPerspective}");
-                    }
-                }
-
-                transaction.Commit();
+            if (!gameList.Any())
+            {
+                _logger.LogInformation($"No unscraped games available to assign to {assignedTo}");
                 return gameList;
             }
-            catch (Exception ex)
+
+            var allPlayers = await multi.ReadAsync<GamePlayerInfoWithKeys>();
+
+            var playersByGame = allPlayers
+                .GroupBy(p => p.TableId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(p => new GamePlayerInfo
+                    {
+                        PlayerId = p.PlayerId,
+                        PlayerName = p.PlayerName,
+                        Elo = p.Elo,
+                        EloChange = p.EloChange ?? 0,
+                        ArenaPoints = p.ArenaPoints,
+                        ArenaPointsChange = p.ArenaPointsChange,
+                        Position = p.Position
+                    }).ToList()
+                );
+
+            foreach (var game in gameList)
             {
-                transaction.Rollback();
-                _logger.LogError(ex, $"Error assigning games to {assignedTo}");
-                throw;
+                if (playersByGame.TryGetValue(game.TableId, out var players))
+                {
+                    game.Players = players;
+                }
+                else
+                {
+                    game.Players = new List<GamePlayerInfo>();
+                    _logger.LogWarning($"No players found for game TableId {game.TableId}, PlayerPerspective {game.PlayerPerspective}");
+                }
             }
+
+            _logger.LogInformation($"Assigned {gameList.Count} games to {assignedTo}");
+            return gameList;
         }
 
         public async Task<string> GetPlayerNameAsync(int playerId)
