@@ -525,7 +525,7 @@ namespace BgaTmScraperRegistry.Services
             // 199-element IN list back to the server.
             var assignSql = @"
                 DECLARE @Assigned TABLE (
-                    TableId int NOT NULL PRIMARY KEY,
+                    TableId int NOT NULL,
                     PlayerPerspective int NOT NULL,
                     VersionId nvarchar(max) NULL,
                     GameMode nvarchar(max) NULL,
@@ -537,7 +537,8 @@ namespace BgaTmScraperRegistry.Services
                     DraftOn bit NULL,
                     BeginnersCorporationsOn bit NULL,
                     GameSpeed nvarchar(max) NULL,
-                    MapPriority int NOT NULL
+                    MapPriority int NOT NULL,
+                    PRIMARY KEY (TableId, PlayerPerspective)
                 );
 
                 ;WITH Candidates AS (
@@ -613,7 +614,7 @@ namespace BgaTmScraperRegistry.Services
                     gp.ArenaPointsChange,
                     gp.Position
                 FROM GamePlayers_Canonical gp
-                INNER JOIN @Assigned a ON a.TableId = gp.TableId
+                WHERE EXISTS (SELECT 1 FROM @Assigned a WHERE a.TableId = gp.TableId)
                 ORDER BY gp.TableId, gp.Position;";
 
             using var multi = await connection.QueryMultipleAsync(assignSql, new { count, assignedTo });
