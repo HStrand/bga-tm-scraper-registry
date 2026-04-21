@@ -431,6 +431,7 @@ def _card_stats_sql(gen_column: str) -> str:
     JOIN read_parquet('{parquet_path("gameplayers_canonical")}') gp
       ON gp.TableId = gc.TableId AND gp.PlayerId = gc.PlayerId
     WHERE gc.{gen_column} IS NOT NULL
+      AND lower(gc.Card) <> 'standard project city'
     GROUP BY {normalized_card_expr("gc.Card")}
     """
 
