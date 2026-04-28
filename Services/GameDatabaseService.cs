@@ -511,7 +511,7 @@ namespace BgaTmScraperRegistry.Services
 
             var count = await connection.QuerySingleAsync<int>(query);
             _logger.LogInformation($"Found {count} unscraped games available for assignment");
-            
+
             return count;
         }
 
@@ -541,22 +541,61 @@ namespace BgaTmScraperRegistry.Services
                     PRIMARY KEY (TableId, PlayerPerspective)
                 );
 
-                ;WITH Candidates AS (
-                    SELECT TOP (@count) g.Id
+                DECLARE @half int = @count / 2;
+
+                ;WITH Unscraped AS (
+                    SELECT TOP (@count) g.Id,
+                        ROW_NUMBER() OVER (ORDER BY
+                            CASE g.Map
+                                WHEN 'Vastitas Borealis' THEN 1
+                                WHEN 'Elysium' THEN 2
+                                WHEN 'Random' THEN 3
+                                WHEN 'Hellas' THEN 4
+                                WHEN 'Tharsis' THEN 5
+                                WHEN 'Amazonis Planitia' THEN 6
+                                ELSE 7
+                            END,
+                            g.TableId) AS RN
                     FROM Games g
                     INNER JOIN Players p ON g.PlayerPerspective = p.PlayerId
                     WHERE g.ScrapedAt IS NULL
                       AND (g.ReplayDeleted IS NULL OR g.ReplayDeleted = 0)
                       AND (g.AssignedTo IS NULL OR g.AssignedAt < DATEADD(hour, -24, GETUTCDATE()))
-                    ORDER BY CASE g.Map
-                        WHEN 'Vastitas Borealis' THEN 1
-                        WHEN 'Elysium' THEN 2
-                        WHEN 'Random' THEN 3
-                        WHEN 'Hellas' THEN 4
-                        WHEN 'Tharsis' THEN 5
-                        WHEN 'Amazonis Planitia' THEN 6
-                        ELSE 7
-                        END
+                ),
+                Rescrape AS (
+                    SELECT TOP (@count) g.Id,
+                        ROW_NUMBER() OVER (ORDER BY
+                            CASE WHEN g.ScraperVersion IS NULL THEN 0 ELSE 1 END,
+                            g.ScraperVersion ASC,
+                            CASE g.Map
+                                WHEN 'Vastitas Borealis' THEN 1
+                                WHEN 'Elysium' THEN 2
+                                WHEN 'Random' THEN 3
+                                WHEN 'Hellas' THEN 4
+                                WHEN 'Tharsis' THEN 5
+                                WHEN 'Amazonis Planitia' THEN 6
+                                ELSE 7
+                            END,
+                            g.TableId) AS RN
+                    FROM Games g
+                    INNER JOIN Players p ON g.PlayerPerspective = p.PlayerId
+                    WHERE g.ScrapedAt IS NOT NULL
+                      AND (g.ReplayDeleted IS NULL OR g.ReplayDeleted = 0)
+                      AND (g.AssignedTo IS NULL OR g.AssignedAt < DATEADD(hour, -24, GETUTCDATE()))
+                ),
+                Pooled AS (
+                    SELECT Id, RN,
+                        CASE WHEN RN <= @half THEN 0 ELSE 2 END AS SelectionPriority
+                    FROM Unscraped
+                    UNION ALL
+                    SELECT Id, RN,
+                        CASE WHEN RN <= @half THEN 1 ELSE 3 END AS SelectionPriority
+                    FROM Rescrape
+                ),
+                Candidates AS (
+                    SELECT TOP (@count) Id
+                    FROM Pooled
+                    ORDER BY SelectionPriority, RN
                 )
                 UPDATE g
                 SET AssignedTo = @assignedTo, AssignedAt = GETUTCDATE()
