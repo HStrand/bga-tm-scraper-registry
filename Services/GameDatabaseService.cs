@@ -656,7 +656,7 @@ namespace BgaTmScraperRegistry.Services
                 WHERE EXISTS (SELECT 1 FROM @Assigned a WHERE a.TableId = gp.TableId)
                 ORDER BY gp.TableId, gp.Position;";
 
-            using var multi = await connection.QueryMultipleAsync(assignSql, new { count, assignedTo });
+            using var multi = await connection.QueryMultipleAsync(assignSql, new { count, assignedTo }, commandTimeout: 120);
 
             var gameList = (await multi.ReadAsync<GameAssignmentDetails>()).ToList();
 
