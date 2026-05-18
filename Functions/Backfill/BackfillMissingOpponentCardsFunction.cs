@@ -148,22 +148,14 @@ namespace BgaTmScraperRegistry
                             using var connection = new SqlConnection(sqlConnectionString);
                             await connection.OpenAsync();
 
-                            using var transaction = connection.BeginTransaction();
-                            try
-                            {
-                                await statsService.UpsertGameCardsAsync(connection, transaction, opponentCards);
-                                transaction.Commit();
+                            // UpsertGameCardsAsync is idempotent (replace-by-(TableId,PlayerId) via staging table),
+                            // so no outer transaction is needed.
+                            await statsService.UpsertGameCardsAsync(connection, opponentCards);
 
-                                opponentPlayersUpdated += uniqueOpponentPlayers;
-                                cardRowsUpserted += opponentCards.Count;
+                            opponentPlayersUpdated += uniqueOpponentPlayers;
+                            cardRowsUpserted += opponentCards.Count;
 
-                                log.LogInformation($"Successfully upserted {opponentCards.Count} opponent cards for {uniqueOpponentPlayers} players in TableId={item.TableId}");
-                            }
-                            catch (Exception txEx)
-                            {
-                                transaction.Rollback();
-                                throw txEx;
-                            }
+                            log.LogInformation($"Successfully upserted {opponentCards.Count} opponent cards for {uniqueOpponentPlayers} players in TableId={item.TableId}");
                         }
                         catch (Exception ux)
                         {
