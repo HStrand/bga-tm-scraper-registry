@@ -896,10 +896,18 @@ namespace BgaTmScraperRegistry.Services
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
+            // One row per TableId. Pick any one perspective with a blob for the fetch.
+            // EXISTS covers TableIds where Games is already non-Random but Games_Canonical
+            // was left as 'Random' (the Canonical merge guards against overwriting a real
+            // map with 'Random', so it can stay stale).
             var query = @"
-                SELECT TableId, PlayerPerspective AS PlayerId
-                FROM Games
-                WHERE Map = 'Random' AND ScrapedAt IS NOT NULL";
+                SELECT g.TableId, MIN(g.PlayerPerspective) AS PlayerId
+                FROM Games g
+                WHERE g.ScrapedAt IS NOT NULL
+                  AND (g.Map = 'Random'
+                       OR EXISTS (SELECT 1 FROM Games_Canonical gc
+                                  WHERE gc.TableId = g.TableId AND gc.Map = 'Random'))
+                GROUP BY g.TableId";
 
             if (top.HasValue && top.Value > 0)
             {
@@ -914,27 +922,33 @@ namespace BgaTmScraperRegistry.Services
             }
         }
 
-        public async Task<bool> UpdateGameMapAsync(int tableId, int playerPerspective, string map)
+        public async Task<bool> UpdateGameMapAsync(int tableId, string map)
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
             var mapTruncated = ValidateAndTruncateString(map, 255, $"Game TableId {tableId} Map");
 
+            // Fan out to every perspective row for this TableId in Games, and update the
+            // single Canonical row. Guarded so we never overwrite a known map with the
+            // resolved one (caller has already validated it is non-Random).
             var query = @"
-                UPDATE Games 
+                UPDATE Games
                 SET Map = @map
-                WHERE TableId = @tableId AND PlayerPerspective = @playerPerspective";
-            
-            var rowsAffected = await connection.ExecuteAsync(query, new 
-            { 
-                tableId, 
-                playerPerspective, 
+                WHERE TableId = @tableId AND (Map = 'Random' OR Map IS NULL);
+
+                UPDATE Games_Canonical
+                SET Map = @map
+                WHERE TableId = @tableId AND (Map = 'Random' OR Map IS NULL);";
+
+            var rowsAffected = await connection.ExecuteAsync(query, new
+            {
+                tableId,
                 map = mapTruncated
             });
-            
-            _logger.LogInformation($"Updated {rowsAffected} game record(s) Map field for TableId {tableId}, PlayerPerspective {playerPerspective}");
-            
+
+            _logger.LogInformation($"Updated {rowsAffected} row(s) across Games + Games_Canonical for TableId {tableId} -> Map '{mapTruncated}'");
+
             return rowsAffected > 0;
         }
     }

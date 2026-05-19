@@ -183,7 +183,7 @@ namespace BgaTmScraperRegistry
                         // Update the database
                         try
                         {
-                            var success = await dbService.UpdateGameMapAsync(item.TableId, item.PlayerId, normalizedMap);
+                            var success = await dbService.UpdateGameMapAsync(item.TableId, normalizedMap);
                             if (success)
                             {
                                 updated++;

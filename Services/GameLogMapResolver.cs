@@ -25,6 +25,43 @@ namespace BgaTmScraperRegistry.Services
             "Elysium",
         };
 
+        // Each map has its own set of milestones, so any single claimed/visible milestone
+        // pins the map. Scrape data uses upper-case names (e.g. "TYCOON"); DB / parquet uses
+        // title case (e.g. "Tycoon"); BGA also abbreviates a couple ("POLAR", "RIM"). Match
+        // case-insensitively to cover all three.
+        private static readonly Dictionary<string, string> MilestoneToMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            // Tharsis
+            { "Terraformer", "Tharsis" },
+            { "Mayor", "Tharsis" },
+            { "Gardener", "Tharsis" },
+            { "Builder", "Tharsis" },
+            { "Planner", "Tharsis" },
+
+            // Hellas
+            { "Diversifier", "Hellas" },
+            { "Tactician", "Hellas" },
+            { "Polar Explorer", "Hellas" },
+            { "Polar", "Hellas" },
+            { "Energizer", "Hellas" },
+            { "Rim Settler", "Hellas" },
+            { "Rim", "Hellas" },
+
+            // Elysium
+            { "Generalist", "Elysium" },
+            { "Specialist", "Elysium" },
+            { "Ecologist", "Elysium" },
+            { "Tycoon", "Elysium" },
+            { "Legend", "Elysium" },
+
+            // Vastitas Borealis
+            { "Agronomist", "Vastitas Borealis" },
+            { "Engineer", "Vastitas Borealis" },
+            { "Spacefarer", "Vastitas Borealis" },
+            { "Geologist", "Vastitas Borealis" },
+            { "Farmer", "Vastitas Borealis" },
+        };
+
         /// <summary>
         /// Returns the best-effort raw map name for a game log: the top-level field when it
         /// is set and not "Random", otherwise a "Map: {name}" hint scraped from the first
@@ -47,6 +84,62 @@ namespace BgaTmScraperRegistry.Services
             {
                 logger?.LogInformation($"Resolved map '{fromMoves}' from move descriptions (map field was '{rawMap ?? "null"}')");
                 return fromMoves;
+            }
+
+            var fromMilestones = TryExtractMapFromMilestones(gameLogData, out var unmatched);
+            if (!string.IsNullOrWhiteSpace(fromMilestones))
+            {
+                logger?.LogInformation($"Resolved map '{fromMilestones}' from milestones (map field was '{rawMap ?? "null"}')");
+                return fromMilestones;
+            }
+
+            if (unmatched != null && unmatched.Count > 0)
+            {
+                // Surface unknown milestone names so we can extend the mapping (e.g. Amazonis
+                // Planitia milestones which aren't catalogued here yet).
+                logger?.LogWarning($"Found milestones but none mapped to a known map. Names: [{string.Join(", ", unmatched)}]");
+            }
+
+            return null;
+        }
+
+        private static string TryExtractMapFromMilestones(GameLogData gameLogData, out HashSet<string> unmatched)
+        {
+            unmatched = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Source 1: final move's game state has a milestones dict keyed by name.
+            if (gameLogData.Moves != null && gameLogData.Moves.Count > 0)
+            {
+                for (var i = gameLogData.Moves.Count - 1; i >= 0; i--)
+                {
+                    var milestones = gameLogData.Moves[i]?.GameState?.Milestones;
+                    if (milestones == null || milestones.Count == 0) continue;
+                    foreach (var name in milestones.Keys)
+                    {
+                        if (string.IsNullOrWhiteSpace(name)) continue;
+                        if (MilestoneToMap.TryGetValue(name.Trim(), out var map))
+                            return map;
+                        unmatched.Add(name.Trim());
+                    }
+                    break; // only inspect the latest move that has milestones
+                }
+            }
+
+            // Source 2: per-player milestones_claimed lists.
+            if (gameLogData.Players != null)
+            {
+                foreach (var player in gameLogData.Players.Values)
+                {
+                    var claimed = player?.MilestonesClaimed;
+                    if (claimed == null) continue;
+                    foreach (var name in claimed)
+                    {
+                        if (string.IsNullOrWhiteSpace(name)) continue;
+                        if (MilestoneToMap.TryGetValue(name.Trim(), out var map))
+                            return map;
+                        unmatched.Add(name.Trim());
+                    }
+                }
             }
 
             return null;

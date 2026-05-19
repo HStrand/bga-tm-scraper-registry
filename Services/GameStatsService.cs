@@ -777,7 +777,12 @@ namespace BgaTmScraperRegistry.Services
                 UPDATE Games
                 SET Map = @NewMap
                 WHERE TableId = @TableId
-                  AND (Map = 'Random' OR Map IS NULL)";
+                  AND (Map = 'Random' OR Map IS NULL);
+
+                UPDATE Games_Canonical
+                SET Map = @NewMap
+                WHERE TableId = @TableId
+                  AND (Map = 'Random' OR Map IS NULL);";
 
             var rowsAffected = await connection.ExecuteAsync(
                 updateQuery,
@@ -787,7 +792,7 @@ namespace BgaTmScraperRegistry.Services
 
             if (rowsAffected > 0)
             {
-                _logger.LogInformation($"Updated Games.Map from 'Random' to '{normalizedMap}' for TableId {tableId}");
+                _logger.LogInformation($"Updated {rowsAffected} row(s) across Games + Games_Canonical from 'Random' to '{normalizedMap}' for TableId {tableId}");
             }
         }
     }
