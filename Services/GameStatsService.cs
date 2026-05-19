@@ -12,9 +12,11 @@ namespace BgaTmScraperRegistry.Services
 {
     public class GameStatsService
     {
-        // Per-statement timeout. Was 180–600s; that was masking a chatty implementation.
-        // After bulk-ification, individual statements should finish in single-digit seconds.
-        private const int CommandTimeoutSeconds = 60;
+        // Per-statement timeout. Target steady-state is single-digit seconds per statement
+        // (achieved after the StartingHand*/GameCards heaps are rebuilt as clustered indexes
+        // on (TableId, PlayerId)). Temporarily raised to 180s as a stopgap while heap rebuilds
+        // are pending and to absorb any remaining slow DELETEs we haven't located yet.
+        private const int CommandTimeoutSeconds = 180;
 
         private readonly string _connectionString;
         private readonly ILogger _logger;
