@@ -41,7 +41,6 @@ namespace BgaTmScraperRegistry
                 }
 
 
-                var cutoff = DateTime.UtcNow.AddMinutes(-10);
                 var blobConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
                 
                 try
@@ -50,11 +49,7 @@ namespace BgaTmScraperRegistry
                     var containerClient = blobServiceClient.GetBlobContainerClient("games");
                     var blobClient = containerClient.GetBlobClient(name);
                     var props = await blobClient.GetPropertiesAsync();
-                    if (props.Value.LastModified.DateTime < cutoff)
-                    {
-                        log.LogInformation($"Skipping blob {name} LastModified={props.Value.LastModified.UtcDateTime:o} older than cutover {cutoff:o}");
-                        return;
-                    }
+  
                 }
                 catch (Exception ex)
                 {

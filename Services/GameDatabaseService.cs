@@ -380,12 +380,15 @@ namespace BgaTmScraperRegistry.Services
                               @BeginnersCorporationsOn AS BeginnersCorporationsOn, @GameSpeed AS GameSpeed) AS source
                 ON target.TableId = source.TableId AND target.PlayerPerspective = source.PlayerPerspective
                 WHEN MATCHED THEN
-                    UPDATE SET 
+                    UPDATE SET
                         VersionId = source.VersionId,
                         GameMode = source.GameMode,
                         IndexedAt = source.IndexedAt,
                         IndexedBy = source.IndexedBy,
-                        Map = source.Map,
+                        Map = CASE
+                            WHEN source.Map IS NOT NULL AND source.Map <> 'Random' THEN source.Map
+                            ELSE target.Map
+                        END,
                         PreludeOn = source.PreludeOn,
                         ColoniesOn = source.ColoniesOn,
                         CorporateEraOn = source.CorporateEraOn,
@@ -408,7 +411,12 @@ namespace BgaTmScraperRegistry.Services
                     INSERT (TableId, GameMode, Map, PreludeOn, ColoniesOn, CorporateEraOn, DraftOn, BeginnersCorporationsOn, GameSpeed)
                     VALUES (source.TableId, source.GameMode, source.Map, source.PreludeOn, source.ColoniesOn, source.CorporateEraOn, source.DraftOn, source.BeginnersCorporationsOn, source.GameSpeed)
                 WHEN MATCHED THEN
-                    UPDATE SET GameMode = source.GameMode, Map = source.Map, PreludeOn = source.PreludeOn,
+                    UPDATE SET GameMode = source.GameMode,
+                               Map = CASE
+                                   WHEN source.Map IS NOT NULL AND source.Map <> 'Random' THEN source.Map
+                                   ELSE target.Map
+                               END,
+                               PreludeOn = source.PreludeOn,
                                ColoniesOn = source.ColoniesOn, CorporateEraOn = source.CorporateEraOn,
                                DraftOn = source.DraftOn, BeginnersCorporationsOn = source.BeginnersCorporationsOn,
                                GameSpeed = source.GameSpeed;
