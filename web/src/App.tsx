@@ -31,9 +31,7 @@ export default function App() {
           </div>
         } />
         <Route path="/play/:gameId" element={
-          <div className="replay-bg">
-            <div className="mx-auto px-6 py-6"><GamePlayPage /></div>
-          </div>
+          <div className="replay-bg"><GamePlayPage /></div>
         } />
         <Route path="*" element={
           <Layout>

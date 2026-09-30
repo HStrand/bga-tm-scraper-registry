@@ -4,8 +4,8 @@ import type { EnginePlayer, Payment } from '@/lib/engine/types';
 import { PlayButton } from './controls';
 
 interface PaymentFormProps {
-  /** What is being paid for, e.g. "Play Comet". */
-  title: string;
+  /** What is being paid for, e.g. "Play Comet"; left out where a heading already says it. */
+  title?: string;
   rules: PaymentRules;
   player: EnginePlayer;
   names: Record<string, string>;
@@ -43,7 +43,7 @@ export function PaymentForm({ title, rules, player, names, busy, onConfirm, onCa
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-white">{title} <span className="text-slate-400">— {rules.cost} M€</span></p>
+      <p className="text-sm font-medium text-white">{title ?? 'Cost'} <span className="text-slate-400">— {rules.cost} M€</span></p>
       {rules.titaniumValue > 0 && player.resources.titanium > 0
         && amount('Titanium', spend.titanium, player.resources.titanium, rules.titaniumValue, titanium => setSpend(s => ({ ...s, titanium })))}
       {rules.steelValue > 0 && player.resources.steel > 0
@@ -101,8 +101,8 @@ export function HeatAmount({ cost, player, value, onChange }: {
 }
 
 interface HeatSplitFormProps {
-  /** What is being paid for, e.g. "Asteroid". */
-  title: string;
+  /** What is being paid for, e.g. "Asteroid"; left out where a heading already says it. */
+  title?: string;
   cost: number;
   player: EnginePlayer;
   busy: boolean;
@@ -115,7 +115,7 @@ export function HeatSplitForm({ title, cost, player, busy, onConfirm, onCancel }
   const [heat, setHeat] = useState(() => heatRange(cost, player).min);
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-white">{title} <span className="text-slate-400">— {cost} M€</span></p>
+      <p className="text-sm font-medium text-white">{title ?? 'Cost'} <span className="text-slate-400">— {cost} M€</span></p>
       <HeatAmount cost={cost} player={player} value={heat} onChange={setHeat} />
       <div className="flex gap-2">
         <PlayButton variant="primary" disabled={busy} onClick={() => onConfirm(heat)}>Pay</PlayButton>

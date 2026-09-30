@@ -2,6 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { engineApi, EngineError, type EngineApi } from './client';
 import type { HistoryEntry, MoveBody, TableResponse } from './types';
 
+/** Cards that turned up in hands as a result of the last move, other than ones the player picked themselves. */
+export interface Draw {
+  moveNumber: number;
+  byPlayer: { playerId: number; cardIds: string[] }[];
+}
+
 export interface EngineGame {
   /** The table being shown: the latest one, or an earlier position being looked back at. */
   table: TableResponse | null;
@@ -14,6 +20,9 @@ export interface EngineGame {
   error: string | null;
   /** Whether an earlier position is being shown rather than the latest. */
   viewingPast: boolean;
+  /** What the last move drew, until dismissed. */
+  draw: Draw | null;
+  dismissDraw: () => void;
   submit: (seat: number, move: MoveBody) => Promise<void>;
   /** Show the position after the given move; moves can only be made from the latest one. */
   viewAt: (moveNumber: number) => Promise<void>;
@@ -30,6 +39,10 @@ export function useEngineGame(gameId: string | undefined, api: EngineApi = engin
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pastTables = useRef(new Map<number, TableResponse>());
+  const [draw, setDraw] = useState<Draw | null>(null);
+  // The latest table as of the last render, for comparing hands after a move without a stale closure.
+  const latestRef = useRef<TableResponse | null>(null);
+  latestRef.current = latest;
 
   useEffect(() => {
     if (!gameId) return;
@@ -63,8 +76,10 @@ export function useEngineGame(gameId: string | undefined, api: EngineApi = engin
     setError(null);
     try {
       const engineMove = { ...move, playerId: seat };
+      const before = latestRef.current;
       const table = await api.submitMove(gameId, engineMove);
       setLatest(table);
+      if (before) setDraw(cardsDrawn(before, table, move));
       setPast(null);
       setCardNames(names => ({ ...names, ...table.cardNames }));
       setHistory(moves => [
@@ -95,6 +110,7 @@ export function useEngineGame(gameId: string | undefined, api: EngineApi = engin
   }, [gameId, latest, api]);
 
   const viewLatest = useCallback(() => setPast(null), []);
+  const dismissDraw = useCallback(() => setDraw(null), []);
 
   return {
     table: past ?? latest,
@@ -104,8 +120,21 @@ export function useEngineGame(gameId: string | undefined, api: EngineApi = engin
     busy,
     error,
     viewingPast: past != null,
+    draw,
+    dismissDraw,
     submit,
     viewAt,
     viewLatest,
   };
+}
+
+/** Cards that appeared in any hand between two tables, leaving out the ones the move itself named (bought, drafted). */
+function cardsDrawn(before: TableResponse, after: TableResponse, move: MoveBody): Draw | null {
+  const chosen = new Set('cardIds' in move ? move.cardIds : 'cardId' in move ? [move.cardId] : []);
+  const byPlayer = after.state.players.flatMap(player => {
+    const had = new Set(before.state.players.find(p => p.playerId === player.playerId)?.hand ?? []);
+    const cardIds = player.hand.filter(id => !had.has(id) && !chosen.has(id));
+    return cardIds.length > 0 ? [{ playerId: player.playerId, cardIds }] : [];
+  });
+  return byPlayer.length > 0 ? { moveNumber: after.state.moveNumber, byPlayer } : null;
 }

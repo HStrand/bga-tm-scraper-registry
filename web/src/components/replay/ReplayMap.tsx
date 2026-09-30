@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { hexCenter, hexPoints, type MapDefinition } from '@/data/mapHexes';
 import type { GameInfoVM, GameSnapshotVM } from '@/lib/replay/viewModel';
-import { MapOverlaysSvg, MapMilestonesAwardsSvg, MapTooltip, type TooltipData } from './MapOverlays';
+import { MapOverlaysSvg, MapMilestonesAwardsSvg, MapTooltip, type GoalOffer, type TooltipData } from './MapOverlays';
 import cityTileImage from '/assets/tiles/city tile.png';
 import greeneryTileImage from '/assets/tiles/greenery tile.png';
 import oceanTileImage from '/assets/tiles/ocean tile.png';
@@ -39,9 +39,11 @@ interface ReplayMapProps {
   snapshot: GameSnapshotVM;
   /** Makes the listed hexes clickable, for choosing where to place a tile. */
   selection?: { hexKeys: ReadonlySet<string>; onSelect: (hexKey: string) => void };
+  /** Milestones and awards the player to move may claim or fund by clicking them. */
+  offers?: GoalOffer[];
 }
 
-export function ReplayMap({ mapDefinition, info, snapshot, selection }: ReplayMapProps) {
+export function ReplayMap({ mapDefinition, info, snapshot, selection, offers }: ReplayMapProps) {
   const tileSize = mapDefinition.grid.hexRadius * 2;
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -131,7 +133,7 @@ export function ReplayMap({ mapDefinition, info, snapshot, selection }: ReplayMa
         <MapOverlaysSvg {...overlayProps} />
 
         {/* Milestones & Awards with hover tooltips */}
-        <MapMilestonesAwardsSvg {...overlayProps} setTooltip={setTooltip} />
+        <MapMilestonesAwardsSvg {...overlayProps} setTooltip={setTooltip} offers={offers} />
 
         {/* Highlight for current move */}
         {mapDefinition.hexes.map(hex => {
@@ -202,7 +204,7 @@ export function ReplayMap({ mapDefinition, info, snapshot, selection }: ReplayMa
             <polygon
               key={`select-${hex.col},${hex.row}`}
               points={hexPoints(cx, cy, mapDefinition.grid.hexRadius * 0.92)}
-              className="fill-amber-400/25 stroke-amber-300 hover:fill-amber-400/60 transition-colors"
+              className="hex-offer"
               strokeWidth={3}
               style={{ pointerEvents: 'all', cursor: 'pointer' }}
               role="button"

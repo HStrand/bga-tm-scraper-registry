@@ -19,8 +19,23 @@ interface MapOverlaysProps {
   getSpecialTileImage: (tileType: string) => string | undefined;
 }
 
+/** A milestone or award the player to move may take by clicking it on the map. */
+export interface GoalOffer {
+  name: string;
+  /** "Claim Builder" / "Fund Banker" */
+  label: string;
+  cost: number;
+  onAct: () => void;
+}
+
+// The engine spells one Hellas award "Excentric".
+const sameGoal = (a: string, b: string) =>
+  a.toLowerCase().replace('excentric', 'eccentric') === b.toLowerCase().replace('excentric', 'eccentric');
+
 interface TooltipData {
   title: string;
+  /** What clicking does, when the milestone or award is on offer. */
+  action?: string;
   type: 'milestone' | 'award' | 'milestones-table' | 'awards-table' | 'hex-tile';
   claimedBy?: string;
   generation?: number;
@@ -112,8 +127,8 @@ export function MapOverlaysSvg(props: MapOverlaysProps) {
   );
 }
 
-export function MapMilestonesAwardsSvg(props: MapOverlaysProps & { setTooltip: (t: TooltipData | null) => void }) {
-  const { mapName, tileSize, players, snapshot, getCubeImage, setTooltip } = props;
+export function MapMilestonesAwardsSvg(props: MapOverlaysProps & { setTooltip: (t: TooltipData | null) => void; offers?: GoalOffer[] }) {
+  const { mapName, tileSize, players, snapshot, getCubeImage, setTooltip, offers = [] } = props;
 
   const overlays = getMapOverlays(mapName);
   const cubeSize = tileSize * 0.4;
@@ -125,6 +140,22 @@ export function MapMilestonesAwardsSvg(props: MapOverlaysProps & { setTooltip: (
 
   const elements: React.ReactNode[] = [];
 
+  // A glowing, clickable frame where the milestone or award is on offer; a plain hover target otherwise.
+  const hitArea = (cx: number, cy: number, offer: GoalOffer | undefined, tooltip: TooltipData) => (
+    <rect
+      x={cx - hitSize / 2} y={cy - hitSize / 2} width={hitSize} height={hitSize} rx={6}
+      className={offer ? 'goal-offer' : undefined}
+      fill={offer ? undefined : 'transparent'}
+      strokeWidth={offer ? 2 : 0}
+      cursor="pointer"
+      role={offer ? 'button' : undefined}
+      aria-label={offer ? `${offer.label} (${offer.cost})` : undefined}
+      onClick={offer?.onAct}
+      onMouseEnter={() => setTooltip(offer ? { ...tooltip, action: `Click to ${offer.label.split(' ')[0].toLowerCase()} (${offer.cost} M€)` } : tooltip)}
+      onMouseLeave={() => setTooltip(null)}
+    />
+  );
+
   // Milestone cubes
   if (overlays.milestones) {
     for (const m of overlays.milestones) {
@@ -133,15 +164,12 @@ export function MapMilestonesAwardsSvg(props: MapOverlaysProps & { setTooltip: (
       const cube = color ? getCubeImage(color) : undefined;
       elements.push(
         <g key={`ms-${m.name}`} style={{ pointerEvents: 'all' }}>
-          <rect x={m.cx - hitSize / 2} y={m.cy - hitSize / 2} width={hitSize} height={hitSize} fill="transparent" cursor="pointer"
-            onMouseEnter={() => setTooltip({
-              title: m.name, type: 'milestone',
-              claimedBy: claim ? playerNames[claim.playerId] ?? claim.playerId : undefined, generation: claim?.generation ?? undefined,
-              metric: m.metric, threshold: m.threshold,
-              standings: m.metric ? computeStandings(m, standingsCtx) : undefined,
-            })}
-            onMouseLeave={() => setTooltip(null)}
-          />
+          {hitArea(m.cx, m.cy, offers.find(o => sameGoal(o.name, m.name)), {
+            title: m.name, type: 'milestone',
+            claimedBy: claim ? playerNames[claim.playerId] ?? claim.playerId : undefined, generation: claim?.generation ?? undefined,
+            metric: m.metric, threshold: m.threshold,
+            standings: m.metric ? computeStandings(m, standingsCtx) : undefined,
+          })}
           {cube && <image href={cube} x={m.cx - cubeSize / 2} y={m.cy - cubeSize / 2} width={cubeSize} height={cubeSize} style={{ pointerEvents: 'none' }} />}
           {color && !cube && <rect x={m.cx - cubeSize / 2} y={m.cy - cubeSize / 2} width={cubeSize} height={cubeSize} rx={2} fill={color} stroke="#fff" strokeWidth={1} style={{ pointerEvents: 'none' }} />}
         </g>
@@ -157,15 +185,12 @@ export function MapMilestonesAwardsSvg(props: MapOverlaysProps & { setTooltip: (
       const cube = color ? getCubeImage(color) : undefined;
       elements.push(
         <g key={`aw-${a.name}`} style={{ pointerEvents: 'all' }}>
-          <rect x={a.cx - hitSize / 2} y={a.cy - hitSize / 2} width={hitSize} height={hitSize} fill="transparent" cursor="pointer"
-            onMouseEnter={() => setTooltip({
-              title: a.name, type: 'award',
-              claimedBy: fund ? playerNames[fund.playerId] ?? fund.playerId : undefined, generation: fund?.generation ?? undefined,
-              metric: a.metric,
-              standings: computeStandings(a, standingsCtx),
-            })}
-            onMouseLeave={() => setTooltip(null)}
-          />
+          {hitArea(a.cx, a.cy, offers.find(o => sameGoal(o.name, a.name)), {
+            title: a.name, type: 'award',
+            claimedBy: fund ? playerNames[fund.playerId] ?? fund.playerId : undefined, generation: fund?.generation ?? undefined,
+            metric: a.metric,
+            standings: computeStandings(a, standingsCtx),
+          })}
           {cube && <image href={cube} x={a.cx - cubeSize / 2} y={a.cy - cubeSize / 2} width={cubeSize} height={cubeSize} style={{ pointerEvents: 'none' }} />}
           {color && !cube && <rect x={a.cx - cubeSize / 2} y={a.cy - cubeSize / 2} width={cubeSize} height={cubeSize} rx={2} fill={color} stroke="#fff" strokeWidth={1} style={{ pointerEvents: 'none' }} />}
         </g>
@@ -239,6 +264,7 @@ export function MapTooltip({ tooltip, tooltipPos, getCubeImage }: { tooltip: Too
     <div className="fixed z-[9999] pointer-events-none" style={{ left: tooltipPos.x + 16, top: tooltipPos.y - 10 }}>
       <div className="glass-panel rounded-lg shadow-xl px-4 py-3 text-sm min-w-[200px]" style={{ position: 'relative' }}>
         <div className="font-bold text-base text-white mb-1">{tooltip.title}</div>
+        {tooltip.action && <div className="mb-1 text-xs font-semibold text-amber-300">{tooltip.action}</div>}
         {tooltip.type === 'milestone' && (
           <>
             {tooltip.metric && <div className="text-slate-400 text-xs mb-1">{tooltip.metric}</div>}

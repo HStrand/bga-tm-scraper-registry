@@ -31,6 +31,8 @@ export interface PlayerPrompt extends PromptBase {
 export interface CardPrompt extends PromptBase {
   kind: 'card';
   cardIds: string[];
+  /** The button that confirms the pick, e.g. "Draft"; "Choose" when left out. */
+  confirmLabel?: string;
   move: (cardId: string) => MoveBody;
 }
 
@@ -227,6 +229,7 @@ export function currentPrompt(moves: AvailableMoves, player: EnginePlayer): Prom
       kind: 'card',
       title: 'Draft a card',
       cardIds: moves.draft.draftHand,
+      confirmLabel: 'Draft',
       move: cardId => ({ type: 'DraftCard', cardId }),
     };
   }

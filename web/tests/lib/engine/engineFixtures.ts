@@ -35,8 +35,8 @@ export const sameMove = (a: EngineMove, b: EngineMove) => canonical(a) === canon
  * An engine that replays the recorded session: it accepts exactly the move that was recorded next and
  * answers with the recorded table, and refuses anything else the way the engine refuses an illegal move.
  */
-export function recordedEngine(): EngineApi & { position: () => number } {
-  let position = 0;
+export function recordedEngine(start = 0): EngineApi & { position: () => number } {
+  let position = start;
   return {
     position: () => position,
     forkPoints: async () => forkPointsFixture,
