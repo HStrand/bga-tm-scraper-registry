@@ -5,6 +5,7 @@ import startingPlayerImg from '/assets/starting player.png';
 import temperatureImg from '/assets/temperature.png';
 import oxygenImg from '/assets/oxygen.png';
 import oceanImg from '/assets/ocean.png';
+import type { PlayerSnapshotVM, ResourceKey, TagKey } from '@/lib/replay/viewModel';
 
 // --- Icon loading ---
 export const resourceIcons = import.meta.glob('../../../assets/resources/*.png', { eager: true }) as Record<string, { default: string }>;
@@ -27,37 +28,39 @@ export function getCubeImage(hexColor: string): string | undefined {
 }
 
 // --- Resource/production/tag definitions ---
-export const RESOURCES = [
-  { key: 'M€', prodKey: 'M€ Production', icon: 'mc', label: 'MC' },
-  { key: 'Steel', prodKey: 'Steel Production', icon: 'steel', label: 'Steel' },
-  { key: 'Titanium', prodKey: 'Titanium Production', icon: 'titanium', label: 'Titan' },
-  { key: 'Plant', prodKey: 'Plant Production', icon: 'plant', label: 'Plants' },
-  { key: 'Energy', prodKey: 'Energy Production', icon: 'energy', label: 'Energy' },
-  { key: 'Heat', prodKey: 'Heat Production', icon: 'heat', label: 'Heat' },
+// `name` and `title` are the display names, which are also BGA's tracker names.
+export const RESOURCES: { key: ResourceKey; name: string; icon: string; label: string }[] = [
+  { key: 'mc', name: 'M€', icon: 'mc', label: 'MC' },
+  { key: 'steel', name: 'Steel', icon: 'steel', label: 'Steel' },
+  { key: 'titanium', name: 'Titanium', icon: 'titanium', label: 'Titan' },
+  { key: 'plants', name: 'Plant', icon: 'plant', label: 'Plants' },
+  { key: 'energy', name: 'Energy', icon: 'energy', label: 'Energy' },
+  { key: 'heat', name: 'Heat', icon: 'heat', label: 'Heat' },
 ];
 
-export const TAG_ROWS = [
+export const TAG_ROWS: { key: TagKey; title: string; icon: string }[][] = [
   [
-    { key: 'Building tag', altKey: 'Count of Building tags', icon: 'building' },
-    { key: 'Space tag', altKey: 'Count of Space tags', icon: 'space' },
-    { key: 'Science tag', altKey: 'Count of Science tags', icon: 'science' },
-    { key: 'Energy tag', altKey: 'Count of Power tags', icon: 'power' },
-    { key: 'Earth tag', altKey: 'Count of Earth tags', icon: 'earth' },
-    { key: 'Jovian tag', altKey: 'Count of Jovian tags', icon: 'jovian' },
+    { key: 'building', title: 'Building tag', icon: 'building' },
+    { key: 'space', title: 'Space tag', icon: 'space' },
+    { key: 'science', title: 'Science tag', icon: 'science' },
+    { key: 'power', title: 'Energy tag', icon: 'power' },
+    { key: 'earth', title: 'Earth tag', icon: 'earth' },
+    { key: 'jovian', title: 'Jovian tag', icon: 'jovian' },
   ],
   [
-    { key: 'City tag', altKey: 'Count of City tags', icon: 'city' },
-    { key: 'Plant tag', altKey: 'Count of Plant tags', icon: 'plant' },
-    { key: 'Microbe tag', altKey: 'Count of Microbe tags', icon: 'microbe' },
-    { key: 'Animal tag', altKey: 'Count of Animal tags', icon: 'animal' },
-    { key: 'Wild tag', altKey: 'Count of Wild tags', icon: 'wild' },
-    { key: 'Event tag', altKey: 'Count of played Events cards', icon: 'event' },
+    { key: 'city', title: 'City tag', icon: 'city' },
+    { key: 'plant', title: 'Plant tag', icon: 'plant' },
+    { key: 'microbe', title: 'Microbe tag', icon: 'microbe' },
+    { key: 'animal', title: 'Animal tag', icon: 'animal' },
+    { key: 'wild', title: 'Wild tag', icon: 'wild' },
+    { key: 'event', title: 'Event tag', icon: 'event' },
   ],
-  [
-    { key: 'City', icon: 'city tile', iconSource: 'tile' as const, label: 'Cities' },
-    { key: 'Forest', icon: 'greenery tile', iconSource: 'tile' as const, label: 'Greeneries' },
-    { key: 'Land', icon: 'tile', iconSource: 'tile' as const, label: 'Tiles' },
-  ],
+];
+
+export const TILE_COUNT_ROW: { key: keyof PlayerSnapshotVM['tileCounts']; icon: string; label: string }[] = [
+  { key: 'cities', icon: 'city tile', label: 'Cities' },
+  { key: 'greeneries', icon: 'greenery tile', label: 'Greeneries' },
+  { key: 'total', icon: 'tile', label: 'Tiles' },
 ];
 
 // --- Shared components ---
@@ -90,17 +93,13 @@ export function TrackerCell({ icon, value, subValue, title }: { icon?: string; v
   );
 }
 
-function getTracker(trackers: Record<string, number>, key: string, altKey?: string): number {
-  return trackers[key] ?? (altKey ? trackers[altKey] ?? 0 : 0);
-}
-
-const RESOURCE_COLORS: Record<string, string> = {
-  'M€': '#b8860b',
-  'Steel': '#8b4513',
-  'Titanium': '#2d2d2d',
-  'Plant': '#2d6a1e',
-  'Energy': '#6b21a8',
-  'Heat': '#b91c1c',
+const RESOURCE_COLORS: Record<ResourceKey, string> = {
+  mc: '#b8860b',
+  steel: '#8b4513',
+  titanium: '#2d2d2d',
+  plants: '#2d6a1e',
+  energy: '#6b21a8',
+  heat: '#b91c1c',
 };
 
 function CellTooltip({ icon, label, sublabel, children }: { icon?: string; label: string; sublabel?: string; children: React.ReactNode }) {
@@ -130,10 +129,10 @@ function CellTooltip({ icon, label, sublabel, children }: { icon?: string; label
   );
 }
 
-function ResourceCell({ icon, value, prodValue, title, resourceKey }: { icon?: string; value: number; prodValue: number; title: string; resourceKey: string }) {
+function ResourceCell({ icon, value, prodValue, title, resourceKey, name }: { icon?: string; value: number; prodValue: number; title: string; resourceKey: ResourceKey; name: string }) {
   const bg = RESOURCE_COLORS[resourceKey] ?? '#334155';
   return (
-    <CellTooltip icon={icon} label={resourceKey} sublabel={`${value} (production ${prodValue >= 0 ? '+' : ''}${prodValue})`}>
+    <CellTooltip icon={icon} label={name} sublabel={`${value} (production ${prodValue >= 0 ? '+' : ''}${prodValue})`}>
     <div className="flex flex-col items-center w-14 rounded-lg overflow-hidden">
       {/* Icon on colored background with overlaid count */}
       <div className="relative w-full flex items-center justify-center h-10" style={{ background: bg }}>
@@ -164,18 +163,18 @@ function ResourceCell({ icon, value, prodValue, title, resourceKey }: { icon?: s
 }
 
 const TAG_COLORS: Record<string, string> = {
-  'Building tag': '#6b4c2a', 'Count of Building tags': '#6b4c2a',
-  'Space tag': '#1a1a2e', 'Count of Space tags': '#1a1a2e',
-  'Science tag': '#f5f5f5', 'Count of Science tags': '#f5f5f5',
-  'Energy tag': '#6b21a8', 'Count of Power tags': '#6b21a8',
-  'Earth tag': '#1e40af', 'Count of Earth tags': '#1e40af',
-  'Jovian tag': '#92400e', 'Count of Jovian tags': '#92400e',
-  'City tag': '#374151', 'Count of City tags': '#374151',
-  'Plant tag': '#166534', 'Count of Plant tags': '#166534',
-  'Microbe tag': '#065f46', 'Count of Microbe tags': '#065f46',
-  'Animal tag': '#713f12', 'Count of Animal tags': '#713f12',
-  'Wild tag': '#6b7280', 'Count of Wild tags': '#6b7280',
-  'Event tag': '#991b1b', 'Count of played Events cards': '#991b1b',
+  'Building tag': '#6b4c2a',
+  'Space tag': '#1a1a2e',
+  'Science tag': '#f5f5f5',
+  'Energy tag': '#6b21a8',
+  'Earth tag': '#1e40af',
+  'Jovian tag': '#92400e',
+  'City tag': '#374151',
+  'Plant tag': '#166534',
+  'Microbe tag': '#065f46',
+  'Animal tag': '#713f12',
+  'Wild tag': '#6b7280',
+  'Event tag': '#991b1b',
 };
 
 function TagCell({ icon, value, title, large }: { icon?: string; value: number; title: string; large?: boolean }) {
@@ -206,7 +205,8 @@ function TagCell({ icon, value, title, large }: { icon?: string; value: number; 
   );
 }
 
-export function PlayerTrackers({ trackers, tileCounts, inline }: { trackers: Record<string, number>; tileCounts?: { cities: number; greeneries: number; total: number }; inline?: boolean }) {
+export function PlayerTrackers({ player, inline }: { player: Pick<PlayerSnapshotVM, 'resources' | 'production' | 'tags' | 'tileCounts'>; inline?: boolean }) {
+  const { resources, production, tags, tileCounts } = player;
   const [showResources, setShowResources] = useState(true);
   const [showTags, setShowTags] = useState(true);
   const [resourcesZoom, setResourcesZoom] = useState(1);
@@ -253,7 +253,7 @@ export function PlayerTrackers({ trackers, tileCounts, inline }: { trackers: Rec
         {showResources && (
           <div className="flex gap-1 flex-shrink-0" style={{ zoom: resourcesZoom }}>
             {RESOURCES.map(r => (
-              <ResourceCell key={r.key} resourceKey={r.key} icon={getIcon(resourceIcons, r.icon)} value={trackers[r.key] ?? 0} prodValue={trackers[r.prodKey] ?? 0} title={`${r.label}: ${trackers[r.key] ?? 0} (prod: ${trackers[r.prodKey] ?? 0})`} />
+              <ResourceCell key={r.key} resourceKey={r.key} name={r.name} icon={getIcon(resourceIcons, r.icon)} value={resources[r.key]} prodValue={production[r.key]} title={`${r.label}: ${resources[r.key]} (prod: ${production[r.key]})`} />
             ))}
           </div>
         )}
@@ -262,14 +262,12 @@ export function PlayerTrackers({ trackers, tileCounts, inline }: { trackers: Rec
         {/* Tags can wrap against each other */}
         {showTags && (
           <div className="flex gap-1 flex-wrap" style={{ zoom: tagsZoom }}>
-            {TAG_ROWS[0].map(t => {
-              const altKey = 'altKey' in t ? t.altKey : undefined;
-              return <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={getTracker(trackers, t.key, altKey)} title={t.key} />;
-            })}
-            {TAG_ROWS[1].map(t => {
-              const altKey = 'altKey' in t ? t.altKey : undefined;
-              return <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={getTracker(trackers, t.key, altKey)} title={t.key} />;
-            })}
+            {TAG_ROWS[0].map(t => (
+              <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={tags[t.key]} title={t.title} />
+            ))}
+            {TAG_ROWS[1].map(t => (
+              <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={tags[t.key]} title={t.title} />
+            ))}
           </div>
         )}
       </>
@@ -280,42 +278,26 @@ export function PlayerTrackers({ trackers, tileCounts, inline }: { trackers: Rec
     <div className="border-t border-white/10 px-3 py-3 space-y-1.5">
       <div className="flex flex-wrap gap-1">
         {RESOURCES.map(r => (
-          <ResourceCell key={r.key} resourceKey={r.key} icon={getIcon(resourceIcons, r.icon)} value={trackers[r.key] ?? 0} prodValue={trackers[r.prodKey] ?? 0} title={`${r.label}: ${trackers[r.key] ?? 0} (prod: ${trackers[r.prodKey] ?? 0})`} />
+          <ResourceCell key={r.key} resourceKey={r.key} name={r.name} icon={getIcon(resourceIcons, r.icon)} value={resources[r.key]} prodValue={production[r.key]} title={`${r.label}: ${resources[r.key]} (prod: ${production[r.key]})`} />
         ))}
       </div>
       <div className="border-t border-white/10 !mt-3 !mb-2" />
       <div className="flex flex-wrap gap-1">
-        {TAG_ROWS[0].map(t => {
-          const altKey = 'altKey' in t ? t.altKey : undefined;
-          return <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={getTracker(trackers, t.key, altKey)} title={t.key} />;
-        })}
+        {TAG_ROWS[0].map(t => (
+          <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={tags[t.key]} title={t.title} />
+        ))}
       </div>
       <div className="flex flex-wrap gap-1">
-        {TAG_ROWS[1].map(t => {
-          const altKey = 'altKey' in t ? t.altKey : undefined;
-          return <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={getTracker(trackers, t.key, altKey)} title={t.key} />;
-        })}
+        {TAG_ROWS[1].map(t => (
+          <TagCell key={t.key} icon={getIcon(tagIcons, t.icon)} value={tags[t.key]} title={t.title} />
+        ))}
       </div>
 
       {/* Tiles */}
       <div className="flex flex-wrap gap-1">
-        {TAG_ROWS[2].map(t => {
-          let val = getTracker(trackers, t.key);
-          if (val === 0 && tileCounts) {
-            if (t.key === 'City') val = tileCounts.cities;
-            else if (t.key === 'Forest') val = tileCounts.greeneries;
-            else if (t.key === 'Land') val = tileCounts.total;
-          }
-          return (
-            <TagCell
-              key={t.key}
-              icon={getIcon(tileIcons, t.icon)}
-              value={val}
-              title={'label' in t ? t.label : t.key}
-              large
-            />
-          );
-        })}
+        {TILE_COUNT_ROW.map(t => (
+          <TagCell key={t.key} icon={getIcon(tileIcons, t.icon)} value={tileCounts[t.key]} title={t.label} large />
+        ))}
       </div>
     </div>
   );

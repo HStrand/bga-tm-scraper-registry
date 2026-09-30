@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
+import type { PlayerSnapshotVM } from '@/lib/replay/viewModel';
 import { getCubeImage, resourceIcons, getIcon, RESOURCES, temperatureImg } from './replayShared';
 import cityTileImage from '/assets/tiles/city tile.png';
 import greeneryTileImage from '/assets/tiles/greenery tile.png';
@@ -179,16 +180,16 @@ function DeltaBadge({ delta }: { delta: TrackerDelta }) {
   );
 }
 
-/** Compute tracker deltas between two tracker snapshots for a player */
+/** Resource and production changes between two snapshots of a player */
 export function computeTrackerDeltas(
-  prev: Record<string, number> | undefined,
-  curr: Record<string, number> | undefined,
+  prev: Pick<PlayerSnapshotVM, 'resources' | 'production'> | undefined,
+  curr: Pick<PlayerSnapshotVM, 'resources' | 'production'> | undefined,
 ): TrackerDelta[] {
   if (!prev || !curr) return [];
   const deltas: TrackerDelta[] = [];
 
   for (const res of RESOURCES) {
-    const resDelta = (curr[res.key] ?? 0) - (prev[res.key] ?? 0);
+    const resDelta = curr.resources[res.key] - prev.resources[res.key];
     if (resDelta !== 0) {
       deltas.push({
         key: res.key,
@@ -199,10 +200,10 @@ export function computeTrackerDeltas(
       });
     }
 
-    const prodDelta = (curr[res.prodKey] ?? 0) - (prev[res.prodKey] ?? 0);
+    const prodDelta = curr.production[res.key] - prev.production[res.key];
     if (prodDelta !== 0) {
       deltas.push({
-        key: res.prodKey,
+        key: `${res.key} production`,
         label: res.label,
         icon: getIcon(resourceIcons, res.icon),
         delta: prodDelta,

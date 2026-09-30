@@ -1,6 +1,8 @@
 // Per-map overlay coordinates for off-map tiles, global parameter trackers,
 // milestones, awards, and other fixed UI elements rendered on the map image.
 
+import { RESOURCE_KEYS, type PlayerSnapshotVM, type ResourceKey, type TagKey, type TileVM } from '@/lib/replay/viewModel';
+
 export interface OffMapTile {
   name: string;
   tileType: 'city' | 'greenery' | 'special';
@@ -22,26 +24,20 @@ export interface CubeTracker {
 }
 
 export interface ScorerContext {
-  trackers: Record<string, number>;
-  tileCounts?: { cities: number; greeneries: number; total: number };
+  player: PlayerSnapshotVM;
   playerId: string;
-  placedTiles?: Map<string, { dbKey: string; tileType: string; playerId: string; moveIndex: number }>;
-  playedCards?: string[];
-  cardResources?: Record<string, number>;
-  gameState?: import('@/types/gamelog').GameState;
-  hexCoords?: Map<string, [number, number]>; // dbKey -> [col, row] for all hexes on the map
+  tiles: TileVM[];
+  hexCoords?: Map<string, [number, number]>; // hexKey -> [col, row] for all hexes on the map
 }
 
-/** Resolve a tile dbKey to [col, row], using hexCoords lookup for named tiles */
-function resolveCoords(dbKey: string, hexCoords?: Map<string, [number, number]>): [number, number] | null {
-  const m = dbKey.match(/(\d+),(\d+)/);
-  if (m) return [parseInt(m[1], 10), parseInt(m[2], 10)];
-  if (hexCoords) {
-    const coords = hexCoords.get(dbKey);
-    if (coords) return coords;
-  }
-  return null;
+/** Resolve a tile to [col, row], using hexCoords lookup for named tiles */
+function resolveCoords(tile: TileVM, hexCoords?: Map<string, [number, number]>): [number, number] | null {
+  if (tile.col != null && tile.row != null) return [tile.col, tile.row];
+  return hexCoords?.get(tile.hexKey) ?? null;
 }
+
+/** A per-player number a milestone or award is scored on. */
+export type StatRef = { resource: ResourceKey } | { production: ResourceKey } | { tag: TagKey };
 
 export type CustomScorer = (ctx: ScorerContext) => number;
 
@@ -51,8 +47,7 @@ export interface MilestoneAwardOverlay {
   cy: number;
   metric?: string;
   threshold?: number;
-  trackerKeys?: string[];
-  altKeys?: boolean;
+  stats?: StatRef[]; // summed
   includeWildTags?: boolean; // add wild tags to the score (each wild tag counts as +1)
   useTileCounts?: 'cities' | 'greeneries' | 'total';
   useHandCount?: boolean;
@@ -62,9 +57,6 @@ export interface MilestoneAwardOverlay {
 
 export interface AwardOverlay extends MilestoneAwardOverlay {
   metric: string; // description of what's measured
-  trackerKeys: string[]; // keys from player_trackers
-  altKeys?: boolean; // if true, keys are alternates (take max); if false/absent, sum them
-  useTileCounts?: 'cities' | 'greeneries' | 'total'; // use tile counts instead of tracker keys
 }
 
 export interface LabelHitArea {
@@ -86,36 +78,26 @@ export interface MapOverlays {
 
 // Tag keys used for Diversifier counting (excluding Wild)
 // Tags that count for Diversifier (Event tags excluded)
-const TAG_KEYS: [string, string][] = [
-  ['Building tag', 'Count of Building tags'],
-  ['Space tag', 'Count of Space tags'],
-  ['Science tag', 'Count of Science tags'],
-  ['Energy tag', 'Count of Power tags'],
-  ['Earth tag', 'Count of Earth tags'],
-  ['Jovian tag', 'Count of Jovian tags'],
-  ['City tag', 'Count of City tags'],
-  ['Plant tag', 'Count of Plant tags'],
-  ['Microbe tag', 'Count of Microbe tags'],
-  ['Animal tag', 'Count of Animal tags'],
+const DIVERSIFIER_TAGS: TagKey[] = [
+  'building', 'space', 'science', 'power', 'earth', 'jovian', 'city', 'plant', 'microbe', 'animal',
 ];
 
-const diversifierScorer: CustomScorer = ({ trackers }) => {
+const diversifierScorer: CustomScorer = ({ player }) => {
   let distinctTags = 0;
-  for (const [key, altKey] of TAG_KEYS) {
-    if ((trackers[key] ?? trackers[altKey] ?? 0) > 0) distinctTags++;
+  for (const tag of DIVERSIFIER_TAGS) {
+    if (player.tags[tag] > 0) distinctTags++;
   }
-  const wildCount = trackers['Wild tag'] ?? trackers['Count of Wild tags'] ?? 0;
-  const totalTagTypes = TAG_KEYS.length;
+  const wildCount = player.tags.wild;
+  const totalTagTypes = DIVERSIFIER_TAGS.length;
   return Math.min(distinctTags + wildCount, totalTagTypes);
 };
 
-const polarExplorerScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) => {
-  if (!placedTiles) return 0;
+const polarExplorerScorer: CustomScorer = ({ playerId, tiles, hexCoords }) => {
   let count = 0;
-  for (const tile of placedTiles.values()) {
-    if (tile.playerId !== playerId) continue;
-    if (tile.tileType.toLowerCase() === 'ocean') continue;
-    const coords = resolveCoords(tile.dbKey, hexCoords);
+  for (const tile of tiles) {
+    if (tile.placedBy !== playerId) continue;
+    if (tile.type.toLowerCase() === 'ocean') continue;
+    const coords = resolveCoords(tile, hexCoords);
     if (coords && (coords[1] === 8 || coords[1] === 9)) count++;
   }
   return count;
@@ -123,52 +105,46 @@ const polarExplorerScorer: CustomScorer = ({ playerId, placedTiles, hexCoords })
 
 import { countAutomatedCards, countCardsWithRequirements, getCardCategory, getCardMeta, getCardResourceType } from '@/lib/cardMetadata';
 
-const tacticianScorer: CustomScorer = ({ playedCards }) => {
-  return playedCards ? countCardsWithRequirements(playedCards) : 0;
+const tacticianScorer: CustomScorer = ({ player }) => {
+  return countCardsWithRequirements(player.played);
 };
 
-const magnateScorer: CustomScorer = ({ playedCards }) => {
-  return playedCards ? countAutomatedCards(playedCards) : 0;
+const magnateScorer: CustomScorer = ({ player }) => {
+  return countAutomatedCards(player.played);
 };
 
 // Generalist: count how many of the 6 production types are >= 1
-const PROD_KEYS = ['M€ Production', 'Steel Production', 'Titanium Production', 'Plant Production', 'Energy Production', 'Heat Production'];
-const generalistScorer: CustomScorer = ({ trackers }) => {
-  return PROD_KEYS.filter(k => (trackers[k] ?? 0) >= 1).length;
+const generalistScorer: CustomScorer = ({ player }) => {
+  return RESOURCE_KEYS.filter(k => player.production[k] >= 1).length;
 };
 
 // Specialist: highest single production value
-const specialistScorer: CustomScorer = ({ trackers }) => {
-  return Math.max(...PROD_KEYS.map(k => trackers[k] ?? 0));
+const specialistScorer: CustomScorer = ({ player }) => {
+  return Math.max(...RESOURCE_KEYS.map(k => player.production[k]));
 };
 
 // Ecologist: count bio tags (plant + microbe + animal) + wild
-const ecologistScorer: CustomScorer = ({ trackers }) => {
-  const plant = Math.max(trackers['Plant tag'] ?? 0, trackers['Count of Plant tags'] ?? 0);
-  const microbe = Math.max(trackers['Microbe tag'] ?? 0, trackers['Count of Microbe tags'] ?? 0);
-  const animal = Math.max(trackers['Animal tag'] ?? 0, trackers['Count of Animal tags'] ?? 0);
-  const wild = trackers['Wild tag'] ?? trackers['Count of Wild tags'] ?? 0;
+const ecologistScorer: CustomScorer = ({ player }) => {
+  const { plant, microbe, animal, wild } = player.tags;
   return plant + microbe + animal + wild;
 };
 
 // Tycoon: count green (automated) + blue (active) cards played
-const tycoonScorer: CustomScorer = ({ playedCards }) => {
-  if (!playedCards) return 0;
-  return playedCards.filter(c => {
+const tycoonScorer: CustomScorer = ({ player }) => {
+  return player.played.filter(c => {
     const cat = getCardCategory(c);
     return cat === 'automated' || cat === 'action' || cat === 'effect';
   }).length;
 };
 
 // Legend: count event cards played
-const legendScorer: CustomScorer = ({ playedCards }) => {
-  if (!playedCards) return 0;
-  return playedCards.filter(c => getCardCategory(c) === 'event').length;
+const legendScorer: CustomScorer = ({ player }) => {
+  return player.played.filter(c => getCardCategory(c) === 'event').length;
 };
 
 // Engineer: sum of heat + energy production
-const engineerScorer: CustomScorer = ({ trackers }) => {
-  return (trackers['Heat Production'] ?? 0) + (trackers['Energy Production'] ?? 0);
+const engineerScorer: CustomScorer = ({ player }) => {
+  return player.production.heat + player.production.energy;
 };
 
 // Geologist (Vastitas): tiles at or adjacent to volcanic areas
@@ -178,8 +154,7 @@ const VOLCANIC_HEXES: [number, number][] = [
   [2, 4],  // Alba Mons
   [2, 7],  // Uranius Tholus
 ];
-const geologistScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) => {
-  if (!placedTiles) return 0;
+const geologistScorer: CustomScorer = ({ playerId, tiles, hexCoords }) => {
   const volcanicSet = new Set<string>();
   for (const [col, row] of VOLCANIC_HEXES) {
     volcanicSet.add(`${col},${row}`);
@@ -188,44 +163,40 @@ const geologistScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) => 
     }
   }
   let count = 0;
-  for (const tile of placedTiles.values()) {
-    if (tile.playerId !== playerId) continue;
-    if (tile.tileType.toLowerCase() === 'ocean') continue;
-    const coords = resolveCoords(tile.dbKey, hexCoords);
+  for (const tile of tiles) {
+    if (tile.placedBy !== playerId) continue;
+    if (tile.type.toLowerCase() === 'ocean') continue;
+    const coords = resolveCoords(tile, hexCoords);
     if (coords && volcanicSet.has(`${coords[0]},${coords[1]}`)) count++;
   }
   return count;
 };
 
 // Farmer: count animal + microbe resources on cards
-const farmerScorer: CustomScorer = ({ playedCards, cardResources }) => {
-  if (!playedCards || !cardResources) return 0;
+const farmerScorer: CustomScorer = ({ player }) => {
   let total = 0;
-  for (const card of playedCards) {
+  for (const card of player.played) {
     const resType = getCardResourceType(card);
     if (resType === 'animal' || resType === 'microbe') {
-      total += cardResources[card] ?? 0;
+      total += player.cardResources[card] ?? 0;
     }
   }
   return total;
 };
 
 // Traveller (Vastitas): Jovian + Earth tags (+ wild)
-const travellerScorer: CustomScorer = ({ trackers }) => {
-  const jovian = Math.max(trackers['Jovian tag'] ?? 0, trackers['Count of Jovian tags'] ?? 0);
-  const earth = Math.max(trackers['Earth tag'] ?? 0, trackers['Count of Earth tags'] ?? 0);
-  const wild = trackers['Wild tag'] ?? trackers['Count of Wild tags'] ?? 0;
+const travellerScorer: CustomScorer = ({ player }) => {
+  const { jovian, earth, wild } = player.tags;
   return jovian + earth + wild;
 };
 
 // Landscaper (Vastitas): biggest cluster of connected tiles for a player
-const landscaperScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) => {
-  if (!placedTiles) return 0;
+const landscaperScorer: CustomScorer = ({ playerId, tiles, hexCoords }) => {
   const playerHexes = new Set<string>();
-  for (const tile of placedTiles.values()) {
-    if (tile.playerId !== playerId) continue;
-    if (tile.tileType.toLowerCase() === 'ocean') continue;
-    const coords = resolveCoords(tile.dbKey, hexCoords);
+  for (const tile of tiles) {
+    if (tile.placedBy !== playerId) continue;
+    if (tile.type.toLowerCase() === 'ocean') continue;
+    const coords = resolveCoords(tile, hexCoords);
     if (coords) playerHexes.add(`${coords[0]},${coords[1]}`);
   }
   const visited = new Set<string>();
@@ -251,20 +222,19 @@ const landscaperScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) =>
 };
 
 // Highlander (Vastitas): tiles NOT adjacent to any ocean
-const highlanderScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) => {
-  if (!placedTiles) return 0;
+const highlanderScorer: CustomScorer = ({ playerId, tiles, hexCoords }) => {
   const oceanCoords = new Set<string>();
-  for (const tile of placedTiles.values()) {
-    if (tile.tileType.toLowerCase() === 'ocean') {
-      const coords = resolveCoords(tile.dbKey, hexCoords);
+  for (const tile of tiles) {
+    if (tile.type.toLowerCase() === 'ocean') {
+      const coords = resolveCoords(tile, hexCoords);
       if (coords) oceanCoords.add(`${coords[0]},${coords[1]}`);
     }
   }
   let count = 0;
-  for (const tile of placedTiles.values()) {
-    if (tile.playerId !== playerId) continue;
-    if (tile.tileType.toLowerCase() === 'ocean') continue;
-    const coords = resolveCoords(tile.dbKey, hexCoords);
+  for (const tile of tiles) {
+    if (tile.placedBy !== playerId) continue;
+    if (tile.type.toLowerCase() === 'ocean') continue;
+    const coords = resolveCoords(tile, hexCoords);
     if (!coords) continue;
     const neighbors = getHexNeighbors(coords[0], coords[1]);
     if (!neighbors.some(([nc, nr]) => oceanCoords.has(`${nc},${nr}`))) {
@@ -275,36 +245,33 @@ const highlanderScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) =>
 };
 
 // Promoter (Vastitas): most event cards played
-const promoterScorer: CustomScorer = ({ playedCards }) => {
-  if (!playedCards) return 0;
-  return playedCards.filter(c => getCardCategory(c) === 'event').length;
+const promoterScorer: CustomScorer = ({ player }) => {
+  return player.played.filter(c => getCardCategory(c) === 'event').length;
 };
 
 // Celebrity: count played cards costing 20 MC or more
-const celebrityScorer: CustomScorer = ({ playedCards }) => {
-  if (!playedCards) return 0;
-  return playedCards.filter(c => {
+const celebrityScorer: CustomScorer = ({ player }) => {
+  return player.played.filter(c => {
     const meta = getCardMeta(c);
     return meta && meta.cost != null && meta.cost >= 20;
   }).length;
 };
 
 // Desert Settler: tiles below equator (row >= 6), excluding oceans
-const desertSettlerScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) => {
-  if (!placedTiles) return 0;
+const desertSettlerScorer: CustomScorer = ({ playerId, tiles, hexCoords }) => {
   let count = 0;
-  for (const tile of placedTiles.values()) {
-    if (tile.playerId !== playerId) continue;
-    if (tile.tileType.toLowerCase() === 'ocean') continue;
-    const coords = resolveCoords(tile.dbKey, hexCoords);
+  for (const tile of tiles) {
+    if (tile.placedBy !== playerId) continue;
+    if (tile.type.toLowerCase() === 'ocean') continue;
+    const coords = resolveCoords(tile, hexCoords);
     if (coords && coords[1] >= 6) count++;
   }
   return count;
 };
 
 // Benefactor: highest TR
-const benefactorScorer: CustomScorer = ({ playerId, gameState }) => {
-  return gameState?.player_vp?.[playerId]?.total_details?.tr ?? 0;
+const benefactorScorer: CustomScorer = ({ player }) => {
+  return player.tr ?? 0;
 };
 
 // Estate Dealer: tiles adjacent to oceans
@@ -317,20 +284,19 @@ function getHexNeighbors(col: number, row: number): [number, number][] {
   }
 }
 
-const estateDealerScorer: CustomScorer = ({ playerId, placedTiles, hexCoords }) => {
-  if (!placedTiles) return 0;
+const estateDealerScorer: CustomScorer = ({ playerId, tiles, hexCoords }) => {
   const oceanCoords = new Set<string>();
-  for (const tile of placedTiles.values()) {
-    if (tile.tileType.toLowerCase() === 'ocean') {
-      const coords = resolveCoords(tile.dbKey, hexCoords);
+  for (const tile of tiles) {
+    if (tile.type.toLowerCase() === 'ocean') {
+      const coords = resolveCoords(tile, hexCoords);
       if (coords) oceanCoords.add(`${coords[0]},${coords[1]}`);
     }
   }
   let count = 0;
-  for (const tile of placedTiles.values()) {
-    if (tile.playerId !== playerId) continue;
-    if (tile.tileType.toLowerCase() === 'ocean') continue;
-    const coords = resolveCoords(tile.dbKey, hexCoords);
+  for (const tile of tiles) {
+    if (tile.placedBy !== playerId) continue;
+    if (tile.type.toLowerCase() === 'ocean') continue;
+    const coords = resolveCoords(tile, hexCoords);
     if (!coords) continue;
     const neighbors = getHexNeighbors(coords[0], coords[1]);
     if (neighbors.some(([nc, nr]) => oceanCoords.has(`${nc},${nr}`))) {
@@ -405,15 +371,15 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Terraformer', cx: 55, cy: 889, metric: '35 TR', threshold: 35, useTR: true },
       { name: 'Mayor', cx: 161, cy: 889, metric: '3 city tiles', threshold: 3, useTileCounts: 'cities' },
       { name: 'Gardener', cx: 272, cy: 889, metric: '3 greeneries', threshold: 3, useTileCounts: 'greeneries' },
-      { name: 'Builder', cx: 378, cy: 889, metric: '8 building tags', threshold: 8, trackerKeys: ['Building tag', 'Count of Building tags'], altKeys: true, includeWildTags: true },
+      { name: 'Builder', cx: 378, cy: 889, metric: '8 building tags', threshold: 8, stats: [{ tag: 'building' }], includeWildTags: true },
       { name: 'Planner', cx: 488, cy: 889, metric: '16 cards in hand', threshold: 16, useHandCount: true },
     ],
     awards: [
-      { name: 'Landlord', cx: 643, cy: 889, metric: 'Most tiles', trackerKeys: [], useTileCounts: 'total' },
-      { name: 'Banker', cx: 751, cy: 889, metric: 'Most MC production', trackerKeys: ['M€ Production'] },
-      { name: 'Scientist', cx: 860, cy: 889, metric: 'Most science tags', trackerKeys: ['Science tag', 'Count of Science tags'], altKeys: true },
-      { name: 'Thermalist', cx: 968, cy: 889, metric: 'Most heat resources', trackerKeys: ['Heat'] },
-      { name: 'Miner', cx: 1076, cy: 889, metric: 'Most steel + titanium', trackerKeys: ['Steel', 'Titanium'] },
+      { name: 'Landlord', cx: 643, cy: 889, metric: 'Most tiles', useTileCounts: 'total' },
+      { name: 'Banker', cx: 751, cy: 889, metric: 'Most MC production', stats: [{ production: 'mc' }] },
+      { name: 'Scientist', cx: 860, cy: 889, metric: 'Most science tags', stats: [{ tag: 'science' }] },
+      { name: 'Thermalist', cx: 968, cy: 889, metric: 'Most heat resources', stats: [{ resource: 'heat' }] },
+      { name: 'Miner', cx: 1076, cy: 889, metric: 'Most steel + titanium', stats: [{ resource: 'steel' }, { resource: 'titanium' }] },
     ],
     milestonesLabel: { cx: 300, cy: 845, width: 200, height: 30 },
     awardsLabel: { cx: 870, cy: 845, width: 200, height: 30 },
@@ -482,15 +448,15 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Diversifier', cx: 60, cy: 884, metric: '8 different tags', threshold: 8, customScorer: diversifierScorer },
       { name: 'Tactician', cx: 166, cy: 884, metric: '5 cards with requirements', threshold: 5, customScorer: tacticianScorer },
       { name: 'Polar Explorer', cx: 277, cy: 884, metric: '3 tiles in bottom 2 rows', threshold: 3, customScorer: polarExplorerScorer },
-      { name: 'Energizer', cx: 383, cy: 884, metric: '6 energy production', threshold: 6, trackerKeys: ['Energy Production'] },
-      { name: 'Rim Settler', cx: 493, cy: 884, metric: '3 Jovian tags', threshold: 3, trackerKeys: ['Jovian tag', 'Count of Jovian tags'], altKeys: true, includeWildTags: true },
+      { name: 'Energizer', cx: 383, cy: 884, metric: '6 energy production', threshold: 6, stats: [{ production: 'energy' }] },
+      { name: 'Rim Settler', cx: 493, cy: 884, metric: '3 Jovian tags', threshold: 3, stats: [{ tag: 'jovian' }], includeWildTags: true },
     ],
     awards: [
-      { name: 'Cultivator', cx: 648, cy: 884, metric: 'Most greenery tiles', trackerKeys: [], useTileCounts: 'greeneries' },
-      { name: 'Magnate', cx: 756, cy: 884, metric: 'Most automated cards (green)', trackerKeys: [], customScorer: magnateScorer },
-      { name: 'Space Baron', cx: 865, cy: 884, metric: 'Most space tags', trackerKeys: ['Space tag', 'Count of Space tags'], altKeys: true },
-      { name: 'Eccentric', cx: 973, cy: 884, metric: 'Most resources on cards', trackerKeys: [] },
-      { name: 'Contractor', cx: 1081, cy: 884, metric: 'Most building tags', trackerKeys: ['Building tag', 'Count of Building tags'], altKeys: true },
+      { name: 'Cultivator', cx: 648, cy: 884, metric: 'Most greenery tiles', useTileCounts: 'greeneries' },
+      { name: 'Magnate', cx: 756, cy: 884, metric: 'Most automated cards (green)', customScorer: magnateScorer },
+      { name: 'Space Baron', cx: 865, cy: 884, metric: 'Most space tags', stats: [{ tag: 'space' }] },
+      { name: 'Eccentric', cx: 973, cy: 884, metric: 'Most resources on cards' },
+      { name: 'Contractor', cx: 1081, cy: 884, metric: 'Most building tags', stats: [{ tag: 'building' }] },
     ],
     milestonesLabel: { cx: 300, cy: 840, width: 200, height: 30 },
     awardsLabel: { cx: 870, cy: 840, width: 200, height: 30 },
@@ -563,11 +529,11 @@ const overlays: Record<string, MapOverlays> = {
       { name: 'Legend', cx: 488, cy: 889, metric: '5 events played', threshold: 5, customScorer: legendScorer },
     ],
     awards: [
-      { name: 'Celebrity', cx: 643, cy: 889, metric: 'Most cards costing 20+ MC', trackerKeys: [], customScorer: celebrityScorer },
-      { name: 'Industrialist', cx: 751, cy: 889, metric: 'Most steel + energy resources', trackerKeys: ['Steel', 'Energy'] },
-      { name: 'Desert Settler', cx: 860, cy: 889, metric: 'Most tiles below equator', trackerKeys: [], customScorer: desertSettlerScorer },
-      { name: 'Estate Dealer', cx: 968, cy: 889, metric: 'Most tiles adjacent to ocean', trackerKeys: [], customScorer: estateDealerScorer },
-      { name: 'Benefactor', cx: 1076, cy: 889, metric: 'Highest TR', trackerKeys: [], customScorer: benefactorScorer },
+      { name: 'Celebrity', cx: 643, cy: 889, metric: 'Most cards costing 20+ MC', customScorer: celebrityScorer },
+      { name: 'Industrialist', cx: 751, cy: 889, metric: 'Most steel + energy resources', stats: [{ resource: 'steel' }, { resource: 'energy' }] },
+      { name: 'Desert Settler', cx: 860, cy: 889, metric: 'Most tiles below equator', customScorer: desertSettlerScorer },
+      { name: 'Estate Dealer', cx: 968, cy: 889, metric: 'Most tiles adjacent to ocean', customScorer: estateDealerScorer },
+      { name: 'Benefactor', cx: 1076, cy: 889, metric: 'Highest TR', customScorer: benefactorScorer },
     ],
     milestonesLabel: { cx: 300, cy: 835, width: 200, height: 30 },
     awardsLabel: { cx: 870, cy: 835, width: 200, height: 30 },
@@ -633,18 +599,18 @@ const overlays: Record<string, MapOverlays> = {
       },
     ],
     milestones: [
-      { name: 'Agronomist', cx: 55, cy: 886, metric: '4 plant tags', threshold: 4, trackerKeys: ['Plant tag', 'Count of Plant tags'], altKeys: true, includeWildTags: true },
+      { name: 'Agronomist', cx: 55, cy: 886, metric: '4 plant tags', threshold: 4, stats: [{ tag: 'plant' }], includeWildTags: true },
       { name: 'Engineer', cx: 161, cy: 886, metric: '10 heat + energy production', threshold: 10, customScorer: engineerScorer },
-      { name: 'Spacefarer', cx: 272, cy: 886, metric: '4 space tags', threshold: 4, trackerKeys: ['Space tag', 'Count of Space tags'], altKeys: true, includeWildTags: true },
+      { name: 'Spacefarer', cx: 272, cy: 886, metric: '4 space tags', threshold: 4, stats: [{ tag: 'space' }], includeWildTags: true },
       { name: 'Geologist', cx: 378, cy: 886, metric: '3 tiles at/adjacent to volcanic areas', threshold: 3, customScorer: geologistScorer },
       { name: 'Farmer', cx: 488, cy: 886, metric: '5 animal or microbe resources', threshold: 5, customScorer: farmerScorer },
     ],
     awards: [
-      { name: 'Traveller', cx: 643, cy: 886, metric: 'Most Jovian + Earth tags', trackerKeys: [], customScorer: travellerScorer },
-      { name: 'Landscaper', cx: 751, cy: 886, metric: 'Biggest cluster of tiles', trackerKeys: [], customScorer: landscaperScorer },
-      { name: 'Highlander', cx: 860, cy: 886, metric: 'Most tiles not next to oceans', trackerKeys: [], customScorer: highlanderScorer },
-      { name: 'Promoter', cx: 968, cy: 886, metric: 'Most event cards played', trackerKeys: [], customScorer: promoterScorer },
-      { name: 'Blacksmith', cx: 1076, cy: 886, metric: 'Most steel + titanium production', trackerKeys: ['Steel Production', 'Titanium Production'] },
+      { name: 'Traveller', cx: 643, cy: 886, metric: 'Most Jovian + Earth tags', customScorer: travellerScorer },
+      { name: 'Landscaper', cx: 751, cy: 886, metric: 'Biggest cluster of tiles', customScorer: landscaperScorer },
+      { name: 'Highlander', cx: 860, cy: 886, metric: 'Most tiles not next to oceans', customScorer: highlanderScorer },
+      { name: 'Promoter', cx: 968, cy: 886, metric: 'Most event cards played', customScorer: promoterScorer },
+      { name: 'Blacksmith', cx: 1076, cy: 886, metric: 'Most steel + titanium production', stats: [{ production: 'steel' }, { production: 'titanium' }] },
     ],
     milestonesLabel: { cx: 300, cy: 842, width: 200, height: 30 },
     awardsLabel: { cx: 870, cy: 842, width: 200, height: 30 },

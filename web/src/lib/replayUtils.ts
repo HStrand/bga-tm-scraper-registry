@@ -1,5 +1,6 @@
-import type { GameLogMove, GameState } from '@/types/gamelog';
-import type { MilestoneAwardOverlay, AwardOverlay } from '@/data/mapOverlays';
+import type { GameLogMove } from '@/types/gamelog';
+import type { MilestoneAwardOverlay, AwardOverlay, StatRef } from '@/data/mapOverlays';
+import type { GameSnapshotVM, PlayerSnapshotVM } from '@/lib/replay/viewModel';
 
 export interface ClaimFundInfo {
   playerId: string;
@@ -29,55 +30,51 @@ export function parseMilestonesAndAwards(
 }
 
 export interface StandingsContext {
-  playerNames: Record<string, string>;
-  playerTrackers?: Record<string, Record<string, number>>;
-  playerTileCounts?: Record<string, { cities: number; greeneries: number; total: number }>;
-  playerHandCounts?: Record<string, number>;
-  playerPlayedCards?: Record<string, string[]>;
-  playerCardResources?: Record<string, Record<string, number>>;
+  /** Players in display order. */
+  players: { id: string; name: string }[];
+  snapshot: GameSnapshotVM;
+  /** hexKey -> [col, row] for all hexes on the map */
   hexCoords?: Map<string, [number, number]>;
-  gameState?: GameState;
-  placedTiles?: Map<string, { dbKey: string; tileType: string; playerId: string; moveIndex: number }>;
+}
+
+function statValue(player: PlayerSnapshotVM, stat: StatRef): number {
+  if ('resource' in stat) return player.resources[stat.resource];
+  if ('production' in stat) return player.production[stat.production];
+  return player.tags[stat.tag];
 }
 
 export function computeStandings(
   item: MilestoneAwardOverlay | AwardOverlay,
   ctx: StandingsContext,
 ): { name: string; score: number }[] {
-  const pids = Object.keys(ctx.playerTrackers ?? ctx.playerTileCounts ?? {});
+  // Rank the players the source has stats for; without any, those who own tiles.
+  const withStats = ctx.players.filter(p => ctx.snapshot.players[p.id]?.statsKnown);
+  const ranked = withStats.length > 0
+    ? withStats
+    : ctx.players.filter(p => (ctx.snapshot.players[p.id]?.tileCounts.total ?? 0) > 0);
   const scores: { name: string; score: number }[] = [];
-  for (const pid of pids) {
-    const name = ctx.playerNames[pid] ?? pid;
+  for (const { id, name } of ranked) {
+    const player = ctx.snapshot.players[id];
     let score = 0;
     if (item.customScorer) {
       score = item.customScorer({
-        trackers: ctx.playerTrackers?.[pid] ?? {},
-        tileCounts: ctx.playerTileCounts?.[pid],
-        playerId: pid,
-        placedTiles: ctx.placedTiles,
-        playedCards: ctx.playerPlayedCards?.[pid],
-        cardResources: ctx.playerCardResources?.[pid],
+        player,
+        playerId: id,
+        tiles: ctx.snapshot.tiles,
         hexCoords: ctx.hexCoords,
-        gameState: ctx.gameState,
       });
-    } else if (item.useTR && ctx.gameState?.player_vp) {
-      score = ctx.gameState.player_vp[pid]?.total_details?.tr ?? 0;
-    } else if (item.useTileCounts && ctx.playerTileCounts?.[pid]) {
-      score = ctx.playerTileCounts[pid][item.useTileCounts];
-    } else if (item.useHandCount && ctx.playerHandCounts) {
-      score = ctx.playerHandCounts[pid] ?? 0;
-    } else if (item.trackerKeys && item.trackerKeys.length > 0 && ctx.playerTrackers?.[pid]) {
-      const t = ctx.playerTrackers[pid];
-      if (item.altKeys) {
-        score = Math.max(...item.trackerKeys.map(k => t[k] ?? 0));
-      } else {
-        score = item.trackerKeys.reduce((sum, k) => sum + (t[k] ?? 0), 0);
-      }
+    } else if (item.useTR) {
+      score = player.tr ?? 0;
+    } else if (item.useTileCounts) {
+      score = player.tileCounts[item.useTileCounts];
+    } else if (item.useHandCount) {
+      score = player.hand?.length ?? player.handCount ?? 0;
+    } else if (item.stats) {
+      score = item.stats.reduce((sum, stat) => sum + statValue(player, stat), 0);
     }
     // Add wild tags to score when applicable
-    if (item.includeWildTags && ctx.playerTrackers?.[pid]) {
-      const t = ctx.playerTrackers[pid];
-      score += t['Wild tag'] ?? t['Count of Wild tags'] ?? 0;
+    if (item.includeWildTags) {
+      score += player.tags.wild;
     }
     scores.push({ name, score });
   }

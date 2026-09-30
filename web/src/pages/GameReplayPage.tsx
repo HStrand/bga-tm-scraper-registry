@@ -3,20 +3,22 @@ import { Info, Share2, Check, Copy, RefreshCw, MessageSquare, Send, Link, Unlink
 import { api } from '@/lib/api';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
-import { fetchGameLog, extractTilePlacement, parseTileLocationToDbKey, assignPlayerColors } from '@/lib/gameLog';
+import { fetchGameLog, assignPlayerColors } from '@/lib/gameLog';
 import { getMapOverlays } from '@/data/mapOverlays';
-import { parseMilestonesAndAwards } from '@/lib/replayUtils';
-import { ReplayMap, type PlacedTile } from '@/components/replay/ReplayMap';
+import { buildStartingHandData, buildDraftData, detectMissingFeatures, resolveReplayStep } from '@/lib/replay/bga/folds';
+import { buildBgaTimeline, bgaPlayerStats } from '@/lib/replay/bga/bgaAdapter';
+import { ReplayMap } from '@/components/replay/ReplayMap';
 import { ReplayControls } from '@/components/replay/ReplayControls';
 import { GlobalParamsBar } from '@/components/replay/GlobalParamsBar';
 import { MoveLog } from '@/components/replay/MoveLog';
 import { PlayerCard } from '@/components/replay/PlayerCard';
 import { PlayerTableau } from '@/components/replay/PlayerTableau';
 import { DiscardPileModal } from '@/components/replay/DiscardPileModal';
-import { StartingHandModal, type StartingHandPlayerData } from '@/components/replay/StartingHandModal';
-import { DraftModal, type DraftData, type DraftPlayerData } from '@/components/replay/DraftModal';
+import { StartingHandModal } from '@/components/replay/StartingHandModal';
+import { DraftModal } from '@/components/replay/DraftModal';
 import { EndGameSummary } from '@/components/replay/EndGameSummary';
 import { CardPlayPopup, computeTrackerDeltas, type TrackerDelta, type PopupType } from '@/components/replay/CardPlayPopup';
+import { PlayFromHere } from '@/components/play/PlayFromHere';
 import type { GameLog } from '@/types/gamelog';
 
 export function GameReplayPage() {
@@ -189,532 +191,48 @@ export function GameReplayPage() {
     [gameLog],
   );
 
-  const playerNames = useMemo(
-    () => gameLog
-      ? Object.fromEntries(Object.entries(gameLog.players).map(([id, p]) => [id, p.player_name]))
-      : {},
-    [gameLog],
+  // Everything the shared replay components render comes from the view model; the rest of this page
+  // reads the game log directly only for what is specific to BGA replays.
+  const timeline = useMemo(() => gameLog ? buildBgaTimeline(gameLog) : null, [gameLog]);
+  const snapshot = useMemo(
+    () => timeline ? timeline.snapshotAt(currentStep) : null,
+    [timeline, currentStep],
   );
-
-  const playerCorporations = useMemo(
-    () => gameLog
-      ? Object.fromEntries(Object.entries(gameLog.players).map(([id, p]) => [id, p.corporation]))
-      : {},
-    [gameLog],
-  );
-
-  const playerElos = useMemo(
-    () => gameLog
-      ? Object.fromEntries(Object.entries(gameLog.players).map(([id, p]) => {
-          const rank = p.elo_data?.game_rank;
-          const change = p.elo_data?.game_rank_change ?? 0;
-          return [id, rank != null ? rank - change : null];
-        }))
-      : {},
-    [gameLog],
-  );
-
-  const placedTiles = useMemo(() => {
-    if (!gameLog) return new Map<string, PlacedTile>();
-    const map = new Map<string, PlacedTile>();
-    for (let i = 0; i <= currentStep; i++) {
-      const move = gameLog.moves[i];
-      const placement = extractTilePlacement(move);
-      if (placement) {
-        map.set(placement.dbKey, {
-          dbKey: placement.dbKey,
-          tileType: placement.tileType,
-          playerId: move.player_id,
-          moveIndex: i,
-        });
-      }
-      // Land Claim has tile_location but no tile_placed
-      if (!placement && move.tile_location && move.card_played?.toLowerCase() === 'land claim') {
-        const dbKey = parseTileLocationToDbKey(move.tile_location);
-        map.set(dbKey, { dbKey, tileType: 'Land Claim', playerId: move.player_id, moveIndex: i });
-      }
-      // Merge special tiles from game_state
-      const specialTiles = gameLog.moves[i]?.game_state?.special_tiles;
-      if (specialTiles) {
-        for (const [pid, tiles] of Object.entries(specialTiles)) {
-          for (const [tileName, location] of Object.entries(tiles)) {
-            const dbKey = parseTileLocationToDbKey(location);
-            if (!map.has(dbKey)) {
-              map.set(dbKey, { dbKey, tileType: tileName, playerId: pid, moveIndex: i });
-            } else {
-              // Land Claim is just a reservation marker — never overwrite a real tile with it.
-              if (tileName === 'Land Claim') continue;
-              // Update existing tile with special type info
-              const existing = map.get(dbKey)!;
-              existing.tileType = tileName;
-            }
-          }
-        }
-      }
-    }
-    return map;
-  }, [gameLog, currentStep]);
-
-  const playerTileCounts = useMemo(() => {
-    const counts: Record<string, { cities: number; greeneries: number; total: number }> = {};
-    for (const tile of placedTiles.values()) {
-      const t = tile.tileType.toLowerCase();
-      if (t === 'ocean') continue; // oceans are not player-owned tiles
-      if (!counts[tile.playerId]) counts[tile.playerId] = { cities: 0, greeneries: 0, total: 0 };
-      const c = counts[tile.playerId];
-      c.total++;
-      if (t === 'city' || t.includes('capital')) c.cities++;
-      else if (t === 'forest' || t === 'greenery') c.greeneries++;
-    }
-    return counts;
-  }, [placedTiles]);
 
   const offMapTiles = useMemo(() => {
-    if (!mapDefinition) return [] as PlacedTile[];
+    if (!mapDefinition || !snapshot) return [];
     const hexKeys = new Set(mapDefinition.hexes.map(h => h.dbKey));
     const overlays = getMapOverlays(mapDefinition.name);
     const renderedOffMap = new Set(overlays.offMapTiles?.map(t => t.name) ?? []);
-    return Array.from(placedTiles.values()).filter(t => !hexKeys.has(t.dbKey) && !renderedOffMap.has(t.dbKey));
-  }, [placedTiles, mapDefinition]);
+    return snapshot.tiles.filter(t => !hexKeys.has(t.hexKey) && !renderedOffMap.has(t.hexKey));
+  }, [snapshot, mapDefinition]);
 
-  const { claimedMilestones, fundedAwards } = useMemo(() => {
-    if (!gameLog) return { claimedMilestones: new Map(), fundedAwards: new Map() };
-    return parseMilestonesAndAwards(gameLog.moves, currentStep);
-  }, [gameLog, currentStep]);
-
-  const generationBoundaries = useMemo(() => {
-    if (!gameLog) return new Map<number, { start: number; end: number }>();
-    const map = new Map<number, { start: number; end: number }>();
-    for (let i = 0; i < gameLog.moves.length; i++) {
-      const gen = gameLog.moves[i]?.game_state?.generation;
-      if (gen == null) continue;
-      const entry = map.get(gen);
-      if (!entry) {
-        map.set(gen, { start: i, end: i });
-      } else {
-        entry.end = i;
-      }
-    }
-    return map;
-  }, [gameLog]);
-
-  // Build a set of prelude card names per player for separation
-  const playerPreludeNames = useMemo(() => {
-    if (!gameLog) return new Map<string, Set<string>>();
-    const map = new Map<string, Set<string>>();
-    for (const [id, p] of Object.entries(gameLog.players)) {
-      const preludes = p.starting_hand?.preludes;
-      map.set(id, preludes ? new Set(preludes) : new Set());
-    }
-    return map;
-  }, [gameLog]);
-
-  const playerTableaux = useMemo(() => {
-    if (!gameLog) return new Map<string, { headquarters: string[]; played: string[]; hand: string[]; sold: string[]; cardResources: Record<string, number> }>();
-    const map = new Map<string, { headquarters: string[]; played: string[]; hand: string[]; sold: string[]; cardResources: Record<string, number> }>();
-    // Determine which players have selected their starting hand by currentStep
-    const hasKept = new Set<string>();
-    for (let i = 0; i <= currentStep; i++) {
-      const ck = gameLog.moves[i]?.cards_kept;
-      if (ck) for (const pid of Object.keys(ck)) hasKept.add(pid);
-    }
-    for (const [id, p] of Object.entries(gameLog.players)) {
-      // Only show corporation in headquarters after it's been selected
-      const showCorp = !p.starting_hand || hasKept.has(id);
-      map.set(id, { headquarters: showCorp ? [p.corporation] : [], played: [], hand: [], sold: [], cardResources: {} });
-    }
-    // First pass: collect all played cards per player
-    const allPlayed = new Map<string, string[]>();
-    for (const id of Object.keys(gameLog.players)) allPlayed.set(id, []);
-    for (let i = 0; i <= currentStep; i++) {
-      const move = gameLog.moves[i];
-      if (move?.card_played) {
-        allPlayed.get(move.player_id)?.push(move.card_played);
-      }
-    }
-    // Track the first time each card is seen in a player's hand for stable ordering
-    const handFirstSeen = new Map<string, Map<string, number>>();
-    for (const id of Object.keys(gameLog.players)) handFirstSeen.set(id, new Map());
-    let seenCounter = 0;
-
-    for (let i = 0; i <= currentStep; i++) {
-      const move = gameLog.moves[i];
-      // Use the hand snapshot when available (keyed by player id in game_state)
-      const playerHands = move?.game_state?.player_hands;
-      if (playerHands) {
-        for (const [pid, hand] of Object.entries(playerHands)) {
-          const entry = map.get(pid);
-          if (entry) {
-            entry.hand = [...hand];
-            const seen = handFirstSeen.get(pid)!;
-            for (const card of hand) {
-              if (!seen.has(card)) seen.set(card, seenCounter++);
-            }
-          }
-        }
-      }
-      // Seed hand from cards_kept — add any cards not already tracked
-      if (move?.cards_kept) {
-        for (const [pid, cards] of Object.entries(move.cards_kept)) {
-          const entry = map.get(pid);
-          if (entry) {
-            const existing = new Set([...entry.hand, ...entry.headquarters]);
-            const seen = handFirstSeen.get(pid)!;
-            for (const card of cards) {
-              if (!existing.has(card)) entry.hand.push(card);
-              if (!seen.has(card)) seen.set(card, seenCounter++);
-            }
-          }
-        }
-      }
-      // Track sold cards
-      if (move?.cards_sold) {
-        const entry = map.get(move.player_id);
-        if (entry) {
-          for (const card of move.cards_sold) entry.sold.push(card);
-        }
-      }
-      // Extract card resources from game_state.player_vp.details.card_resources
-      const playerVp = move?.game_state?.player_vp;
-      if (playerVp) {
-        for (const [pid, vp] of Object.entries(playerVp)) {
-          const cr = vp.details?.card_resources;
-          if (cr) {
-            const entry = map.get(pid);
-            if (entry) {
-              const resources: Record<string, number> = {};
-              for (const [cardName, res] of Object.entries(cr)) {
-                resources[cardName] = res.count;
-              }
-              entry.cardResources = resources;
-            }
-          }
-        }
-      }
-    }
-    // Move kept preludes and corporation cards from hand to headquarters
-    for (const [pid, entry] of map) {
-      const preludeNames = playerPreludeNames.get(pid);
-      const corp = gameLog.players[pid]?.corporation;
-      const isHQ = (c: string) => (preludeNames?.has(c)) || (corp && c === corp);
-      const kept = entry.hand.filter(isHQ);
-      if (kept.length > 0) {
-        entry.hand = entry.hand.filter(c => !isHQ(c));
-        for (const card of kept) {
-          if (!entry.headquarters.includes(card)) entry.headquarters.push(card);
-        }
-      }
-    }
-    // Reconcile: played cards that are no longer in hand go to played/headquarters
-    for (const [pid, cards] of allPlayed) {
-      const entry = map.get(pid);
-      if (!entry) continue;
-      const handSet = new Set(entry.hand);
-      for (const card of cards) {
-        if (!handSet.has(card)) {
-          const preludeNames = playerPreludeNames.get(pid);
-          if (preludeNames?.has(card)) {
-            if (!entry.headquarters.includes(card)) entry.headquarters.push(card);
-          } else {
-            entry.played.push(card);
-          }
-        }
-      }
-    }
-    // Sort hands by first-seen order so card positions stay stable across steps
-    for (const [pid, entry] of map) {
-      const seen = handFirstSeen.get(pid);
-      if (seen && seen.size > 0) {
-        entry.hand.sort((a, b) => (seen.get(a) ?? Infinity) - (seen.get(b) ?? Infinity));
-      }
-    }
-    return map;
-  }, [gameLog, currentStep, playerPreludeNames]);
+  const generationBoundaries = useMemo(
+    () => timeline?.generationBoundaries ?? new Map<number, { start: number; end: number }>(),
+    [timeline],
+  );
 
   // Build starting hand data for the modal — sensitive to currentStep
-  const startingHandData = useMemo(() => {
-    if (!gameLog) return null;
-    const hasAny = Object.values(gameLog.players).some(p => p.starting_hand);
-    if (!hasAny) return null;
-
-    // Find the move index where each player's cards_kept appears
-    const keptMoveByPlayer = new Map<string, number>();
-    const keptCardsByPlayer = new Map<string, string[]>();
-    for (let i = 0; i < gameLog.moves.length; i++) {
-      const move = gameLog.moves[i];
-      if (move.cards_kept) {
-        for (const [pid, cards] of Object.entries(move.cards_kept)) {
-          if (!keptMoveByPlayer.has(pid)) {
-            keptMoveByPlayer.set(pid, i);
-            keptCardsByPlayer.set(pid, cards);
-          }
-        }
-      }
-    }
-
-    // If all players have kept and currentStep is past all of them, hide the modal entirely
-    const pids = Object.keys(gameLog.players).filter(pid => gameLog.players[pid].starting_hand);
-    const lastKeptMove = Math.max(...pids.map(pid => keptMoveByPlayer.get(pid) ?? -1));
-    if (lastKeptMove >= 0 && currentStep > lastKeptMove) return null;
-
-    const result: Record<string, StartingHandPlayerData> = {};
-    for (const pid of pids) {
-      const player = gameLog.players[pid];
-      const keptAt = keptMoveByPlayer.get(pid);
-      const hasKept = keptAt != null && currentStep >= keptAt;
-      const tableau = playerTableaux.get(pid);
-
-      // Kept preludes and project cards: both from cards_kept data
-      const allKept = hasKept ? (keptCardsByPlayer.get(pid) ?? []) : [];
-      const preludeSet = new Set(player.starting_hand?.preludes ?? []);
-      const keptPreludes = allKept.filter(c => preludeSet.has(c));
-      const keptProjectCards = allKept.filter(c => !preludeSet.has(c) && c !== player.corporation);
-
-      result[pid] = {
-        playerName: player.player_name,
-        color: playerColors[pid] ?? '#888',
-        corporation: player.corporation,
-        startingHand: player.starting_hand!,
-        hasKept,
-        keptCorporation: hasKept ? player.corporation : null,
-        keptPreludes,
-        keptProjectCards,
-      };
-    }
-    return result;
-  }, [gameLog, currentStep, playerTableaux, playerColors]);
+  const startingHandData = useMemo(
+    () => gameLog ? buildStartingHandData(gameLog, currentStep, playerColors) : null,
+    [gameLog, currentStep, playerColors],
+  );
 
   // Compute active draft data based on currentStep
-  const draftData = useMemo((): DraftData | null => {
-    if (!gameLog) return null;
-
-    // Find all draft sequences (grouped by generation)
-    // A draft sequence starts with a card_options move and ends with the last cards_kept move
-    interface DraftSequence {
-      startIdx: number;
-      endIdx: number; // last cards_kept move
-      generation: number;
-    }
-    const sequences: DraftSequence[] = [];
-    let seqStart: number | null = null;
-    let seqGen = 0;
-    let lastKeptIdx = -1;
-
-    for (let i = 0; i < gameLog.moves.length; i++) {
-      const m = gameLog.moves[i];
-      if (m.action_type !== 'draft') {
-        // Takeback/cancelled moves can appear mid-draft (a player undoes a pick).
-        // Treat them as transparent so they don't terminate the sequence and
-        // collapse the draft window before the draft is actually resolved.
-        if (m.action_type === 'cancelled' || m.action_type === 'takeback') continue;
-        if (seqStart != null) {
-          sequences.push({ startIdx: seqStart, endIdx: lastKeptIdx >= seqStart ? lastKeptIdx : i - 1, generation: seqGen });
-          seqStart = null;
-        }
-        continue;
-      }
-      if (m.card_options && seqStart == null) {
-        seqStart = i;
-        seqGen = m.game_state?.generation ?? 0;
-      }
-      if (m.cards_kept) lastKeptIdx = i;
-    }
-    if (seqStart != null) {
-      sequences.push({ startIdx: seqStart, endIdx: lastKeptIdx >= seqStart ? lastKeptIdx : gameLog.moves.length - 1, generation: seqGen });
-    }
-
-    // Find the active sequence for currentStep (show until 1 move after last kept)
-    const activeSeq = sequences.find(s => currentStep >= s.startIdx && currentStep <= s.endIdx);
-    if (!activeSeq) return null;
-
-    // Build player data by replaying draft moves up to currentStep
-    const pids = Object.keys(gameLog.players);
-    const players: Record<string, DraftPlayerData> = {};
-    for (const pid of pids) {
-      players[pid] = {
-        playerName: gameLog.players[pid].player_name,
-        color: playerColors[pid] ?? '#888',
-        options: [],
-        drafted: [],
-        keptCards: null,
-      };
-    }
-
-    // Current hand per player (cards in front of them, not yet picked from)
-    const currentHand = new Map<string, string[]>();
-    // Full initial pool for inferring missing picks
-    let initialPool: Set<string> | null = null;
-    const cardsPerPlayer = { count: 0 };
-
-    let direction: 'left' | 'right' = 'right';
-    let directionDetected = false;
-    let firstOptions: Map<string, Set<string>> | null = null;
-
-    for (let i = activeSeq.startIdx; i <= Math.min(currentStep, activeSeq.endIdx); i++) {
-      const m = gameLog.moves[i];
-      if (m.action_type !== 'draft') continue;
-
-      // Process card_drafted BEFORE card_options on the same move,
-      // since the pick is from the previous hand, then new hands arrive
-      if (m.card_drafted && m.player_id && !m.cards_kept) {
-        const hand = currentHand.get(m.player_id);
-        if (hand) {
-          const idx = hand.indexOf(m.card_drafted);
-          if (idx >= 0) hand.splice(idx, 1);
-        }
-        if (!players[m.player_id]?.drafted.includes(m.card_drafted)) {
-          players[m.player_id]?.drafted.push(m.card_drafted);
-        }
-      }
-
-      if (m.card_options) {
-        // Set each player's current hand (new pass of cards arriving)
-        for (const [pid, cards] of Object.entries(m.card_options)) {
-          currentHand.set(pid, [...cards]);
-        }
-
-        // Capture initial pool from first card_options
-        if (!initialPool) {
-          initialPool = new Set();
-          for (const cards of Object.values(m.card_options)) {
-            for (const c of cards) initialPool.add(c);
-          }
-          cardsPerPlayer.count = initialPool.size / pids.length;
-        }
-
-        // Auto-draft forced picks (1 card remaining)
-        for (const [pid, cards] of Object.entries(m.card_options)) {
-          if (cards.length === 1) {
-            if (!players[pid]?.drafted.includes(cards[0])) {
-              players[pid]?.drafted.push(cards[0]);
-            }
-            currentHand.set(pid, []);
-          }
-        }
-
-        // Detect direction from second card_options move (only once)
-        if (!firstOptions) {
-          firstOptions = new Map();
-          for (const [pid, cards] of Object.entries(m.card_options)) {
-            firstOptions.set(pid, new Set(cards));
-          }
-        } else if (!directionDetected) {
-          directionDetected = true;
-          const pidList = Object.keys(m.card_options);
-          if (pidList.length >= 2) {
-            const cur1 = new Set(m.card_options[pidList[1]] ?? []);
-            const prev0 = firstOptions.get(pidList[0]);
-            if (prev0 && [...cur1].every(c => prev0.has(c))) {
-              direction = 'right';
-            } else {
-              const curLast = new Set(m.card_options[pidList[pidList.length - 1]] ?? []);
-              if (prev0 && [...curLast].every(c => prev0.has(c))) {
-                direction = 'left';
-              }
-            }
-          }
-        }
-      }
-
-      if (m.cards_kept) {
-        for (const [pid, cards] of Object.entries(m.cards_kept)) {
-          if (players[pid]) players[pid].keptCards = cards;
-        }
-      }
-    }
-
-    // Infer missing draft picks from the initial pool, but only once all
-    // forced picks are done (every player should have cardsPerPlayer drafted)
-    if (initialPool && cardsPerPlayer.count > 0) {
-      const totalDrafted = pids.reduce((sum, pid) => sum + players[pid].drafted.length, 0);
-      const expectedTotal = initialPool.size;
-      // Only infer if we're close to done (at least N-1 cards per player drafted)
-      if (totalDrafted >= expectedTotal - pids.length) {
-        const allDrafted = new Set<string>();
-        for (const pid of pids) {
-          for (const c of players[pid].drafted) allDrafted.add(c);
-        }
-        const missing = [...initialPool].filter(c => !allDrafted.has(c));
-        for (const card of missing) {
-          const shortPlayer = pids.find(pid => players[pid].drafted.length < cardsPerPlayer.count);
-          if (shortPlayer) {
-            players[shortPlayer].drafted.push(card);
-          }
-        }
-      }
-    }
-
-    // Set options = current hand (cards in front of the player, not yet picked)
-    for (const pid of pids) {
-      players[pid].options = currentHand.get(pid) ?? [];
-    }
-
-    return {
-      generation: activeSeq.generation,
-      direction,
-      players,
-    };
-  }, [gameLog, currentStep, playerColors]);
+  const draftData = useMemo(
+    () => gameLog ? buildDraftData(gameLog, currentStep, playerColors) : null,
+    [gameLog, currentStep, playerColors],
+  );
 
   // Track draft generation changes (no auto-open)
   useEffect(() => {
     prevDraftGen.current = draftData?.generation ?? null;
   }, [draftData?.generation]);
 
-
-  // Track which action cards have been activated this generation
-  const activatedCards = useMemo(() => {
-    if (!gameLog) return new Map<string, Set<string>>();
-    const currentGen = gameLog.moves[currentStep]?.game_state?.generation;
-    if (currentGen == null) return new Map<string, Set<string>>();
-    const bounds = generationBoundaries.get(currentGen);
-    const startIdx = bounds?.start ?? 0;
-    const activated = new Map<string, Set<string>>();
-    for (let i = startIdx; i <= currentStep; i++) {
-      const move = gameLog.moves[i];
-      if (move.action_type === 'activate_card') {
-        const match = move.description.match(/activates (.+?)(?:\s*\||$)/i);
-        if (match) {
-          const cardName = match[1].trim();
-          if (!activated.has(move.player_id)) activated.set(move.player_id, new Set());
-          activated.get(move.player_id)!.add(cardName);
-        }
-      }
-    }
-    return activated;
-  }, [gameLog, currentStep, generationBoundaries]);
-
-  const discardPile = useMemo(() => {
-    if (!gameLog) return [];
-    const cards: string[] = [];
-    const revealRejectRe = /reveals ([^:]+): it does not have a /gi;
-    for (let i = 0; i <= currentStep; i++) {
-      const move = gameLog.moves[i];
-      if (move?.cards_discarded) cards.push(...move.cards_discarded);
-      if (move?.cards_sold) cards.push(...move.cards_sold);
-      if (move?.description) {
-        let m: RegExpExecArray | null;
-        while ((m = revealRejectRe.exec(move.description)) !== null) {
-          cards.push(m[1].trim());
-        }
-      }
-    }
-    return cards;
-  }, [gameLog, currentStep]);
-
   // Resolve a step index to skip game_state_change moves
   const resolveStep = useCallback((target: number, direction: 'forward' | 'backward' | 'auto' = 'auto') => {
     if (!gameLog) return target;
-    const clamped = Math.max(0, Math.min(target, gameLog.moves.length - 1));
-    if (gameLog.moves[clamped]?.action_type !== 'game_state_change') return clamped;
-    // For 'auto' (slider/jump), go backward to show previous real move
-    // For 'forward' (next), skip ahead; for 'backward' (prev), skip back
-    const dir = direction === 'forward' ? 1 : -1;
-    let step = clamped + dir;
-    while (step >= 0 && step < gameLog.moves.length && gameLog.moves[step]?.action_type === 'game_state_change') {
-      step += dir;
-    }
-    return Math.max(0, Math.min(step, gameLog.moves.length - 1));
+    return resolveReplayStep(gameLog, target, direction);
   }, [gameLog]);
 
   // --- jump ---
@@ -724,17 +242,7 @@ export function GameReplayPage() {
   }, [gameLog, resolveStep]);
 
   // --- missing features detection ---
-  const missingFeatures = useMemo(() => {
-    if (!gameLog) return [];
-    const missing: { key: string; label: string }[] = [];
-    const hasPlayerHands = gameLog.moves.some(m => m.game_state?.player_hands);
-    const hasCardsDiscarded = gameLog.moves.some(m => m.cards_discarded);
-    const hasSpecialTiles = gameLog.moves.some(m => m.game_state?.special_tiles);
-    if (!hasPlayerHands) missing.push({ key: 'player_hands', label: 'Player hands' });
-    if (!hasCardsDiscarded) missing.push({ key: 'cards_discarded', label: 'Cards discarded' });
-    if (!hasSpecialTiles) missing.push({ key: 'special_tiles', label: 'Special tile placements' });
-    return missing;
-  }, [gameLog]);
+  const missingFeatures = useMemo(() => gameLog ? detectMissingFeatures(gameLog) : [], [gameLog]);
 
   // --- keyboard ---
   useEffect(() => {
@@ -760,7 +268,10 @@ export function GameReplayPage() {
       ? gameLog.moves[currentStep - 1]?.game_state?.player_trackers?.[move.player_id]
       : undefined;
     const currTrackers = move.game_state?.player_trackers?.[move.player_id];
-    const deltas = computeTrackerDeltas(prevTrackers, currTrackers);
+    const deltas = computeTrackerDeltas(
+      prevTrackers && bgaPlayerStats(prevTrackers),
+      currTrackers && bgaPlayerStats(currTrackers),
+    );
 
     const color = playerColors[move.player_id] ?? '#888';
     const base = { player: move.player_name, color, deltas };
@@ -827,7 +338,7 @@ export function GameReplayPage() {
     );
   }
 
-  if (error || !gameLog) {
+  if (error || !gameLog || !timeline || !snapshot) {
     return (
       <div className="bg-red-900/20 border border-red-800/40 rounded-lg p-4 text-red-300">
         <p className="font-medium">{error ?? 'Game not found.'}</p>
@@ -865,6 +376,7 @@ export function GameReplayPage() {
   const currentMove = gameLog.moves[currentStep];
   const gameState = currentMove?.game_state;
   const isLastMove = currentStep === gameLog.moves.length - 1;
+  const players = timeline.info.players;
 
   return (
     <div>
@@ -909,6 +421,13 @@ export function GameReplayPage() {
             <MessageSquare size={16} />
             <span>Comments{comments.length > 0 ? ` (${comments.length})` : ''}</span>
           </button>
+          {tableId && (
+            <PlayFromHere
+              tableId={tableId}
+              moveIndex={currentStep}
+              playerNames={Object.fromEntries(players.map(p => [p.id, p.name]))}
+            />
+          )}
         </div>
       </div>
 
@@ -992,29 +511,22 @@ export function GameReplayPage() {
       <div className="flex gap-4 overflow-x-clip">
         {/* Left: Player cards */}
         <div className="w-[320px] flex-shrink-0 space-y-3">
-          {gameState?.player_vp && Object.keys(gameState.player_vp).map(pid => {
-            const tableau = playerTableaux.get(pid);
+          {players.filter(p => snapshot.players[p.id]?.vp).map(p => {
+            const player = snapshot.players[p.id];
+            const corporation = p.corporation ?? '';
             return (
               <PlayerCard
-                key={pid}
-                playerId={pid}
-                playerName={playerNames[pid] ?? pid}
-                corporation={(tableau?.headquarters ?? []).includes(playerCorporations[pid] ?? '') ? playerCorporations[pid] ?? '' : ''}
-                color={playerColors[pid] ?? '#888'}
-                elo={playerElos?.[pid] ?? null}
-                vp={gameState.player_vp?.[pid]}
-                trackers={gameState.player_trackers?.[pid]}
-                tileCounts={playerTileCounts?.[pid]}
-                isStartingPlayer={gameState.starting_player === pid}
-                isExpanded={expandedPlayerIds.has(pid)}
-                onExpand={() => handlePlayerExpand(pid)}
-                onCollapse={() => handlePlayerCollapse(pid)}
-                headquarters={tableau?.headquarters ?? []}
-                played={tableau?.played ?? []}
-                hand={tableau?.hand ?? []}
-                sold={tableau?.sold ?? []}
-                cardResources={tableau?.cardResources ?? {}}
-                activatedCards={activatedCards.get(pid)}
+                key={p.id}
+                playerId={p.id}
+                playerName={p.name}
+                corporation={player.headquarters.includes(corporation) ? corporation : ''}
+                color={p.color}
+                elo={p.elo ?? null}
+                player={player}
+                isStartingPlayer={snapshot.firstPlayerId === p.id}
+                isExpanded={expandedPlayerIds.has(p.id)}
+                onExpand={() => handlePlayerExpand(p.id)}
+                onCollapse={() => handlePlayerCollapse(p.id)}
               />
             );
           })}
@@ -1105,28 +617,7 @@ export function GameReplayPage() {
                 </div>
               )}
               {mapDefinition ? (
-                <ReplayMap
-                  mapDefinition={mapDefinition}
-                  placedTiles={placedTiles}
-                  playerColors={playerColors}
-                  currentStep={currentStep}
-                  gameState={gameState}
-                  claimedMilestones={claimedMilestones}
-                  fundedAwards={fundedAwards}
-                  playerNames={playerNames}
-                  playerTrackers={gameState?.player_trackers}
-                  playerTileCounts={playerTileCounts}
-                  playerHandCounts={Object.fromEntries(
-                    Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.hand.length])
-                  )}
-                  moves={gameLog.moves}
-                  playerPlayedCards={Object.fromEntries(
-                    Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.played])
-                  )}
-                  playerCardResources={Object.fromEntries(
-                    Array.from(playerTableaux.entries()).map(([pid, t]) => [pid, t.cardResources])
-                  )}
-                />
+                <ReplayMap mapDefinition={mapDefinition} info={timeline.info} snapshot={snapshot} />
               ) : (
                 <div className="glass-panel rounded-xl p-8 text-center text-slate-400">
                   Map &ldquo;{gameLog.map}&rdquo; not available for visualization.
@@ -1137,10 +628,10 @@ export function GameReplayPage() {
                 <div className="mt-3 text-sm text-slate-400 text-left">
                   <span className="font-medium text-slate-300">Off-map tiles:</span>{' '}
                   {offMapTiles.map((t, i) => (
-                    <span key={t.dbKey}>
+                    <span key={t.hexKey}>
                       {i > 0 && ', '}
-                      <span className="inline-block w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: playerColors[t.playerId] }} />
-                      {t.dbKey} ({t.tileType} &mdash; {gameLog.players[t.playerId]?.player_name ?? t.playerId})
+                      <span className="inline-block w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: t.placedBy != null ? playerColors[t.placedBy] : undefined }} />
+                      {t.hexKey} ({t.type} &mdash; {(t.placedBy != null ? gameLog.players[t.placedBy]?.player_name : undefined) ?? t.placedBy})
                     </span>
                   ))}
                 </div>
@@ -1151,7 +642,7 @@ export function GameReplayPage() {
               <ReplayControls
                 currentStep={currentStep}
                 totalMoves={gameLog.moves.length}
-                gameState={gameState}
+                generation={snapshot.generation}
                 isAnimating={false}
                 onPrev={() => setCurrentStep(s => resolveStep(s - 1, 'backward'))}
                 onNext={() => setCurrentStep(s => resolveStep(s + 1, 'forward'))}
@@ -1197,7 +688,7 @@ export function GameReplayPage() {
               <ReplayControls
                 currentStep={currentStep}
                 totalMoves={gameLog.moves.length}
-                gameState={gameState}
+                generation={snapshot.generation}
                 isAnimating={false}
                 onPrev={() => setCurrentStep(s => resolveStep(s - 1, 'backward'))}
                 onNext={() => setCurrentStep(s => resolveStep(s + 1, 'forward'))}
@@ -1212,7 +703,7 @@ export function GameReplayPage() {
 
         {/* Right: Global params + Move log */}
         <div className="w-[380px] flex-shrink-0 space-y-3 lg:self-start lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto scrollbar-hidden">
-          <GlobalParamsBar gameState={gameState} onOpenDiscardPile={() => setShowDiscardPile(true)} />
+          <GlobalParamsBar snapshot={snapshot} onOpenDiscardPile={() => setShowDiscardPile(true)} />
           <div
             ref={logContainerRef}
             className={logPosition ? 'fixed z-50 w-[380px]' : ''}
@@ -1254,17 +745,17 @@ export function GameReplayPage() {
           playerName={gameLog.players[tableauPlayerId].player_name}
           corporation={gameLog.players[tableauPlayerId].corporation}
           color={playerColors[tableauPlayerId]}
-          headquarters={playerTableaux.get(tableauPlayerId)?.headquarters ?? []}
-          played={playerTableaux.get(tableauPlayerId)?.played ?? []}
-          hand={playerTableaux.get(tableauPlayerId)?.hand ?? []}
-          sold={playerTableaux.get(tableauPlayerId)?.sold ?? []}
-          cardResources={playerTableaux.get(tableauPlayerId)?.cardResources ?? {}}
+          headquarters={snapshot.players[tableauPlayerId]?.headquarters ?? []}
+          played={snapshot.players[tableauPlayerId]?.played ?? []}
+          hand={snapshot.players[tableauPlayerId]?.hand ?? []}
+          sold={snapshot.players[tableauPlayerId]?.sold ?? []}
+          cardResources={snapshot.players[tableauPlayerId]?.cardResources ?? {}}
           onClose={() => setTableauPlayerId(null)}
         />
       )}
 
       {showDiscardPile && (
-        <DiscardPileModal cards={discardPile} onClose={() => setShowDiscardPile(false)} />
+        <DiscardPileModal cards={snapshot.piles.discardCards ?? []} onClose={() => setShowDiscardPile(false)} />
       )}
 
       {startingHandData && startingHandOpen && (
@@ -1291,15 +782,18 @@ export function GameReplayPage() {
 
       {endGameOpen && isLastMove && gameState?.player_vp && gameLog && (
         <EndGameSummary
-          players={Object.keys(gameLog.players).map(pid => ({
-            playerId: pid,
-            playerName: gameLog.players[pid].player_name,
-            color: playerColors[pid] ?? '#888',
-            corporation: playerCorporations[pid] ?? '',
-            vp: gameState.player_vp?.[pid],
-            finalVp: gameLog.players[pid].final_vp,
-            mcRemaining: gameState.player_trackers?.[pid]?.['M€'] ?? null,
-          }))}
+          players={players.map(p => {
+            const player = snapshot.players[p.id];
+            return {
+              playerId: p.id,
+              playerName: p.name,
+              color: p.color,
+              corporation: p.corporation ?? '',
+              vp: player.vp,
+              finalVp: gameLog.players[p.id].final_vp,
+              mcRemaining: player.statsKnown ? player.resources.mc : null,
+            };
+          })}
           winner={gameLog.winner}
           onClose={() => setEndGameOpen(false)}
         />

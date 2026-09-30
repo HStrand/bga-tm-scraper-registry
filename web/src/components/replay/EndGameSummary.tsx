@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Trophy, Award, Flag, Trees, Building2, Layers } from 'lucide-react';
-import type { PlayerVictoryPoints } from '@/types/gamelog';
+import type { VpVM } from '@/lib/replay/viewModel';
 import { getCubeImage, resourceIcons, getIcon } from './replayShared';
 
 import trImg from '/assets/tr.png';
@@ -13,7 +13,7 @@ export interface PlayerSummary {
   playerName: string;
   color: string;
   corporation: string;
-  vp: PlayerVictoryPoints | undefined;
+  vp: VpVM | null | undefined;
   finalVp: number | null;
   mcRemaining?: number | null;
 }
@@ -24,7 +24,7 @@ interface EndGameSummaryProps {
   onClose: () => void;
 }
 
-const VP_CATEGORIES: { key: keyof NonNullable<PlayerVictoryPoints['total_details']>; label: string; icon: typeof Trophy }[] = [
+const VP_CATEGORIES: { key: keyof NonNullable<VpVM['breakdown']>; label: string; icon: typeof Trophy }[] = [
   { key: 'tr', label: 'TR', icon: Trophy },
   { key: 'milestones', label: 'Miles.', icon: Flag },
   { key: 'awards', label: 'Awards', icon: Award },
@@ -94,7 +94,7 @@ export function EndGameSummary({ players, winner, onClose }: EndGameSummaryProps
             const cube = getCubeImage(p.color);
             const total = p.vp?.total ?? p.finalVp ?? 0;
             const isWinner = p.playerName === winner || (idx === 0 && !winner);
-            const details = p.vp?.total_details;
+            const details = p.vp?.breakdown;
             const showTiebreaker = hasTie && total === topVp && p.mcRemaining != null;
 
             return (

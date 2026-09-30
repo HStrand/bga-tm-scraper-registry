@@ -1,0 +1,4932 @@
+{
+ "playerColors": {
+  "86296239": "#ffa500",
+  "98490496": "#ff0000"
+ },
+ "generationBoundaries": {
+  "$map": [
+   [
+    1,
+    {
+     "start": 0,
+     "end": 36
+    }
+   ],
+   [
+    2,
+    {
+     "start": 37,
+     "end": 67
+    }
+   ],
+   [
+    3,
+    {
+     "start": 68,
+     "end": 96
+    }
+   ],
+   [
+    4,
+    {
+     "start": 97,
+     "end": 128
+    }
+   ],
+   [
+    5,
+    {
+     "start": 129,
+     "end": 178
+    }
+   ],
+   [
+    6,
+    {
+     "start": 179,
+     "end": 248
+    }
+   ],
+   [
+    7,
+    {
+     "start": 249,
+     "end": 284
+    }
+   ],
+   [
+    8,
+    {
+     "start": 285,
+     "end": 332
+    }
+   ],
+   [
+    9,
+    {
+     "start": 333,
+     "end": 401
+    }
+   ],
+   [
+    10,
+    {
+     "start": 402,
+     "end": 481
+    }
+   ]
+  ]
+ },
+ "playerPreludeNames": {
+  "$map": [
+   [
+    "86296239",
+    {
+     "$set": [
+      "Huge Asteroid",
+      "Mohole Excavation",
+      "Polar Industries",
+      "Research Network"
+     ]
+    }
+   ],
+   [
+    "98490496",
+    {
+     "$set": [
+      "Great Aquifer",
+      "Metals Company",
+      "Power Generation",
+      "UNMI Contractor"
+     ]
+    }
+   ]
+  ]
+ },
+ "missingFeatures": [],
+ "steps": [
+  {
+   "step": 0,
+   "placedTiles": {
+    "$map": []
+   },
+   "playerTileCounts": {},
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": []
+    },
+    "fundedAwards": {
+     "$map": []
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [],
+       "played": [],
+       "hand": [],
+       "sold": [],
+       "cardResources": {}
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [],
+       "played": [],
+       "hand": [],
+       "sold": [],
+       "cardResources": {}
+      }
+     ]
+    ]
+   },
+   "startingHandData": {
+    "86296239": {
+     "playerName": "StrandedKnight",
+     "color": "#ffa500",
+     "corporation": "Point Luna",
+     "startingHand": {
+      "corporations": [
+       "Point Luna",
+       "PhoboLog"
+      ],
+      "preludes": [
+       "Huge Asteroid",
+       "Mohole Excavation",
+       "Polar Industries",
+       "Research Network"
+      ],
+      "project_cards": [
+       "Acquired Company",
+       "Artificial Photosynthesis",
+       "Titanium Mine",
+       "Magnetic Field Generators",
+       "Protected Habitats",
+       "Permafrost extraction",
+       "Rad-Chem Factory",
+       "Underground City",
+       "Giant Space Mirror",
+       "Space Hotels"
+      ]
+     },
+     "hasKept": false,
+     "keptCorporation": null,
+     "keptPreludes": [],
+     "keptProjectCards": []
+    },
+    "98490496": {
+     "playerName": "cdman234",
+     "color": "#ff0000",
+     "corporation": "CrediCor",
+     "startingHand": {
+      "corporations": [
+       "CrediCor",
+       "Helion"
+      ],
+      "preludes": [
+       "Great Aquifer",
+       "Metals Company",
+       "Power Generation",
+       "UNMI Contractor"
+      ],
+      "project_cards": [
+       "Comet",
+       "Moss",
+       "Invention Contest",
+       "Plantation",
+       "Interstellar Colony Ship",
+       "Cloud Seeding",
+       "Inventors' Guild",
+       "Mining Rights",
+       "Mars University",
+       "Nuclear Zone"
+      ]
+     },
+     "hasKept": false,
+     "keptCorporation": null,
+     "keptPreludes": [],
+     "keptProjectCards": []
+    }
+   },
+   "draftData": null,
+   "activatedCards": {
+    "$map": []
+   },
+   "discardPile": []
+  },
+  {
+   "step": 40,
+   "placedTiles": {
+    "$map": [
+     [
+      "Olympus Mons",
+      {
+       "dbKey": "Olympus Mons",
+       "tileType": "Nuclear Zone",
+       "playerId": "98490496",
+       "moveIndex": 10
+      }
+     ],
+     [
+      "Hex 7,8",
+      {
+       "dbKey": "Hex 7,8",
+       "tileType": "Mining",
+       "playerId": "98490496",
+       "moveIndex": 20
+      }
+     ]
+    ]
+   },
+   "playerTileCounts": {
+    "98490496": {
+     "cities": 0,
+     "greeneries": 0,
+     "total": 2
+    }
+   },
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": []
+    },
+    "fundedAwards": {
+     "$map": []
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [
+        "Point Luna",
+        "Mohole Excavation",
+        "Research Network"
+       ],
+       "played": [
+        "Space Hotels",
+        "Great Escarpment Consortium"
+       ],
+       "hand": [
+        "Acquired Company",
+        "Titanium Mine",
+        "Protected Habitats",
+        "Giant Space Mirror",
+        "Tundra Farming",
+        "Nitrophilic Moss",
+        "Arctic Algae",
+        "Domed Crater"
+       ],
+       "sold": [],
+       "cardResources": {}
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [
+        "CrediCor",
+        "Metals Company",
+        "UNMI Contractor"
+       ],
+       "played": [
+        "Nuclear Zone",
+        "Mineral Deposit",
+        "Mining Rights",
+        "Invention Contest",
+        "Mars University",
+        "Space Mirrors"
+       ],
+       "hand": [
+        "Comet",
+        "Plantation",
+        "Inventors' Guild",
+        "Ecological Zone",
+        "Aerobraked Ammonia Asteroid",
+        "Special Design"
+       ],
+       "sold": [],
+       "cardResources": {}
+      }
+     ]
+    ]
+   },
+   "startingHandData": null,
+   "draftData": {
+    "generation": 2,
+    "direction": "right",
+    "players": {
+     "86296239": {
+      "playerName": "StrandedKnight",
+      "color": "#ffa500",
+      "options": [
+       "Steelworks",
+       "Rover Construction"
+      ],
+      "drafted": [
+       "Lichen",
+       "Energy Tapping"
+      ],
+      "keptCards": null
+     },
+     "98490496": {
+      "playerName": "cdman234",
+      "color": "#ff0000",
+      "options": [
+       "Breathing Filters",
+       "Fuel Factory",
+       "Underground Detonations"
+      ],
+      "drafted": [
+       "Archaebacteria"
+      ],
+      "keptCards": null
+     }
+    }
+   },
+   "activatedCards": {
+    "$map": []
+   },
+   "discardPile": [
+    "Artificial Photosynthesis",
+    "Magnetic Field Generators",
+    "Permafrost extraction",
+    "Rad-Chem Factory",
+    "Underground City",
+    "Moss",
+    "Interstellar Colony Ship",
+    "Cloud Seeding",
+    "Dust Seals",
+    "Power Supply Consortium",
+    "Psychrophiles"
+   ]
+  },
+  {
+   "step": 80,
+   "placedTiles": {
+    "$map": [
+     [
+      "Olympus Mons",
+      {
+       "dbKey": "Olympus Mons",
+       "tileType": "Nuclear Zone",
+       "playerId": "98490496",
+       "moveIndex": 10
+      }
+     ],
+     [
+      "Hex 7,8",
+      {
+       "dbKey": "Hex 7,8",
+       "tileType": "Mining",
+       "playerId": "98490496",
+       "moveIndex": 20
+      }
+     ]
+    ]
+   },
+   "playerTileCounts": {
+    "98490496": {
+     "cities": 0,
+     "greeneries": 0,
+     "total": 2
+    }
+   },
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": []
+    },
+    "fundedAwards": {
+     "$map": []
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [
+        "Point Luna",
+        "Mohole Excavation",
+        "Research Network"
+       ],
+       "played": [
+        "Space Hotels",
+        "Great Escarpment Consortium",
+        "Acquired Company",
+        "Energy Tapping",
+        "Titanium Mine"
+       ],
+       "hand": [
+        "Protected Habitats",
+        "Giant Space Mirror",
+        "Tundra Farming",
+        "Nitrophilic Moss",
+        "Arctic Algae",
+        "Domed Crater",
+        "Lichen",
+        "Lava Flows"
+       ],
+       "sold": [],
+       "cardResources": {}
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [
+        "CrediCor",
+        "Metals Company",
+        "UNMI Contractor"
+       ],
+       "played": [
+        "Nuclear Zone",
+        "Mineral Deposit",
+        "Mining Rights",
+        "Invention Contest",
+        "Mars University",
+        "Space Mirrors",
+        "Inventors' Guild",
+        "Aerobraked Ammonia Asteroid"
+       ],
+       "hand": [
+        "Comet",
+        "Plantation",
+        "Ecological Zone",
+        "Special Design",
+        "Fuel Factory",
+        "Convoy From Europa",
+        "Big Asteroid"
+       ],
+       "sold": [],
+       "cardResources": {}
+      }
+     ]
+    ]
+   },
+   "startingHandData": null,
+   "draftData": null,
+   "activatedCards": {
+    "$map": []
+   },
+   "discardPile": [
+    "Artificial Photosynthesis",
+    "Magnetic Field Generators",
+    "Permafrost extraction",
+    "Rad-Chem Factory",
+    "Underground City",
+    "Moss",
+    "Interstellar Colony Ship",
+    "Cloud Seeding",
+    "Dust Seals",
+    "Power Supply Consortium",
+    "Psychrophiles",
+    "Steelworks",
+    "Underground Detonations",
+    "Breathing Filters",
+    "Rover Construction",
+    "Archaebacteria",
+    "Nitrite Reducing Bacteria",
+    "Power Grid",
+    "Tectonic Stress Power",
+    "Martian Rails",
+    "Callisto Penal Mines"
+   ]
+  },
+  {
+   "step": 120,
+   "placedTiles": {
+    "$map": [
+     [
+      "Olympus Mons",
+      {
+       "dbKey": "Olympus Mons",
+       "tileType": "Nuclear Zone",
+       "playerId": "98490496",
+       "moveIndex": 10
+      }
+     ],
+     [
+      "Hex 7,8",
+      {
+       "dbKey": "Hex 7,8",
+       "tileType": "Mining",
+       "playerId": "98490496",
+       "moveIndex": 20
+      }
+     ],
+     [
+      "Hex 6,5",
+      {
+       "dbKey": "Hex 6,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 87
+      }
+     ],
+     [
+      "Hex 3,5",
+      {
+       "dbKey": "Hex 3,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 108
+      }
+     ],
+     [
+      "Hex 2,5",
+      {
+       "dbKey": "Hex 2,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 110
+      }
+     ],
+     [
+      "Hex 5,1",
+      {
+       "dbKey": "Hex 5,1",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 115
+      }
+     ]
+    ]
+   },
+   "playerTileCounts": {
+    "86296239": {
+     "cities": 2,
+     "greeneries": 1,
+     "total": 3
+    },
+    "98490496": {
+     "cities": 0,
+     "greeneries": 0,
+     "total": 2
+    }
+   },
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": [
+      [
+       "GENERALIST",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 3
+       }
+      ]
+     ]
+    },
+    "fundedAwards": {
+     "$map": []
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [
+        "Point Luna",
+        "Mohole Excavation",
+        "Research Network"
+       ],
+       "played": [
+        "Space Hotels",
+        "Great Escarpment Consortium",
+        "Acquired Company",
+        "Energy Tapping",
+        "Titanium Mine",
+        "Cartel",
+        "Corporate Stronghold",
+        "Giant Space Mirror",
+        "Domed Crater"
+       ],
+       "hand": [
+        "Protected Habitats",
+        "Tundra Farming",
+        "Nitrophilic Moss",
+        "Arctic Algae",
+        "Lichen",
+        "Lava Flows",
+        "Imported Nitrogen",
+        "Decomposers",
+        "Restricted Area",
+        "AI Central"
+       ],
+       "sold": [],
+       "cardResources": {}
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [
+        "CrediCor",
+        "Metals Company",
+        "UNMI Contractor"
+       ],
+       "played": [
+        "Nuclear Zone",
+        "Mineral Deposit",
+        "Mining Rights",
+        "Invention Contest",
+        "Mars University",
+        "Space Mirrors",
+        "Inventors' Guild",
+        "Aerobraked Ammonia Asteroid",
+        "Fuel Factory",
+        "Comet"
+       ],
+       "hand": [
+        "Plantation",
+        "Ecological Zone",
+        "Special Design",
+        "Convoy From Europa",
+        "Big Asteroid",
+        "Asteroid Mining",
+        "Research Outpost",
+        "Earth Office",
+        "Windmills"
+       ],
+       "sold": [],
+       "cardResources": {}
+      }
+     ]
+    ]
+   },
+   "startingHandData": null,
+   "draftData": null,
+   "activatedCards": {
+    "$map": [
+     [
+      "98490496",
+      {
+       "$set": [
+        "Inventors' Guild"
+       ]
+      }
+     ]
+    ]
+   },
+   "discardPile": [
+    "Artificial Photosynthesis",
+    "Magnetic Field Generators",
+    "Permafrost extraction",
+    "Rad-Chem Factory",
+    "Underground City",
+    "Moss",
+    "Interstellar Colony Ship",
+    "Cloud Seeding",
+    "Dust Seals",
+    "Power Supply Consortium",
+    "Psychrophiles",
+    "Steelworks",
+    "Underground Detonations",
+    "Breathing Filters",
+    "Rover Construction",
+    "Archaebacteria",
+    "Nitrite Reducing Bacteria",
+    "Power Grid",
+    "Tectonic Stress Power",
+    "Martian Rails",
+    "Callisto Penal Mines",
+    "Symbiotic Fungus",
+    "Great Dam",
+    "Protected Valley",
+    "Ants"
+   ]
+  },
+  {
+   "step": 160,
+   "placedTiles": {
+    "$map": [
+     [
+      "Olympus Mons",
+      {
+       "dbKey": "Olympus Mons",
+       "tileType": "Nuclear Zone",
+       "playerId": "98490496",
+       "moveIndex": 10
+      }
+     ],
+     [
+      "Hex 7,8",
+      {
+       "dbKey": "Hex 7,8",
+       "tileType": "Mining",
+       "playerId": "98490496",
+       "moveIndex": 20
+      }
+     ],
+     [
+      "Hex 6,5",
+      {
+       "dbKey": "Hex 6,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 87
+      }
+     ],
+     [
+      "Hex 3,5",
+      {
+       "dbKey": "Hex 3,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 108
+      }
+     ],
+     [
+      "Hex 2,5",
+      {
+       "dbKey": "Hex 2,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 110
+      }
+     ],
+     [
+      "Hex 5,1",
+      {
+       "dbKey": "Hex 5,1",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 115
+      }
+     ],
+     [
+      "Hex 4,3",
+      {
+       "dbKey": "Hex 4,3",
+       "tileType": "Restricted Area",
+       "playerId": "86296239",
+       "moveIndex": 124
+      }
+     ],
+     [
+      "Hex 8,5",
+      {
+       "dbKey": "Hex 8,5",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 140
+      }
+     ],
+     [
+      "Hex 8,4",
+      {
+       "dbKey": "Hex 8,4",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 148
+      }
+     ]
+    ]
+   },
+   "playerTileCounts": {
+    "86296239": {
+     "cities": 2,
+     "greeneries": 1,
+     "total": 4
+    },
+    "98490496": {
+     "cities": 1,
+     "greeneries": 0,
+     "total": 3
+    }
+   },
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": [
+      [
+       "GENERALIST",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 3
+       }
+      ],
+      [
+       "LEGEND",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 5
+       }
+      ]
+     ]
+    },
+    "fundedAwards": {
+     "$map": []
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [
+        "Point Luna",
+        "Mohole Excavation",
+        "Research Network"
+       ],
+       "played": [
+        "Space Hotels",
+        "Great Escarpment Consortium",
+        "Acquired Company",
+        "Energy Tapping",
+        "Titanium Mine",
+        "Cartel",
+        "Corporate Stronghold",
+        "Giant Space Mirror",
+        "Domed Crater",
+        "Restricted Area",
+        "Designed Microorganisms",
+        "Indentured Workers"
+       ],
+       "hand": [
+        "Protected Habitats",
+        "Tundra Farming",
+        "Nitrophilic Moss",
+        "Arctic Algae",
+        "Lichen",
+        "Lava Flows",
+        "Imported Nitrogen",
+        "Decomposers",
+        "AI Central",
+        "Methane From Titan",
+        "Energy Saving",
+        "Predators",
+        "Pets"
+       ],
+       "sold": [],
+       "cardResources": {}
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [
+        "CrediCor",
+        "Metals Company",
+        "UNMI Contractor"
+       ],
+       "played": [
+        "Nuclear Zone",
+        "Mineral Deposit",
+        "Mining Rights",
+        "Invention Contest",
+        "Mars University",
+        "Space Mirrors",
+        "Inventors' Guild",
+        "Aerobraked Ammonia Asteroid",
+        "Fuel Factory",
+        "Comet",
+        "Earth Office",
+        "Research Outpost",
+        "Convoy From Europa"
+       ],
+       "hand": [
+        "Plantation",
+        "Ecological Zone",
+        "Big Asteroid",
+        "Asteroid Mining",
+        "Electro Catapult",
+        "Olympus Conference",
+        "Industrial Center",
+        "Technology Demonstration"
+       ],
+       "sold": [],
+       "cardResources": {}
+      }
+     ]
+    ]
+   },
+   "startingHandData": null,
+   "draftData": null,
+   "activatedCards": {
+    "$map": [
+     [
+      "98490496",
+      {
+       "$set": [
+        "Inventors' Guild"
+       ]
+      }
+     ]
+    ]
+   },
+   "discardPile": [
+    "Artificial Photosynthesis",
+    "Magnetic Field Generators",
+    "Permafrost extraction",
+    "Rad-Chem Factory",
+    "Underground City",
+    "Moss",
+    "Interstellar Colony Ship",
+    "Cloud Seeding",
+    "Dust Seals",
+    "Power Supply Consortium",
+    "Psychrophiles",
+    "Steelworks",
+    "Underground Detonations",
+    "Breathing Filters",
+    "Rover Construction",
+    "Archaebacteria",
+    "Nitrite Reducing Bacteria",
+    "Power Grid",
+    "Tectonic Stress Power",
+    "Martian Rails",
+    "Callisto Penal Mines",
+    "Symbiotic Fungus",
+    "Great Dam",
+    "Protected Valley",
+    "Ants",
+    "Livestock",
+    "GHG Factories",
+    "GHG Producing Bacteria",
+    "Special Design",
+    "Windmills",
+    "Regolith Eaters"
+   ]
+  },
+  {
+   "step": 200,
+   "placedTiles": {
+    "$map": [
+     [
+      "Olympus Mons",
+      {
+       "dbKey": "Olympus Mons",
+       "tileType": "Nuclear Zone",
+       "playerId": "98490496",
+       "moveIndex": 10
+      }
+     ],
+     [
+      "Hex 7,8",
+      {
+       "dbKey": "Hex 7,8",
+       "tileType": "Mining",
+       "playerId": "98490496",
+       "moveIndex": 20
+      }
+     ],
+     [
+      "Hex 6,5",
+      {
+       "dbKey": "Hex 6,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 87
+      }
+     ],
+     [
+      "Hex 3,5",
+      {
+       "dbKey": "Hex 3,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 108
+      }
+     ],
+     [
+      "Hex 2,5",
+      {
+       "dbKey": "Hex 2,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 110
+      }
+     ],
+     [
+      "Hex 5,1",
+      {
+       "dbKey": "Hex 5,1",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 115
+      }
+     ],
+     [
+      "Hex 4,3",
+      {
+       "dbKey": "Hex 4,3",
+       "tileType": "Restricted Area",
+       "playerId": "86296239",
+       "moveIndex": 124
+      }
+     ],
+     [
+      "Hex 8,5",
+      {
+       "dbKey": "Hex 8,5",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 140
+      }
+     ],
+     [
+      "Hex 8,4",
+      {
+       "dbKey": "Hex 8,4",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 148
+      }
+     ],
+     [
+      "Hex 5,5",
+      {
+       "dbKey": "Hex 5,5",
+       "tileType": "Industrial Center",
+       "playerId": "98490496",
+       "moveIndex": 167
+      }
+     ]
+    ]
+   },
+   "playerTileCounts": {
+    "86296239": {
+     "cities": 2,
+     "greeneries": 1,
+     "total": 4
+    },
+    "98490496": {
+     "cities": 1,
+     "greeneries": 0,
+     "total": 4
+    }
+   },
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": [
+      [
+       "GENERALIST",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 3
+       }
+      ],
+      [
+       "LEGEND",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 5
+       }
+      ]
+     ]
+    },
+    "fundedAwards": {
+     "$map": []
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [
+        "Point Luna",
+        "Mohole Excavation",
+        "Research Network"
+       ],
+       "played": [
+        "Space Hotels",
+        "Great Escarpment Consortium",
+        "Acquired Company",
+        "Energy Tapping",
+        "Titanium Mine",
+        "Cartel",
+        "Corporate Stronghold",
+        "Giant Space Mirror",
+        "Domed Crater",
+        "Restricted Area",
+        "Designed Microorganisms",
+        "Indentured Workers",
+        "AI Central",
+        "Lichen",
+        "Virus",
+        "Protected Habitats"
+       ],
+       "hand": [
+        "Tundra Farming",
+        "Nitrophilic Moss",
+        "Arctic Algae",
+        "Lava Flows",
+        "Imported Nitrogen",
+        "Decomposers",
+        "Methane From Titan",
+        "Predators",
+        "Pets",
+        "Flooding",
+        "Imported Hydrogen",
+        "Eos Chasma National Park",
+        "Soil Factory",
+        "Birds"
+       ],
+       "sold": [],
+       "cardResources": {}
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [
+        "CrediCor",
+        "Metals Company",
+        "UNMI Contractor"
+       ],
+       "played": [
+        "Nuclear Zone",
+        "Mineral Deposit",
+        "Mining Rights",
+        "Invention Contest",
+        "Mars University",
+        "Space Mirrors",
+        "Inventors' Guild",
+        "Aerobraked Ammonia Asteroid",
+        "Fuel Factory",
+        "Comet",
+        "Earth Office",
+        "Research Outpost",
+        "Convoy From Europa",
+        "Industrial Center",
+        "Advanced Alloys"
+       ],
+       "hand": [
+        "Plantation",
+        "Ecological Zone",
+        "Big Asteroid",
+        "Asteroid Mining",
+        "Electro Catapult",
+        "Olympus Conference",
+        "Technology Demonstration",
+        "Mohole Area",
+        "Optimal Aerobraking",
+        "Solar Power"
+       ],
+       "sold": [],
+       "cardResources": {}
+      }
+     ]
+    ]
+   },
+   "startingHandData": null,
+   "draftData": null,
+   "activatedCards": {
+    "$map": [
+     [
+      "98490496",
+      {
+       "$set": [
+        "Inventors' Guild"
+       ]
+      }
+     ]
+    ]
+   },
+   "discardPile": [
+    "Artificial Photosynthesis",
+    "Magnetic Field Generators",
+    "Permafrost extraction",
+    "Rad-Chem Factory",
+    "Underground City",
+    "Moss",
+    "Interstellar Colony Ship",
+    "Cloud Seeding",
+    "Dust Seals",
+    "Power Supply Consortium",
+    "Psychrophiles",
+    "Steelworks",
+    "Underground Detonations",
+    "Breathing Filters",
+    "Rover Construction",
+    "Archaebacteria",
+    "Nitrite Reducing Bacteria",
+    "Power Grid",
+    "Tectonic Stress Power",
+    "Martian Rails",
+    "Callisto Penal Mines",
+    "Symbiotic Fungus",
+    "Great Dam",
+    "Protected Valley",
+    "Ants",
+    "Livestock",
+    "GHG Factories",
+    "GHG Producing Bacteria",
+    "Special Design",
+    "Windmills",
+    "Regolith Eaters",
+    "Business Network",
+    "Food Factory",
+    "Energy Saving",
+    "Fueled Generators",
+    "Release of Inert Gases"
+   ]
+  },
+  {
+   "step": 240,
+   "placedTiles": {
+    "$map": [
+     [
+      "Olympus Mons",
+      {
+       "dbKey": "Olympus Mons",
+       "tileType": "Nuclear Zone",
+       "playerId": "98490496",
+       "moveIndex": 10
+      }
+     ],
+     [
+      "Hex 7,8",
+      {
+       "dbKey": "Hex 7,8",
+       "tileType": "Mining",
+       "playerId": "98490496",
+       "moveIndex": 20
+      }
+     ],
+     [
+      "Hex 6,5",
+      {
+       "dbKey": "Hex 6,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 87
+      }
+     ],
+     [
+      "Hex 3,5",
+      {
+       "dbKey": "Hex 3,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 108
+      }
+     ],
+     [
+      "Hex 2,5",
+      {
+       "dbKey": "Hex 2,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 110
+      }
+     ],
+     [
+      "Hex 5,1",
+      {
+       "dbKey": "Hex 5,1",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 115
+      }
+     ],
+     [
+      "Hex 4,3",
+      {
+       "dbKey": "Hex 4,3",
+       "tileType": "Restricted Area",
+       "playerId": "86296239",
+       "moveIndex": 124
+      }
+     ],
+     [
+      "Hex 8,5",
+      {
+       "dbKey": "Hex 8,5",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 140
+      }
+     ],
+     [
+      "Hex 8,4",
+      {
+       "dbKey": "Hex 8,4",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 148
+      }
+     ],
+     [
+      "Hex 5,5",
+      {
+       "dbKey": "Hex 5,5",
+       "tileType": "Industrial Center",
+       "playerId": "98490496",
+       "moveIndex": 167
+      }
+     ],
+     [
+      "Hex 4,5",
+      {
+       "dbKey": "Hex 4,5",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 234
+      }
+     ],
+     [
+      "Hex 4,6",
+      {
+       "dbKey": "Hex 4,6",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 240
+      }
+     ]
+    ]
+   },
+   "playerTileCounts": {
+    "86296239": {
+     "cities": 2,
+     "greeneries": 2,
+     "total": 5
+    },
+    "98490496": {
+     "cities": 1,
+     "greeneries": 0,
+     "total": 4
+    }
+   },
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": [
+      [
+       "GENERALIST",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 3
+       }
+      ],
+      [
+       "LEGEND",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 5
+       }
+      ],
+      [
+       "TYCOON",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 6
+       }
+      ]
+     ]
+    },
+    "fundedAwards": {
+     "$map": []
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [
+        "Point Luna",
+        "Mohole Excavation",
+        "Research Network"
+       ],
+       "played": [
+        "Space Hotels",
+        "Great Escarpment Consortium",
+        "Acquired Company",
+        "Energy Tapping",
+        "Titanium Mine",
+        "Cartel",
+        "Corporate Stronghold",
+        "Giant Space Mirror",
+        "Domed Crater",
+        "Restricted Area",
+        "Designed Microorganisms",
+        "Indentured Workers",
+        "AI Central",
+        "Lichen",
+        "Virus",
+        "Protected Habitats",
+        "Arctic Algae",
+        "Imported Hydrogen"
+       ],
+       "hand": [
+        "Tundra Farming",
+        "Nitrophilic Moss",
+        "Lava Flows",
+        "Imported Nitrogen",
+        "Decomposers",
+        "Methane From Titan",
+        "Predators",
+        "Pets",
+        "Flooding",
+        "Eos Chasma National Park",
+        "Soil Factory",
+        "Birds",
+        "SF Memorial",
+        "Space Elevator"
+       ],
+       "sold": [],
+       "cardResources": {}
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [
+        "CrediCor",
+        "Metals Company",
+        "UNMI Contractor"
+       ],
+       "played": [
+        "Nuclear Zone",
+        "Mineral Deposit",
+        "Mining Rights",
+        "Invention Contest",
+        "Mars University",
+        "Space Mirrors",
+        "Inventors' Guild",
+        "Aerobraked Ammonia Asteroid",
+        "Fuel Factory",
+        "Comet",
+        "Earth Office",
+        "Research Outpost",
+        "Convoy From Europa",
+        "Industrial Center",
+        "Advanced Alloys",
+        "Optimal Aerobraking",
+        "Technology Demonstration",
+        "Olympus Conference",
+        "Mass Converter"
+       ],
+       "hand": [
+        "Plantation",
+        "Ecological Zone",
+        "Big Asteroid",
+        "Asteroid Mining",
+        "Electro Catapult",
+        "Mohole Area",
+        "Lava Tube Settlement",
+        "Cupola City",
+        "Investment Loan"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Olympus Conference": 0
+       }
+      }
+     ]
+    ]
+   },
+   "startingHandData": null,
+   "draftData": null,
+   "activatedCards": {
+    "$map": [
+     [
+      "98490496",
+      {
+       "$set": [
+        "Inventors' Guild"
+       ]
+      }
+     ]
+    ]
+   },
+   "discardPile": [
+    "Artificial Photosynthesis",
+    "Magnetic Field Generators",
+    "Permafrost extraction",
+    "Rad-Chem Factory",
+    "Underground City",
+    "Moss",
+    "Interstellar Colony Ship",
+    "Cloud Seeding",
+    "Dust Seals",
+    "Power Supply Consortium",
+    "Psychrophiles",
+    "Steelworks",
+    "Underground Detonations",
+    "Breathing Filters",
+    "Rover Construction",
+    "Archaebacteria",
+    "Nitrite Reducing Bacteria",
+    "Power Grid",
+    "Tectonic Stress Power",
+    "Martian Rails",
+    "Callisto Penal Mines",
+    "Symbiotic Fungus",
+    "Great Dam",
+    "Protected Valley",
+    "Ants",
+    "Livestock",
+    "GHG Factories",
+    "GHG Producing Bacteria",
+    "Special Design",
+    "Windmills",
+    "Regolith Eaters",
+    "Business Network",
+    "Food Factory",
+    "Energy Saving",
+    "Fueled Generators",
+    "Release of Inert Gases",
+    "Wave Power",
+    "Solar Power",
+    "Bribed Committee"
+   ]
+  },
+  {
+   "step": 280,
+   "placedTiles": {
+    "$map": [
+     [
+      "Olympus Mons",
+      {
+       "dbKey": "Olympus Mons",
+       "tileType": "Nuclear Zone",
+       "playerId": "98490496",
+       "moveIndex": 10
+      }
+     ],
+     [
+      "Hex 7,8",
+      {
+       "dbKey": "Hex 7,8",
+       "tileType": "Mining",
+       "playerId": "98490496",
+       "moveIndex": 20
+      }
+     ],
+     [
+      "Hex 6,5",
+      {
+       "dbKey": "Hex 6,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 87
+      }
+     ],
+     [
+      "Hex 3,5",
+      {
+       "dbKey": "Hex 3,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 108
+      }
+     ],
+     [
+      "Hex 2,5",
+      {
+       "dbKey": "Hex 2,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 110
+      }
+     ],
+     [
+      "Hex 5,1",
+      {
+       "dbKey": "Hex 5,1",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 115
+      }
+     ],
+     [
+      "Hex 4,3",
+      {
+       "dbKey": "Hex 4,3",
+       "tileType": "Restricted Area",
+       "playerId": "86296239",
+       "moveIndex": 124
+      }
+     ],
+     [
+      "Hex 8,5",
+      {
+       "dbKey": "Hex 8,5",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 140
+      }
+     ],
+     [
+      "Hex 8,4",
+      {
+       "dbKey": "Hex 8,4",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 148
+      }
+     ],
+     [
+      "Hex 5,5",
+      {
+       "dbKey": "Hex 5,5",
+       "tileType": "Industrial Center",
+       "playerId": "98490496",
+       "moveIndex": 167
+      }
+     ],
+     [
+      "Hex 4,5",
+      {
+       "dbKey": "Hex 4,5",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 234
+      }
+     ],
+     [
+      "Hex 4,6",
+      {
+       "dbKey": "Hex 4,6",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 240
+      }
+     ],
+     [
+      "Hex 5,4",
+      {
+       "dbKey": "Hex 5,4",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 244
+      }
+     ],
+     [
+      "Hex 4,4",
+      {
+       "dbKey": "Hex 4,4",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 248
+      }
+     ],
+     [
+      "Hex 4,7",
+      {
+       "dbKey": "Hex 4,7",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 275
+      }
+     ]
+    ]
+   },
+   "playerTileCounts": {
+    "86296239": {
+     "cities": 2,
+     "greeneries": 3,
+     "total": 6
+    },
+    "98490496": {
+     "cities": 2,
+     "greeneries": 0,
+     "total": 5
+    }
+   },
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": [
+      [
+       "GENERALIST",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 3
+       }
+      ],
+      [
+       "LEGEND",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 5
+       }
+      ],
+      [
+       "TYCOON",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 6
+       }
+      ]
+     ]
+    },
+    "fundedAwards": {
+     "$map": []
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [
+        "Point Luna",
+        "Mohole Excavation",
+        "Research Network"
+       ],
+       "played": [
+        "Space Hotels",
+        "Great Escarpment Consortium",
+        "Acquired Company",
+        "Energy Tapping",
+        "Titanium Mine",
+        "Cartel",
+        "Corporate Stronghold",
+        "Giant Space Mirror",
+        "Domed Crater",
+        "Restricted Area",
+        "Designed Microorganisms",
+        "Indentured Workers",
+        "AI Central",
+        "Lichen",
+        "Virus",
+        "Protected Habitats",
+        "Arctic Algae",
+        "Imported Hydrogen",
+        "Flooding",
+        "Space Elevator",
+        "Decomposers",
+        "Nitrophilic Moss"
+       ],
+       "hand": [
+        "Lava Flows",
+        "Imported Nitrogen",
+        "Methane From Titan",
+        "Predators",
+        "Pets",
+        "Eos Chasma National Park",
+        "Birds",
+        "SF Memorial",
+        "Small Animals",
+        "Lake Marineris",
+        "Ore Processor",
+        "Space Station",
+        "Fusion Power"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Decomposers": 2
+       }
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [
+        "CrediCor",
+        "Metals Company",
+        "UNMI Contractor"
+       ],
+       "played": [
+        "Nuclear Zone",
+        "Mineral Deposit",
+        "Mining Rights",
+        "Invention Contest",
+        "Mars University",
+        "Space Mirrors",
+        "Inventors' Guild",
+        "Aerobraked Ammonia Asteroid",
+        "Fuel Factory",
+        "Comet",
+        "Earth Office",
+        "Research Outpost",
+        "Convoy From Europa",
+        "Industrial Center",
+        "Advanced Alloys",
+        "Optimal Aerobraking",
+        "Technology Demonstration",
+        "Olympus Conference",
+        "Mass Converter",
+        "Electro Catapult",
+        "Cupola City"
+       ],
+       "hand": [
+        "Plantation",
+        "Ecological Zone",
+        "Big Asteroid",
+        "Asteroid Mining",
+        "Mohole Area",
+        "Lava Tube Settlement",
+        "Investment Loan",
+        "Fish",
+        "Advanced Ecosystems"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Olympus Conference": 0
+       }
+      }
+     ]
+    ]
+   },
+   "startingHandData": null,
+   "draftData": null,
+   "activatedCards": {
+    "$map": [
+     [
+      "98490496",
+      {
+       "$set": [
+        "Inventors' Guild",
+        "Electro Catapult"
+       ]
+      }
+     ],
+     [
+      "86296239",
+      {
+       "$set": [
+        "Space Elevator"
+       ]
+      }
+     ]
+    ]
+   },
+   "discardPile": [
+    "Artificial Photosynthesis",
+    "Magnetic Field Generators",
+    "Permafrost extraction",
+    "Rad-Chem Factory",
+    "Underground City",
+    "Moss",
+    "Interstellar Colony Ship",
+    "Cloud Seeding",
+    "Dust Seals",
+    "Power Supply Consortium",
+    "Psychrophiles",
+    "Steelworks",
+    "Underground Detonations",
+    "Breathing Filters",
+    "Rover Construction",
+    "Archaebacteria",
+    "Nitrite Reducing Bacteria",
+    "Power Grid",
+    "Tectonic Stress Power",
+    "Martian Rails",
+    "Callisto Penal Mines",
+    "Symbiotic Fungus",
+    "Great Dam",
+    "Protected Valley",
+    "Ants",
+    "Livestock",
+    "GHG Factories",
+    "GHG Producing Bacteria",
+    "Special Design",
+    "Windmills",
+    "Regolith Eaters",
+    "Business Network",
+    "Food Factory",
+    "Energy Saving",
+    "Fueled Generators",
+    "Release of Inert Gases",
+    "Wave Power",
+    "Solar Power",
+    "Bribed Committee",
+    "Tundra Farming",
+    "Soil Factory",
+    "Import of Advanced GHG",
+    "Aquifer Pumping",
+    "Tardigrades",
+    "Rad-Suits",
+    "Mine"
+   ]
+  },
+  {
+   "step": 320,
+   "placedTiles": {
+    "$map": [
+     [
+      "Olympus Mons",
+      {
+       "dbKey": "Olympus Mons",
+       "tileType": "Nuclear Zone",
+       "playerId": "98490496",
+       "moveIndex": 10
+      }
+     ],
+     [
+      "Hex 7,8",
+      {
+       "dbKey": "Hex 7,8",
+       "tileType": "Mining",
+       "playerId": "98490496",
+       "moveIndex": 20
+      }
+     ],
+     [
+      "Hex 6,5",
+      {
+       "dbKey": "Hex 6,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 87
+      }
+     ],
+     [
+      "Hex 3,5",
+      {
+       "dbKey": "Hex 3,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 108
+      }
+     ],
+     [
+      "Hex 2,5",
+      {
+       "dbKey": "Hex 2,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 110
+      }
+     ],
+     [
+      "Hex 5,1",
+      {
+       "dbKey": "Hex 5,1",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 115
+      }
+     ],
+     [
+      "Hex 4,3",
+      {
+       "dbKey": "Hex 4,3",
+       "tileType": "Restricted Area",
+       "playerId": "86296239",
+       "moveIndex": 124
+      }
+     ],
+     [
+      "Hex 8,5",
+      {
+       "dbKey": "Hex 8,5",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 140
+      }
+     ],
+     [
+      "Hex 8,4",
+      {
+       "dbKey": "Hex 8,4",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 148
+      }
+     ],
+     [
+      "Hex 5,5",
+      {
+       "dbKey": "Hex 5,5",
+       "tileType": "Industrial Center",
+       "playerId": "98490496",
+       "moveIndex": 167
+      }
+     ],
+     [
+      "Hex 4,5",
+      {
+       "dbKey": "Hex 4,5",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 234
+      }
+     ],
+     [
+      "Hex 4,6",
+      {
+       "dbKey": "Hex 4,6",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 240
+      }
+     ],
+     [
+      "Hex 5,4",
+      {
+       "dbKey": "Hex 5,4",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 244
+      }
+     ],
+     [
+      "Hex 4,4",
+      {
+       "dbKey": "Hex 4,4",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 248
+      }
+     ],
+     [
+      "Hex 4,7",
+      {
+       "dbKey": "Hex 4,7",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 275
+      }
+     ],
+     [
+      "Elysium Mons",
+      {
+       "dbKey": "Elysium Mons",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 299
+      }
+     ]
+    ]
+   },
+   "playerTileCounts": {
+    "86296239": {
+     "cities": 2,
+     "greeneries": 3,
+     "total": 6
+    },
+    "98490496": {
+     "cities": 3,
+     "greeneries": 0,
+     "total": 6
+    }
+   },
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": [
+      [
+       "GENERALIST",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 3
+       }
+      ],
+      [
+       "LEGEND",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 5
+       }
+      ],
+      [
+       "TYCOON",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 6
+       }
+      ]
+     ]
+    },
+    "fundedAwards": {
+     "$map": [
+      [
+       "celebrity",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 8
+       }
+      ]
+     ]
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [
+        "Point Luna",
+        "Mohole Excavation",
+        "Research Network"
+       ],
+       "played": [
+        "Space Hotels",
+        "Great Escarpment Consortium",
+        "Acquired Company",
+        "Energy Tapping",
+        "Titanium Mine",
+        "Cartel",
+        "Corporate Stronghold",
+        "Giant Space Mirror",
+        "Domed Crater",
+        "Restricted Area",
+        "Designed Microorganisms",
+        "Indentured Workers",
+        "AI Central",
+        "Lichen",
+        "Virus",
+        "Protected Habitats",
+        "Arctic Algae",
+        "Imported Hydrogen",
+        "Flooding",
+        "Space Elevator",
+        "Decomposers",
+        "Nitrophilic Moss",
+        "Pets",
+        "Asteroid Mining Consortium",
+        "SF Memorial",
+        "Space Station"
+       ],
+       "hand": [
+        "Lava Flows",
+        "Imported Nitrogen",
+        "Methane From Titan",
+        "Predators",
+        "Eos Chasma National Park",
+        "Birds",
+        "Small Animals",
+        "Lake Marineris",
+        "Ore Processor",
+        "Fusion Power",
+        "Phobos Space Haven",
+        "Algae",
+        "Zeppelins",
+        "Beam From a Thorium Asteroid",
+        "Power Plant",
+        "Power Infrastructure"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Decomposers": 3,
+        "Pets": 2
+       }
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [
+        "CrediCor",
+        "Metals Company",
+        "UNMI Contractor"
+       ],
+       "played": [
+        "Nuclear Zone",
+        "Mineral Deposit",
+        "Mining Rights",
+        "Invention Contest",
+        "Mars University",
+        "Space Mirrors",
+        "Inventors' Guild",
+        "Aerobraked Ammonia Asteroid",
+        "Fuel Factory",
+        "Comet",
+        "Earth Office",
+        "Research Outpost",
+        "Convoy From Europa",
+        "Industrial Center",
+        "Advanced Alloys",
+        "Optimal Aerobraking",
+        "Technology Demonstration",
+        "Olympus Conference",
+        "Mass Converter",
+        "Electro Catapult",
+        "Cupola City",
+        "Lava Tube Settlement",
+        "Asteroid Mining",
+        "Building Industries",
+        "Greenhouses"
+       ],
+       "hand": [
+        "Plantation",
+        "Ecological Zone",
+        "Big Asteroid",
+        "Mohole Area",
+        "Investment Loan",
+        "Fish",
+        "Advanced Ecosystems",
+        "Adaptation Technology",
+        "Giant Ice Asteroid"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Olympus Conference": 0
+       }
+      }
+     ]
+    ]
+   },
+   "startingHandData": null,
+   "draftData": null,
+   "activatedCards": {
+    "$map": [
+     [
+      "98490496",
+      {
+       "$set": [
+        "Electro Catapult",
+        "Inventors' Guild"
+       ]
+      }
+     ],
+     [
+      "86296239",
+      {
+       "$set": [
+        "Space Elevator"
+       ]
+      }
+     ]
+    ]
+   },
+   "discardPile": [
+    "Artificial Photosynthesis",
+    "Magnetic Field Generators",
+    "Permafrost extraction",
+    "Rad-Chem Factory",
+    "Underground City",
+    "Moss",
+    "Interstellar Colony Ship",
+    "Cloud Seeding",
+    "Dust Seals",
+    "Power Supply Consortium",
+    "Psychrophiles",
+    "Steelworks",
+    "Underground Detonations",
+    "Breathing Filters",
+    "Rover Construction",
+    "Archaebacteria",
+    "Nitrite Reducing Bacteria",
+    "Power Grid",
+    "Tectonic Stress Power",
+    "Martian Rails",
+    "Callisto Penal Mines",
+    "Symbiotic Fungus",
+    "Great Dam",
+    "Protected Valley",
+    "Ants",
+    "Livestock",
+    "GHG Factories",
+    "GHG Producing Bacteria",
+    "Special Design",
+    "Windmills",
+    "Regolith Eaters",
+    "Business Network",
+    "Food Factory",
+    "Energy Saving",
+    "Fueled Generators",
+    "Release of Inert Gases",
+    "Wave Power",
+    "Solar Power",
+    "Bribed Committee",
+    "Tundra Farming",
+    "Soil Factory",
+    "Import of Advanced GHG",
+    "Aquifer Pumping",
+    "Tardigrades",
+    "Rad-Suits",
+    "Mine",
+    "Water Splitting Plant",
+    "Sponsors",
+    "Soletta"
+   ]
+  },
+  {
+   "step": 360,
+   "placedTiles": {
+    "$map": [
+     [
+      "Olympus Mons",
+      {
+       "dbKey": "Olympus Mons",
+       "tileType": "Nuclear Zone",
+       "playerId": "98490496",
+       "moveIndex": 10
+      }
+     ],
+     [
+      "Hex 7,8",
+      {
+       "dbKey": "Hex 7,8",
+       "tileType": "Mining",
+       "playerId": "98490496",
+       "moveIndex": 20
+      }
+     ],
+     [
+      "Hex 6,5",
+      {
+       "dbKey": "Hex 6,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 87
+      }
+     ],
+     [
+      "Hex 3,5",
+      {
+       "dbKey": "Hex 3,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 108
+      }
+     ],
+     [
+      "Hex 2,5",
+      {
+       "dbKey": "Hex 2,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 110
+      }
+     ],
+     [
+      "Hex 5,1",
+      {
+       "dbKey": "Hex 5,1",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 115
+      }
+     ],
+     [
+      "Hex 4,3",
+      {
+       "dbKey": "Hex 4,3",
+       "tileType": "Restricted Area",
+       "playerId": "86296239",
+       "moveIndex": 124
+      }
+     ],
+     [
+      "Hex 8,5",
+      {
+       "dbKey": "Hex 8,5",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 140
+      }
+     ],
+     [
+      "Hex 8,4",
+      {
+       "dbKey": "Hex 8,4",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 148
+      }
+     ],
+     [
+      "Hex 5,5",
+      {
+       "dbKey": "Hex 5,5",
+       "tileType": "Industrial Center",
+       "playerId": "98490496",
+       "moveIndex": 167
+      }
+     ],
+     [
+      "Hex 4,5",
+      {
+       "dbKey": "Hex 4,5",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 234
+      }
+     ],
+     [
+      "Hex 4,6",
+      {
+       "dbKey": "Hex 4,6",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 240
+      }
+     ],
+     [
+      "Hex 5,4",
+      {
+       "dbKey": "Hex 5,4",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 244
+      }
+     ],
+     [
+      "Hex 4,4",
+      {
+       "dbKey": "Hex 4,4",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 248
+      }
+     ],
+     [
+      "Hex 4,7",
+      {
+       "dbKey": "Hex 4,7",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 275
+      }
+     ],
+     [
+      "Elysium Mons",
+      {
+       "dbKey": "Elysium Mons",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 299
+      }
+     ],
+     [
+      "Hex 5,6",
+      {
+       "dbKey": "Hex 5,6",
+       "tileType": "Forest",
+       "playerId": "98490496",
+       "moveIndex": 321
+      }
+     ],
+     [
+      "Hex 7,4",
+      {
+       "dbKey": "Hex 7,4",
+       "tileType": "Mohole Area",
+       "playerId": "98490496",
+       "moveIndex": 353
+      }
+     ],
+     [
+      "Hex 3,7",
+      {
+       "dbKey": "Hex 3,7",
+       "tileType": "Mining",
+       "playerId": "86296239",
+       "moveIndex": 358
+      }
+     ]
+    ]
+   },
+   "playerTileCounts": {
+    "86296239": {
+     "cities": 2,
+     "greeneries": 3,
+     "total": 7
+    },
+    "98490496": {
+     "cities": 3,
+     "greeneries": 1,
+     "total": 8
+    }
+   },
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": [
+      [
+       "GENERALIST",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 3
+       }
+      ],
+      [
+       "LEGEND",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 5
+       }
+      ],
+      [
+       "TYCOON",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 6
+       }
+      ]
+     ]
+    },
+    "fundedAwards": {
+     "$map": [
+      [
+       "celebrity",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 8
+       }
+      ]
+     ]
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [
+        "Point Luna",
+        "Mohole Excavation",
+        "Research Network"
+       ],
+       "played": [
+        "Space Hotels",
+        "Great Escarpment Consortium",
+        "Acquired Company",
+        "Energy Tapping",
+        "Titanium Mine",
+        "Cartel",
+        "Corporate Stronghold",
+        "Giant Space Mirror",
+        "Domed Crater",
+        "Restricted Area",
+        "Designed Microorganisms",
+        "Indentured Workers",
+        "AI Central",
+        "Lichen",
+        "Virus",
+        "Protected Habitats",
+        "Arctic Algae",
+        "Imported Hydrogen",
+        "Flooding",
+        "Space Elevator",
+        "Decomposers",
+        "Nitrophilic Moss",
+        "Pets",
+        "Asteroid Mining Consortium",
+        "SF Memorial",
+        "Space Station",
+        "Methane From Titan"
+       ],
+       "hand": [
+        "Lava Flows",
+        "Imported Nitrogen",
+        "Predators",
+        "Eos Chasma National Park",
+        "Birds",
+        "Small Animals",
+        "Lake Marineris",
+        "Ore Processor",
+        "Fusion Power",
+        "Phobos Space Haven",
+        "Algae",
+        "Zeppelins",
+        "Beam From a Thorium Asteroid",
+        "Power Plant",
+        "Power Infrastructure",
+        "Colonizer Training Camp",
+        "Herbivores",
+        "Medical Lab",
+        "Mining Area",
+        "Towing a Comet"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Decomposers": 3,
+        "Pets": 2
+       }
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [
+        "CrediCor",
+        "Metals Company",
+        "UNMI Contractor"
+       ],
+       "played": [
+        "Nuclear Zone",
+        "Mineral Deposit",
+        "Mining Rights",
+        "Invention Contest",
+        "Mars University",
+        "Space Mirrors",
+        "Inventors' Guild",
+        "Aerobraked Ammonia Asteroid",
+        "Fuel Factory",
+        "Comet",
+        "Earth Office",
+        "Research Outpost",
+        "Convoy From Europa",
+        "Industrial Center",
+        "Advanced Alloys",
+        "Optimal Aerobraking",
+        "Technology Demonstration",
+        "Olympus Conference",
+        "Mass Converter",
+        "Electro Catapult",
+        "Cupola City",
+        "Lava Tube Settlement",
+        "Asteroid Mining",
+        "Building Industries",
+        "Greenhouses",
+        "Investment Loan",
+        "Mohole Area"
+       ],
+       "hand": [
+        "Plantation",
+        "Ecological Zone",
+        "Big Asteroid",
+        "Fish",
+        "Advanced Ecosystems",
+        "Adaptation Technology",
+        "Giant Ice Asteroid",
+        "Noctis Farming",
+        "Immigration Shuttles",
+        "Robotic Workforce",
+        "Satellites"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Olympus Conference": 0
+       }
+      }
+     ]
+    ]
+   },
+   "startingHandData": null,
+   "draftData": null,
+   "activatedCards": {
+    "$map": [
+     [
+      "98490496",
+      {
+       "$set": [
+        "Electro Catapult",
+        "Inventors' Guild"
+       ]
+      }
+     ],
+     [
+      "86296239",
+      {
+       "$set": [
+        "Space Elevator"
+       ]
+      }
+     ]
+    ]
+   },
+   "discardPile": [
+    "Artificial Photosynthesis",
+    "Magnetic Field Generators",
+    "Permafrost extraction",
+    "Rad-Chem Factory",
+    "Underground City",
+    "Moss",
+    "Interstellar Colony Ship",
+    "Cloud Seeding",
+    "Dust Seals",
+    "Power Supply Consortium",
+    "Psychrophiles",
+    "Steelworks",
+    "Underground Detonations",
+    "Breathing Filters",
+    "Rover Construction",
+    "Archaebacteria",
+    "Nitrite Reducing Bacteria",
+    "Power Grid",
+    "Tectonic Stress Power",
+    "Martian Rails",
+    "Callisto Penal Mines",
+    "Symbiotic Fungus",
+    "Great Dam",
+    "Protected Valley",
+    "Ants",
+    "Livestock",
+    "GHG Factories",
+    "GHG Producing Bacteria",
+    "Special Design",
+    "Windmills",
+    "Regolith Eaters",
+    "Business Network",
+    "Food Factory",
+    "Energy Saving",
+    "Fueled Generators",
+    "Release of Inert Gases",
+    "Wave Power",
+    "Solar Power",
+    "Bribed Committee",
+    "Tundra Farming",
+    "Soil Factory",
+    "Import of Advanced GHG",
+    "Aquifer Pumping",
+    "Tardigrades",
+    "Rad-Suits",
+    "Mine",
+    "Water Splitting Plant",
+    "Sponsors",
+    "Soletta",
+    "Peroxide Power",
+    "Insulation",
+    "Lightning Harvest"
+   ]
+  },
+  {
+   "step": 400,
+   "placedTiles": {
+    "$map": [
+     [
+      "Olympus Mons",
+      {
+       "dbKey": "Olympus Mons",
+       "tileType": "Nuclear Zone",
+       "playerId": "98490496",
+       "moveIndex": 10
+      }
+     ],
+     [
+      "Hex 7,8",
+      {
+       "dbKey": "Hex 7,8",
+       "tileType": "Mining",
+       "playerId": "98490496",
+       "moveIndex": 20
+      }
+     ],
+     [
+      "Hex 6,5",
+      {
+       "dbKey": "Hex 6,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 87
+      }
+     ],
+     [
+      "Hex 3,5",
+      {
+       "dbKey": "Hex 3,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 108
+      }
+     ],
+     [
+      "Hex 2,5",
+      {
+       "dbKey": "Hex 2,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 110
+      }
+     ],
+     [
+      "Hex 5,1",
+      {
+       "dbKey": "Hex 5,1",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 115
+      }
+     ],
+     [
+      "Hex 4,3",
+      {
+       "dbKey": "Hex 4,3",
+       "tileType": "Restricted Area",
+       "playerId": "86296239",
+       "moveIndex": 124
+      }
+     ],
+     [
+      "Hex 8,5",
+      {
+       "dbKey": "Hex 8,5",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 140
+      }
+     ],
+     [
+      "Hex 8,4",
+      {
+       "dbKey": "Hex 8,4",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 148
+      }
+     ],
+     [
+      "Hex 5,5",
+      {
+       "dbKey": "Hex 5,5",
+       "tileType": "Industrial Center",
+       "playerId": "98490496",
+       "moveIndex": 167
+      }
+     ],
+     [
+      "Hex 4,5",
+      {
+       "dbKey": "Hex 4,5",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 234
+      }
+     ],
+     [
+      "Hex 4,6",
+      {
+       "dbKey": "Hex 4,6",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 240
+      }
+     ],
+     [
+      "Hex 5,4",
+      {
+       "dbKey": "Hex 5,4",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 244
+      }
+     ],
+     [
+      "Hex 4,4",
+      {
+       "dbKey": "Hex 4,4",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 248
+      }
+     ],
+     [
+      "Hex 4,7",
+      {
+       "dbKey": "Hex 4,7",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 275
+      }
+     ],
+     [
+      "Elysium Mons",
+      {
+       "dbKey": "Elysium Mons",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 299
+      }
+     ],
+     [
+      "Hex 5,6",
+      {
+       "dbKey": "Hex 5,6",
+       "tileType": "Forest",
+       "playerId": "98490496",
+       "moveIndex": 321
+      }
+     ],
+     [
+      "Hex 7,4",
+      {
+       "dbKey": "Hex 7,4",
+       "tileType": "Mohole Area",
+       "playerId": "98490496",
+       "moveIndex": 353
+      }
+     ],
+     [
+      "Hex 3,7",
+      {
+       "dbKey": "Hex 3,7",
+       "tileType": "Mining",
+       "playerId": "86296239",
+       "moveIndex": 358
+      }
+     ],
+     [
+      "Hex 3,6",
+      {
+       "dbKey": "Hex 3,6",
+       "tileType": "Ecological Zone",
+       "playerId": "98490496",
+       "moveIndex": 369
+      }
+     ],
+     [
+      "Hex 9,4",
+      {
+       "dbKey": "Hex 9,4",
+       "tileType": "Forest",
+       "playerId": "98490496",
+       "moveIndex": 377
+      }
+     ],
+     [
+      "Hex 7,5",
+      {
+       "dbKey": "Hex 7,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 380
+      }
+     ],
+     [
+      "Hex 6,3",
+      {
+       "dbKey": "Hex 6,3",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 386
+      }
+     ],
+     [
+      "Hex 6,4",
+      {
+       "dbKey": "Hex 6,4",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 389
+      }
+     ]
+    ]
+   },
+   "playerTileCounts": {
+    "86296239": {
+     "cities": 2,
+     "greeneries": 5,
+     "total": 9
+    },
+    "98490496": {
+     "cities": 3,
+     "greeneries": 2,
+     "total": 10
+    }
+   },
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": [
+      [
+       "GENERALIST",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 3
+       }
+      ],
+      [
+       "LEGEND",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 5
+       }
+      ],
+      [
+       "TYCOON",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 6
+       }
+      ]
+     ]
+    },
+    "fundedAwards": {
+     "$map": [
+      [
+       "celebrity",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 8
+       }
+      ]
+     ]
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [
+        "Point Luna",
+        "Mohole Excavation",
+        "Research Network"
+       ],
+       "played": [
+        "Space Hotels",
+        "Great Escarpment Consortium",
+        "Acquired Company",
+        "Energy Tapping",
+        "Titanium Mine",
+        "Cartel",
+        "Corporate Stronghold",
+        "Giant Space Mirror",
+        "Domed Crater",
+        "Restricted Area",
+        "Designed Microorganisms",
+        "Indentured Workers",
+        "AI Central",
+        "Lichen",
+        "Virus",
+        "Protected Habitats",
+        "Arctic Algae",
+        "Imported Hydrogen",
+        "Flooding",
+        "Space Elevator",
+        "Decomposers",
+        "Nitrophilic Moss",
+        "Pets",
+        "Asteroid Mining Consortium",
+        "SF Memorial",
+        "Space Station",
+        "Methane From Titan",
+        "Mining Area",
+        "Colonizer Training Camp",
+        "Towing a Comet",
+        "Herbivores",
+        "Algae",
+        "Eos Chasma National Park"
+       ],
+       "hand": [
+        "Lava Flows",
+        "Imported Nitrogen",
+        "Predators",
+        "Birds",
+        "Small Animals",
+        "Lake Marineris",
+        "Ore Processor",
+        "Fusion Power",
+        "Phobos Space Haven",
+        "Zeppelins",
+        "Beam From a Thorium Asteroid",
+        "Power Plant",
+        "Power Infrastructure",
+        "Medical Lab"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Decomposers": 6,
+        "Pets": 2,
+        "Herbivores": 2
+       }
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [
+        "CrediCor",
+        "Metals Company",
+        "UNMI Contractor"
+       ],
+       "played": [
+        "Nuclear Zone",
+        "Mineral Deposit",
+        "Mining Rights",
+        "Invention Contest",
+        "Mars University",
+        "Space Mirrors",
+        "Inventors' Guild",
+        "Aerobraked Ammonia Asteroid",
+        "Fuel Factory",
+        "Comet",
+        "Earth Office",
+        "Research Outpost",
+        "Convoy From Europa",
+        "Industrial Center",
+        "Advanced Alloys",
+        "Optimal Aerobraking",
+        "Technology Demonstration",
+        "Olympus Conference",
+        "Mass Converter",
+        "Electro Catapult",
+        "Cupola City",
+        "Lava Tube Settlement",
+        "Asteroid Mining",
+        "Building Industries",
+        "Greenhouses",
+        "Investment Loan",
+        "Mohole Area",
+        "Immigration Shuttles",
+        "Satellites",
+        "Ecological Zone",
+        "Noctis Farming"
+       ],
+       "hand": [
+        "Plantation",
+        "Big Asteroid",
+        "Fish",
+        "Advanced Ecosystems",
+        "Adaptation Technology",
+        "Giant Ice Asteroid",
+        "Robotic Workforce"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Olympus Conference": 0,
+        "Ecological Zone": 3
+       }
+      }
+     ]
+    ]
+   },
+   "startingHandData": null,
+   "draftData": null,
+   "activatedCards": {
+    "$map": [
+     [
+      "98490496",
+      {
+       "$set": [
+        "Electro Catapult",
+        "Inventors' Guild"
+       ]
+      }
+     ],
+     [
+      "86296239",
+      {
+       "$set": [
+        "Space Elevator"
+       ]
+      }
+     ]
+    ]
+   },
+   "discardPile": [
+    "Artificial Photosynthesis",
+    "Magnetic Field Generators",
+    "Permafrost extraction",
+    "Rad-Chem Factory",
+    "Underground City",
+    "Moss",
+    "Interstellar Colony Ship",
+    "Cloud Seeding",
+    "Dust Seals",
+    "Power Supply Consortium",
+    "Psychrophiles",
+    "Steelworks",
+    "Underground Detonations",
+    "Breathing Filters",
+    "Rover Construction",
+    "Archaebacteria",
+    "Nitrite Reducing Bacteria",
+    "Power Grid",
+    "Tectonic Stress Power",
+    "Martian Rails",
+    "Callisto Penal Mines",
+    "Symbiotic Fungus",
+    "Great Dam",
+    "Protected Valley",
+    "Ants",
+    "Livestock",
+    "GHG Factories",
+    "GHG Producing Bacteria",
+    "Special Design",
+    "Windmills",
+    "Regolith Eaters",
+    "Business Network",
+    "Food Factory",
+    "Energy Saving",
+    "Fueled Generators",
+    "Release of Inert Gases",
+    "Wave Power",
+    "Solar Power",
+    "Bribed Committee",
+    "Tundra Farming",
+    "Soil Factory",
+    "Import of Advanced GHG",
+    "Aquifer Pumping",
+    "Tardigrades",
+    "Rad-Suits",
+    "Mine",
+    "Water Splitting Plant",
+    "Sponsors",
+    "Soletta",
+    "Peroxide Power",
+    "Insulation",
+    "Lightning Harvest"
+   ]
+  },
+  {
+   "step": 440,
+   "placedTiles": {
+    "$map": [
+     [
+      "Olympus Mons",
+      {
+       "dbKey": "Olympus Mons",
+       "tileType": "Nuclear Zone",
+       "playerId": "98490496",
+       "moveIndex": 10
+      }
+     ],
+     [
+      "Hex 7,8",
+      {
+       "dbKey": "Hex 7,8",
+       "tileType": "Mining",
+       "playerId": "98490496",
+       "moveIndex": 20
+      }
+     ],
+     [
+      "Hex 6,5",
+      {
+       "dbKey": "Hex 6,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 87
+      }
+     ],
+     [
+      "Hex 3,5",
+      {
+       "dbKey": "Hex 3,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 108
+      }
+     ],
+     [
+      "Hex 2,5",
+      {
+       "dbKey": "Hex 2,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 110
+      }
+     ],
+     [
+      "Hex 5,1",
+      {
+       "dbKey": "Hex 5,1",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 115
+      }
+     ],
+     [
+      "Hex 4,3",
+      {
+       "dbKey": "Hex 4,3",
+       "tileType": "Restricted Area",
+       "playerId": "86296239",
+       "moveIndex": 124
+      }
+     ],
+     [
+      "Hex 8,5",
+      {
+       "dbKey": "Hex 8,5",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 140
+      }
+     ],
+     [
+      "Hex 8,4",
+      {
+       "dbKey": "Hex 8,4",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 148
+      }
+     ],
+     [
+      "Hex 5,5",
+      {
+       "dbKey": "Hex 5,5",
+       "tileType": "Industrial Center",
+       "playerId": "98490496",
+       "moveIndex": 167
+      }
+     ],
+     [
+      "Hex 4,5",
+      {
+       "dbKey": "Hex 4,5",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 234
+      }
+     ],
+     [
+      "Hex 4,6",
+      {
+       "dbKey": "Hex 4,6",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 240
+      }
+     ],
+     [
+      "Hex 5,4",
+      {
+       "dbKey": "Hex 5,4",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 244
+      }
+     ],
+     [
+      "Hex 4,4",
+      {
+       "dbKey": "Hex 4,4",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 248
+      }
+     ],
+     [
+      "Hex 4,7",
+      {
+       "dbKey": "Hex 4,7",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 275
+      }
+     ],
+     [
+      "Elysium Mons",
+      {
+       "dbKey": "Elysium Mons",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 299
+      }
+     ],
+     [
+      "Hex 5,6",
+      {
+       "dbKey": "Hex 5,6",
+       "tileType": "Forest",
+       "playerId": "98490496",
+       "moveIndex": 321
+      }
+     ],
+     [
+      "Hex 7,4",
+      {
+       "dbKey": "Hex 7,4",
+       "tileType": "Mohole Area",
+       "playerId": "98490496",
+       "moveIndex": 353
+      }
+     ],
+     [
+      "Hex 3,7",
+      {
+       "dbKey": "Hex 3,7",
+       "tileType": "Mining",
+       "playerId": "86296239",
+       "moveIndex": 358
+      }
+     ],
+     [
+      "Hex 3,6",
+      {
+       "dbKey": "Hex 3,6",
+       "tileType": "Ecological Zone",
+       "playerId": "98490496",
+       "moveIndex": 369
+      }
+     ],
+     [
+      "Hex 9,4",
+      {
+       "dbKey": "Hex 9,4",
+       "tileType": "Forest",
+       "playerId": "98490496",
+       "moveIndex": 377
+      }
+     ],
+     [
+      "Hex 7,5",
+      {
+       "dbKey": "Hex 7,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 380
+      }
+     ],
+     [
+      "Hex 6,3",
+      {
+       "dbKey": "Hex 6,3",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 386
+      }
+     ],
+     [
+      "Hex 6,4",
+      {
+       "dbKey": "Hex 6,4",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 389
+      }
+     ],
+     [
+      "Hex 5,3",
+      {
+       "dbKey": "Hex 5,3",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 401
+      }
+     ],
+     [
+      "Hecatus Tholus",
+      {
+       "dbKey": "Hecatus Tholus",
+       "tileType": "Lava Flows",
+       "playerId": "86296239",
+       "moveIndex": 412
+      }
+     ],
+     [
+      "Hex 6,2",
+      {
+       "dbKey": "Hex 6,2",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 414
+      }
+     ],
+     [
+      "Hex 7,3",
+      {
+       "dbKey": "Hex 7,3",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 419
+      }
+     ],
+     [
+      "Hex 7,2",
+      {
+       "dbKey": "Hex 7,2",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 420
+      }
+     ],
+     [
+      "Hex 8,2",
+      {
+       "dbKey": "Hex 8,2",
+       "tileType": "Forest",
+       "playerId": "98490496",
+       "moveIndex": 425
+      }
+     ],
+     [
+      "Hex 6,1",
+      {
+       "dbKey": "Hex 6,1",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 438
+      }
+     ]
+    ]
+   },
+   "playerTileCounts": {
+    "86296239": {
+     "cities": 2,
+     "greeneries": 6,
+     "total": 11
+    },
+    "98490496": {
+     "cities": 3,
+     "greeneries": 3,
+     "total": 11
+    }
+   },
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": [
+      [
+       "GENERALIST",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 3
+       }
+      ],
+      [
+       "LEGEND",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 5
+       }
+      ],
+      [
+       "TYCOON",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 6
+       }
+      ]
+     ]
+    },
+    "fundedAwards": {
+     "$map": [
+      [
+       "celebrity",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 8
+       }
+      ]
+     ]
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [
+        "Point Luna",
+        "Mohole Excavation",
+        "Research Network"
+       ],
+       "played": [
+        "Space Hotels",
+        "Great Escarpment Consortium",
+        "Acquired Company",
+        "Energy Tapping",
+        "Titanium Mine",
+        "Cartel",
+        "Corporate Stronghold",
+        "Giant Space Mirror",
+        "Domed Crater",
+        "Restricted Area",
+        "Designed Microorganisms",
+        "Indentured Workers",
+        "AI Central",
+        "Lichen",
+        "Virus",
+        "Protected Habitats",
+        "Arctic Algae",
+        "Imported Hydrogen",
+        "Flooding",
+        "Space Elevator",
+        "Decomposers",
+        "Nitrophilic Moss",
+        "Pets",
+        "Asteroid Mining Consortium",
+        "SF Memorial",
+        "Space Station",
+        "Methane From Titan",
+        "Mining Area",
+        "Colonizer Training Camp",
+        "Towing a Comet",
+        "Herbivores",
+        "Algae",
+        "Eos Chasma National Park",
+        "Lava Flows"
+       ],
+       "hand": [
+        "Imported Nitrogen",
+        "Predators",
+        "Birds",
+        "Small Animals",
+        "Lake Marineris",
+        "Ore Processor",
+        "Fusion Power",
+        "Phobos Space Haven",
+        "Zeppelins",
+        "Beam From a Thorium Asteroid",
+        "Power Plant",
+        "Power Infrastructure",
+        "Medical Lab",
+        "Shuttles",
+        "Capital",
+        "Deep Well Heating",
+        "Carbonate Processing",
+        "Commercial District"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Decomposers": 6,
+        "Pets": 2,
+        "Herbivores": 3
+       }
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [
+        "CrediCor",
+        "Metals Company",
+        "UNMI Contractor"
+       ],
+       "played": [
+        "Nuclear Zone",
+        "Mineral Deposit",
+        "Mining Rights",
+        "Invention Contest",
+        "Mars University",
+        "Space Mirrors",
+        "Inventors' Guild",
+        "Aerobraked Ammonia Asteroid",
+        "Fuel Factory",
+        "Comet",
+        "Earth Office",
+        "Research Outpost",
+        "Convoy From Europa",
+        "Industrial Center",
+        "Advanced Alloys",
+        "Optimal Aerobraking",
+        "Technology Demonstration",
+        "Olympus Conference",
+        "Mass Converter",
+        "Electro Catapult",
+        "Cupola City",
+        "Lava Tube Settlement",
+        "Asteroid Mining",
+        "Building Industries",
+        "Greenhouses",
+        "Investment Loan",
+        "Mohole Area",
+        "Immigration Shuttles",
+        "Satellites",
+        "Ecological Zone",
+        "Noctis Farming",
+        "Giant Ice Asteroid",
+        "Plantation"
+       ],
+       "hand": [
+        "Big Asteroid",
+        "Fish",
+        "Advanced Ecosystems",
+        "Adaptation Technology",
+        "Robotic Workforce",
+        "Nitrogen-Rich Asteroid",
+        "Grass",
+        "Adapted Lichen",
+        "Miranda Resort"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Olympus Conference": 0,
+        "Ecological Zone": 4
+       }
+      }
+     ]
+    ]
+   },
+   "startingHandData": null,
+   "draftData": null,
+   "activatedCards": {
+    "$map": [
+     [
+      "98490496",
+      {
+       "$set": [
+        "Electro Catapult",
+        "Inventors' Guild"
+       ]
+      }
+     ],
+     [
+      "86296239",
+      {
+       "$set": [
+        "Space Elevator"
+       ]
+      }
+     ]
+    ]
+   },
+   "discardPile": [
+    "Artificial Photosynthesis",
+    "Magnetic Field Generators",
+    "Permafrost extraction",
+    "Rad-Chem Factory",
+    "Underground City",
+    "Moss",
+    "Interstellar Colony Ship",
+    "Cloud Seeding",
+    "Dust Seals",
+    "Power Supply Consortium",
+    "Psychrophiles",
+    "Steelworks",
+    "Underground Detonations",
+    "Breathing Filters",
+    "Rover Construction",
+    "Archaebacteria",
+    "Nitrite Reducing Bacteria",
+    "Power Grid",
+    "Tectonic Stress Power",
+    "Martian Rails",
+    "Callisto Penal Mines",
+    "Symbiotic Fungus",
+    "Great Dam",
+    "Protected Valley",
+    "Ants",
+    "Livestock",
+    "GHG Factories",
+    "GHG Producing Bacteria",
+    "Special Design",
+    "Windmills",
+    "Regolith Eaters",
+    "Business Network",
+    "Food Factory",
+    "Energy Saving",
+    "Fueled Generators",
+    "Release of Inert Gases",
+    "Wave Power",
+    "Solar Power",
+    "Bribed Committee",
+    "Tundra Farming",
+    "Soil Factory",
+    "Import of Advanced GHG",
+    "Aquifer Pumping",
+    "Tardigrades",
+    "Rad-Suits",
+    "Mine",
+    "Water Splitting Plant",
+    "Sponsors",
+    "Soletta",
+    "Peroxide Power",
+    "Insulation",
+    "Lightning Harvest",
+    "Trans-Neptune Probe",
+    "Physics Complex",
+    "Geothermal Power"
+   ]
+  },
+  {
+   "step": 480,
+   "placedTiles": {
+    "$map": [
+     [
+      "Olympus Mons",
+      {
+       "dbKey": "Olympus Mons",
+       "tileType": "Nuclear Zone",
+       "playerId": "98490496",
+       "moveIndex": 10
+      }
+     ],
+     [
+      "Hex 7,8",
+      {
+       "dbKey": "Hex 7,8",
+       "tileType": "Mining",
+       "playerId": "98490496",
+       "moveIndex": 20
+      }
+     ],
+     [
+      "Hex 6,5",
+      {
+       "dbKey": "Hex 6,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 87
+      }
+     ],
+     [
+      "Hex 3,5",
+      {
+       "dbKey": "Hex 3,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 108
+      }
+     ],
+     [
+      "Hex 2,5",
+      {
+       "dbKey": "Hex 2,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 110
+      }
+     ],
+     [
+      "Hex 5,1",
+      {
+       "dbKey": "Hex 5,1",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 115
+      }
+     ],
+     [
+      "Hex 4,3",
+      {
+       "dbKey": "Hex 4,3",
+       "tileType": "Restricted Area",
+       "playerId": "86296239",
+       "moveIndex": 124
+      }
+     ],
+     [
+      "Hex 8,5",
+      {
+       "dbKey": "Hex 8,5",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 140
+      }
+     ],
+     [
+      "Hex 8,4",
+      {
+       "dbKey": "Hex 8,4",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 148
+      }
+     ],
+     [
+      "Hex 5,5",
+      {
+       "dbKey": "Hex 5,5",
+       "tileType": "Industrial Center",
+       "playerId": "98490496",
+       "moveIndex": 167
+      }
+     ],
+     [
+      "Hex 4,5",
+      {
+       "dbKey": "Hex 4,5",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 234
+      }
+     ],
+     [
+      "Hex 4,6",
+      {
+       "dbKey": "Hex 4,6",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 240
+      }
+     ],
+     [
+      "Hex 5,4",
+      {
+       "dbKey": "Hex 5,4",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 244
+      }
+     ],
+     [
+      "Hex 4,4",
+      {
+       "dbKey": "Hex 4,4",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 248
+      }
+     ],
+     [
+      "Hex 4,7",
+      {
+       "dbKey": "Hex 4,7",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 275
+      }
+     ],
+     [
+      "Elysium Mons",
+      {
+       "dbKey": "Elysium Mons",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 299
+      }
+     ],
+     [
+      "Hex 5,6",
+      {
+       "dbKey": "Hex 5,6",
+       "tileType": "Forest",
+       "playerId": "98490496",
+       "moveIndex": 321
+      }
+     ],
+     [
+      "Hex 7,4",
+      {
+       "dbKey": "Hex 7,4",
+       "tileType": "Mohole Area",
+       "playerId": "98490496",
+       "moveIndex": 353
+      }
+     ],
+     [
+      "Hex 3,7",
+      {
+       "dbKey": "Hex 3,7",
+       "tileType": "Mining",
+       "playerId": "86296239",
+       "moveIndex": 358
+      }
+     ],
+     [
+      "Hex 3,6",
+      {
+       "dbKey": "Hex 3,6",
+       "tileType": "Ecological Zone",
+       "playerId": "98490496",
+       "moveIndex": 369
+      }
+     ],
+     [
+      "Hex 9,4",
+      {
+       "dbKey": "Hex 9,4",
+       "tileType": "Forest",
+       "playerId": "98490496",
+       "moveIndex": 377
+      }
+     ],
+     [
+      "Hex 7,5",
+      {
+       "dbKey": "Hex 7,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 380
+      }
+     ],
+     [
+      "Hex 6,3",
+      {
+       "dbKey": "Hex 6,3",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 386
+      }
+     ],
+     [
+      "Hex 6,4",
+      {
+       "dbKey": "Hex 6,4",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 389
+      }
+     ],
+     [
+      "Hex 5,3",
+      {
+       "dbKey": "Hex 5,3",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 401
+      }
+     ],
+     [
+      "Hecatus Tholus",
+      {
+       "dbKey": "Hecatus Tholus",
+       "tileType": "Lava Flows",
+       "playerId": "86296239",
+       "moveIndex": 412
+      }
+     ],
+     [
+      "Hex 6,2",
+      {
+       "dbKey": "Hex 6,2",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 414
+      }
+     ],
+     [
+      "Hex 7,3",
+      {
+       "dbKey": "Hex 7,3",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 419
+      }
+     ],
+     [
+      "Hex 7,2",
+      {
+       "dbKey": "Hex 7,2",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 420
+      }
+     ],
+     [
+      "Hex 8,2",
+      {
+       "dbKey": "Hex 8,2",
+       "tileType": "Forest",
+       "playerId": "98490496",
+       "moveIndex": 425
+      }
+     ],
+     [
+      "Hex 6,1",
+      {
+       "dbKey": "Hex 6,1",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 438
+      }
+     ],
+     [
+      "Hex 5,2",
+      {
+       "dbKey": "Hex 5,2",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 447
+      }
+     ],
+     [
+      "Hex 6,6",
+      {
+       "dbKey": "Hex 6,6",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 449
+      }
+     ]
+    ]
+   },
+   "playerTileCounts": {
+    "86296239": {
+     "cities": 2,
+     "greeneries": 8,
+     "total": 13
+    },
+    "98490496": {
+     "cities": 3,
+     "greeneries": 3,
+     "total": 11
+    }
+   },
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": [
+      [
+       "GENERALIST",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 3
+       }
+      ],
+      [
+       "LEGEND",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 5
+       }
+      ],
+      [
+       "TYCOON",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 6
+       }
+      ]
+     ]
+    },
+    "fundedAwards": {
+     "$map": [
+      [
+       "celebrity",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 8
+       }
+      ]
+     ]
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [
+        "Point Luna",
+        "Mohole Excavation",
+        "Research Network"
+       ],
+       "played": [
+        "Space Hotels",
+        "Great Escarpment Consortium",
+        "Acquired Company",
+        "Energy Tapping",
+        "Titanium Mine",
+        "Cartel",
+        "Corporate Stronghold",
+        "Giant Space Mirror",
+        "Domed Crater",
+        "Restricted Area",
+        "Designed Microorganisms",
+        "Indentured Workers",
+        "AI Central",
+        "Lichen",
+        "Virus",
+        "Protected Habitats",
+        "Arctic Algae",
+        "Imported Hydrogen",
+        "Flooding",
+        "Space Elevator",
+        "Decomposers",
+        "Nitrophilic Moss",
+        "Pets",
+        "Asteroid Mining Consortium",
+        "SF Memorial",
+        "Space Station",
+        "Methane From Titan",
+        "Mining Area",
+        "Colonizer Training Camp",
+        "Towing a Comet",
+        "Herbivores",
+        "Algae",
+        "Eos Chasma National Park",
+        "Lava Flows",
+        "Lake Marineris"
+       ],
+       "hand": [
+        "Imported Nitrogen",
+        "Predators",
+        "Birds",
+        "Small Animals",
+        "Phobos Space Haven",
+        "Zeppelins",
+        "Beam From a Thorium Asteroid",
+        "Power Plant",
+        "Medical Lab",
+        "Shuttles",
+        "Capital",
+        "Commercial District"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Decomposers": 6,
+        "Pets": 2,
+        "Herbivores": 5
+       }
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [
+        "CrediCor",
+        "Metals Company",
+        "UNMI Contractor"
+       ],
+       "played": [
+        "Nuclear Zone",
+        "Mineral Deposit",
+        "Mining Rights",
+        "Invention Contest",
+        "Mars University",
+        "Space Mirrors",
+        "Inventors' Guild",
+        "Aerobraked Ammonia Asteroid",
+        "Fuel Factory",
+        "Comet",
+        "Earth Office",
+        "Research Outpost",
+        "Convoy From Europa",
+        "Industrial Center",
+        "Advanced Alloys",
+        "Optimal Aerobraking",
+        "Technology Demonstration",
+        "Olympus Conference",
+        "Mass Converter",
+        "Electro Catapult",
+        "Cupola City",
+        "Lava Tube Settlement",
+        "Asteroid Mining",
+        "Building Industries",
+        "Greenhouses",
+        "Investment Loan",
+        "Mohole Area",
+        "Immigration Shuttles",
+        "Satellites",
+        "Ecological Zone",
+        "Noctis Farming",
+        "Giant Ice Asteroid",
+        "Plantation",
+        "Nitrogen-Rich Asteroid",
+        "Grass"
+       ],
+       "hand": [
+        "Fish",
+        "Adapted Lichen",
+        "Miranda Resort"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Olympus Conference": 0,
+        "Ecological Zone": 5
+       }
+      }
+     ]
+    ]
+   },
+   "startingHandData": null,
+   "draftData": null,
+   "activatedCards": {
+    "$map": [
+     [
+      "98490496",
+      {
+       "$set": [
+        "Electro Catapult",
+        "Inventors' Guild"
+       ]
+      }
+     ],
+     [
+      "86296239",
+      {
+       "$set": [
+        "Space Elevator"
+       ]
+      }
+     ]
+    ]
+   },
+   "discardPile": [
+    "Artificial Photosynthesis",
+    "Magnetic Field Generators",
+    "Permafrost extraction",
+    "Rad-Chem Factory",
+    "Underground City",
+    "Moss",
+    "Interstellar Colony Ship",
+    "Cloud Seeding",
+    "Dust Seals",
+    "Power Supply Consortium",
+    "Psychrophiles",
+    "Steelworks",
+    "Underground Detonations",
+    "Breathing Filters",
+    "Rover Construction",
+    "Archaebacteria",
+    "Nitrite Reducing Bacteria",
+    "Power Grid",
+    "Tectonic Stress Power",
+    "Martian Rails",
+    "Callisto Penal Mines",
+    "Symbiotic Fungus",
+    "Great Dam",
+    "Protected Valley",
+    "Ants",
+    "Livestock",
+    "GHG Factories",
+    "GHG Producing Bacteria",
+    "Special Design",
+    "Windmills",
+    "Regolith Eaters",
+    "Business Network",
+    "Food Factory",
+    "Energy Saving",
+    "Fueled Generators",
+    "Release of Inert Gases",
+    "Wave Power",
+    "Solar Power",
+    "Bribed Committee",
+    "Tundra Farming",
+    "Soil Factory",
+    "Import of Advanced GHG",
+    "Aquifer Pumping",
+    "Tardigrades",
+    "Rad-Suits",
+    "Mine",
+    "Water Splitting Plant",
+    "Sponsors",
+    "Soletta",
+    "Peroxide Power",
+    "Insulation",
+    "Lightning Harvest",
+    "Trans-Neptune Probe",
+    "Physics Complex",
+    "Geothermal Power",
+    "Power Infrastructure",
+    "Big Asteroid",
+    "Deep Well Heating",
+    "Robotic Workforce",
+    "Carbonate Processing",
+    "Adaptation Technology",
+    "Fusion Power",
+    "Advanced Ecosystems",
+    "Ore Processor"
+   ]
+  },
+  {
+   "step": 481,
+   "placedTiles": {
+    "$map": [
+     [
+      "Olympus Mons",
+      {
+       "dbKey": "Olympus Mons",
+       "tileType": "Nuclear Zone",
+       "playerId": "98490496",
+       "moveIndex": 10
+      }
+     ],
+     [
+      "Hex 7,8",
+      {
+       "dbKey": "Hex 7,8",
+       "tileType": "Mining",
+       "playerId": "98490496",
+       "moveIndex": 20
+      }
+     ],
+     [
+      "Hex 6,5",
+      {
+       "dbKey": "Hex 6,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 87
+      }
+     ],
+     [
+      "Hex 3,5",
+      {
+       "dbKey": "Hex 3,5",
+       "tileType": "City",
+       "playerId": "86296239",
+       "moveIndex": 108
+      }
+     ],
+     [
+      "Hex 2,5",
+      {
+       "dbKey": "Hex 2,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 110
+      }
+     ],
+     [
+      "Hex 5,1",
+      {
+       "dbKey": "Hex 5,1",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 115
+      }
+     ],
+     [
+      "Hex 4,3",
+      {
+       "dbKey": "Hex 4,3",
+       "tileType": "Restricted Area",
+       "playerId": "86296239",
+       "moveIndex": 124
+      }
+     ],
+     [
+      "Hex 8,5",
+      {
+       "dbKey": "Hex 8,5",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 140
+      }
+     ],
+     [
+      "Hex 8,4",
+      {
+       "dbKey": "Hex 8,4",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 148
+      }
+     ],
+     [
+      "Hex 5,5",
+      {
+       "dbKey": "Hex 5,5",
+       "tileType": "Industrial Center",
+       "playerId": "98490496",
+       "moveIndex": 167
+      }
+     ],
+     [
+      "Hex 4,5",
+      {
+       "dbKey": "Hex 4,5",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 234
+      }
+     ],
+     [
+      "Hex 4,6",
+      {
+       "dbKey": "Hex 4,6",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 240
+      }
+     ],
+     [
+      "Hex 5,4",
+      {
+       "dbKey": "Hex 5,4",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 244
+      }
+     ],
+     [
+      "Hex 4,4",
+      {
+       "dbKey": "Hex 4,4",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 248
+      }
+     ],
+     [
+      "Hex 4,7",
+      {
+       "dbKey": "Hex 4,7",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 275
+      }
+     ],
+     [
+      "Elysium Mons",
+      {
+       "dbKey": "Elysium Mons",
+       "tileType": "City",
+       "playerId": "98490496",
+       "moveIndex": 299
+      }
+     ],
+     [
+      "Hex 5,6",
+      {
+       "dbKey": "Hex 5,6",
+       "tileType": "Forest",
+       "playerId": "98490496",
+       "moveIndex": 321
+      }
+     ],
+     [
+      "Hex 7,4",
+      {
+       "dbKey": "Hex 7,4",
+       "tileType": "Mohole Area",
+       "playerId": "98490496",
+       "moveIndex": 353
+      }
+     ],
+     [
+      "Hex 3,7",
+      {
+       "dbKey": "Hex 3,7",
+       "tileType": "Mining",
+       "playerId": "86296239",
+       "moveIndex": 358
+      }
+     ],
+     [
+      "Hex 3,6",
+      {
+       "dbKey": "Hex 3,6",
+       "tileType": "Ecological Zone",
+       "playerId": "98490496",
+       "moveIndex": 369
+      }
+     ],
+     [
+      "Hex 9,4",
+      {
+       "dbKey": "Hex 9,4",
+       "tileType": "Forest",
+       "playerId": "98490496",
+       "moveIndex": 377
+      }
+     ],
+     [
+      "Hex 7,5",
+      {
+       "dbKey": "Hex 7,5",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 380
+      }
+     ],
+     [
+      "Hex 6,3",
+      {
+       "dbKey": "Hex 6,3",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 386
+      }
+     ],
+     [
+      "Hex 6,4",
+      {
+       "dbKey": "Hex 6,4",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 389
+      }
+     ],
+     [
+      "Hex 5,3",
+      {
+       "dbKey": "Hex 5,3",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 401
+      }
+     ],
+     [
+      "Hecatus Tholus",
+      {
+       "dbKey": "Hecatus Tholus",
+       "tileType": "Lava Flows",
+       "playerId": "86296239",
+       "moveIndex": 412
+      }
+     ],
+     [
+      "Hex 6,2",
+      {
+       "dbKey": "Hex 6,2",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 414
+      }
+     ],
+     [
+      "Hex 7,3",
+      {
+       "dbKey": "Hex 7,3",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 419
+      }
+     ],
+     [
+      "Hex 7,2",
+      {
+       "dbKey": "Hex 7,2",
+       "tileType": "Ocean",
+       "playerId": "98490496",
+       "moveIndex": 420
+      }
+     ],
+     [
+      "Hex 8,2",
+      {
+       "dbKey": "Hex 8,2",
+       "tileType": "Forest",
+       "playerId": "98490496",
+       "moveIndex": 425
+      }
+     ],
+     [
+      "Hex 6,1",
+      {
+       "dbKey": "Hex 6,1",
+       "tileType": "Ocean",
+       "playerId": "86296239",
+       "moveIndex": 438
+      }
+     ],
+     [
+      "Hex 5,2",
+      {
+       "dbKey": "Hex 5,2",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 447
+      }
+     ],
+     [
+      "Hex 6,6",
+      {
+       "dbKey": "Hex 6,6",
+       "tileType": "Forest",
+       "playerId": "86296239",
+       "moveIndex": 449
+      }
+     ]
+    ]
+   },
+   "playerTileCounts": {
+    "86296239": {
+     "cities": 2,
+     "greeneries": 8,
+     "total": 13
+    },
+    "98490496": {
+     "cities": 3,
+     "greeneries": 3,
+     "total": 11
+    }
+   },
+   "milestonesAndAwards": {
+    "claimedMilestones": {
+     "$map": [
+      [
+       "GENERALIST",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 3
+       }
+      ],
+      [
+       "LEGEND",
+       {
+        "playerId": "98490496",
+        "playerName": "cdman234",
+        "generation": 5
+       }
+      ],
+      [
+       "TYCOON",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 6
+       }
+      ]
+     ]
+    },
+    "fundedAwards": {
+     "$map": [
+      [
+       "celebrity",
+       {
+        "playerId": "86296239",
+        "playerName": "StrandedKnight",
+        "generation": 8
+       }
+      ]
+     ]
+    }
+   },
+   "playerTableaux": {
+    "$map": [
+     [
+      "86296239",
+      {
+       "headquarters": [
+        "Point Luna",
+        "Mohole Excavation",
+        "Research Network"
+       ],
+       "played": [
+        "Space Hotels",
+        "Great Escarpment Consortium",
+        "Acquired Company",
+        "Energy Tapping",
+        "Titanium Mine",
+        "Cartel",
+        "Corporate Stronghold",
+        "Giant Space Mirror",
+        "Domed Crater",
+        "Restricted Area",
+        "Designed Microorganisms",
+        "Indentured Workers",
+        "AI Central",
+        "Lichen",
+        "Virus",
+        "Protected Habitats",
+        "Arctic Algae",
+        "Imported Hydrogen",
+        "Flooding",
+        "Space Elevator",
+        "Decomposers",
+        "Nitrophilic Moss",
+        "Pets",
+        "Asteroid Mining Consortium",
+        "SF Memorial",
+        "Space Station",
+        "Methane From Titan",
+        "Mining Area",
+        "Colonizer Training Camp",
+        "Towing a Comet",
+        "Herbivores",
+        "Algae",
+        "Eos Chasma National Park",
+        "Lava Flows",
+        "Lake Marineris"
+       ],
+       "hand": [
+        "Imported Nitrogen",
+        "Predators",
+        "Birds",
+        "Small Animals",
+        "Phobos Space Haven",
+        "Zeppelins",
+        "Beam From a Thorium Asteroid",
+        "Power Plant",
+        "Medical Lab",
+        "Shuttles",
+        "Capital",
+        "Commercial District"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Decomposers": 6,
+        "Pets": 2,
+        "Herbivores": 5
+       }
+      }
+     ],
+     [
+      "98490496",
+      {
+       "headquarters": [
+        "CrediCor",
+        "Metals Company",
+        "UNMI Contractor"
+       ],
+       "played": [
+        "Nuclear Zone",
+        "Mineral Deposit",
+        "Mining Rights",
+        "Invention Contest",
+        "Mars University",
+        "Space Mirrors",
+        "Inventors' Guild",
+        "Aerobraked Ammonia Asteroid",
+        "Fuel Factory",
+        "Comet",
+        "Earth Office",
+        "Research Outpost",
+        "Convoy From Europa",
+        "Industrial Center",
+        "Advanced Alloys",
+        "Optimal Aerobraking",
+        "Technology Demonstration",
+        "Olympus Conference",
+        "Mass Converter",
+        "Electro Catapult",
+        "Cupola City",
+        "Lava Tube Settlement",
+        "Asteroid Mining",
+        "Building Industries",
+        "Greenhouses",
+        "Investment Loan",
+        "Mohole Area",
+        "Immigration Shuttles",
+        "Satellites",
+        "Ecological Zone",
+        "Noctis Farming",
+        "Giant Ice Asteroid",
+        "Plantation",
+        "Nitrogen-Rich Asteroid",
+        "Grass"
+       ],
+       "hand": [
+        "Fish",
+        "Adapted Lichen",
+        "Miranda Resort"
+       ],
+       "sold": [],
+       "cardResources": {
+        "Olympus Conference": 0,
+        "Ecological Zone": 5
+       }
+      }
+     ]
+    ]
+   },
+   "startingHandData": null,
+   "draftData": null,
+   "activatedCards": {
+    "$map": [
+     [
+      "98490496",
+      {
+       "$set": [
+        "Electro Catapult",
+        "Inventors' Guild"
+       ]
+      }
+     ],
+     [
+      "86296239",
+      {
+       "$set": [
+        "Space Elevator"
+       ]
+      }
+     ]
+    ]
+   },
+   "discardPile": [
+    "Artificial Photosynthesis",
+    "Magnetic Field Generators",
+    "Permafrost extraction",
+    "Rad-Chem Factory",
+    "Underground City",
+    "Moss",
+    "Interstellar Colony Ship",
+    "Cloud Seeding",
+    "Dust Seals",
+    "Power Supply Consortium",
+    "Psychrophiles",
+    "Steelworks",
+    "Underground Detonations",
+    "Breathing Filters",
+    "Rover Construction",
+    "Archaebacteria",
+    "Nitrite Reducing Bacteria",
+    "Power Grid",
+    "Tectonic Stress Power",
+    "Martian Rails",
+    "Callisto Penal Mines",
+    "Symbiotic Fungus",
+    "Great Dam",
+    "Protected Valley",
+    "Ants",
+    "Livestock",
+    "GHG Factories",
+    "GHG Producing Bacteria",
+    "Special Design",
+    "Windmills",
+    "Regolith Eaters",
+    "Business Network",
+    "Food Factory",
+    "Energy Saving",
+    "Fueled Generators",
+    "Release of Inert Gases",
+    "Wave Power",
+    "Solar Power",
+    "Bribed Committee",
+    "Tundra Farming",
+    "Soil Factory",
+    "Import of Advanced GHG",
+    "Aquifer Pumping",
+    "Tardigrades",
+    "Rad-Suits",
+    "Mine",
+    "Water Splitting Plant",
+    "Sponsors",
+    "Soletta",
+    "Peroxide Power",
+    "Insulation",
+    "Lightning Harvest",
+    "Trans-Neptune Probe",
+    "Physics Complex",
+    "Geothermal Power",
+    "Power Infrastructure",
+    "Big Asteroid",
+    "Deep Well Heating",
+    "Robotic Workforce",
+    "Carbonate Processing",
+    "Adaptation Technology",
+    "Fusion Power",
+    "Advanced Ecosystems",
+    "Ore Processor"
+   ]
+  }
+ ]
+}

@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, SkipBack, SkipForward, Link, Unlink } from 'lucide-react';
-import type { GameState } from '@/types/gamelog';
 
 interface ReplayControlsProps {
   currentStep: number;
   totalMoves: number;
-  gameState: GameState | undefined;
+  generation: number | null;
   isAnimating: boolean;
   onPrev: () => void;
   onNext: () => void;
@@ -16,7 +15,7 @@ interface ReplayControlsProps {
 }
 
 export function ReplayControls({
-  currentStep, totalMoves, gameState, isAnimating,
+  currentStep, totalMoves, generation, isAnimating,
   onPrev, onNext, onJump, generationBoundaries,
   unlinked, onToggleUnlink,
 }: ReplayControlsProps) {
@@ -49,7 +48,7 @@ export function ReplayControls({
     setSliderHover({ value, pct: displayPct });
   }, [totalMoves]);
 
-  const currentGen = gameState?.generation ?? null;
+  const currentGen = generation;
   const sortedGens = useMemo(
     () => Array.from(generationBoundaries.keys()).sort((a, b) => a - b),
     [generationBoundaries],

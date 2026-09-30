@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getMapOverlays, type AwardOverlay, type MilestoneAwardOverlay } from '@/data/mapOverlays';
-import type { GameState } from '@/types/gamelog';
-import { computeStandings, type ClaimFundInfo, type StandingsContext } from '@/lib/replayUtils';
-import type { PlacedTile } from './ReplayMap';
+import { computeStandings, type StandingsContext } from '@/lib/replayUtils';
+import { findClaim, type GameSnapshotVM, type PlayerInfoVM } from '@/lib/replay/viewModel';
 
 // Reuse cube/tile images from parent — passed as props to avoid duplicate glob imports
 interface MapOverlaysProps {
@@ -11,18 +10,8 @@ interface MapOverlaysProps {
   imageWidth: number;
   imageHeight: number;
   tileSize: number;
-  placedTiles: Map<string, PlacedTile>;
-  playerColors: Record<string, string>;
-  currentStep: number;
-  gameState?: GameState;
-  claimedMilestones?: Map<string, ClaimFundInfo>;
-  fundedAwards?: Map<string, ClaimFundInfo>;
-  playerNames?: Record<string, string>;
-  playerTrackers?: Record<string, Record<string, number>>;
-  playerTileCounts?: Record<string, { cities: number; greeneries: number; total: number }>;
-  playerHandCounts?: Record<string, number>;
-  playerPlayedCards?: Record<string, string[]>;
-  playerCardResources?: Record<string, Record<string, number>>;
+  players: PlayerInfoVM[];
+  snapshot: GameSnapshotVM;
   hexCoords?: Map<string, [number, number]>;
   getCubeImage: (color: string) => string | undefined;
   cityTileImage: string;
@@ -57,36 +46,25 @@ interface TooltipData {
 
 export function MapOverlaysSvg(props: MapOverlaysProps) {
   const {
-    mapName, tileSize, placedTiles, playerColors, currentStep, gameState,
-    claimedMilestones, fundedAwards, playerNames, playerTrackers, playerTileCounts, playerHandCounts,
+    mapName, tileSize, players, snapshot,
     getCubeImage, cityTileImage, greeneryTileImage, getSpecialTileImage,
   } = props;
 
   const overlays = getMapOverlays(mapName);
-
-  const standingsCtx: StandingsContext = {
-    playerNames: playerNames ?? {},
-    playerTrackers,
-    playerTileCounts,
-    playerHandCounts,
-    playerPlayedCards: props.playerPlayedCards,
-    playerCardResources: props.playerCardResources,
-    hexCoords: props.hexCoords,
-    gameState,
-    placedTiles,
-  };
+  const playerColors: Record<string, string> = Object.fromEntries(players.map(p => [p.id, p.color]));
+  const { globals, generation } = snapshot;
 
   return (
     <>
       {/* Off-map tiles */}
       {overlays.offMapTiles?.map(({ name, tileType, cx, cy }) => {
-        const tile = placedTiles.get(name);
-        if (!tile || tile.moveIndex > currentStep) return null;
-        const color = playerColors[tile.playerId] ?? '#888';
+        const tile = snapshot.tiles.find(t => t.hexKey === name);
+        if (!tile) return null;
+        const color = (tile.placedBy != null ? playerColors[tile.placedBy] : undefined) ?? '#888';
         const size = tileSize;
         const cubeSize = tileSize * 0.4;
         const tileImages: Record<string, string> = { city: cityTileImage, greenery: greeneryTileImage };
-        const img = tileImages[tileType] ?? getSpecialTileImage(tile.tileType);
+        const img = tileImages[tileType] ?? getSpecialTileImage(tile.type);
         return (
           <g key={`offmap-${name}`}>
             {img && <image href={img} x={cx - size / 2} y={cy - size / 2} width={size} height={size} />}
@@ -100,10 +78,10 @@ export function MapOverlaysSvg(props: MapOverlaysProps) {
       })}
 
       {/* Number trackers (gen, oceans) */}
-      {gameState && overlays.trackers?.map(({ key, cx, cy }) => {
+      {globals && overlays.trackers?.map(({ key, cx, cy }) => {
         const values: Record<string, number | null> = {
-          oceans: gameState.oceans, generation: gameState.generation,
-          temperature: gameState.temperature, oxygen: gameState.oxygen,
+          oceans: globals.oceans, generation,
+          temperature: globals.temperature, oxygen: globals.oxygen,
         };
         const val = values[key];
         if (val == null) return null;
@@ -119,8 +97,8 @@ export function MapOverlaysSvg(props: MapOverlaysProps) {
       })}
 
       {/* Cube trackers (oxygen, temperature) */}
-      {gameState && overlays.cubeTrackers?.map(({ key, positions, minValue, step }) => {
-        const values: Record<string, number | null> = { oxygen: gameState.oxygen, temperature: gameState.temperature };
+      {globals && overlays.cubeTrackers?.map(({ key, positions, minValue, step }) => {
+        const values: Record<string, number | null> = { oxygen: globals.oxygen, temperature: globals.temperature };
         const val = values[key];
         if (val == null) return null;
         const idx = Math.max(0, Math.min(positions.length - 1, Math.round((val - minValue) / step)));
@@ -135,34 +113,22 @@ export function MapOverlaysSvg(props: MapOverlaysProps) {
 }
 
 export function MapMilestonesAwardsSvg(props: MapOverlaysProps & { setTooltip: (t: TooltipData | null) => void }) {
-  const {
-    mapName, tileSize, playerColors, placedTiles,
-    claimedMilestones, fundedAwards, playerNames, playerTrackers, playerTileCounts, playerHandCounts, gameState,
-    getCubeImage, setTooltip,
-  } = props;
+  const { mapName, tileSize, players, snapshot, getCubeImage, setTooltip } = props;
 
   const overlays = getMapOverlays(mapName);
   const cubeSize = tileSize * 0.4;
   const hitSize = tileSize * 0.8;
+  const playerColors: Record<string, string> = Object.fromEntries(players.map(p => [p.id, p.color]));
+  const playerNames: Record<string, string> = Object.fromEntries(players.map(p => [p.id, p.name]));
 
-  const standingsCtx: StandingsContext = {
-    playerNames: playerNames ?? {},
-    playerTrackers,
-    playerTileCounts,
-    playerHandCounts,
-    playerPlayedCards: props.playerPlayedCards,
-    playerCardResources: props.playerCardResources,
-    hexCoords: props.hexCoords,
-    gameState,
-    placedTiles,
-  };
+  const standingsCtx: StandingsContext = { players, snapshot, hexCoords: props.hexCoords };
 
   const elements: React.ReactNode[] = [];
 
   // Milestone cubes
   if (overlays.milestones) {
     for (const m of overlays.milestones) {
-      const claim = claimedMilestones?.get(m.name.toUpperCase());
+      const claim = findClaim(snapshot.milestones, m.name);
       const color = claim ? (playerColors[claim.playerId] ?? '#888') : undefined;
       const cube = color ? getCubeImage(color) : undefined;
       elements.push(
@@ -170,7 +136,7 @@ export function MapMilestonesAwardsSvg(props: MapOverlaysProps & { setTooltip: (
           <rect x={m.cx - hitSize / 2} y={m.cy - hitSize / 2} width={hitSize} height={hitSize} fill="transparent" cursor="pointer"
             onMouseEnter={() => setTooltip({
               title: m.name, type: 'milestone',
-              claimedBy: claim?.playerName, generation: claim?.generation,
+              claimedBy: claim ? playerNames[claim.playerId] ?? claim.playerId : undefined, generation: claim?.generation ?? undefined,
               metric: m.metric, threshold: m.threshold,
               standings: m.metric ? computeStandings(m, standingsCtx) : undefined,
             })}
@@ -186,7 +152,7 @@ export function MapMilestonesAwardsSvg(props: MapOverlaysProps & { setTooltip: (
   // Award cubes
   if (overlays.awards) {
     for (const a of overlays.awards) {
-      const fund = fundedAwards?.get(a.name.toLowerCase());
+      const fund = findClaim(snapshot.awards, a.name);
       const color = fund ? (playerColors[fund.playerId] ?? '#888') : undefined;
       const cube = color ? getCubeImage(color) : undefined;
       elements.push(
@@ -194,7 +160,7 @@ export function MapMilestonesAwardsSvg(props: MapOverlaysProps & { setTooltip: (
           <rect x={a.cx - hitSize / 2} y={a.cy - hitSize / 2} width={hitSize} height={hitSize} fill="transparent" cursor="pointer"
             onMouseEnter={() => setTooltip({
               title: a.name, type: 'award',
-              claimedBy: fund?.playerName, generation: fund?.generation,
+              claimedBy: fund ? playerNames[fund.playerId] ?? fund.playerId : undefined, generation: fund?.generation ?? undefined,
               metric: a.metric,
               standings: computeStandings(a, standingsCtx),
             })}
@@ -208,24 +174,22 @@ export function MapMilestonesAwardsSvg(props: MapOverlaysProps & { setTooltip: (
   }
 
   // Label hit areas for table tooltips
-  const pids = Object.keys(playerNames ?? {});
-  const pNames = pids.map(pid => playerNames?.[pid] ?? pid);
+  const pids = players.map(p => p.id);
+  const pNames = players.map(p => p.name);
 
   const buildTableRows = (items: (MilestoneAwardOverlay | AwardOverlay)[], type: 'milestone' | 'award') => {
     return items.map(item => {
       const isMilestone = type === 'milestone';
-      const claim = isMilestone
-        ? claimedMilestones?.get(item.name.toUpperCase())
-        : fundedAwards?.get(item.name.toLowerCase());
+      const claim = findClaim(isMilestone ? snapshot.milestones : snapshot.awards, item.name);
       const metric = 'metric' in item && item.metric ? item.metric : '';
       const standings = computeStandings(item, standingsCtx);
       const threshold = 'threshold' in item ? item.threshold : undefined;
       return {
         name: item.name,
         metric,
-        claimedBy: claim?.playerName,
+        claimedBy: claim ? playerNames[claim.playerId] ?? claim.playerId : undefined,
         claimedColor: claim ? (playerColors[claim.playerId] ?? '#888') : undefined,
-        generation: claim?.generation,
+        generation: claim?.generation ?? undefined,
         playerScores: pids.map((pid, i) => ({
           name: pNames[i],
           score: standings.find(s => s.name === pNames[i])?.score ?? 0,

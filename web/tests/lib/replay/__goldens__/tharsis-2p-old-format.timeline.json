@@ -1,0 +1,4793 @@
+{
+ "info": {
+  "source": {
+   "kind": "bga",
+   "tableId": "691299249",
+   "perspective": "95077095"
+  },
+  "mapName": "Tharsis",
+  "options": {
+   "prelude": true,
+   "corporateEra": true,
+   "draft": true,
+   "colonies": false
+  },
+  "players": [
+   {
+    "id": "86683496",
+    "name": "Kim_morgan",
+    "color": "#ff0000",
+    "corporation": "CrediCor",
+    "elo": 139
+   },
+   {
+    "id": "95077095",
+    "name": "Niiyaaa",
+    "color": "#0000ff",
+    "corporation": "Saturn Systems",
+    "elo": 594
+   }
+  ]
+ },
+ "length": 431,
+ "generationBoundaries": {
+  "$map": [
+   [
+    1,
+    {
+     "start": 0,
+     "end": 24
+    }
+   ],
+   [
+    2,
+    {
+     "start": 25,
+     "end": 50
+    }
+   ],
+   [
+    3,
+    {
+     "start": 51,
+     "end": 77
+    }
+   ],
+   [
+    4,
+    {
+     "start": 78,
+     "end": 106
+    }
+   ],
+   [
+    5,
+    {
+     "start": 107,
+     "end": 134
+    }
+   ],
+   [
+    6,
+    {
+     "start": 135,
+     "end": 168
+    }
+   ],
+   [
+    7,
+    {
+     "start": 169,
+     "end": 197
+    }
+   ],
+   [
+    8,
+    {
+     "start": 198,
+     "end": 233
+    }
+   ],
+   [
+    9,
+    {
+     "start": 234,
+     "end": 266
+    }
+   ],
+   [
+    10,
+    {
+     "start": 267,
+     "end": 307
+    }
+   ],
+   [
+    11,
+    {
+     "start": 308,
+     "end": 362
+    }
+   ],
+   [
+    12,
+    {
+     "start": 363,
+     "end": 430
+    }
+   ]
+  ]
+ },
+ "snapshots": [
+  {
+   "index": 0,
+   "generation": 1,
+   "globals": {
+    "temperature": -30,
+    "oxygen": 0,
+    "oceans": 0
+   },
+   "players": {
+    "86683496": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 0,
+      "steel": 0,
+      "titanium": 0,
+      "plants": 0,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 0,
+      "steel": 0,
+      "titanium": 0,
+      "plants": 0,
+      "energy": 0,
+      "heat": 0
+     },
+     "tags": {
+      "building": 0,
+      "space": 0,
+      "science": 0,
+      "power": 0,
+      "earth": 0,
+      "jovian": 0,
+      "city": 0,
+      "plant": 0,
+      "microbe": 0,
+      "animal": 0,
+      "wild": 0,
+      "event": 0
+     },
+     "tr": 20,
+     "tileCounts": {
+      "cities": 0,
+      "greeneries": 0,
+      "total": 0
+     },
+     "vp": {
+      "total": 20,
+      "breakdown": {
+       "tr": 20,
+       "milestones": 0,
+       "awards": 0,
+       "greeneries": 0,
+       "cities": 0,
+       "cards": 0
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "CrediCor"
+     ],
+     "played": [],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    },
+    "95077095": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 0,
+      "steel": 0,
+      "titanium": 0,
+      "plants": 0,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 0,
+      "steel": 0,
+      "titanium": 0,
+      "plants": 0,
+      "energy": 0,
+      "heat": 0
+     },
+     "tags": {
+      "building": 0,
+      "space": 0,
+      "science": 0,
+      "power": 0,
+      "earth": 0,
+      "jovian": 0,
+      "city": 0,
+      "plant": 0,
+      "microbe": 0,
+      "animal": 0,
+      "wild": 0,
+      "event": 0
+     },
+     "tr": 20,
+     "tileCounts": {
+      "cities": 0,
+      "greeneries": 0,
+      "total": 0
+     },
+     "vp": {
+      "total": 20,
+      "breakdown": {
+       "tr": 20,
+       "milestones": 0,
+       "awards": 0,
+       "greeneries": 0,
+       "cities": 0,
+       "cards": 0
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [],
+     "played": [],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    }
+   },
+   "tiles": [],
+   "milestones": [],
+   "awards": [],
+   "piles": {
+    "draw": null,
+    "discard": null,
+    "discardCards": []
+   }
+  },
+  {
+   "index": 40,
+   "generation": 2,
+   "globals": {
+    "temperature": -24,
+    "oxygen": 0,
+    "oceans": 5
+   },
+   "players": {
+    "86683496": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 30,
+      "steel": 0,
+      "titanium": 0,
+      "plants": 0,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 7,
+      "steel": 0,
+      "titanium": 0,
+      "plants": 0,
+      "energy": 0,
+      "heat": 0
+     },
+     "tags": {
+      "building": 1,
+      "space": 0,
+      "science": 1,
+      "power": 0,
+      "earth": 1,
+      "jovian": 0,
+      "city": 0,
+      "plant": 0,
+      "microbe": 0,
+      "animal": 0,
+      "wild": 0,
+      "event": 2
+     },
+     "tr": 24,
+     "tileCounts": {
+      "cities": 0,
+      "greeneries": 0,
+      "total": 0
+     },
+     "vp": {
+      "total": 25,
+      "breakdown": {
+       "tr": 24,
+       "milestones": 0,
+       "awards": 0,
+       "greeneries": 0,
+       "cities": 0,
+       "cards": 1
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "CrediCor"
+     ],
+     "played": [
+      "Business Empire",
+      "Acquired Space Agency",
+      "Ice Asteroid",
+      "Lava Flows",
+      "Natural Preserve"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    },
+    "95077095": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 9,
+      "steel": 0,
+      "titanium": 0,
+      "plants": 4,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 2,
+      "steel": 0,
+      "titanium": 3,
+      "plants": 2,
+      "energy": 0,
+      "heat": 1
+     },
+     "tags": {
+      "building": 0,
+      "space": 0,
+      "science": 2,
+      "power": 0,
+      "earth": 0,
+      "jovian": 2,
+      "city": 0,
+      "plant": 0,
+      "microbe": 1,
+      "animal": 0,
+      "wild": 0,
+      "event": 1
+     },
+     "tr": 24,
+     "tileCounts": {
+      "cities": 0,
+      "greeneries": 0,
+      "total": 0
+     },
+     "vp": {
+      "total": 24,
+      "breakdown": {
+       "tr": 24,
+       "milestones": 0,
+       "awards": 0,
+       "greeneries": 0,
+       "cities": 0,
+       "cards": 0
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "Great Aquifer",
+      "Galilean Mining"
+     ],
+     "played": [
+      "Inventors' Guild",
+      "Designed Microorganisms",
+      "Comet"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": [
+      "Inventors' Guild"
+     ]
+    }
+   },
+   "tiles": [
+    {
+     "hexKey": "Hex 8,2",
+     "col": 8,
+     "row": 2,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 4,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,9",
+     "col": 7,
+     "row": 9,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 5,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 6,1",
+     "col": 6,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 16,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,1",
+     "col": 7,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 17,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 5,5",
+     "col": 5,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 37,
+     "generation": 2
+    }
+   ],
+   "milestones": [],
+   "awards": [],
+   "piles": {
+    "draw": null,
+    "discard": null,
+    "discardCards": [
+     "GHG Producing Bacteria",
+     "Kelp Farming",
+     "Adapted Lichen",
+     "Lunar Beam",
+     "Geothermal Power",
+     "Mineral Deposit",
+     "Noctis City",
+     "Deep Well Heating",
+     "Heat Trappers",
+     "SF Memorial",
+     "Viral Enhancers"
+    ]
+   }
+  },
+  {
+   "index": 80,
+   "generation": 4,
+   "globals": {
+    "temperature": -24,
+    "oxygen": 1,
+    "oceans": 6
+   },
+   "players": {
+    "86683496": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 8,
+      "steel": 0,
+      "titanium": 0,
+      "plants": 2,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 7,
+      "steel": 0,
+      "titanium": 1,
+      "plants": 0,
+      "energy": 0,
+      "heat": 0
+     },
+     "tags": {
+      "building": 3,
+      "space": 2,
+      "science": 4,
+      "power": 1,
+      "earth": 2,
+      "jovian": 0,
+      "city": 1,
+      "plant": 0,
+      "microbe": 0,
+      "animal": 0,
+      "wild": 0,
+      "event": 4
+     },
+     "tr": 26,
+     "tileCounts": {
+      "cities": 1,
+      "greeneries": 1,
+      "total": 2
+     },
+     "vp": {
+      "total": 31,
+      "breakdown": {
+       "tr": 26,
+       "milestones": 0,
+       "awards": 0,
+       "greeneries": 1,
+       "cities": 0,
+       "cards": 4
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "CrediCor"
+     ],
+     "played": [
+      "Business Empire",
+      "Acquired Space Agency",
+      "Ice Asteroid",
+      "Lava Flows",
+      "Natural Preserve",
+      "Solar Wind Power",
+      "Fuel Factory",
+      "Earth Office",
+      "Lagrange Observatory",
+      "Research Outpost",
+      "Investment Loan",
+      "Large Convoy"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    },
+    "95077095": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 0,
+      "steel": 0,
+      "titanium": 0,
+      "plants": 4,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 2,
+      "steel": 0,
+      "titanium": 3,
+      "plants": 2,
+      "energy": 0,
+      "heat": 1
+     },
+     "tags": {
+      "building": 0,
+      "space": 0,
+      "science": 2,
+      "power": 0,
+      "earth": 0,
+      "jovian": 2,
+      "city": 0,
+      "plant": 0,
+      "microbe": 1,
+      "animal": 0,
+      "wild": 0,
+      "event": 2
+     },
+     "tr": 26,
+     "tileCounts": {
+      "cities": 0,
+      "greeneries": 0,
+      "total": 0
+     },
+     "vp": {
+      "total": 24,
+      "breakdown": {
+       "tr": 26,
+       "milestones": 0,
+       "awards": 0,
+       "greeneries": 0,
+       "cities": 0,
+       "cards": -2
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "Great Aquifer",
+      "Galilean Mining"
+     ],
+     "played": [
+      "Inventors' Guild",
+      "Designed Microorganisms",
+      "Comet",
+      "Bribed Committee"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    }
+   },
+   "tiles": [
+    {
+     "hexKey": "Hex 8,2",
+     "col": 8,
+     "row": 2,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 4,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,9",
+     "col": 7,
+     "row": 9,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 5,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 6,1",
+     "col": 6,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 16,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,1",
+     "col": 7,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 17,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 5,5",
+     "col": 5,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 37,
+     "generation": 2
+    },
+    {
+     "hexKey": "Hex 2,5",
+     "col": 2,
+     "row": 5,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 65,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 6,5",
+     "col": 6,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 72,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 7,4",
+     "col": 7,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 76,
+     "generation": 3
+    }
+   ],
+   "milestones": [],
+   "awards": [],
+   "piles": {
+    "draw": null,
+    "discard": null,
+    "discardCards": [
+     "GHG Producing Bacteria",
+     "Kelp Farming",
+     "Adapted Lichen",
+     "Lunar Beam",
+     "Geothermal Power",
+     "Mineral Deposit",
+     "Noctis City",
+     "Deep Well Heating",
+     "Heat Trappers",
+     "SF Memorial",
+     "Viral Enhancers"
+    ]
+   }
+  },
+  {
+   "index": 120,
+   "generation": 5,
+   "globals": {
+    "temperature": -16,
+    "oxygen": 2,
+    "oceans": 8
+   },
+   "players": {
+    "86683496": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 34,
+      "steel": 0,
+      "titanium": 2,
+      "plants": 0,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 7,
+      "steel": 0,
+      "titanium": 1,
+      "plants": 0,
+      "energy": 0,
+      "heat": 1
+     },
+     "tags": {
+      "building": 3,
+      "space": 2,
+      "science": 4,
+      "power": 1,
+      "earth": 2,
+      "jovian": 0,
+      "city": 1,
+      "plant": 0,
+      "microbe": 0,
+      "animal": 0,
+      "wild": 0,
+      "event": 6
+     },
+     "tr": 28,
+     "tileCounts": {
+      "cities": 1,
+      "greeneries": 1,
+      "total": 2
+     },
+     "vp": {
+      "total": 32,
+      "breakdown": {
+       "tr": 28,
+       "milestones": 0,
+       "awards": 0,
+       "greeneries": 1,
+       "cities": 0,
+       "cards": 3
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "CrediCor"
+     ],
+     "played": [
+      "Business Empire",
+      "Acquired Space Agency",
+      "Ice Asteroid",
+      "Lava Flows",
+      "Natural Preserve",
+      "Solar Wind Power",
+      "Fuel Factory",
+      "Earth Office",
+      "Lagrange Observatory",
+      "Research Outpost",
+      "Investment Loan",
+      "Large Convoy",
+      "Asteroid",
+      "Flooding"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    },
+    "95077095": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 16,
+      "steel": 0,
+      "titanium": 0,
+      "plants": 4,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 3,
+      "steel": 0,
+      "titanium": 4,
+      "plants": 2,
+      "energy": 0,
+      "heat": 9
+     },
+     "tags": {
+      "building": 1,
+      "space": 1,
+      "science": 3,
+      "power": 0,
+      "earth": 0,
+      "jovian": 3,
+      "city": 0,
+      "plant": 0,
+      "microbe": 1,
+      "animal": 0,
+      "wild": 0,
+      "event": 3
+     },
+     "tr": 31,
+     "tileCounts": {
+      "cities": 0,
+      "greeneries": 1,
+      "total": 1
+     },
+     "vp": {
+      "total": 31,
+      "breakdown": {
+       "tr": 31,
+       "milestones": 0,
+       "awards": 0,
+       "greeneries": 1,
+       "cities": 0,
+       "cards": -1
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "Great Aquifer",
+      "Galilean Mining"
+     ],
+     "played": [
+      "Inventors' Guild",
+      "Designed Microorganisms",
+      "Comet",
+      "Bribed Committee",
+      "Giant Ice Asteroid",
+      "Mohole Area",
+      "Vesta Shipyard",
+      "Robotic Workforce"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": [
+      "Inventors' Guild"
+     ]
+    }
+   },
+   "tiles": [
+    {
+     "hexKey": "Hex 8,2",
+     "col": 8,
+     "row": 2,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 4,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,9",
+     "col": 7,
+     "row": 9,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 5,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 6,1",
+     "col": 6,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 16,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,1",
+     "col": 7,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 17,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 5,5",
+     "col": 5,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 37,
+     "generation": 2
+    },
+    {
+     "hexKey": "Hex 2,5",
+     "col": 2,
+     "row": 5,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 65,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 6,5",
+     "col": 6,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 72,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 7,4",
+     "col": 7,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 76,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 4,5",
+     "col": 4,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 91,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 9,4",
+     "col": 9,
+     "row": 4,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 92,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 6,4",
+     "col": 6,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 96,
+     "generation": 4
+    }
+   ],
+   "milestones": [],
+   "awards": [],
+   "piles": {
+    "draw": null,
+    "discard": null,
+    "discardCards": [
+     "GHG Producing Bacteria",
+     "Kelp Farming",
+     "Adapted Lichen",
+     "Lunar Beam",
+     "Geothermal Power",
+     "Mineral Deposit",
+     "Noctis City",
+     "Deep Well Heating",
+     "Heat Trappers",
+     "SF Memorial",
+     "Viral Enhancers"
+    ]
+   }
+  },
+  {
+   "index": 160,
+   "generation": 6,
+   "globals": {
+    "temperature": -12,
+    "oxygen": 6,
+    "oceans": 9
+   },
+   "players": {
+    "86683496": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 0,
+      "steel": 0,
+      "titanium": 4,
+      "plants": 1,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 7,
+      "steel": 0,
+      "titanium": 2,
+      "plants": 1,
+      "energy": 0,
+      "heat": 1
+     },
+     "tags": {
+      "building": 4,
+      "space": 2,
+      "science": 5,
+      "power": 1,
+      "earth": 2,
+      "jovian": 0,
+      "city": 1,
+      "plant": 1,
+      "microbe": 0,
+      "animal": 0,
+      "wild": 1,
+      "event": 8
+     },
+     "tr": 32,
+     "tileCounts": {
+      "cities": 1,
+      "greeneries": 3,
+      "total": 4
+     },
+     "vp": {
+      "total": 43,
+      "breakdown": {
+       "tr": 32,
+       "milestones": 5,
+       "awards": 0,
+       "greeneries": 3,
+       "cities": 0,
+       "cards": 3
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "CrediCor"
+     ],
+     "played": [
+      "Business Empire",
+      "Acquired Space Agency",
+      "Ice Asteroid",
+      "Lava Flows",
+      "Natural Preserve",
+      "Solar Wind Power",
+      "Fuel Factory",
+      "Earth Office",
+      "Lagrange Observatory",
+      "Research Outpost",
+      "Investment Loan",
+      "Large Convoy",
+      "Asteroid",
+      "Flooding",
+      "Mining Expedition",
+      "Restricted Area",
+      "Titanium Mine",
+      "Research Coordination",
+      "Technology Demonstration",
+      "Grass"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    },
+    "95077095": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 3,
+      "steel": 0,
+      "titanium": 0,
+      "plants": 8,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 5,
+      "steel": 0,
+      "titanium": 4,
+      "plants": 4,
+      "energy": 3,
+      "heat": 9
+     },
+     "tags": {
+      "building": 2,
+      "space": 2,
+      "science": 3,
+      "power": 1,
+      "earth": 0,
+      "jovian": 3,
+      "city": 0,
+      "plant": 2,
+      "microbe": 1,
+      "animal": 0,
+      "wild": 0,
+      "event": 4
+     },
+     "tr": 34,
+     "tileCounts": {
+      "cities": 0,
+      "greeneries": 2,
+      "total": 2
+     },
+     "vp": {
+      "total": 35,
+      "breakdown": {
+       "tr": 34,
+       "milestones": 0,
+       "awards": 0,
+       "greeneries": 2,
+       "cities": 0,
+       "cards": -1
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "Great Aquifer",
+      "Galilean Mining"
+     ],
+     "played": [
+      "Inventors' Guild",
+      "Designed Microorganisms",
+      "Comet",
+      "Bribed Committee",
+      "Giant Ice Asteroid",
+      "Mohole Area",
+      "Vesta Shipyard",
+      "Robotic Workforce",
+      "Giant Space Mirror",
+      "Sabotage",
+      "Algae",
+      "Protected Valley"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": [
+      "Inventors' Guild"
+     ]
+    }
+   },
+   "tiles": [
+    {
+     "hexKey": "Hex 8,2",
+     "col": 8,
+     "row": 2,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 4,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,9",
+     "col": 7,
+     "row": 9,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 5,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 6,1",
+     "col": 6,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 16,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,1",
+     "col": 7,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 17,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 5,5",
+     "col": 5,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 37,
+     "generation": 2
+    },
+    {
+     "hexKey": "Hex 2,5",
+     "col": 2,
+     "row": 5,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 65,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 6,5",
+     "col": 6,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 72,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 7,4",
+     "col": 7,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 76,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 4,5",
+     "col": 4,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 91,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 9,4",
+     "col": 9,
+     "row": 4,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 92,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 6,4",
+     "col": 6,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 96,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 8,6",
+     "col": 8,
+     "row": 6,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 121,
+     "generation": 5
+    },
+    {
+     "hexKey": "Hex 9,5",
+     "col": 9,
+     "row": 5,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 144,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 8,4",
+     "col": 8,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 153,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 9,6",
+     "col": 9,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 160,
+     "generation": 6
+    }
+   ],
+   "milestones": [
+    {
+     "name": "GARDENER",
+     "playerId": "86683496",
+     "generation": 6
+    }
+   ],
+   "awards": [],
+   "piles": {
+    "draw": null,
+    "discard": null,
+    "discardCards": [
+     "GHG Producing Bacteria",
+     "Kelp Farming",
+     "Adapted Lichen",
+     "Lunar Beam",
+     "Geothermal Power",
+     "Mineral Deposit",
+     "Noctis City",
+     "Deep Well Heating",
+     "Heat Trappers",
+     "SF Memorial",
+     "Viral Enhancers"
+    ]
+   }
+  },
+  {
+   "index": 200,
+   "generation": 8,
+   "globals": {
+    "temperature": -8,
+    "oxygen": 9,
+    "oceans": 9
+   },
+   "players": {
+    "86683496": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 2,
+      "steel": 0,
+      "titanium": 4,
+      "plants": 4,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 7,
+      "steel": 0,
+      "titanium": 2,
+      "plants": 1,
+      "energy": 0,
+      "heat": 1
+     },
+     "tags": {
+      "building": 5,
+      "space": 2,
+      "science": 6,
+      "power": 1,
+      "earth": 2,
+      "jovian": 0,
+      "city": 1,
+      "plant": 2,
+      "microbe": 0,
+      "animal": 0,
+      "wild": 1,
+      "event": 8
+     },
+     "tr": 33,
+     "tileCounts": {
+      "cities": 1,
+      "greeneries": 4,
+      "total": 5
+     },
+     "vp": {
+      "total": 52,
+      "breakdown": {
+       "tr": 33,
+       "milestones": 5,
+       "awards": 5,
+       "greeneries": 4,
+       "cities": 1,
+       "cards": 4
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "CrediCor"
+     ],
+     "played": [
+      "Business Empire",
+      "Acquired Space Agency",
+      "Ice Asteroid",
+      "Lava Flows",
+      "Natural Preserve",
+      "Solar Wind Power",
+      "Fuel Factory",
+      "Earth Office",
+      "Lagrange Observatory",
+      "Research Outpost",
+      "Investment Loan",
+      "Large Convoy",
+      "Asteroid",
+      "Flooding",
+      "Mining Expedition",
+      "Restricted Area",
+      "Titanium Mine",
+      "Research Coordination",
+      "Technology Demonstration",
+      "Grass",
+      "Mars University",
+      "Plantation"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    },
+    "95077095": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 0,
+      "steel": 0,
+      "titanium": 0,
+      "plants": 6,
+      "energy": 0,
+      "heat": 4
+     },
+     "production": {
+      "mc": 5,
+      "steel": 0,
+      "titanium": 6,
+      "plants": 4,
+      "energy": 3,
+      "heat": 9
+     },
+     "tags": {
+      "building": 2,
+      "space": 3,
+      "science": 3,
+      "power": 1,
+      "earth": 1,
+      "jovian": 4,
+      "city": 0,
+      "plant": 2,
+      "microbe": 1,
+      "animal": 0,
+      "wild": 0,
+      "event": 4
+     },
+     "tr": 38,
+     "tileCounts": {
+      "cities": 0,
+      "greeneries": 4,
+      "total": 4
+     },
+     "vp": {
+      "total": 48,
+      "breakdown": {
+       "tr": 38,
+       "milestones": 5,
+       "awards": 0,
+       "greeneries": 4,
+       "cities": 0,
+       "cards": 1
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "Great Aquifer",
+      "Galilean Mining"
+     ],
+     "played": [
+      "Inventors' Guild",
+      "Designed Microorganisms",
+      "Comet",
+      "Bribed Committee",
+      "Giant Ice Asteroid",
+      "Mohole Area",
+      "Vesta Shipyard",
+      "Robotic Workforce",
+      "Giant Space Mirror",
+      "Sabotage",
+      "Algae",
+      "Protected Valley",
+      "Business Network",
+      "Asteroid Mining"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    }
+   },
+   "tiles": [
+    {
+     "hexKey": "Hex 8,2",
+     "col": 8,
+     "row": 2,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 4,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,9",
+     "col": 7,
+     "row": 9,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 5,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 6,1",
+     "col": 6,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 16,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,1",
+     "col": 7,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 17,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 5,5",
+     "col": 5,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 37,
+     "generation": 2
+    },
+    {
+     "hexKey": "Hex 2,5",
+     "col": 2,
+     "row": 5,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 65,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 6,5",
+     "col": 6,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 72,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 7,4",
+     "col": 7,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 76,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 4,5",
+     "col": 4,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 91,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 9,4",
+     "col": 9,
+     "row": 4,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 92,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 6,4",
+     "col": 6,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 96,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 8,6",
+     "col": 8,
+     "row": 6,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 121,
+     "generation": 5
+    },
+    {
+     "hexKey": "Hex 9,5",
+     "col": 9,
+     "row": 5,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 144,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 8,4",
+     "col": 8,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 153,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 9,6",
+     "col": 9,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 160,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 5,4",
+     "col": 5,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 163,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 6,6",
+     "col": 6,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 177,
+     "generation": 7
+    },
+    {
+     "hexKey": "Arsia Mons",
+     "col": null,
+     "row": null,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 193,
+     "generation": 7
+    }
+   ],
+   "milestones": [
+    {
+     "name": "GARDENER",
+     "playerId": "86683496",
+     "generation": 6
+    },
+    {
+     "name": "TERRAFORMER",
+     "playerId": "95077095",
+     "generation": 7
+    }
+   ],
+   "awards": [
+    {
+     "name": "landlord",
+     "playerId": "86683496",
+     "generation": 7
+    }
+   ],
+   "piles": {
+    "draw": null,
+    "discard": null,
+    "discardCards": [
+     "GHG Producing Bacteria",
+     "Kelp Farming",
+     "Adapted Lichen",
+     "Lunar Beam",
+     "Geothermal Power",
+     "Mineral Deposit",
+     "Noctis City",
+     "Deep Well Heating",
+     "Heat Trappers",
+     "SF Memorial",
+     "Viral Enhancers"
+    ]
+   }
+  },
+  {
+   "index": 240,
+   "generation": 9,
+   "globals": {
+    "temperature": -4,
+    "oxygen": 10,
+    "oceans": 9
+   },
+   "players": {
+    "86683496": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 0,
+      "steel": 0,
+      "titanium": 4,
+      "plants": 4,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 7,
+      "steel": 0,
+      "titanium": 2,
+      "plants": 1,
+      "energy": 0,
+      "heat": 1
+     },
+     "tags": {
+      "building": 6,
+      "space": 2,
+      "science": 7,
+      "power": 1,
+      "earth": 2,
+      "jovian": 0,
+      "city": 1,
+      "plant": 2,
+      "microbe": 0,
+      "animal": 1,
+      "wild": 1,
+      "event": 8
+     },
+     "tr": 33,
+     "tileCounts": {
+      "cities": 1,
+      "greeneries": 4,
+      "total": 5
+     },
+     "vp": {
+      "total": 58,
+      "breakdown": {
+       "tr": 33,
+       "milestones": 5,
+       "awards": 10,
+       "greeneries": 4,
+       "cities": 1,
+       "cards": 5
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "CrediCor"
+     ],
+     "played": [
+      "Business Empire",
+      "Acquired Space Agency",
+      "Ice Asteroid",
+      "Lava Flows",
+      "Natural Preserve",
+      "Solar Wind Power",
+      "Fuel Factory",
+      "Earth Office",
+      "Lagrange Observatory",
+      "Research Outpost",
+      "Investment Loan",
+      "Large Convoy",
+      "Asteroid",
+      "Flooding",
+      "Mining Expedition",
+      "Restricted Area",
+      "Titanium Mine",
+      "Research Coordination",
+      "Technology Demonstration",
+      "Grass",
+      "Mars University",
+      "Plantation",
+      "Medical Lab",
+      "Small Animals"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    },
+    "95077095": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 2,
+      "steel": 0,
+      "titanium": 3,
+      "plants": 5,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 12,
+      "steel": 0,
+      "titanium": 6,
+      "plants": 4,
+      "energy": 0,
+      "heat": 9
+     },
+     "tags": {
+      "building": 3,
+      "space": 4,
+      "science": 3,
+      "power": 1,
+      "earth": 1,
+      "jovian": 4,
+      "city": 1,
+      "plant": 3,
+      "microbe": 1,
+      "animal": 0,
+      "wild": 0,
+      "event": 5
+     },
+     "tr": 41,
+     "tileCounts": {
+      "cities": 0,
+      "greeneries": 5,
+      "total": 5
+     },
+     "vp": {
+      "total": 57,
+      "breakdown": {
+       "tr": 41,
+       "milestones": 5,
+       "awards": 0,
+       "greeneries": 5,
+       "cities": 2,
+       "cards": 4
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "Great Aquifer",
+      "Galilean Mining"
+     ],
+     "played": [
+      "Inventors' Guild",
+      "Designed Microorganisms",
+      "Comet",
+      "Bribed Committee",
+      "Giant Ice Asteroid",
+      "Mohole Area",
+      "Vesta Shipyard",
+      "Robotic Workforce",
+      "Giant Space Mirror",
+      "Sabotage",
+      "Algae",
+      "Protected Valley",
+      "Business Network",
+      "Asteroid Mining",
+      "Invention Contest",
+      "Capital",
+      "Shuttles",
+      "Heather"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    }
+   },
+   "tiles": [
+    {
+     "hexKey": "Hex 8,2",
+     "col": 8,
+     "row": 2,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 4,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,9",
+     "col": 7,
+     "row": 9,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 5,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 6,1",
+     "col": 6,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 16,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,1",
+     "col": 7,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 17,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 5,5",
+     "col": 5,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 37,
+     "generation": 2
+    },
+    {
+     "hexKey": "Hex 2,5",
+     "col": 2,
+     "row": 5,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 65,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 6,5",
+     "col": 6,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 72,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 7,4",
+     "col": 7,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 76,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 4,5",
+     "col": 4,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 91,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 9,4",
+     "col": 9,
+     "row": 4,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 92,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 6,4",
+     "col": 6,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 96,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 8,6",
+     "col": 8,
+     "row": 6,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 121,
+     "generation": 5
+    },
+    {
+     "hexKey": "Hex 9,5",
+     "col": 9,
+     "row": 5,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 144,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 8,4",
+     "col": 8,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 153,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 9,6",
+     "col": 9,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 160,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 5,4",
+     "col": 5,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 163,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 6,6",
+     "col": 6,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 177,
+     "generation": 7
+    },
+    {
+     "hexKey": "Arsia Mons",
+     "col": null,
+     "row": null,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 193,
+     "generation": 7
+    },
+    {
+     "hexKey": "Hex 4,6",
+     "col": 4,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 227,
+     "generation": 8
+    }
+   ],
+   "milestones": [
+    {
+     "name": "GARDENER",
+     "playerId": "86683496",
+     "generation": 6
+    },
+    {
+     "name": "TERRAFORMER",
+     "playerId": "95077095",
+     "generation": 7
+    }
+   ],
+   "awards": [
+    {
+     "name": "landlord",
+     "playerId": "86683496",
+     "generation": 7
+    },
+    {
+     "name": "scientist",
+     "playerId": "86683496",
+     "generation": 8
+    }
+   ],
+   "piles": {
+    "draw": null,
+    "discard": null,
+    "discardCards": [
+     "GHG Producing Bacteria",
+     "Kelp Farming",
+     "Adapted Lichen",
+     "Lunar Beam",
+     "Geothermal Power",
+     "Mineral Deposit",
+     "Noctis City",
+     "Deep Well Heating",
+     "Heat Trappers",
+     "SF Memorial",
+     "Viral Enhancers"
+    ]
+   }
+  },
+  {
+   "index": 280,
+   "generation": 10,
+   "globals": {
+    "temperature": -2,
+    "oxygen": 13,
+    "oceans": 9
+   },
+   "players": {
+    "86683496": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 34,
+      "steel": 0,
+      "titanium": 4,
+      "plants": 2,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 13,
+      "steel": 0,
+      "titanium": 2,
+      "plants": 2,
+      "energy": 0,
+      "heat": 1
+     },
+     "tags": {
+      "building": 9,
+      "space": 2,
+      "science": 7,
+      "power": 2,
+      "earth": 2,
+      "jovian": 0,
+      "city": 2,
+      "plant": 3,
+      "microbe": 0,
+      "animal": 1,
+      "wild": 1,
+      "event": 9
+     },
+     "tr": 35,
+     "tileCounts": {
+      "cities": 2,
+      "greeneries": 6,
+      "total": 8
+     },
+     "vp": {
+      "total": 69,
+      "breakdown": {
+       "tr": 35,
+       "milestones": 10,
+       "awards": 10,
+       "greeneries": 6,
+       "cities": 3,
+       "cards": 5
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "CrediCor"
+     ],
+     "played": [
+      "Business Empire",
+      "Acquired Space Agency",
+      "Ice Asteroid",
+      "Lava Flows",
+      "Natural Preserve",
+      "Solar Wind Power",
+      "Fuel Factory",
+      "Earth Office",
+      "Lagrange Observatory",
+      "Research Outpost",
+      "Investment Loan",
+      "Large Convoy",
+      "Asteroid",
+      "Flooding",
+      "Mining Expedition",
+      "Restricted Area",
+      "Titanium Mine",
+      "Research Coordination",
+      "Technology Demonstration",
+      "Grass",
+      "Mars University",
+      "Plantation",
+      "Medical Lab",
+      "Small Animals",
+      "Local Heat Trapping",
+      "Rover Construction",
+      "Lichen",
+      "Power Plant",
+      "Corporate Stronghold"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    },
+    "95077095": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 42,
+      "steel": 0,
+      "titanium": 3,
+      "plants": 1,
+      "energy": 0,
+      "heat": 4
+     },
+     "production": {
+      "mc": 13,
+      "steel": 0,
+      "titanium": 6,
+      "plants": 4,
+      "energy": 0,
+      "heat": 9
+     },
+     "tags": {
+      "building": 3,
+      "space": 4,
+      "science": 3,
+      "power": 1,
+      "earth": 1,
+      "jovian": 4,
+      "city": 1,
+      "plant": 3,
+      "microbe": 1,
+      "animal": 0,
+      "wild": 0,
+      "event": 5
+     },
+     "tr": 43,
+     "tileCounts": {
+      "cities": 1,
+      "greeneries": 6,
+      "total": 7
+     },
+     "vp": {
+      "total": 65,
+      "breakdown": {
+       "tr": 43,
+       "milestones": 5,
+       "awards": 0,
+       "greeneries": 6,
+       "cities": 7,
+       "cards": 4
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "Great Aquifer",
+      "Galilean Mining"
+     ],
+     "played": [
+      "Inventors' Guild",
+      "Designed Microorganisms",
+      "Comet",
+      "Bribed Committee",
+      "Giant Ice Asteroid",
+      "Mohole Area",
+      "Vesta Shipyard",
+      "Robotic Workforce",
+      "Giant Space Mirror",
+      "Sabotage",
+      "Algae",
+      "Protected Valley",
+      "Business Network",
+      "Asteroid Mining",
+      "Invention Contest",
+      "Capital",
+      "Shuttles",
+      "Heather"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": [
+      "Business Network"
+     ]
+    }
+   },
+   "tiles": [
+    {
+     "hexKey": "Hex 8,2",
+     "col": 8,
+     "row": 2,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 4,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,9",
+     "col": 7,
+     "row": 9,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 5,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 6,1",
+     "col": 6,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 16,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,1",
+     "col": 7,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 17,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 5,5",
+     "col": 5,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 37,
+     "generation": 2
+    },
+    {
+     "hexKey": "Hex 2,5",
+     "col": 2,
+     "row": 5,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 65,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 6,5",
+     "col": 6,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 72,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 7,4",
+     "col": 7,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 76,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 4,5",
+     "col": 4,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 91,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 9,4",
+     "col": 9,
+     "row": 4,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 92,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 6,4",
+     "col": 6,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 96,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 8,6",
+     "col": 8,
+     "row": 6,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 121,
+     "generation": 5
+    },
+    {
+     "hexKey": "Hex 9,5",
+     "col": 9,
+     "row": 5,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 144,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 8,4",
+     "col": 8,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 153,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 9,6",
+     "col": 9,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 160,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 5,4",
+     "col": 5,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 163,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 6,6",
+     "col": 6,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 177,
+     "generation": 7
+    },
+    {
+     "hexKey": "Arsia Mons",
+     "col": null,
+     "row": null,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 193,
+     "generation": 7
+    },
+    {
+     "hexKey": "Hex 4,6",
+     "col": 4,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 227,
+     "generation": 8
+    },
+    {
+     "hexKey": "Hex 5,7",
+     "col": 5,
+     "row": 7,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 246,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 7,3",
+     "col": 7,
+     "row": 3,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 250,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 6,3",
+     "col": 6,
+     "row": 3,
+     "type": "City",
+     "placedBy": "95077095",
+     "placedAt": 255,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 7,2",
+     "col": 7,
+     "row": 2,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 261,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 6,7",
+     "col": 6,
+     "row": 7,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 276,
+     "generation": 10
+    }
+   ],
+   "milestones": [
+    {
+     "name": "GARDENER",
+     "playerId": "86683496",
+     "generation": 6
+    },
+    {
+     "name": "TERRAFORMER",
+     "playerId": "95077095",
+     "generation": 7
+    },
+    {
+     "name": "BUILDER",
+     "playerId": "86683496",
+     "generation": 9
+    }
+   ],
+   "awards": [
+    {
+     "name": "landlord",
+     "playerId": "86683496",
+     "generation": 7
+    },
+    {
+     "name": "scientist",
+     "playerId": "86683496",
+     "generation": 8
+    }
+   ],
+   "piles": {
+    "draw": null,
+    "discard": null,
+    "discardCards": [
+     "GHG Producing Bacteria",
+     "Kelp Farming",
+     "Adapted Lichen",
+     "Lunar Beam",
+     "Geothermal Power",
+     "Mineral Deposit",
+     "Noctis City",
+     "Deep Well Heating",
+     "Heat Trappers",
+     "SF Memorial",
+     "Viral Enhancers"
+    ]
+   }
+  },
+  {
+   "index": 320,
+   "generation": 11,
+   "globals": {
+    "temperature": 0,
+    "oxygen": 14,
+    "oceans": 9
+   },
+   "players": {
+    "86683496": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 39,
+      "steel": 0,
+      "titanium": 6,
+      "plants": 8,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 15,
+      "steel": 0,
+      "titanium": 2,
+      "plants": 6,
+      "energy": 0,
+      "heat": 1
+     },
+     "tags": {
+      "building": 9,
+      "space": 2,
+      "science": 8,
+      "power": 2,
+      "earth": 2,
+      "jovian": 0,
+      "city": 2,
+      "plant": 5,
+      "microbe": 0,
+      "animal": 2,
+      "wild": 1,
+      "event": 10
+     },
+     "tr": 36,
+     "tileCounts": {
+      "cities": 2,
+      "greeneries": 7,
+      "total": 9
+     },
+     "vp": {
+      "total": 76,
+      "breakdown": {
+       "tr": 36,
+       "milestones": 10,
+       "awards": 10,
+       "greeneries": 7,
+       "cities": 4,
+       "cards": 9
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "CrediCor"
+     ],
+     "played": [
+      "Business Empire",
+      "Acquired Space Agency",
+      "Ice Asteroid",
+      "Lava Flows",
+      "Natural Preserve",
+      "Solar Wind Power",
+      "Fuel Factory",
+      "Earth Office",
+      "Lagrange Observatory",
+      "Research Outpost",
+      "Investment Loan",
+      "Large Convoy",
+      "Asteroid",
+      "Flooding",
+      "Mining Expedition",
+      "Restricted Area",
+      "Titanium Mine",
+      "Research Coordination",
+      "Technology Demonstration",
+      "Grass",
+      "Mars University",
+      "Plantation",
+      "Medical Lab",
+      "Small Animals",
+      "Local Heat Trapping",
+      "Rover Construction",
+      "Lichen",
+      "Power Plant",
+      "Corporate Stronghold",
+      "Adaptation Technology",
+      "Fish",
+      "Imported Nitrogen",
+      "Bushes",
+      "Farming"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    },
+    "95077095": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 31,
+      "steel": 0,
+      "titanium": 12,
+      "plants": 0,
+      "energy": 0,
+      "heat": 5
+     },
+     "production": {
+      "mc": 17,
+      "steel": 0,
+      "titanium": 6,
+      "plants": 3,
+      "energy": 0,
+      "heat": 9
+     },
+     "tags": {
+      "building": 3,
+      "space": 5,
+      "science": 3,
+      "power": 1,
+      "earth": 3,
+      "jovian": 4,
+      "city": 1,
+      "plant": 3,
+      "microbe": 2,
+      "animal": 1,
+      "wild": 0,
+      "event": 5
+     },
+     "tr": 45,
+     "tileCounts": {
+      "cities": 2,
+      "greeneries": 8,
+      "total": 10
+     },
+     "vp": {
+      "total": 82,
+      "breakdown": {
+       "tr": 45,
+       "milestones": 5,
+       "awards": 5,
+       "greeneries": 8,
+       "cities": 12,
+       "cards": 7
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "Great Aquifer",
+      "Galilean Mining"
+     ],
+     "played": [
+      "Inventors' Guild",
+      "Designed Microorganisms",
+      "Comet",
+      "Bribed Committee",
+      "Giant Ice Asteroid",
+      "Mohole Area",
+      "Vesta Shipyard",
+      "Robotic Workforce",
+      "Giant Space Mirror",
+      "Sabotage",
+      "Algae",
+      "Protected Valley",
+      "Business Network",
+      "Asteroid Mining",
+      "Invention Contest",
+      "Capital",
+      "Shuttles",
+      "Heather",
+      "Earth Catapult",
+      "Decomposers",
+      "Predators",
+      "Space Hotels"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": []
+    }
+   },
+   "tiles": [
+    {
+     "hexKey": "Hex 8,2",
+     "col": 8,
+     "row": 2,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 4,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,9",
+     "col": 7,
+     "row": 9,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 5,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 6,1",
+     "col": 6,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 16,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,1",
+     "col": 7,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 17,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 5,5",
+     "col": 5,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 37,
+     "generation": 2
+    },
+    {
+     "hexKey": "Hex 2,5",
+     "col": 2,
+     "row": 5,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 65,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 6,5",
+     "col": 6,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 72,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 7,4",
+     "col": 7,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 76,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 4,5",
+     "col": 4,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 91,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 9,4",
+     "col": 9,
+     "row": 4,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 92,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 6,4",
+     "col": 6,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 96,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 8,6",
+     "col": 8,
+     "row": 6,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 121,
+     "generation": 5
+    },
+    {
+     "hexKey": "Hex 9,5",
+     "col": 9,
+     "row": 5,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 144,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 8,4",
+     "col": 8,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 153,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 9,6",
+     "col": 9,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 160,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 5,4",
+     "col": 5,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 163,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 6,6",
+     "col": 6,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 177,
+     "generation": 7
+    },
+    {
+     "hexKey": "Arsia Mons",
+     "col": null,
+     "row": null,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 193,
+     "generation": 7
+    },
+    {
+     "hexKey": "Hex 4,6",
+     "col": 4,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 227,
+     "generation": 8
+    },
+    {
+     "hexKey": "Hex 5,7",
+     "col": 5,
+     "row": 7,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 246,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 7,3",
+     "col": 7,
+     "row": 3,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 250,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 6,3",
+     "col": 6,
+     "row": 3,
+     "type": "City",
+     "placedBy": "95077095",
+     "placedAt": 255,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 7,2",
+     "col": 7,
+     "row": 2,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 261,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 6,7",
+     "col": 6,
+     "row": 7,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 276,
+     "generation": 10
+    },
+    {
+     "hexKey": "Hex 6,2",
+     "col": 6,
+     "row": 2,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 281,
+     "generation": 10
+    },
+    {
+     "hexKey": "Hex 6,8",
+     "col": 6,
+     "row": 8,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 295,
+     "generation": 10
+    },
+    {
+     "hexKey": "Hex 4,7",
+     "col": 4,
+     "row": 7,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 316,
+     "generation": 11
+    },
+    {
+     "hexKey": "Hex 5,8",
+     "col": 5,
+     "row": 8,
+     "type": "City",
+     "placedBy": "95077095",
+     "placedAt": 318,
+     "generation": 11
+    }
+   ],
+   "milestones": [
+    {
+     "name": "GARDENER",
+     "playerId": "86683496",
+     "generation": 6
+    },
+    {
+     "name": "TERRAFORMER",
+     "playerId": "95077095",
+     "generation": 7
+    },
+    {
+     "name": "BUILDER",
+     "playerId": "86683496",
+     "generation": 9
+    }
+   ],
+   "awards": [
+    {
+     "name": "landlord",
+     "playerId": "86683496",
+     "generation": 7
+    },
+    {
+     "name": "scientist",
+     "playerId": "86683496",
+     "generation": 8
+    }
+   ],
+   "piles": {
+    "draw": null,
+    "discard": null,
+    "discardCards": [
+     "GHG Producing Bacteria",
+     "Kelp Farming",
+     "Adapted Lichen",
+     "Lunar Beam",
+     "Geothermal Power",
+     "Mineral Deposit",
+     "Noctis City",
+     "Deep Well Heating",
+     "Heat Trappers",
+     "SF Memorial",
+     "Viral Enhancers"
+    ]
+   }
+  },
+  {
+   "index": 360,
+   "generation": 11,
+   "globals": {
+    "temperature": 4,
+    "oxygen": 14,
+    "oceans": 9
+   },
+   "players": {
+    "86683496": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 0,
+      "steel": 0,
+      "titanium": 4,
+      "plants": 3,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 20,
+      "steel": 0,
+      "titanium": 2,
+      "plants": 6,
+      "energy": 0,
+      "heat": 1
+     },
+     "tags": {
+      "building": 10,
+      "space": 3,
+      "science": 8,
+      "power": 2,
+      "earth": 2,
+      "jovian": 1,
+      "city": 2,
+      "plant": 6,
+      "microbe": 0,
+      "animal": 3,
+      "wild": 1,
+      "event": 11
+     },
+     "tr": 36,
+     "tileCounts": {
+      "cities": 2,
+      "greeneries": 9,
+      "total": 11
+     },
+     "vp": {
+      "total": 83,
+      "breakdown": {
+       "tr": 36,
+       "milestones": 10,
+       "awards": 10,
+       "greeneries": 9,
+       "cities": 5,
+       "cards": 13
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "CrediCor"
+     ],
+     "played": [
+      "Business Empire",
+      "Acquired Space Agency",
+      "Ice Asteroid",
+      "Lava Flows",
+      "Natural Preserve",
+      "Solar Wind Power",
+      "Fuel Factory",
+      "Earth Office",
+      "Lagrange Observatory",
+      "Research Outpost",
+      "Investment Loan",
+      "Large Convoy",
+      "Asteroid",
+      "Flooding",
+      "Mining Expedition",
+      "Restricted Area",
+      "Titanium Mine",
+      "Research Coordination",
+      "Technology Demonstration",
+      "Grass",
+      "Mars University",
+      "Plantation",
+      "Medical Lab",
+      "Small Animals",
+      "Local Heat Trapping",
+      "Rover Construction",
+      "Lichen",
+      "Power Plant",
+      "Corporate Stronghold",
+      "Adaptation Technology",
+      "Fish",
+      "Imported Nitrogen",
+      "Bushes",
+      "Farming",
+      "Hired Raiders",
+      "Birds",
+      "Eos Chasma National Park",
+      "Miranda Resort"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": [
+      "Restricted Area",
+      "Fish",
+      "Small Animals",
+      "Birds"
+     ]
+    },
+    "95077095": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 0,
+      "steel": 0,
+      "titanium": 11,
+      "plants": 0,
+      "energy": 0,
+      "heat": 1
+     },
+     "production": {
+      "mc": 22,
+      "steel": 0,
+      "titanium": 6,
+      "plants": 3,
+      "energy": 6,
+      "heat": 12
+     },
+     "tags": {
+      "building": 3,
+      "space": 6,
+      "science": 6,
+      "power": 2,
+      "earth": 3,
+      "jovian": 5,
+      "city": 1,
+      "plant": 3,
+      "microbe": 2,
+      "animal": 1,
+      "wild": 0,
+      "event": 6
+     },
+     "tr": 47,
+     "tileCounts": {
+      "cities": 2,
+      "greeneries": 8,
+      "total": 10
+     },
+     "vp": {
+      "total": 86,
+      "breakdown": {
+       "tr": 47,
+       "milestones": 5,
+       "awards": 0,
+       "greeneries": 8,
+       "cities": 12,
+       "cards": 14
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "Great Aquifer",
+      "Galilean Mining"
+     ],
+     "played": [
+      "Inventors' Guild",
+      "Designed Microorganisms",
+      "Comet",
+      "Bribed Committee",
+      "Giant Ice Asteroid",
+      "Mohole Area",
+      "Vesta Shipyard",
+      "Robotic Workforce",
+      "Giant Space Mirror",
+      "Sabotage",
+      "Algae",
+      "Protected Valley",
+      "Business Network",
+      "Asteroid Mining",
+      "Invention Contest",
+      "Capital",
+      "Shuttles",
+      "Heather",
+      "Earth Catapult",
+      "Decomposers",
+      "Predators",
+      "Space Hotels",
+      "Gene Repair",
+      "Breathing Filters",
+      "Mass Converter",
+      "Methane From Titan",
+      "Imported GHG"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": [
+      "Business Network",
+      "Inventors' Guild",
+      "Predators"
+     ]
+    }
+   },
+   "tiles": [
+    {
+     "hexKey": "Hex 8,2",
+     "col": 8,
+     "row": 2,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 4,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,9",
+     "col": 7,
+     "row": 9,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 5,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 6,1",
+     "col": 6,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 16,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,1",
+     "col": 7,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 17,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 5,5",
+     "col": 5,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 37,
+     "generation": 2
+    },
+    {
+     "hexKey": "Hex 2,5",
+     "col": 2,
+     "row": 5,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 65,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 6,5",
+     "col": 6,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 72,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 7,4",
+     "col": 7,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 76,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 4,5",
+     "col": 4,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 91,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 9,4",
+     "col": 9,
+     "row": 4,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 92,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 6,4",
+     "col": 6,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 96,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 8,6",
+     "col": 8,
+     "row": 6,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 121,
+     "generation": 5
+    },
+    {
+     "hexKey": "Hex 9,5",
+     "col": 9,
+     "row": 5,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 144,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 8,4",
+     "col": 8,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 153,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 9,6",
+     "col": 9,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 160,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 5,4",
+     "col": 5,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 163,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 6,6",
+     "col": 6,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 177,
+     "generation": 7
+    },
+    {
+     "hexKey": "Arsia Mons",
+     "col": null,
+     "row": null,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 193,
+     "generation": 7
+    },
+    {
+     "hexKey": "Hex 4,6",
+     "col": 4,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 227,
+     "generation": 8
+    },
+    {
+     "hexKey": "Hex 5,7",
+     "col": 5,
+     "row": 7,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 246,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 7,3",
+     "col": 7,
+     "row": 3,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 250,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 6,3",
+     "col": 6,
+     "row": 3,
+     "type": "City",
+     "placedBy": "95077095",
+     "placedAt": 255,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 7,2",
+     "col": 7,
+     "row": 2,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 261,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 6,7",
+     "col": 6,
+     "row": 7,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 276,
+     "generation": 10
+    },
+    {
+     "hexKey": "Hex 6,2",
+     "col": 6,
+     "row": 2,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 281,
+     "generation": 10
+    },
+    {
+     "hexKey": "Hex 6,8",
+     "col": 6,
+     "row": 8,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 295,
+     "generation": 10
+    },
+    {
+     "hexKey": "Hex 4,7",
+     "col": 4,
+     "row": 7,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 316,
+     "generation": 11
+    },
+    {
+     "hexKey": "Hex 5,8",
+     "col": 5,
+     "row": 8,
+     "type": "City",
+     "placedBy": "95077095",
+     "placedAt": 318,
+     "generation": 11
+    },
+    {
+     "hexKey": "Hex 7,8",
+     "col": 7,
+     "row": 8,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 322,
+     "generation": 11
+    },
+    {
+     "hexKey": "Hex 6,9",
+     "col": 6,
+     "row": 9,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 349,
+     "generation": 11
+    }
+   ],
+   "milestones": [
+    {
+     "name": "GARDENER",
+     "playerId": "86683496",
+     "generation": 6
+    },
+    {
+     "name": "TERRAFORMER",
+     "playerId": "95077095",
+     "generation": 7
+    },
+    {
+     "name": "BUILDER",
+     "playerId": "86683496",
+     "generation": 9
+    }
+   ],
+   "awards": [
+    {
+     "name": "landlord",
+     "playerId": "86683496",
+     "generation": 7
+    },
+    {
+     "name": "scientist",
+     "playerId": "86683496",
+     "generation": 8
+    }
+   ],
+   "piles": {
+    "draw": null,
+    "discard": null,
+    "discardCards": [
+     "GHG Producing Bacteria",
+     "Kelp Farming",
+     "Adapted Lichen",
+     "Lunar Beam",
+     "Geothermal Power",
+     "Mineral Deposit",
+     "Noctis City",
+     "Deep Well Heating",
+     "Heat Trappers",
+     "SF Memorial",
+     "Viral Enhancers"
+    ]
+   }
+  },
+  {
+   "index": 400,
+   "generation": 12,
+   "globals": {
+    "temperature": 8,
+    "oxygen": 14,
+    "oceans": 9
+   },
+   "players": {
+    "86683496": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 10,
+      "steel": 0,
+      "titanium": 0,
+      "plants": 2,
+      "energy": 0,
+      "heat": 0
+     },
+     "production": {
+      "mc": 22,
+      "steel": 0,
+      "titanium": 2,
+      "plants": 10,
+      "energy": 2,
+      "heat": 1
+     },
+     "tags": {
+      "building": 12,
+      "space": 3,
+      "science": 8,
+      "power": 3,
+      "earth": 2,
+      "jovian": 1,
+      "city": 2,
+      "plant": 6,
+      "microbe": 0,
+      "animal": 3,
+      "wild": 1,
+      "event": 12
+     },
+     "tr": 39,
+     "tileCounts": {
+      "cities": 2,
+      "greeneries": 10,
+      "total": 12
+     },
+     "vp": {
+      "total": 89,
+      "breakdown": {
+       "tr": 39,
+       "milestones": 10,
+       "awards": 10,
+       "greeneries": 10,
+       "cities": 5,
+       "cards": 15
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "CrediCor"
+     ],
+     "played": [
+      "Business Empire",
+      "Acquired Space Agency",
+      "Ice Asteroid",
+      "Lava Flows",
+      "Natural Preserve",
+      "Solar Wind Power",
+      "Fuel Factory",
+      "Earth Office",
+      "Lagrange Observatory",
+      "Research Outpost",
+      "Investment Loan",
+      "Large Convoy",
+      "Asteroid",
+      "Flooding",
+      "Mining Expedition",
+      "Restricted Area",
+      "Titanium Mine",
+      "Research Coordination",
+      "Technology Demonstration",
+      "Grass",
+      "Mars University",
+      "Plantation",
+      "Medical Lab",
+      "Small Animals",
+      "Local Heat Trapping",
+      "Rover Construction",
+      "Lichen",
+      "Power Plant",
+      "Corporate Stronghold",
+      "Adaptation Technology",
+      "Fish",
+      "Imported Nitrogen",
+      "Bushes",
+      "Farming",
+      "Hired Raiders",
+      "Birds",
+      "Eos Chasma National Park",
+      "Miranda Resort",
+      "Nitrogen-Rich Asteroid",
+      "Nuclear Power",
+      "Commercial District"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": [
+      "Restricted Area",
+      "Fish",
+      "Small Animals"
+     ]
+    },
+    "95077095": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 39,
+      "steel": 0,
+      "titanium": 11,
+      "plants": 0,
+      "energy": 0,
+      "heat": 5
+     },
+     "production": {
+      "mc": 22,
+      "steel": 0,
+      "titanium": 6,
+      "plants": 3,
+      "energy": 6,
+      "heat": 12
+     },
+     "tags": {
+      "building": 3,
+      "space": 6,
+      "science": 6,
+      "power": 2,
+      "earth": 4,
+      "jovian": 5,
+      "city": 1,
+      "plant": 3,
+      "microbe": 2,
+      "animal": 1,
+      "wild": 0,
+      "event": 8
+     },
+     "tr": 48,
+     "tileCounts": {
+      "cities": 2,
+      "greeneries": 8,
+      "total": 10
+     },
+     "vp": {
+      "total": 98,
+      "breakdown": {
+       "tr": 48,
+       "milestones": 5,
+       "awards": 5,
+       "greeneries": 8,
+       "cities": 12,
+       "cards": 20
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "Great Aquifer",
+      "Galilean Mining"
+     ],
+     "played": [
+      "Inventors' Guild",
+      "Designed Microorganisms",
+      "Comet",
+      "Bribed Committee",
+      "Giant Ice Asteroid",
+      "Mohole Area",
+      "Vesta Shipyard",
+      "Robotic Workforce",
+      "Giant Space Mirror",
+      "Sabotage",
+      "Algae",
+      "Protected Valley",
+      "Business Network",
+      "Asteroid Mining",
+      "Invention Contest",
+      "Capital",
+      "Shuttles",
+      "Heather",
+      "Earth Catapult",
+      "Decomposers",
+      "Predators",
+      "Space Hotels",
+      "Gene Repair",
+      "Breathing Filters",
+      "Mass Converter",
+      "Methane From Titan",
+      "Imported GHG",
+      "Media Group",
+      "Interstellar Colony Ship",
+      "CEO's Favourite Project"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": [
+      "Predators",
+      "Business Network",
+      "Inventors' Guild"
+     ]
+    }
+   },
+   "tiles": [
+    {
+     "hexKey": "Hex 8,2",
+     "col": 8,
+     "row": 2,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 4,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,9",
+     "col": 7,
+     "row": 9,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 5,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 6,1",
+     "col": 6,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 16,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,1",
+     "col": 7,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 17,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 5,5",
+     "col": 5,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 37,
+     "generation": 2
+    },
+    {
+     "hexKey": "Hex 2,5",
+     "col": 2,
+     "row": 5,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 65,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 6,5",
+     "col": 6,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 72,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 7,4",
+     "col": 7,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 76,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 4,5",
+     "col": 4,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 91,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 9,4",
+     "col": 9,
+     "row": 4,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 92,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 6,4",
+     "col": 6,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 96,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 8,6",
+     "col": 8,
+     "row": 6,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 121,
+     "generation": 5
+    },
+    {
+     "hexKey": "Hex 9,5",
+     "col": 9,
+     "row": 5,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 144,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 8,4",
+     "col": 8,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 153,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 9,6",
+     "col": 9,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 160,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 5,4",
+     "col": 5,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 163,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 6,6",
+     "col": 6,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 177,
+     "generation": 7
+    },
+    {
+     "hexKey": "Arsia Mons",
+     "col": null,
+     "row": null,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 193,
+     "generation": 7
+    },
+    {
+     "hexKey": "Hex 4,6",
+     "col": 4,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 227,
+     "generation": 8
+    },
+    {
+     "hexKey": "Hex 5,7",
+     "col": 5,
+     "row": 7,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 246,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 7,3",
+     "col": 7,
+     "row": 3,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 250,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 6,3",
+     "col": 6,
+     "row": 3,
+     "type": "City",
+     "placedBy": "95077095",
+     "placedAt": 255,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 7,2",
+     "col": 7,
+     "row": 2,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 261,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 6,7",
+     "col": 6,
+     "row": 7,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 276,
+     "generation": 10
+    },
+    {
+     "hexKey": "Hex 6,2",
+     "col": 6,
+     "row": 2,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 281,
+     "generation": 10
+    },
+    {
+     "hexKey": "Hex 6,8",
+     "col": 6,
+     "row": 8,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 295,
+     "generation": 10
+    },
+    {
+     "hexKey": "Hex 4,7",
+     "col": 4,
+     "row": 7,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 316,
+     "generation": 11
+    },
+    {
+     "hexKey": "Hex 5,8",
+     "col": 5,
+     "row": 8,
+     "type": "City",
+     "placedBy": "95077095",
+     "placedAt": 318,
+     "generation": 11
+    },
+    {
+     "hexKey": "Hex 7,8",
+     "col": 7,
+     "row": 8,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 322,
+     "generation": 11
+    },
+    {
+     "hexKey": "Hex 6,9",
+     "col": 6,
+     "row": 9,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 349,
+     "generation": 11
+    },
+    {
+     "hexKey": "Hex 8,3",
+     "col": 8,
+     "row": 3,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 370,
+     "generation": 12
+    }
+   ],
+   "milestones": [
+    {
+     "name": "GARDENER",
+     "playerId": "86683496",
+     "generation": 6
+    },
+    {
+     "name": "TERRAFORMER",
+     "playerId": "95077095",
+     "generation": 7
+    },
+    {
+     "name": "BUILDER",
+     "playerId": "86683496",
+     "generation": 9
+    }
+   ],
+   "awards": [
+    {
+     "name": "landlord",
+     "playerId": "86683496",
+     "generation": 7
+    },
+    {
+     "name": "scientist",
+     "playerId": "86683496",
+     "generation": 8
+    },
+    {
+     "name": "thermalist",
+     "playerId": "95077095",
+     "generation": 12
+    }
+   ],
+   "piles": {
+    "draw": null,
+    "discard": null,
+    "discardCards": [
+     "GHG Producing Bacteria",
+     "Kelp Farming",
+     "Adapted Lichen",
+     "Lunar Beam",
+     "Geothermal Power",
+     "Mineral Deposit",
+     "Noctis City",
+     "Deep Well Heating",
+     "Heat Trappers",
+     "SF Memorial",
+     "Viral Enhancers"
+    ]
+   }
+  },
+  {
+   "index": 430,
+   "generation": 12,
+   "globals": {
+    "temperature": 8,
+    "oxygen": 14,
+    "oceans": 9
+   },
+   "players": {
+    "86683496": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 66,
+      "steel": 0,
+      "titanium": 3,
+      "plants": 2,
+      "energy": 2,
+      "heat": 4
+     },
+     "production": {
+      "mc": 22,
+      "steel": 0,
+      "titanium": 2,
+      "plants": 13,
+      "energy": 2,
+      "heat": 1
+     },
+     "tags": {
+      "building": 12,
+      "space": 3,
+      "science": 8,
+      "power": 3,
+      "earth": 2,
+      "jovian": 1,
+      "city": 2,
+      "plant": 7,
+      "microbe": 0,
+      "animal": 3,
+      "wild": 1,
+      "event": 12
+     },
+     "tr": 39,
+     "tileCounts": {
+      "cities": 2,
+      "greeneries": 12,
+      "total": 14
+     },
+     "vp": {
+      "total": 96,
+      "breakdown": {
+       "tr": 39,
+       "milestones": 10,
+       "awards": 10,
+       "greeneries": 12,
+       "cities": 8,
+       "cards": 17
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "CrediCor"
+     ],
+     "played": [
+      "Business Empire",
+      "Acquired Space Agency",
+      "Ice Asteroid",
+      "Lava Flows",
+      "Natural Preserve",
+      "Solar Wind Power",
+      "Fuel Factory",
+      "Earth Office",
+      "Lagrange Observatory",
+      "Research Outpost",
+      "Investment Loan",
+      "Large Convoy",
+      "Asteroid",
+      "Flooding",
+      "Mining Expedition",
+      "Restricted Area",
+      "Titanium Mine",
+      "Research Coordination",
+      "Technology Demonstration",
+      "Grass",
+      "Mars University",
+      "Plantation",
+      "Medical Lab",
+      "Small Animals",
+      "Local Heat Trapping",
+      "Rover Construction",
+      "Lichen",
+      "Power Plant",
+      "Corporate Stronghold",
+      "Adaptation Technology",
+      "Fish",
+      "Imported Nitrogen",
+      "Bushes",
+      "Farming",
+      "Hired Raiders",
+      "Birds",
+      "Eos Chasma National Park",
+      "Miranda Resort",
+      "Nitrogen-Rich Asteroid",
+      "Nuclear Power",
+      "Commercial District",
+      "Trees"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": [
+      "Restricted Area",
+      "Fish",
+      "Small Animals",
+      "Birds"
+     ]
+    },
+    "95077095": {
+     "statsKnown": true,
+     "resources": {
+      "mc": 79,
+      "steel": 0,
+      "titanium": 8,
+      "plants": 1,
+      "energy": 5,
+      "heat": 23
+     },
+     "production": {
+      "mc": 27,
+      "steel": 0,
+      "titanium": 6,
+      "plants": 3,
+      "energy": 5,
+      "heat": 12
+     },
+     "tags": {
+      "building": 5,
+      "space": 8,
+      "science": 7,
+      "power": 2,
+      "earth": 4,
+      "jovian": 6,
+      "city": 3,
+      "plant": 5,
+      "microbe": 3,
+      "animal": 2,
+      "wild": 0,
+      "event": 10
+     },
+     "tr": 50,
+     "tileCounts": {
+      "cities": 4,
+      "greeneries": 10,
+      "total": 14
+     },
+     "vp": {
+      "total": 122,
+      "breakdown": {
+       "tr": 50,
+       "milestones": 5,
+       "awards": 5,
+       "greeneries": 10,
+       "cities": 17,
+       "cards": 35
+      }
+     },
+     "hand": [],
+     "handCount": 0,
+     "headquarters": [
+      "Great Aquifer",
+      "Galilean Mining"
+     ],
+     "played": [
+      "Inventors' Guild",
+      "Designed Microorganisms",
+      "Comet",
+      "Bribed Committee",
+      "Giant Ice Asteroid",
+      "Mohole Area",
+      "Vesta Shipyard",
+      "Robotic Workforce",
+      "Giant Space Mirror",
+      "Sabotage",
+      "Algae",
+      "Protected Valley",
+      "Business Network",
+      "Asteroid Mining",
+      "Invention Contest",
+      "Capital",
+      "Shuttles",
+      "Heather",
+      "Earth Catapult",
+      "Decomposers",
+      "Predators",
+      "Space Hotels",
+      "Gene Repair",
+      "Breathing Filters",
+      "Mass Converter",
+      "Methane From Titan",
+      "Imported GHG",
+      "Media Group",
+      "Interstellar Colony Ship",
+      "CEO's Favourite Project",
+      "Imported Hydrogen",
+      "Trans-Neptune Probe",
+      "Release of Inert Gases",
+      "Ganymede Colony",
+      "Advanced Ecosystems",
+      "Open City",
+      "Greenhouses"
+     ],
+     "sold": [],
+     "cardResources": {},
+     "usedActions": [
+      "Predators",
+      "Business Network",
+      "Inventors' Guild"
+     ]
+    }
+   },
+   "tiles": [
+    {
+     "hexKey": "Hex 8,2",
+     "col": 8,
+     "row": 2,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 4,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,9",
+     "col": 7,
+     "row": 9,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 5,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 6,1",
+     "col": 6,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 16,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 7,1",
+     "col": 7,
+     "row": 1,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 17,
+     "generation": 1
+    },
+    {
+     "hexKey": "Hex 5,5",
+     "col": 5,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 37,
+     "generation": 2
+    },
+    {
+     "hexKey": "Hex 2,5",
+     "col": 2,
+     "row": 5,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 65,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 6,5",
+     "col": 6,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 72,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 7,4",
+     "col": 7,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 76,
+     "generation": 3
+    },
+    {
+     "hexKey": "Hex 4,5",
+     "col": 4,
+     "row": 5,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 91,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 9,4",
+     "col": 9,
+     "row": 4,
+     "type": "Ocean",
+     "placedBy": "95077095",
+     "placedAt": 92,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 6,4",
+     "col": 6,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 96,
+     "generation": 4
+    },
+    {
+     "hexKey": "Hex 8,6",
+     "col": 8,
+     "row": 6,
+     "type": "Ocean",
+     "placedBy": "86683496",
+     "placedAt": 121,
+     "generation": 5
+    },
+    {
+     "hexKey": "Hex 9,5",
+     "col": 9,
+     "row": 5,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 144,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 8,4",
+     "col": 8,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 153,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 9,6",
+     "col": 9,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 160,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 5,4",
+     "col": 5,
+     "row": 4,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 163,
+     "generation": 6
+    },
+    {
+     "hexKey": "Hex 6,6",
+     "col": 6,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 177,
+     "generation": 7
+    },
+    {
+     "hexKey": "Arsia Mons",
+     "col": null,
+     "row": null,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 193,
+     "generation": 7
+    },
+    {
+     "hexKey": "Hex 4,6",
+     "col": 4,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 227,
+     "generation": 8
+    },
+    {
+     "hexKey": "Hex 5,7",
+     "col": 5,
+     "row": 7,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 246,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 7,3",
+     "col": 7,
+     "row": 3,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 250,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 6,3",
+     "col": 6,
+     "row": 3,
+     "type": "City",
+     "placedBy": "95077095",
+     "placedAt": 255,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 7,2",
+     "col": 7,
+     "row": 2,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 261,
+     "generation": 9
+    },
+    {
+     "hexKey": "Hex 6,7",
+     "col": 6,
+     "row": 7,
+     "type": "City",
+     "placedBy": "86683496",
+     "placedAt": 276,
+     "generation": 10
+    },
+    {
+     "hexKey": "Hex 6,2",
+     "col": 6,
+     "row": 2,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 281,
+     "generation": 10
+    },
+    {
+     "hexKey": "Hex 6,8",
+     "col": 6,
+     "row": 8,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 295,
+     "generation": 10
+    },
+    {
+     "hexKey": "Hex 4,7",
+     "col": 4,
+     "row": 7,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 316,
+     "generation": 11
+    },
+    {
+     "hexKey": "Hex 5,8",
+     "col": 5,
+     "row": 8,
+     "type": "City",
+     "placedBy": "95077095",
+     "placedAt": 318,
+     "generation": 11
+    },
+    {
+     "hexKey": "Hex 7,8",
+     "col": 7,
+     "row": 8,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 322,
+     "generation": 11
+    },
+    {
+     "hexKey": "Hex 6,9",
+     "col": 6,
+     "row": 9,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 349,
+     "generation": 11
+    },
+    {
+     "hexKey": "Hex 8,3",
+     "col": 8,
+     "row": 3,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 370,
+     "generation": 12
+    },
+    {
+     "hexKey": "Ganymede Colony",
+     "col": null,
+     "row": null,
+     "type": "City",
+     "placedBy": "95077095",
+     "placedAt": 410,
+     "generation": 12
+    },
+    {
+     "hexKey": "Hex 3,7",
+     "col": 3,
+     "row": 7,
+     "type": "City",
+     "placedBy": "95077095",
+     "placedAt": 415,
+     "generation": 12
+    },
+    {
+     "hexKey": "Hex 3,6",
+     "col": 3,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 421,
+     "generation": 12
+    },
+    {
+     "hexKey": "Pavonis Mons",
+     "col": null,
+     "row": null,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 426,
+     "generation": 12
+    },
+    {
+     "hexKey": "Hex 2,6",
+     "col": 2,
+     "row": 6,
+     "type": "Forest",
+     "placedBy": "86683496",
+     "placedAt": 428,
+     "generation": 12
+    },
+    {
+     "hexKey": "Hex 4,8",
+     "col": 4,
+     "row": 8,
+     "type": "Forest",
+     "placedBy": "95077095",
+     "placedAt": 430,
+     "generation": 12
+    }
+   ],
+   "milestones": [
+    {
+     "name": "GARDENER",
+     "playerId": "86683496",
+     "generation": 6
+    },
+    {
+     "name": "TERRAFORMER",
+     "playerId": "95077095",
+     "generation": 7
+    },
+    {
+     "name": "BUILDER",
+     "playerId": "86683496",
+     "generation": 9
+    }
+   ],
+   "awards": [
+    {
+     "name": "landlord",
+     "playerId": "86683496",
+     "generation": 7
+    },
+    {
+     "name": "scientist",
+     "playerId": "86683496",
+     "generation": 8
+    },
+    {
+     "name": "thermalist",
+     "playerId": "95077095",
+     "generation": 12
+    }
+   ],
+   "piles": {
+    "draw": null,
+    "discard": null,
+    "discardCards": [
+     "GHG Producing Bacteria",
+     "Kelp Farming",
+     "Adapted Lichen",
+     "Lunar Beam",
+     "Geothermal Power",
+     "Mineral Deposit",
+     "Noctis City",
+     "Deep Well Heating",
+     "Heat Trappers",
+     "SF Memorial",
+     "Viral Enhancers"
+    ]
+   }
+  }
+ ],
+ "log": [
+  {
+   "index": 0,
+   "moveNumber": 1,
+   "playerId": null,
+   "playerName": null,
+   "actionType": "other",
+   "description": "Module: Corporate Era | Map: Tharsis | Niiyaaa is starting player for this generation",
+   "generation": 1
+  },
+  {
+   "index": 40,
+   "moveNumber": 49,
+   "playerId": "95077095",
+   "playerName": "Niiyaaa",
+   "actionType": "activate_card",
+   "description": "Niiyaaa activates Inventors' Guild",
+   "generation": 2
+  },
+  {
+   "index": 80,
+   "moveNumber": 100,
+   "playerId": "95077095",
+   "playerName": "Niiyaaa",
+   "actionType": "draft_card",
+   "description": "You draft Mohole Area",
+   "generation": 4
+  },
+  {
+   "index": 120,
+   "moveNumber": 150,
+   "playerId": "86683496",
+   "playerName": "Kim_morgan",
+   "actionType": "play_card",
+   "description": "Kim_morgan pays 6 | Kim_morgan plays card Flooding",
+   "cardPlayed": "Flooding",
+   "generation": 5
+  },
+  {
+   "index": 160,
+   "moveNumber": 203,
+   "playerId": "95077095",
+   "playerName": "Niiyaaa",
+   "actionType": "place_tile",
+   "description": "Niiyaaa places Forest on Tharsis Hex 9,6 (9,6) | Niiyaaa gains 2 | Niiyaaa increases  by 1 step/s to a value of 6 | Niiyaaa gains 1  (Increase Oxygen Level) | Niiyaaa gains 1  (Forest)",
+   "tile": {
+    "type": "Forest",
+    "hexKey": "Hex 9,6"
+   },
+   "generation": 6
+  },
+  {
+   "index": 200,
+   "moveNumber": 256,
+   "playerId": "95077095",
+   "playerName": "Niiyaaa",
+   "actionType": "draft_card",
+   "description": "You draft Heather",
+   "generation": 8
+  },
+  {
+   "index": 240,
+   "moveNumber": 306,
+   "playerId": "86683496",
+   "playerName": "Kim_morgan",
+   "actionType": "buy_card",
+   "description": "Kim_morgan pays 3 (Buy Card) | Niiyaaa keeps 2 card/s | Kim_morgan keeps 1 card/s",
+   "generation": 9
+  },
+  {
+   "index": 280,
+   "moveNumber": 355,
+   "playerId": "95077095",
+   "playerName": "Niiyaaa",
+   "actionType": "standard_project",
+   "description": "Niiyaaa plays standard project Greenery | Niiyaaa pays 23",
+   "generation": 10
+  },
+  {
+   "index": 320,
+   "moveNumber": 409,
+   "playerId": "86683496",
+   "playerName": "Kim_morgan",
+   "actionType": "play_card",
+   "description": "Kim_morgan pays 15 | Kim_morgan plays card Farming | Kim_morgan increases  by 2 (immediate effect of Farming) | Kim_morgan increases  by 2 (immediate effect of Farming) | Kim_morgan gains 2  (immediate effect of Farming)",
+   "cardPlayed": "Farming",
+   "generation": 11
+  },
+  {
+   "index": 360,
+   "moveNumber": 462,
+   "playerId": "95077095",
+   "playerName": "Niiyaaa",
+   "actionType": "convert_heat",
+   "description": "Niiyaaa pays 8  (Convert heat into temperature) | Niiyaaa increases  by 1 step/s to a value of 4 | Niiyaaa gains 1  (Increase Temperature)",
+   "generation": 11
+  },
+  {
+   "index": 400,
+   "moveNumber": 517,
+   "playerId": null,
+   "playerName": null,
+   "actionType": "other",
+   "description": "Niiyaaa cancels their move",
+   "generation": 12
+  },
+  {
+   "index": 430,
+   "moveNumber": 558,
+   "playerId": "95077095",
+   "playerName": "Niiyaaa",
+   "actionType": "place_tile",
+   "description": "Niiyaaa places Forest on Tharsis Hex 4,8 (4,8) | It is the end of the generation 12 and Mars is terraformed! | Niiyaaa scores 50 point/s for Terraforming Rating | Kim_morgan scores 39 point/s for Terraforming Rating | Kim_morgan scores 5 point/s for award Scientist with max value of 8 | second place is not awarded for 2 player game | Kim_morgan scores 5 point/s for award Landlord with max value of 18 | second place is not awarded for 2 player game | Niiyaaa scores 5 point/s for award Thermalist with max value of 23 | second place is not awarded for 2 player game | Kim_morgan scores 5 point/s for milestone | Kim_morgan scores 5 point/s for milestone | Niiyaaa scores 5 point/s for milestone | Niiyaaa scores 0 point/s for city tile at Ganymede Colony | Niiyaaa scores 5 point/s for city tile at Tharsis Hex 6,3 | Niiyaaa scores 4 point/s for city tile at Tharsis Hex 5,6 | Niiyaaa scores 4 point/s for city tile at Tharsis Hex 3,7 | Niiyaaa scores 4 point/s for city tile at Tharsis Hex 5,8 | Niiyaaa scores 10 points for Greenery tiles | Kim_morgan scores 4 point/s for city tile at Tharsis Hex 2,5 | Kim_morgan scores 4 point/s for city tile at Tharsis Hex 6,7 | Kim_morgan scores 12 points for Greenery tiles | Niiyaaa scores 2 point/s for card Decomposers | Niiyaaa scores 6 point/s for card Predators | Niiyaaa scores 2 point/s for card Capital | Niiyaaa scores 6 point/s for card Ganymede Colony | Niiyaaa scores total 19 points for cards with fixed points | Kim_morgan scores 3 point/s for card Fish | Kim_morgan scores 2 point/s for card Small Animals | Kim_morgan scores 1 point/s for card Birds | Kim_morgan scores 1 point/s for card Commercial District | Kim_morgan scores total 10 points for cards with fixed points | Niiyaaa has 79 M€ left (for tiebreaker purposes) | Niiyaaa scores 122 TOTAL VP | Kim_morgan has 66 M€ left (for tiebreaker purposes) | Kim_morgan scores 96 TOTAL VP | The end of the game: Niiyaaa wins!",
+   "tile": {
+    "type": "Forest",
+    "hexKey": "Hex 4,8"
+   },
+   "generation": 12
+  }
+ ]
+}

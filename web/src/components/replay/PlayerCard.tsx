@@ -1,8 +1,8 @@
-import { memo, useState, useEffect, useRef, useCallback } from 'react';
+import { memo, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { X, Pin, PinOff, Grid3X3, Layers, List, EyeOff, GripHorizontal } from 'lucide-react';
 import { getCardImage, getCardPlaceholderImage } from '@/lib/card';
 import { computeCardCost } from '@/data/cardDiscounts';
-import type { PlayerVictoryPoints } from '@/types/gamelog';
+import type { PlayerSnapshotVM } from '@/lib/replay/viewModel';
 import { getCubeImage, startingPlayerImg, PlayerTrackers, getIcon, resourceIcons } from './replayShared';
 import trImg from '/assets/tr.png';
 import { getCardCategory, getCardResourceType } from '@/lib/cardMetadata';
@@ -13,20 +13,16 @@ interface PlayerCardProps {
   corporation: string;
   color: string;
   elo: number | null;
-  vp: PlayerVictoryPoints | undefined;
-  trackers: Record<string, number> | undefined;
-  tileCounts: { cities: number; greeneries: number; total: number } | undefined;
+  player: PlayerSnapshotVM;
   isStartingPlayer: boolean;
   isExpanded: boolean;
   onExpand: () => void;
   onCollapse: () => void;
-  headquarters: string[];
-  played: string[];
-  hand: string[];
-  sold: string[];
-  cardResources: Record<string, number>;
-  activatedCards?: Set<string>;
+  /** Makes cards clickable; without it they are display-only. */
+  onCardClick?: (card: string, zone: CardZone) => void;
 }
+
+export type CardZone = 'headquarters' | 'hand' | 'played' | 'sold';
 
 type ViewMode = 'grid' | 'stack' | 'synthetic' | 'hidden';
 
@@ -101,7 +97,7 @@ function CostBadge({ card, costContext, cardSize, size = 'normal' }: { card: str
 
 // --- Card view components (dark-themed) ---
 
-const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize, activatedCards, costContext }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string>; costContext?: CostContext }) {
+export const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize, activatedCards, costContext, onCardClick }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string>; costContext?: CostContext; onCardClick?: (card: string) => void }) {
   return (
     <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${cardSize}px, 1fr))` }}>
       {cards.map((card, i) => {
@@ -109,7 +105,7 @@ const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize, activa
         const res = cardResources?.[card];
         const used = activatedCards?.has(card);
         return (
-          <div key={`${card}-${i}`} className="group/card relative">
+          <div key={`${card}-${i}`} className={`group/card relative${onCardClick ? ' cursor-pointer' : ''}`} onClick={onCardClick ? () => onCardClick(card) : undefined}>
             <div className="relative">
               <img src={img} alt={card} className={`w-full rounded shadow-sm group-hover/card:brightness-125 group-hover/card:shadow-lg relative transition-[filter,box-shadow] duration-150 ${used ? 'opacity-40 grayscale' : ''}`} />
               {costContext && <CostBadge card={card} costContext={costContext} cardSize={cardSize} />}
@@ -123,7 +119,7 @@ const CardGrid = memo(function CardGrid({ cards, cardResources, cardSize, activa
   );
 });
 
-const CardStack = memo(function CardStack({ cards, cardResources, cardSize, activatedCards, costContext }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string>; costContext?: CostContext }) {
+const CardStack = memo(function CardStack({ cards, cardResources, cardSize, activatedCards, costContext, onCardClick }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string>; costContext?: CostContext; onCardClick?: (card: string) => void }) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   if (cards.length === 0) return null;
 
@@ -150,7 +146,7 @@ const CardStack = memo(function CardStack({ cards, cardResources, cardSize, acti
             const isAfterHovered = hoveredColIdx === colIdx && i > hoveredLocalIdx;
             const top = cardOffset * i + (isAfterHovered ? cardHeight * 0.45 : 0);
             return (
-              <div key={`${card}-${globalIdx}`} className="absolute left-0 transition-all duration-150 ease-out" style={{ top: `${top}px`, zIndex: isHovered ? 100 : i, width: `${cardWidth}px` }} onMouseEnter={() => setHoveredKey(hoverKey)} onMouseLeave={() => setHoveredKey(null)}>
+              <div key={`${card}-${globalIdx}`} className={`absolute left-0 transition-all duration-150 ease-out${onCardClick ? ' cursor-pointer' : ''}`} style={{ top: `${top}px`, zIndex: isHovered ? 100 : i, width: `${cardWidth}px` }} onMouseEnter={() => setHoveredKey(hoverKey)} onMouseLeave={() => setHoveredKey(null)} onClick={onCardClick ? () => onCardClick(card) : undefined}>
                 <div className="relative">
                 <img src={img} alt={card} className={`rounded shadow-sm transition-[filter,box-shadow] duration-150 ${isHovered ? 'brightness-125 shadow-lg' : ''} ${activatedCards?.has(card) ? 'grayscale' : ''}`} style={{ width: `${cardWidth}px` }} />
                 {activatedCards?.has(card) && (
@@ -168,7 +164,7 @@ const CardStack = memo(function CardStack({ cards, cardResources, cardSize, acti
   );
 });
 
-const CardSynthetic = memo(function CardSynthetic({ cards, cardResources, cardSize, activatedCards }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string> }) {
+const CardSynthetic = memo(function CardSynthetic({ cards, cardResources, cardSize, activatedCards, onCardClick }: { cards: string[]; cardResources?: Record<string, number>; cardSize: number; activatedCards?: Set<string>; onCardClick?: (card: string) => void }) {
   const boxWidth = Math.max(100, cardSize * 1.2);
   return (
     <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${boxWidth}px, 1fr))` }}>
@@ -176,7 +172,7 @@ const CardSynthetic = memo(function CardSynthetic({ cards, cardResources, cardSi
         const res = cardResources?.[card];
         const used = activatedCards?.has(card);
         return (
-          <div key={`${card}-${i}`} className={`rounded-lg overflow-hidden ${used ? 'opacity-40' : ''}`} style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.1) 100%)', border: '1px solid rgba(148,163,184,0.08)' }}>
+          <div key={`${card}-${i}`} className={`rounded-lg overflow-hidden ${used ? 'opacity-40' : ''}${onCardClick ? ' cursor-pointer' : ''}`} onClick={onCardClick ? () => onCardClick(card) : undefined} style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.1) 100%)', border: '1px solid rgba(148,163,184,0.08)' }}>
             <div className="px-2 py-1.5">
               <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wide leading-tight line-clamp-2">{card}</span>
             </div>
@@ -202,8 +198,8 @@ const CardSynthetic = memo(function CardSynthetic({ cards, cardResources, cardSi
   );
 });
 
-const CardSection = memo(function CardSection({ cards, title, color, cardResources, defaultViewMode = 'grid', defaultCardSize = 140, activatedCards, costContext }: {
-  cards: string[]; title: string; color: string; cardResources?: Record<string, number>; defaultViewMode?: ViewMode; defaultCardSize?: number; activatedCards?: Set<string>; costContext?: CostContext;
+export const CardSection = memo(function CardSection({ cards, title, color, cardResources, defaultViewMode = 'grid', defaultCardSize = 140, activatedCards, costContext, onCardClick }: {
+  cards: string[]; title: string; color: string; cardResources?: Record<string, number>; defaultViewMode?: ViewMode; defaultCardSize?: number; activatedCards?: Set<string>; costContext?: CostContext; onCardClick?: (card: string) => void;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
   const [cardSize, setCardSize] = useState(defaultCardSize);
@@ -239,21 +235,28 @@ const CardSection = memo(function CardSection({ cards, title, color, cardResourc
         <div className="h-px flex-1 bg-white/10" />
       </div>
       {viewMode === 'hidden' ? null : viewMode === 'stack' ? (
-        <CardStack cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} costContext={costContext} />
+        <CardStack cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} costContext={costContext} onCardClick={onCardClick} />
       ) : viewMode === 'synthetic' ? (
-        <CardSynthetic cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} />
+        <CardSynthetic cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} onCardClick={onCardClick} />
       ) : (
-        <CardGrid cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} costContext={costContext} />
+        <CardGrid cards={cards} cardResources={cardResources} cardSize={cardSize} activatedCards={activatedCards} costContext={costContext} onCardClick={onCardClick} />
       )}
     </div>
   );
 });
 
 export const PlayerCard = memo(function PlayerCard({
-  playerId, playerName, corporation, color, elo, vp, trackers, tileCounts,
-  isStartingPlayer, isExpanded, onExpand, onCollapse,
-  headquarters, played, hand, sold, cardResources, activatedCards,
+  playerName, corporation, color, elo, player,
+  isStartingPlayer, isExpanded, onExpand, onCollapse, onCardClick,
 }: PlayerCardProps) {
+  const { vp, headquarters, played, sold, cardResources } = player;
+  const hand = player.hand ?? [];
+  const handCount = player.hand?.length ?? player.handCount ?? 0;
+  const activatedCards = useMemo(() => new Set(player.usedActions), [player.usedActions]);
+  const clickIn = useMemo(() => {
+    const zone = (z: CardZone) => onCardClick ? (card: string) => onCardClick(card, z) : undefined;
+    return { headquarters: zone('headquarters'), hand: zone('hand'), played: zone('played'), sold: zone('sold') };
+  }, [onCardClick]);
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const compactRef = useRef<HTMLDivElement>(null);
@@ -357,7 +360,7 @@ export const PlayerCard = memo(function PlayerCard({
   }, [isExpanded]);
 
   const cubeImg = getCubeImage(color);
-  const d = vp?.total_details;
+  const d = vp?.breakdown;
 
   const compactCard = (
     <div ref={compactRef} className="glass-panel rounded-xl p-4 cursor-pointer">
@@ -382,7 +385,7 @@ export const PlayerCard = memo(function PlayerCard({
       </div>
       <div className="flex items-center gap-2.5 mt-3 pt-2.5 border-t border-white/5">
         <img src={getCardPlaceholderImage()} alt="Cards" className="w-8 h-11 object-cover rounded-sm opacity-60" />
-        <span className="text-xl font-semibold text-white">{hand.length}</span>
+        <span className="text-xl font-semibold text-white">{handCount}</span>
         <div className="w-px h-8 bg-white/10 mx-1" />
         <span className="relative flex-shrink-0">
           <img src={trImg} alt="TR" className="w-11 h-11 object-contain" />
@@ -521,8 +524,8 @@ export const PlayerCard = memo(function PlayerCard({
 
         {/* Stats — Resources + Tags */}
         <div className="flex flex-wrap items-start gap-1 px-3 py-2.5 flex-shrink-0 border-t border-white/10">
-          {trackers && (
-            <PlayerTrackers trackers={trackers} tileCounts={tileCounts} inline />
+          {player.statsKnown && (
+            <PlayerTrackers player={player} inline />
           )}
         </div>
 
@@ -547,13 +550,13 @@ export const PlayerCard = memo(function PlayerCard({
           return (
         <div className="overflow-y-auto scrollbar-subtle flex-1 min-h-0 mr-2">
           <div className="px-3 py-2.5 space-y-3 border-t border-white/10">
-            <CardSection cards={allHQ} title="Headquarters" color={color} defaultViewMode="grid" defaultCardSize={180} />
-            <CardSection cards={hand} title="Hand" color={color} defaultViewMode="grid" defaultCardSize={130} costContext={{ played: [...allHQ, ...played], corporation }} />
-            <CardSection cards={actions} title="Actions" color="#60a5fa" cardResources={cardResources} defaultViewMode="grid" activatedCards={activatedCards} />
-            <CardSection cards={effects} title="Effects" color="#60a5fa" cardResources={cardResources} defaultViewMode="stack" />
-            <CardSection cards={automated} title="Automated" color="#4ade80" cardResources={cardResources} defaultViewMode="synthetic" />
-            <CardSection cards={events} title="Events" color="#f87171" cardResources={cardResources} defaultViewMode="hidden" />
-            <CardSection cards={sold} title="Sold" color={color} defaultViewMode="hidden" />
+            <CardSection cards={allHQ} title="Headquarters" color={color} defaultViewMode="grid" defaultCardSize={180} onCardClick={clickIn.headquarters} />
+            <CardSection cards={hand} title="Hand" color={color} defaultViewMode="grid" defaultCardSize={130} costContext={{ played: [...allHQ, ...played], corporation }} onCardClick={clickIn.hand} />
+            <CardSection cards={actions} title="Actions" color="#60a5fa" cardResources={cardResources} defaultViewMode="grid" activatedCards={activatedCards} onCardClick={clickIn.played} />
+            <CardSection cards={effects} title="Effects" color="#60a5fa" cardResources={cardResources} defaultViewMode="stack" onCardClick={clickIn.played} />
+            <CardSection cards={automated} title="Automated" color="#4ade80" cardResources={cardResources} defaultViewMode="synthetic" onCardClick={clickIn.played} />
+            <CardSection cards={events} title="Events" color="#f87171" cardResources={cardResources} defaultViewMode="hidden" onCardClick={clickIn.played} />
+            <CardSection cards={sold} title="Sold" color={color} defaultViewMode="hidden" onCardClick={clickIn.sold} />
           </div>
         </div>
           );
@@ -580,20 +583,13 @@ export const PlayerCard = memo(function PlayerCard({
   // Custom comparator: skip re-render if card arrays haven't changed by content
   if (prev.isExpanded !== next.isExpanded) return false;
   if (prev.playerId !== next.playerId) return false;
-  if (prev.vp?.total !== next.vp?.total) return false;
+  if (prev.player.vp?.total !== next.player.vp?.total) return false;
   if (prev.color !== next.color) return false;
   if (prev.isStartingPlayer !== next.isStartingPlayer) return false;
   if (prev.corporation !== next.corporation) return false;
   if (prev.elo !== next.elo) return false;
-  // Only check card arrays if expanded (they're not rendered when collapsed)
-  if (next.isExpanded) {
-    if (prev.hand.length !== next.hand.length || prev.hand.some((c, i) => c !== next.hand[i])) return false;
-    if (prev.played.length !== next.played.length || prev.played.some((c, i) => c !== next.played[i])) return false;
-    if (prev.headquarters.length !== next.headquarters.length) return false;
-    if (prev.sold.length !== next.sold.length) return false;
-    if (prev.trackers !== next.trackers) return false;
-    if (prev.tileCounts !== next.tileCounts) return false;
-    if (prev.activatedCards !== next.activatedCards) return false;
-  }
+  if (prev.onCardClick !== next.onCardClick) return false;
+  // Only check the rest if expanded (it is not rendered when collapsed)
+  if (next.isExpanded && prev.player !== next.player) return false;
   return true;
 });

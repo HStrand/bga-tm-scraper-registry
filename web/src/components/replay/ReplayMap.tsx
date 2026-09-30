@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { hexCenter, hexPoints, type MapDefinition } from '@/data/mapHexes';
-import type { GameState } from '@/types/gamelog';
-import type { ClaimFundInfo } from '@/lib/replayUtils';
+import type { GameInfoVM, GameSnapshotVM } from '@/lib/replay/viewModel';
 import { MapOverlaysSvg, MapMilestonesAwardsSvg, MapTooltip, type TooltipData } from './MapOverlays';
 import cityTileImage from '/assets/tiles/city tile.png';
 import greeneryTileImage from '/assets/tiles/greenery tile.png';
@@ -34,31 +33,15 @@ function getCubeImage(hexColor: string): string | undefined {
   return entry?.[1].default;
 }
 
-export interface PlacedTile {
-  dbKey: string;
-  tileType: string;
-  playerId: string;
-  moveIndex: number;
-}
-
 interface ReplayMapProps {
   mapDefinition: MapDefinition;
-  placedTiles: Map<string, PlacedTile>;
-  playerColors: Record<string, string>;
-  currentStep: number;
-  gameState?: GameState;
-  claimedMilestones?: Map<string, ClaimFundInfo>;
-  fundedAwards?: Map<string, ClaimFundInfo>;
-  playerNames?: Record<string, string>;
-  playerTrackers?: Record<string, Record<string, number>>;
-  playerTileCounts?: Record<string, { cities: number; greeneries: number; total: number }>;
-  playerHandCounts?: Record<string, number>;
-  playerPlayedCards?: Record<string, string[]>;
-  playerCardResources?: Record<string, Record<string, number>>;
-  moves?: import('@/types/gamelog').GameLogMove[];
+  info: Pick<GameInfoVM, 'players'>;
+  snapshot: GameSnapshotVM;
+  /** Makes the listed hexes clickable, for choosing where to place a tile. */
+  selection?: { hexKeys: ReadonlySet<string>; onSelect: (hexKey: string) => void };
 }
 
-export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentStep, gameState, claimedMilestones, fundedAwards, playerNames, playerTrackers, playerTileCounts, playerHandCounts, playerPlayedCards, playerCardResources, moves }: ReplayMapProps) {
+export function ReplayMap({ mapDefinition, info, snapshot, selection }: ReplayMapProps) {
   const tileSize = mapDefinition.grid.hexRadius * 2;
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -67,23 +50,18 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
     setTooltipPos({ x: e.clientX, y: e.clientY });
   };
 
+  const players = info.players;
+  const playerColors: Record<string, string> = Object.fromEntries(players.map(p => [p.id, p.color]));
+  const playerNames: Record<string, string> = Object.fromEntries(players.map(p => [p.id, p.name]));
+  const tilesByHex = new Map(snapshot.tiles.map(t => [t.hexKey, t]));
+
   const overlayProps = {
     mapName: mapDefinition.name,
     imageWidth: mapDefinition.imageWidth,
     imageHeight: mapDefinition.imageHeight,
     tileSize,
-    placedTiles,
-    playerColors,
-    currentStep,
-    gameState,
-    claimedMilestones,
-    fundedAwards,
-    playerNames,
-    playerTrackers,
-    playerTileCounts,
-    playerHandCounts,
-    playerPlayedCards,
-    playerCardResources,
+    players,
+    snapshot,
     hexCoords: new Map(mapDefinition.hexes.map(h => [h.dbKey, [h.col, h.row] as [number, number]])),
     getCubeImage,
     cityTileImage,
@@ -110,7 +88,7 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
         {mapDefinition.hexes.map(hex => {
           const { cx, cy } = hexCenter(mapDefinition.grid, hex.col, hex.row);
           const points = hexPoints(cx, cy, mapDefinition.grid.hexRadius);
-          const tile = placedTiles.get(hex.dbKey);
+          const tile = tilesByHex.get(hex.dbKey);
 
           if (!tile) {
             return (
@@ -118,7 +96,7 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
             );
           }
 
-          const tileNorm = tile.tileType.toLowerCase();
+          const tileNorm = tile.type.toLowerCase();
           const isOcean = tileNorm === 'ocean';
           const isCity = tileNorm === 'city';
           const isGreenery = tileNorm === 'greenery' || tileNorm === 'forest';
@@ -127,9 +105,9 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
           const tileImg = isCity ? cityTileImage
             : isGreenery ? greeneryTileImage
             : isOcean ? oceanTileImage
-            : getSpecialTileImage(tile.tileType) ?? null;
+            : getSpecialTileImage(tile.type) ?? null;
 
-          const color = playerColors[tile.playerId] ?? '#888';
+          const color = (tile.placedBy != null ? playerColors[tile.placedBy] : undefined) ?? '#888';
           const cubeSize = tileSize * 0.4;
           const imgSize = isOcean ? tileSize * 1.28 : tileSize;
 
@@ -157,11 +135,11 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
 
         {/* Highlight for current move */}
         {mapDefinition.hexes.map(hex => {
-          const tile = placedTiles.get(hex.dbKey);
-          if (!tile || tile.moveIndex !== currentStep) return null;
+          const tile = tilesByHex.get(hex.dbKey);
+          if (!tile || tile.placedAt !== snapshot.index) return null;
           const { cx, cy } = hexCenter(mapDefinition.grid, hex.col, hex.row);
           const points = hexPoints(cx, cy, mapDefinition.grid.hexRadius);
-          const color = playerColors[tile.playerId] ?? '#d97706';
+          const color = (tile.placedBy != null ? playerColors[tile.placedBy] : undefined) ?? '#d97706';
           const filterId = `hex-glow-${hex.col}-${hex.row}`;
           return (
             <g key={`highlight-${hex.col},${hex.row}`}>
@@ -184,18 +162,18 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
 
         {/* Hex tile hover areas */}
         {mapDefinition.hexes.map(hex => {
-          const tile = placedTiles.get(hex.dbKey);
+          const tile = tilesByHex.get(hex.dbKey);
           if (!tile) return null;
           const { cx, cy } = hexCenter(mapDefinition.grid, hex.col, hex.row);
           const points = hexPoints(cx, cy, mapDefinition.grid.hexRadius);
-          const tileNorm = tile.tileType.toLowerCase();
+          const tileNorm = tile.type.toLowerCase();
           const tileLabel = tileNorm === 'city' ? 'City'
             : (tileNorm === 'greenery' || tileNorm === 'forest') ? 'Greenery'
             : tileNorm === 'ocean' ? 'Ocean'
-            : tile.tileType;
-          const pName = playerNames?.[tile.playerId] ?? tile.playerId;
-          const pColor = playerColors[tile.playerId] ?? '#888';
-          const gen = moves?.[tile.moveIndex]?.game_state?.generation;
+            : tile.type;
+          const pName = tile.placedBy != null ? playerNames[tile.placedBy] ?? tile.placedBy : undefined;
+          const pColor = (tile.placedBy != null ? playerColors[tile.placedBy] : undefined) ?? '#888';
+          const gen = tile.generation;
           const hexName = hex.name ?? hex.dbKey;
           return (
             <polygon
@@ -213,6 +191,23 @@ export function ReplayMap({ mapDefinition, placedTiles, playerColors, currentSte
                 coordinates: `${hex.col}, ${hex.row}`,
               })}
               onMouseLeave={() => setTooltip(null)}
+            />
+          );
+        })}
+
+        {/* Hexes offered for a tile placement */}
+        {selection && mapDefinition.hexes.filter(hex => selection.hexKeys.has(hex.dbKey)).map(hex => {
+          const { cx, cy } = hexCenter(mapDefinition.grid, hex.col, hex.row);
+          return (
+            <polygon
+              key={`select-${hex.col},${hex.row}`}
+              points={hexPoints(cx, cy, mapDefinition.grid.hexRadius * 0.92)}
+              className="fill-amber-400/25 stroke-amber-300 hover:fill-amber-400/60 transition-colors"
+              strokeWidth={3}
+              style={{ pointerEvents: 'all', cursor: 'pointer' }}
+              role="button"
+              aria-label={`Place on ${hex.name ?? hex.dbKey}`}
+              onClick={() => selection.onSelect(hex.dbKey)}
             />
           );
         })}
