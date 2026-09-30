@@ -82,7 +82,9 @@ export function PreludeStatsPage() {
             prev.draftOn === undefined &&
             !prev.playerName &&
             prev.eloMin === undefined &&
-            prev.eloMax === undefined;
+            prev.eloMax === undefined &&
+            prev.oppEloMin === undefined &&
+            prev.oppEloMax === undefined;
           if (isEmpty) {
             return {
               maps: opts.maps ?? [],

@@ -284,6 +284,40 @@ export function FiltersPanel({
         </div>
       </div>
 
+      {/* Opponent Elo */}
+      <div className="space-y-3">
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Opponent Elo
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <input
+              type="number"
+              placeholder="Min"
+              value={localFilters.oppEloMin || ''}
+              onChange={(e) => updateFilters({
+                oppEloMin: e.target.value ? Number(e.target.value) : undefined
+              })}
+              className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <input
+              type="number"
+              placeholder="Max"
+              value={localFilters.oppEloMax || ''}
+              onChange={(e) => updateFilters({
+                oppEloMax: e.target.value ? Number(e.target.value) : undefined
+              })}
+              className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-slate-600 rounded-md bg-white/80 dark:bg-slate-700/70 backdrop-blur-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          All opponents within range
+        </p>
+      </div>
+
       {/* Generations */}
       {generationsRange && (
         <div className="space-y-3">
@@ -737,6 +771,7 @@ export function FiltersPanel({
       <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
         <div className="text-xs text-slate-500 dark:text-slate-400">
           {localFilters.eloMin || localFilters.eloMax ||
+           localFilters.oppEloMin || localFilters.oppEloMax ||
            localFilters.preludeOn !== undefined || localFilters.coloniesOn !== undefined || localFilters.draftOn !== undefined ||
            localFilters.playerCounts.length !== availablePlayerCounts.length ||
            localFilters.maps.length !== availableMaps.length ||

@@ -127,6 +127,8 @@ export function CorporationsOverviewPage() {
               !prev.playerName &&
               prev.eloMin === undefined &&
               prev.eloMax === undefined &&
+              prev.oppEloMin === undefined &&
+              prev.oppEloMax === undefined &&
               prev.timesPlayedMin === undefined &&
               prev.timesPlayedMax === undefined
             ) {

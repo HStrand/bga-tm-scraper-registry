@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.db import parquet_path
+from app.opponent_elo import opponent_elo_clause
 from app.sql_fixups import card_variants, normalize_card_name, normalized_card_expr
 
 router = APIRouter(prefix="/api/cards", tags=["cards"])
@@ -177,6 +178,10 @@ def _card_filtered_cte(card_name: str, qp) -> Tuple[str, list]:
     if player_name:
         where.append("gp.PlayerName = ?")
         params.append(player_name)
+    opp_sql, opp_params = opponent_elo_clause(qp, "gp.TableId", "gp.PlayerId")
+    if opp_sql:
+        where.append(opp_sql)
+        params.extend(opp_params)
 
     cte = f"""
     WITH filtered AS (

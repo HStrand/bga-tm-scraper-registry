@@ -24,6 +24,8 @@ function buildQuery(filters: CorporationFilters): string {
 
   if (filters.eloMin !== undefined) params.set('eloMin', String(filters.eloMin));
   if (filters.eloMax !== undefined) params.set('eloMax', String(filters.eloMax));
+  if (filters.oppEloMin !== undefined) params.set('oppEloMin', String(filters.oppEloMin));
+  if (filters.oppEloMax !== undefined) params.set('oppEloMax', String(filters.oppEloMax));
   if (filters.generationsMin !== undefined) params.set('generationsMin', String(filters.generationsMin));
   if (filters.generationsMax !== undefined) params.set('generationsMax', String(filters.generationsMax));
   if (filters.playerName) params.set('playerName', filters.playerName);

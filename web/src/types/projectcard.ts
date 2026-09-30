@@ -36,6 +36,8 @@ export interface ProjectCardStats {
 export interface ProjectCardFilters {
   eloMin?: number;
   eloMax?: number;
+  oppEloMin?: number;
+  oppEloMax?: number;
   playerCounts: number[];
   maps: string[];
   gameModes: string[];

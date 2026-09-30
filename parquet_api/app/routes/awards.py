@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from app.db import parquet_path
+from app.opponent_elo import opponent_elo_clause
 
 router = APIRouter(prefix="/api/awards", tags=["awards"])
 
@@ -183,6 +184,10 @@ def get_awards_overview(request: Request):
     if corporation:
         where.append("lower(Corporation) = ?")
         params.append(corporation.strip().lower())
+    opp_sql, opp_params = opponent_elo_clause(qp)
+    if opp_sql:
+        where.append(opp_sql)
+        params.extend(opp_params)
 
     where_sql = f"WHERE {' AND '.join(where)}" if where else ""
 

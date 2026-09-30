@@ -67,6 +67,8 @@ namespace BgaTmScraperRegistry.Services
             public bool? DraftOn { get; set; }
             public int? EloMin { get; set; }
             public int? EloMax { get; set; }
+            public int? OppEloMin { get; set; }
+            public int? OppEloMax { get; set; }
             public int? PlayedGenMin { get; set; }
             public int? PlayedGenMax { get; set; }
             public string PlayerName { get; set; }
@@ -201,6 +203,8 @@ namespace BgaTmScraperRegistry.Services
             if (f.DraftOn.HasValue) parts.Add($"draftOn={(f.DraftOn.Value ? "true" : "false")}");
             if (f.EloMin.HasValue) parts.Add($"eloMin={f.EloMin.Value}");
             if (f.EloMax.HasValue) parts.Add($"eloMax={f.EloMax.Value}");
+            if (f.OppEloMin.HasValue) parts.Add($"oppEloMin={f.OppEloMin.Value}");
+            if (f.OppEloMax.HasValue) parts.Add($"oppEloMax={f.OppEloMax.Value}");
             if (f.PlayedGenMin.HasValue) parts.Add($"playedGenMin={f.PlayedGenMin.Value}");
             if (f.PlayedGenMax.HasValue) parts.Add($"playedGenMax={f.PlayedGenMax.Value}");
             if (!string.IsNullOrWhiteSpace(f.PlayerName)) parts.Add($"playerName={Uri.EscapeDataString(f.PlayerName)}");

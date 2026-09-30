@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.db import parquet_path
+from app.opponent_elo import opponent_elo_clause
 
 router = APIRouter(prefix="/api/corporations", tags=["corporations"])
 
@@ -159,6 +160,10 @@ def get_corporation_rankings(request: Request):
         escaped = player_name.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_").lower()
         where.append("lower(playerName) LIKE ? ESCAPE '\\'")
         params.append(f"%{escaped}%")
+    opp_sql, opp_params = opponent_elo_clause(qp)
+    if opp_sql:
+        where.append(opp_sql)
+        params.extend(opp_params)
 
     where_sql = f"WHERE {' AND '.join(where)}" if where else ""
 
@@ -253,6 +258,10 @@ def _parse_corp_filter(qp, require_positive_elo: bool) -> tuple[list[str], list]
         escaped = player_name.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_").lower()
         where.append("lower(playerName) LIKE ? ESCAPE '\\'")
         params.append(f"%{escaped}%")
+    opp_sql, opp_params = opponent_elo_clause(qp)
+    if opp_sql:
+        where.append(opp_sql)
+        params.extend(opp_params)
 
     return where, params
 

@@ -167,6 +167,8 @@ export function LeaderboardsPage() {
                     !prev.corporation &&
                     prev.eloMin === undefined &&
                     prev.eloMax === undefined &&
+                    prev.oppEloMin === undefined &&
+                    prev.oppEloMax === undefined &&
                     prev.generationsMin === undefined &&
                     prev.generationsMax === undefined
                   ) {

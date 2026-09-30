@@ -43,6 +43,8 @@ export interface MilestoneOverviewRow {
 export interface MilestoneFilters {
   eloMin?: number;
   eloMax?: number;
+  oppEloMin?: number;
+  oppEloMax?: number;
   timesPlayedMin?: number;
   timesPlayedMax?: number;
   playedGenMin?: number;

@@ -92,6 +92,8 @@ namespace BgaTmScraperRegistry.Services
             public int[] PlayerCounts { get; set; }
             public int? EloMin { get; set; }
             public int? EloMax { get; set; }
+            public int? OppEloMin { get; set; }
+            public int? OppEloMax { get; set; }
             public int? GenerationsMin { get; set; }
             public int? GenerationsMax { get; set; }
             public string PlayerName { get; set; }
@@ -141,6 +143,7 @@ namespace BgaTmScraperRegistry.Services
                       $"|speeds={Join(f.Speeds)}" +
                       $"|pc={JoinInt(f.PlayerCounts)}" +
                       $"|eloMin={N(f.EloMin)}|eloMax={N(f.EloMax)}" +
+                      $"|oppEloMin={N(f.OppEloMin)}|oppEloMax={N(f.OppEloMax)}" +
                       $"|genMin={N(f.GenerationsMin)}|genMax={N(f.GenerationsMax)}" +
                       $"|fundMin={N(f.FundedGenMin)}|fundMax={N(f.FundedGenMax)}" +
                       $"|tpMin={N(f.TimesPlayedMin)}|tpMax={N(f.TimesPlayedMax)}" +
@@ -219,6 +222,8 @@ namespace BgaTmScraperRegistry.Services
             if (f.DraftOn.HasValue) parts.Add($"draftOn={(f.DraftOn.Value ? "true" : "false")}");
             if (f.EloMin.HasValue) parts.Add($"eloMin={f.EloMin.Value}");
             if (f.EloMax.HasValue) parts.Add($"eloMax={f.EloMax.Value}");
+            if (f.OppEloMin.HasValue) parts.Add($"oppEloMin={f.OppEloMin.Value}");
+            if (f.OppEloMax.HasValue) parts.Add($"oppEloMax={f.OppEloMax.Value}");
             if (f.GenerationsMin.HasValue) parts.Add($"generationsMin={f.GenerationsMin.Value}");
             if (f.GenerationsMax.HasValue) parts.Add($"generationsMax={f.GenerationsMax.Value}");
             if (f.FundedGenMin.HasValue) parts.Add($"fundedGenMin={f.FundedGenMin.Value}");

@@ -26,6 +26,8 @@ export interface PreludeFilters {
 export interface PreludeDetailFilters {
   eloMin?: number;
   eloMax?: number;
+  oppEloMin?: number;
+  oppEloMax?: number;
   playerName?: string;
   maps: string[];
   gameModes: string[];

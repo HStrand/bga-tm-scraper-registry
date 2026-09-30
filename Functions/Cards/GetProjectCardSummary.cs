@@ -110,6 +110,8 @@ namespace BgaTmScraperRegistry.Functions
                 DraftOn = ParseBool(First(req, "draftOn", "draft")),
                 EloMin = ParseInt(First(req, "eloMin")),
                 EloMax = ParseInt(First(req, "eloMax")),
+                OppEloMin = ParseInt(First(req, "oppEloMin")),
+                OppEloMax = ParseInt(First(req, "oppEloMax")),
                 PlayedGenMin = ParseInt(First(req, "playedGenMin")),
                 PlayedGenMax = ParseInt(First(req, "playedGenMax")),
                 PlayerName = First(req, "playerName")

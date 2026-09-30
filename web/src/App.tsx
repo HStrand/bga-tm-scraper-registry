@@ -19,6 +19,7 @@ import { MapPage } from "@/pages/MapPage";
 import { GameReplayPage } from "@/pages/GameReplayPage";
 import { ResourcesPage } from "@/pages/ResourcesPage";
 import { ReplayLandingPage } from "@/pages/ReplayLandingPage";
+import { GamePlayPage } from "@/pages/GamePlayPage";
 
 export default function App() {
   return (
@@ -27,6 +28,11 @@ export default function App() {
         <Route path="/replay/:tableId" element={
           <div className="replay-bg">
             <div className="mx-auto px-6 py-6"><GameReplayPage /></div>
+          </div>
+        } />
+        <Route path="/play/:gameId" element={
+          <div className="replay-bg">
+            <div className="mx-auto px-6 py-6"><GamePlayPage /></div>
           </div>
         } />
         <Route path="*" element={

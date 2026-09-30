@@ -186,6 +186,8 @@ function buildRankingsQuery(filters: CorporationFilters): string {
 
   if (filters.eloMin !== undefined) params.set('eloMin', String(filters.eloMin));
   if (filters.eloMax !== undefined) params.set('eloMax', String(filters.eloMax));
+  if (filters.oppEloMin !== undefined) params.set('oppEloMin', String(filters.oppEloMin));
+  if (filters.oppEloMax !== undefined) params.set('oppEloMax', String(filters.oppEloMax));
   if (filters.timesPlayedMin !== undefined) params.set('timesPlayedMin', String(filters.timesPlayedMin));
   if (filters.timesPlayedMax !== undefined) params.set('timesPlayedMax', String(filters.timesPlayedMax));
   if (filters.generationsMin !== undefined) params.set('generationsMin', String(filters.generationsMin));

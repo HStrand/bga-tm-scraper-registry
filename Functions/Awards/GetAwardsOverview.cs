@@ -98,6 +98,8 @@ namespace BgaTmScraperRegistry.Functions
                 DraftOn = ParseBool(First(req, "draftOn", "draft")),
                 EloMin = ParseInt(First(req, "eloMin")),
                 EloMax = ParseInt(First(req, "eloMax")),
+                OppEloMin = ParseInt(First(req, "oppEloMin")),
+                OppEloMax = ParseInt(First(req, "oppEloMax")),
                 GenerationsMin = ParseInt(First(req, "generationsMin", "genMin")),
                 GenerationsMax = ParseInt(First(req, "generationsMax", "genMax")),
                 FundedGenMin = ParseInt(First(req, "fundedGenMin", "playedGenMin")),

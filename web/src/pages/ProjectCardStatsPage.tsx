@@ -45,6 +45,8 @@ function buildFilterQuery(filters: ProjectCardFilters): string {
   if (filters.draftOn !== undefined) params.set('draftOn', String(filters.draftOn));
   if (filters.eloMin !== undefined) params.set('eloMin', String(filters.eloMin));
   if (filters.eloMax !== undefined) params.set('eloMax', String(filters.eloMax));
+  if (filters.oppEloMin !== undefined) params.set('oppEloMin', String(filters.oppEloMin));
+  if (filters.oppEloMax !== undefined) params.set('oppEloMax', String(filters.oppEloMax));
   if (filters.playedGenMin !== undefined) params.set('playedGenMin', String(filters.playedGenMin));
   if (filters.playedGenMax !== undefined) params.set('playedGenMax', String(filters.playedGenMax));
   if (filters.playerName) params.set('playerName', filters.playerName);
@@ -123,6 +125,8 @@ export function ProjectCardStatsPage() {
               !prev.playerName &&
               prev.eloMin === undefined &&
               prev.eloMax === undefined &&
+              prev.oppEloMin === undefined &&
+              prev.oppEloMax === undefined &&
               prev.playedGenMin === undefined &&
               prev.playedGenMax === undefined;
             if (!effectivelyEmpty) return prev;

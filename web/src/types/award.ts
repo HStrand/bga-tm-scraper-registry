@@ -38,6 +38,8 @@ export interface AwardOverviewRow {
 export interface AwardFilters {
   eloMin?: number;
   eloMax?: number;
+  oppEloMin?: number;
+  oppEloMax?: number;
   timesPlayedMin?: number;
   timesPlayedMax?: number;
   fundedGenMin?: number;

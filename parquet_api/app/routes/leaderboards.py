@@ -4,6 +4,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from app.db import parquet_path
+from app.opponent_elo import opponent_elo_clause
 
 router = APIRouter(prefix="/api", tags=["leaderboards"])
 
@@ -191,6 +192,10 @@ def get_leaderboard_scores(request: Request):
     if corporation:
         where.append("lower(corporation) = ?")
         params.append(corporation.strip().lower())
+    opp_sql, opp_params = opponent_elo_clause(qp)
+    if opp_sql:
+        where.append(opp_sql)
+        params.extend(opp_params)
 
     where_sql = f"WHERE {' AND '.join(where)}" if where else ""
     sql = f"""

@@ -85,6 +85,8 @@ export function CorporationStatsPage() {
             !prev.playerName &&
             prev.eloMin === undefined &&
             prev.eloMax === undefined &&
+            prev.oppEloMin === undefined &&
+            prev.oppEloMax === undefined &&
             prev.generationsMin === undefined &&
             prev.generationsMax === undefined;
 
