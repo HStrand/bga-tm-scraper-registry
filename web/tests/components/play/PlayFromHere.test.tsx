@@ -11,7 +11,8 @@ const playerNames = { '98490496': 'cdman234', '86296239': 'StrandedKnight' };
 // In the fixture game, generation 4's action phase starts after move index 105 (BGA move 106).
 const generation4 = forkPointsFixture.forkPoints.find(f => f.generation === 4 && f.kind === 'GenerationStart')!;
 
-const withoutGameStart = { ...forkPointsFixture, forkPoints: forkPointsFixture.forkPoints.filter(f => f.kind !== 'GameStart') };
+// As for a log from before the scraper recorded what each player was dealt: nothing in generation 1.
+const fromGeneration2 = { ...forkPointsFixture, forkPoints: forkPointsFixture.forkPoints.filter(f => f.generation > 1) };
 
 function Landed() {
   const location = useLocation();
@@ -37,13 +38,15 @@ describe('nearestForkPoint', () => {
     expect(nearestForkPoint(forkPointsFixture.forkPoints, generation4.moveIndex - 1)!.generation).toBe(3);
   });
 
-  it('goes back to the opening deal from anywhere in generation 1', () => {
-    expect(nearestForkPoint(forkPointsFixture.forkPoints, 10)!.kind).toBe('GameStart');
+  it('goes back to the opening deal while the preludes are being played', () => {
+    // In the fixture game the last prelude is move index 8.
     expect(nearestForkPoint(forkPointsFixture.forkPoints, 0)!.kind).toBe('GameStart');
+    expect(nearestForkPoint(forkPointsFixture.forkPoints, 7)!.kind).toBe('GameStart');
+    expect(nearestForkPoint(forkPointsFixture.forkPoints, 8)).toMatchObject({ kind: 'GenerationStart', generation: 1 });
   });
 
   it('finds none before the first fork point', () => {
-    expect(nearestForkPoint(withoutGameStart.forkPoints, 10)).toBeUndefined();
+    expect(nearestForkPoint(fromGeneration2.forkPoints, 10)).toBeUndefined();
   });
 });
 
@@ -76,14 +79,38 @@ describe('PlayFromHere', () => {
     expect(screen.getByText(new RegExp(`That is ${shown - lastOfGeneration4.moveIndex} moves? before the position shown`))).toBeInTheDocument();
   });
 
-  it('starts generation 1 over from the opening deal', async () => {
+  it('picks generation 1 up in the middle, once the preludes are played', async () => {
     const importBga = vi.fn(async () => importFixture);
-    const user = renderButton(10, { importBga });
+    // cdman234 has played Nuclear Zone (move indices 9-11) and is about to play his second card.
+    const user = renderButton(12, { importBga });
+
+    await user.click(screen.getByRole('button', { name: 'Play from here' }));
+
+    expect(await screen.findByText("cdman234's next action in generation 1")).toBeInTheDocument();
+    expect(screen.getByText(/That is 1 move before the position shown/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Play from the opening deal' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Play' }));
+
+    expect(importBga).toHaveBeenCalledWith('824655675', 11);
+  });
+
+  it('names the start of generation 1 as the point after the preludes', async () => {
+    const user = renderButton(8);
+
+    await user.click(screen.getByRole('button', { name: 'Play from here' }));
+
+    expect(await screen.findByText('the start of generation 1, once the preludes are played')).toBeInTheDocument();
+  });
+
+  it('starts over from the opening deal while the preludes are being played', async () => {
+    const importBga = vi.fn(async () => importFixture);
+    const user = renderButton(5, { importBga });
 
     await user.click(screen.getByRole('button', { name: 'Play from here' }));
 
     expect(await screen.findByText('the opening deal')).toBeInTheDocument();
-    expect(screen.getByText(/That is 10 moves before the position shown: generation 1 can only be picked up from the deal/)).toBeInTheDocument();
+    expect(screen.getByText(/That is 5 moves before the position shown: until the preludes are played, the game can only be picked up from the deal/)).toBeInTheDocument();
     // The one button already starts from the deal.
     expect(screen.queryByRole('button', { name: 'Play from the opening deal' })).not.toBeInTheDocument();
 
@@ -104,7 +131,7 @@ describe('PlayFromHere', () => {
 
   it('offers the earliest position when generation 1 cannot be picked up at all', async () => {
     // A log from before the scraper recorded what each player was dealt.
-    const user = renderButton(10, { forkPoints: async () => withoutGameStart });
+    const user = renderButton(10, { forkPoints: async () => fromGeneration2 });
 
     await user.click(screen.getByRole('button', { name: 'Play from here' }));
 

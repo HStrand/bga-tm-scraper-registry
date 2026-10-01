@@ -16,7 +16,7 @@ interface PlayFromHereProps {
 
 /**
  * The fork point at or nearest before a move: games can only be picked up at the deal, or where a player is
- * about to act from generation 2 on.
+ * about to act.
  */
 export function nearestForkPoint(forkPoints: ForkPoint[], moveIndex: number): ForkPoint | undefined {
   return [...forkPoints].reverse().find(f => f.moveIndex <= moveIndex);
@@ -60,7 +60,7 @@ export function PlayFromHere({ tableId, moveIndex, playerNames, api = engineApi 
   const blocking = forkPoints?.issues.filter(i => i.severity === 'Blocking') ?? [];
 
   const describe = (f: ForkPoint) => f.kind === 'GenerationStart'
-    ? `the start of generation ${f.generation}`
+    ? `the start of generation ${f.generation}${f.generation === 1 ? ', once the preludes are played' : ''}`
     : `${playerNames[f.activeBgaPlayerId] ?? 'a player'}'s next action in generation ${f.generation}`;
   const behind = fork ? moveIndex - fork.moveIndex : 0;
 
@@ -105,8 +105,8 @@ export function PlayFromHere({ tableId, moveIndex, playerNames, api = engineApi 
                 </p>
                 {behind > 0 && (
                   <p className="text-slate-400">
-                    That is {behind} move{behind === 1 ? '' : 's'} before the position shown: generation 1 can
-                    only be picked up from the deal.
+                    That is {behind} move{behind === 1 ? '' : 's'} before the position shown: until the preludes
+                    are played, the game can only be picked up from the deal.
                   </p>
                 )}
               </div>

@@ -262,6 +262,7 @@ export interface ForkPoint {
   /** Index into the BGA game log's moves: the position is the one after this move. */
   moveIndex: number;
   moveNumber?: number | null;
+  /** The deal; the start of a generation's action phase (in generation 1, after the preludes); a later action. */
   kind: 'GameStart' | 'GenerationStart' | 'ActionStart';
   generation: number;
   activeBgaPlayerId: string;
