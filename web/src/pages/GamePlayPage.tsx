@@ -5,6 +5,7 @@ import { engineApi, type EngineApi } from '@/lib/engine/client';
 import { engineGameInfo, engineSnapshot, hexKeyAt, seatId } from '@/lib/engine/engineAdapter';
 import { hexPlacementCost } from '@/lib/engine/payment';
 import { currentPrompt } from '@/lib/engine/prompts';
+import { startingPosition } from '@/lib/engine/startLink';
 import type { EnginePlayer, ImportIssue, MoveBody, PlayableCard } from '@/lib/engine/types';
 import { useEngineGame } from '@/lib/engine/useEngineGame';
 import { EndGameSummary, type PlayerSummary } from '@/components/replay/EndGameSummary';
@@ -16,6 +17,7 @@ import { Hand } from '@/components/play/Hand';
 import { MoveFeed } from '@/components/play/MoveFeed';
 import { HeatSplitForm, PaymentForm } from '@/components/play/PaymentForm';
 import { PlayerPanel } from '@/components/play/PlayerPanel';
+import { ShareStart } from '@/components/play/ShareStart';
 import { ActionPanels } from '@/components/play/ActionPanels';
 import { TopBar } from '@/components/play/TopBar';
 
@@ -151,6 +153,7 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
     : 'choosing';
 
   const source = table.meta?.source;
+  const start = startingPosition(table.meta);
   const ratio = mapDefinition ? mapDefinition.imageWidth / mapDefinition.imageHeight : 1;
   const zoomed = flow?.kind === 'card' ? flow.cardId : null;
   const showHand = player != null && actor != null && !game.viewingPast;
@@ -163,6 +166,7 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
             <span className="hidden whitespace-nowrap xl:inline">
               Table {source.tableId}, {source.moveIndex === 0 ? 'played again from the opening deal' : `forked after move ${source.moveNumber ?? source.moveIndex + 1}`}
             </span>
+            {start && <ShareStart start={start} />}
             <Link to={`/replay/${source.tableId}?move=${source.moveIndex + 1}`} className="whitespace-nowrap font-semibold text-amber-400 hover:text-amber-300">
               Back to the replay
             </Link>

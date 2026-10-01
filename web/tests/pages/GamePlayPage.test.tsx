@@ -266,6 +266,17 @@ describe('GamePlayPage', () => {
     expect(screen.getByText('Game Over')).toBeInTheDocument();
   });
 
+  it('copies a link that deals a fresh game from the starting position, not a link to this game', async () => {
+    const { user } = await renderGame();
+    const { source, shuffleSeed } = session[0].table.meta!;
+
+    await user.click(screen.getByRole('button', { name: 'Share starting position' }));
+
+    expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
+    expect(await navigator.clipboard.readText()).toBe(
+      `${window.location.origin}/play/new?table=${source.tableId}&move=${source.moveIndex}&seed=${shuffleSeed}`);
+  });
+
   it('shows what the importer warned about', async () => {
     await renderGame({ issues: [{ severity: 'Warning', code: 'SCORE_MISMATCH', message: "cdman234's Capital is worth 2 on BGA but 0 in the engine." }] });
 

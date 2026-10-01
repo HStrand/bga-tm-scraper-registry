@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/Layout";
+import { VersionWatcher } from "@/components/VersionWatcher";
 import HomePage from "@/pages/HomePage";
 import { CorporationStatsPage } from "@/pages/CorporationStatsPage";
 import { CorporationsOverviewPage } from "@/pages/CorporationsOverviewPage";
@@ -20,15 +21,20 @@ import { GameReplayPage } from "@/pages/GameReplayPage";
 import { ResourcesPage } from "@/pages/ResourcesPage";
 import { ReplayLandingPage } from "@/pages/ReplayLandingPage";
 import { GamePlayPage } from "@/pages/GamePlayPage";
+import { NewGamePage } from "@/pages/NewGamePage";
 
 export default function App() {
   return (
     <Router>
+      <VersionWatcher />
       <Routes>
         <Route path="/replay/:tableId" element={
           <div className="replay-bg">
             <div className="mx-auto px-6 py-6"><GameReplayPage /></div>
           </div>
+        } />
+        <Route path="/play/new" element={
+          <div className="replay-bg"><NewGamePage /></div>
         } />
         <Route path="/play/:gameId" element={
           <div className="replay-bg"><GamePlayPage /></div>
