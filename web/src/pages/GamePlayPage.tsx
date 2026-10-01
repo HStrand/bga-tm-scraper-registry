@@ -7,6 +7,7 @@ import { hexPlacementCost } from '@/lib/engine/payment';
 import { currentPrompt } from '@/lib/engine/prompts';
 import type { EnginePlayer, ImportIssue, MoveBody, PlayableCard } from '@/lib/engine/types';
 import { useEngineGame } from '@/lib/engine/useEngineGame';
+import { EndGameSummary, type PlayerSummary } from '@/components/replay/EndGameSummary';
 import { ReplayMap } from '@/components/replay/ReplayMap';
 import { MILESTONE_COST, playActions, type Flow } from '@/components/play/actions';
 import { CardPicker, Dialog, PlayButton, cardImage } from '@/components/play/controls';
@@ -34,6 +35,8 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
   const { table } = game;
 
   const [showIssues, setShowIssues] = useState(true);
+  // The score breakdown opens by itself when the game ends, and can be closed to look at the final board.
+  const [showScores, setShowScores] = useState(true);
   const [chosenSeat, setChosenSeat] = useState<number | null>(null);
   // Something the player has started that needs one more answer: a payment, a hex, which patents to sell.
   const [flow, setFlow] = useState<Flow | null>(null);
@@ -79,6 +82,19 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
   const mapDefinition = ALL_MAPS.find(m => m.dbName === state.map);
   const playerNames = Object.fromEntries(info.players.map(p => [Number(p.id), p.name]));
   const gameOver = state.phase === 'GameEnd';
+
+  // Best score first; a tie goes to whoever has more M€ left.
+  const standings: PlayerSummary[] = info.players
+    .map(p => ({
+      playerId: p.id,
+      playerName: p.name,
+      color: p.color,
+      corporation: p.corporation ?? '',
+      vp: snapshot.players[p.id].vp,
+      finalVp: null,
+      mcRemaining: snapshot.players[p.id].resources.mc,
+    }))
+    .sort((a, b) => (b.vp?.total ?? 0) - (a.vp?.total ?? 0) || b.mcRemaining - a.mcRemaining);
 
   // In the action phase one player acts; in the draft and when buying cards several can, in any order.
   const actingSeats = Object.keys(table.legalMoves).map(Number).sort((a, b) => a - b);
@@ -144,7 +160,9 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
       <TopBar snapshot={snapshot}>
         {source?.tableId && (
           <>
-            <span className="hidden whitespace-nowrap xl:inline">Table {source.tableId}, forked after move {source.moveNumber ?? source.moveIndex + 1}</span>
+            <span className="hidden whitespace-nowrap xl:inline">
+              Table {source.tableId}, {source.moveIndex === 0 ? 'played again from the opening deal' : `forked after move ${source.moveNumber ?? source.moveIndex + 1}`}
+            </span>
             <Link to={`/replay/${source.tableId}?move=${source.moveIndex + 1}`} className="whitespace-nowrap font-semibold text-amber-400 hover:text-amber-300">
               Back to the replay
             </Link>
@@ -235,7 +253,7 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
                 <PlayButton variant="primary" className="mt-2" onClick={game.viewLatest}>Back to the current position</PlayButton>
               </>
             ) : gameOver ? (
-              <FinalScores players={info.players} scores={table.players} />
+              <FinalScores standings={standings} onShowBreakdown={() => setShowScores(true)} />
             ) : seat == null || !player || !actor ? (
               <p className="text-sm text-slate-400">Nobody can move in this position.</p>
             ) : (
@@ -289,6 +307,10 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
           </ul>
           <button type="button" className="mt-1 text-xs font-semibold text-amber-400 hover:text-amber-200" onClick={() => setShowIssues(false)}>Dismiss</button>
         </div>
+      )}
+
+      {gameOver && showScores && !game.viewingPast && (
+        <EndGameSummary players={standings} winner={standings[0].playerName} onClose={() => setShowScores(false)} />
       )}
 
       {player && prompt && prompt.kind !== 'hex' && !game.viewingPast && (
@@ -423,25 +445,20 @@ function SellPatents({ player, names, busy, onMove, onClose }: {
   );
 }
 
-function FinalScores({ players, scores }: {
-  players: { id: string; name: string; color: string }[];
-  scores: { playerId: number; points: { total: number } }[];
-}) {
-  const ranked = [...scores].sort((a, b) => b.points.total - a.points.total);
+/** The result in the turn box, which stays put while the full breakdown is closed. */
+function FinalScores({ standings, onShowBreakdown }: { standings: PlayerSummary[]; onShowBreakdown: () => void }) {
   return (
     <div>
-      <p className="mb-2 text-lg font-bold text-amber-400">Game over</p>
+      <p className="mb-2 text-lg font-bold text-amber-400">Game over — {standings[0].playerName} wins</p>
       <ol className="space-y-1">
-        {ranked.map(score => {
-          const player = players.find(p => p.id === String(score.playerId));
-          return (
-            <li key={score.playerId} className="flex items-center justify-between text-sm">
-              <span className="font-semibold" style={{ color: player?.color }}>{player?.name}</span>
-              <span className="font-bold text-white">{score.points.total} VP</span>
-            </li>
-          );
-        })}
+        {standings.map(player => (
+          <li key={player.playerId} className="flex items-center justify-between text-sm">
+            <span className="font-semibold" style={{ color: player.color }}>{player.playerName}</span>
+            <span className="font-bold text-white">{player.vp?.total ?? 0} VP</span>
+          </li>
+        ))}
       </ol>
+      <PlayButton variant="primary" className="mt-2" onClick={onShowBreakdown}>Score breakdown</PlayButton>
     </div>
   );
 }

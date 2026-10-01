@@ -14,7 +14,10 @@ interface PlayFromHereProps {
   api?: EngineApi;
 }
 
-/** The fork point at or nearest before a move: games can only be picked up where a player is about to act. */
+/**
+ * The fork point at or nearest before a move: games can only be picked up at the deal, or where a player is
+ * about to act from generation 2 on.
+ */
 export function nearestForkPoint(forkPoints: ForkPoint[], moveIndex: number): ForkPoint | undefined {
   return [...forkPoints].reverse().find(f => f.moveIndex <= moveIndex);
 }
@@ -53,11 +56,13 @@ export function PlayFromHere({ tableId, moveIndex, playerNames, api = engineApi 
 
   const fork = forkPoints ? nearestForkPoint(forkPoints.forkPoints, moveIndex) : undefined;
   const earliest = forkPoints?.forkPoints[0];
+  const gameStart = forkPoints?.forkPoints.find(f => f.kind === 'GameStart');
   const blocking = forkPoints?.issues.filter(i => i.severity === 'Blocking') ?? [];
 
   const describe = (f: ForkPoint) => f.kind === 'GenerationStart'
     ? `the start of generation ${f.generation}`
     : `${playerNames[f.activeBgaPlayerId] ?? 'a player'}'s next action in generation ${f.generation}`;
+  const behind = fork ? moveIndex - fork.moveIndex : 0;
 
   return (
     <>
@@ -91,16 +96,32 @@ export function PlayFromHere({ tableId, moveIndex, playerNames, api = engineApi 
               </div>
             )}
 
-            {forkPoints?.eligible && fork && (
+            {forkPoints?.eligible && fork?.kind === 'GameStart' && (
+              <div className="text-sm text-slate-300 space-y-2">
+                <p>
+                  The game starts over from <span className="font-semibold text-white">the opening deal</span>: each
+                  player chooses again from the corporations, preludes and project cards they were dealt. You play
+                  every seat, with all hands visible, and the deck holds the cards the real game went on to draw.
+                </p>
+                {behind > 0 && (
+                  <p className="text-slate-400">
+                    That is {behind} move{behind === 1 ? '' : 's'} before the position shown: generation 1 can
+                    only be picked up from the deal.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {forkPoints?.eligible && fork && fork.kind !== 'GameStart' && (
               <div className="text-sm text-slate-300 space-y-2">
                 <p>
                   The game resumes at <span className="font-semibold text-white">{describe(fork)}</span>, after
                   move {fork.moveNumber ?? fork.moveIndex + 1}. You play every seat, with all hands visible, and
                   the deck holds the cards the real game went on to draw.
                 </p>
-                {fork.moveIndex < moveIndex && (
+                {behind > 0 && (
                   <p className="text-slate-400">
-                    That is {moveIndex - fork.moveIndex} move{moveIndex - fork.moveIndex === 1 ? '' : 's'} before the position
+                    That is {behind} move{behind === 1 ? '' : 's'} before the position
                     shown: a game can only be picked up where a player is about to act.
                   </p>
                 )}
@@ -120,6 +141,11 @@ export function PlayFromHere({ tableId, moveIndex, playerNames, api = engineApi 
               {forkPoints?.eligible && (fork ?? earliest) && (
                 <PlayButton variant="primary" disabled={starting} onClick={() => start((fork ?? earliest)!)}>
                   {starting ? 'Starting...' : fork ? 'Play' : 'Play from the earliest position'}
+                </PlayButton>
+              )}
+              {forkPoints?.eligible && fork && gameStart && fork !== gameStart && (
+                <PlayButton disabled={starting} onClick={() => start(gameStart)} title="Choose corporations, preludes and opening cards again">
+                  Play from the opening deal
                 </PlayButton>
               )}
               <PlayButton disabled={starting} onClick={() => setOpen(false)}>Close</PlayButton>

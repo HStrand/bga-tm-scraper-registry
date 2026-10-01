@@ -61,6 +61,7 @@ export function engineSnapshot(table: TableResponse): GameSnapshotVM {
   const players: Record<SeatId, PlayerSnapshotVM> = {};
   for (const player of state.players) {
     const status = table.players.find(p => p.playerId === player.playerId);
+    // Empty until the opening choices have been made.
     const corporation = cardNames[player.corporationId];
     const hand = player.hand.map(name);
     players[seatId(player.playerId)] = {

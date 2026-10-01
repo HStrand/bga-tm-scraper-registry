@@ -19,6 +19,10 @@ export function describeMove(move: EngineMove, cardNames: Record<string, string>
   const cards = (ids: string[]) => ids.map(card).join(', ');
 
   switch (move.type) {
+    case 'Setup': {
+      const preludes = move.preludeIds.length > 0 ? ` with ${cards(move.preludeIds)}` : '';
+      return `starts as ${card(move.corporationId)}${preludes}, buying ${move.cardIdsToBuy.length} card${move.cardIdsToBuy.length === 1 ? '' : 's'}`;
+    }
     case 'DraftCard': return `drafts ${card(move.cardId)}`;
     case 'BuyCards': return move.cardIds.length > 0 ? `keeps ${cards(move.cardIds)}` : 'keeps no cards';
     case 'PlayCard': return `plays ${card(move.cardId)}${paid(move.payment)}`;

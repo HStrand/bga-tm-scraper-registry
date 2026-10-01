@@ -62,6 +62,13 @@ export interface EngineState {
   claimedHexes: Record<string, number>;
   claimedMilestones: { milestoneName: string; playerId: number }[];
   fundedAwards: { awardName: string; playerId: number }[];
+  /** While the opening is being chosen: what each seat was dealt, and null for the seats still to choose. */
+  setup?: {
+    dealtCorporations: string[][];
+    dealtPreludes: string[][];
+    dealtCards: string[][];
+    submittedMoves: (EngineMove | null)[];
+  } | null;
   pendingAction?: PendingAction | null;
   lastMove?: EngineMove | null;
 }
@@ -87,6 +94,7 @@ export type MoveBody = MoveKind & {
 };
 
 type MoveKind =
+  | { type: 'Setup'; corporationId: string; preludeIds: string[]; cardIdsToBuy: string[] }
   | { type: 'DraftCard'; cardId: string }
   | { type: 'BuyCards'; cardIds: string[] }
   | { type: 'PlayCard'; cardId: string; payment: Payment }
@@ -153,6 +161,18 @@ export interface ActionPhaseOptions {
   usableCardActions: UsableCardAction[];
 }
 
+/** The opening choice: one corporation, some of the preludes, and any of the project cards at a price. */
+export interface SetupOptions {
+  availableCorporations: string[];
+  /** Empty without the Prelude expansion. */
+  availablePreludes: string[];
+  availableCards: string[];
+  preludesToKeep: number;
+  costPerCard: number;
+  /** Corporation id -> the M€ it starts with, which the cards are bought from. */
+  startingMegaCredits: Record<string, number>;
+}
+
 export type PendingAction =
   | { type: 'PlaceTile'; tileType: string; validLocations: HexCoord[] }
   | { type: 'ClaimLand'; validLocations: HexCoord[] }
@@ -174,6 +194,9 @@ export type PendingAction =
 export interface AvailableMoves {
   gameOver: boolean;
   waitingForOtherPlayer: boolean;
+  setup?: SetupOptions | null;
+  /** The preludes the player has kept and not yet played, in the phase where they are played. */
+  prelude?: { remainingPreludes: string[] } | null;
   draft?: { draftHand: string[]; passingToPlayerId: number } | null;
   buyCards?: { availableCards: string[]; costPerCard: number } | null;
   pendingAction?: PendingAction | null;
@@ -239,7 +262,7 @@ export interface ForkPoint {
   /** Index into the BGA game log's moves: the position is the one after this move. */
   moveIndex: number;
   moveNumber?: number | null;
-  kind: 'GenerationStart' | 'ActionStart';
+  kind: 'GameStart' | 'GenerationStart' | 'ActionStart';
   generation: number;
   activeBgaPlayerId: string;
 }

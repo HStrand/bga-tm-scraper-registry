@@ -128,9 +128,15 @@ export function useEngineGame(gameId: string | undefined, api: EngineApi = engin
   };
 }
 
-/** Cards that appeared in any hand between two tables, leaving out the ones the move itself named (bought, drafted). */
+/**
+ * Cards that appeared in any hand between two tables, leaving out the ones the players picked themselves:
+ * those the move named (bought, drafted) and, when the opening choices take effect, those bought from the deal.
+ */
 function cardsDrawn(before: TableResponse, after: TableResponse, move: MoveBody): Draw | null {
-  const chosen = new Set('cardIds' in move ? move.cardIds : 'cardId' in move ? [move.cardId] : []);
+  const chosen = new Set([
+    ...('cardIds' in move ? move.cardIds : 'cardId' in move ? [move.cardId] : []),
+    ...(before.state.setup?.dealtCards.flat() ?? []),
+  ]);
   const byPlayer = after.state.players.flatMap(player => {
     const had = new Set(before.state.players.find(p => p.playerId === player.playerId)?.hand ?? []);
     const cardIds = player.hand.filter(id => !had.has(id) && !chosen.has(id));

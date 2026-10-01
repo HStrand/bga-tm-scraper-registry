@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { GamePlayPage } from '@/pages/GamePlayPage';
-import { recordedEngine } from '../lib/engine/engineFixtures';
+import { gameStartSession, recordedEngine, session } from '../lib/engine/engineFixtures';
 
 // The recorded session starts at generation 4 of an Elysium game with StrandedKnight to move, and goes:
 // StrandedKnight plays Protected Habitats and funds Benefactor; cdman234 plays Convoy From Europa paying
@@ -169,6 +169,101 @@ describe('GamePlayPage', () => {
     // Each player is left with one card, which is drafted for them; the research purchase follows.
     expect(await screen.findByRole('dialog', { name: 'Buy cards for 3 M€ each' })).toBeInTheDocument();
     expect(api.position()).toBe(31);
+  });
+
+  it('plays the opening from the deal: corporation, preludes and cards for each player, then the preludes', async () => {
+    // The recording: cdman234 starts as Credicor, StrandedKnight as Point Luna, then cdman234 plays a prelude.
+    const [dealt, first, second, prelude] = gameStartSession;
+    const names = { ...dealt.table.cardNames, ...second.table.cardNames };
+    const api = recordedEngine(0, gameStartSession);
+    render(
+      <MemoryRouter initialEntries={['/play/game-start']}>
+        <Routes><Route path="/play/:gameId" element={<GamePlayPage api={api} />} /></Routes>
+      </MemoryRouter>,
+    );
+    const user = userEvent.setup();
+    const title = 'Choose a corporation, preludes and opening cards';
+    const opening = (move = first.move!) => move.type === 'Setup' ? move : null!;
+    const pick = async (dialog: HTMLElement, cardIds: string[]) => {
+      for (const id of cardIds) await user.click(within(dialog).getByRole('button', { name: names[id] }));
+    };
+
+    // cdman234 chooses first. Nothing can be confirmed until a corporation and two preludes are picked.
+    const cdman = await screen.findByRole('dialog', { name: title });
+    expect(screen.getByText(/Table 824655675, played again from the opening deal/)).toBeInTheDocument();
+    expect(within(cdman).getByText('cdman234')).toBeInTheDocument();
+    expect(within(cdman).getByRole('button', { name: 'Start' })).toBeDisabled();
+
+    await pick(cdman, [opening().corporationId]);
+    expect(within(cdman).getByText('Keep 2 preludes.')).toBeInTheDocument();
+    await pick(cdman, [...opening().preludeIds, ...opening().cardIdsToBuy]);
+    expect(within(cdman).getByText('54 M€')).toBeInTheDocument();
+    await user.click(within(cdman).getByRole('button', { name: 'Start as Credicor' }));
+
+    // StrandedKnight was dealt Phobolog too, whose 23 M€ do not stretch to eight cards.
+    const stranded = await screen.findByRole('dialog', { name: title });
+    expect(await within(stranded).findByText('StrandedKnight')).toBeInTheDocument();
+    const mine = opening(second.move!);
+    const twoMore = dealt.table.legalMoves['1'].setup!.availableCards.filter(id => !mine.cardIdsToBuy.includes(id)).slice(0, 2);
+    await pick(stranded, ['CORP07', ...mine.preludeIds, ...mine.cardIdsToBuy, ...twoMore]);
+    expect(within(stranded).getByText('8 cards cost 24 M€; Phobolog starts with 23.')).toBeInTheDocument();
+    expect(within(stranded).getByRole('button', { name: 'Start as Phobolog' })).toBeDisabled();
+
+    await pick(stranded, [mine.corporationId, ...twoMore]);
+    await user.click(within(stranded).getByRole('button', { name: 'Start as Point Luna' }));
+
+    // Point Luna draws a card for its own Earth tag. The cards the players bought are not shown as draws.
+    const drawn = await screen.findByRole('dialog', { name: 'Cards drawn' });
+    expect(within(drawn).getByRole('button', { name: 'Tundra Farming' })).toBeInTheDocument();
+    expect(within(drawn).queryByRole('button', { name: names[mine.cardIdsToBuy[0]] })).not.toBeInTheDocument();
+    await user.click(within(drawn).getByRole('button', { name: 'OK' }));
+
+    expect(screen.getByText(/starts as Credicor with .*, buying 1 card$/)).toBeInTheDocument();
+    expect(screen.getByLabelText("cdman234's board")).toHaveTextContent('Credicor');
+
+    // The preludes are played one at a time, starting with the first player's.
+    const preludes = screen.getByRole('dialog', { name: 'Play a prelude' });
+    const playedId = prelude.move!.type === 'PlayPrelude' ? prelude.move!.preludeId : '';
+    const played = names[playedId];
+    expect(within(preludes).getAllByRole('button', { pressed: false })).toHaveLength(2);
+    await pick(preludes, [playedId]);
+    await user.click(within(preludes).getByRole('button', { name: `Play ${played}` }));
+
+    expect(await screen.findByText(new RegExp(`plays the prelude ${played}`))).toBeInTheDocument();
+    expect(api.position()).toBe(3);
+  });
+
+  it('shows the score breakdown when the game is over, and brings it back after it is closed', async () => {
+    // The opening position of the recording, as it would stand had the game ended there.
+    const { table } = session[0];
+    const finished = { ...table, state: { ...table.state, phase: 'GameEnd' as const }, legalMoves: {} };
+    const api = { ...recordedEngine(), table: async () => finished };
+    const view = render(
+      <MemoryRouter initialEntries={['/play/game-1']}>
+        <Routes><Route path="/play/:gameId" element={<GamePlayPage api={api} />} /></Routes>
+      </MemoryRouter>,
+    );
+    const user = userEvent.setup();
+    const [first, second] = [...table.players].sort((a, b) => b.points.total - a.points.total);
+    const name = (seat: number) => table.meta!.seats.find(s => s.seat === seat)!.name;
+
+    expect(await screen.findByText('Game Over')).toBeInTheDocument();
+    expect(screen.getByText('Winner:')).toHaveTextContent(`Winner: ${name(first.playerId)}`);
+    // One row per player, best first, with terraform rating, milestones, awards, greeneries, cities and cards.
+    for (const heading of ['TR', 'Miles.', 'Awards', 'Green.', 'Cities', 'Cards', 'Total']) {
+      expect(screen.getByText(heading)).toBeInTheDocument();
+    }
+    expect(screen.getAllByText(String(first.points.total)).length).toBeGreaterThan(0);
+
+    await user.click(screen.getByTitle('Close'));
+    expect(screen.queryByText('Game Over')).not.toBeInTheDocument();
+
+    const turn = view.container.querySelector('[aria-live="polite"]') as HTMLElement;
+    expect(within(turn).getByText(`Game over — ${name(first.playerId)} wins`)).toBeInTheDocument();
+    expect(within(turn).getByText(`${second.points.total} VP`)).toBeInTheDocument();
+
+    await user.click(within(turn).getByRole('button', { name: 'Score breakdown' }));
+    expect(screen.getByText('Game Over')).toBeInTheDocument();
   });
 
   it('shows what the importer warned about', async () => {

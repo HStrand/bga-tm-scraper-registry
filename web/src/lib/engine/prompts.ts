@@ -1,7 +1,7 @@
 // Turns what the engine is waiting for into one of a handful of prompt shapes, so the play page needs one
 // piece of UI per shape rather than one per kind of decision.
 
-import type { AvailableMoves, EnginePlayer, HexCoord, MoveBody, PendingAction, PlayableCard } from './types';
+import type { AvailableMoves, EnginePlayer, HexCoord, MoveBody, PendingAction, PlayableCard, SetupOptions } from './types';
 
 interface PromptBase {
   title: string;
@@ -59,7 +59,13 @@ export interface PlayCardPrompt extends PromptBase {
   cards: PlayableCard[];
 }
 
-export type Prompt = HexPrompt | PlayerPrompt | CardPrompt | CardsPrompt | OptionPrompt | PlayCardPrompt;
+/** Choose the opening: a corporation, preludes to keep and project cards to buy, all in one go. */
+export interface SetupPrompt extends PromptBase {
+  kind: 'setup';
+  options: SetupOptions;
+}
+
+export type Prompt = HexPrompt | PlayerPrompt | CardPrompt | CardsPrompt | OptionPrompt | PlayCardPrompt | SetupPrompt;
 
 /** "NuclearZone" -> "nuclear zone" */
 const words = (pascal: string) => pascal.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
@@ -217,12 +223,30 @@ function pendingPrompt(pending: PendingAction, moves: AvailableMoves, player: En
 }
 
 /**
- * The single decision a player must make now, if the game is waiting on one: a pending action, a draft pick,
- * a research purchase or the final greenery placement. Null in the action phase proper, where the player
- * chooses among many actions instead.
+ * The single decision a player must make now, if the game is waiting on one: a pending action, the opening
+ * choice, a prelude to play, a draft pick, a research purchase or the final greenery placement. Null in the
+ * action phase proper, where the player chooses among many actions instead.
  */
 export function currentPrompt(moves: AvailableMoves, player: EnginePlayer): Prompt | null {
   if (moves.pendingAction) return pendingPrompt(moves.pendingAction, moves, player);
+
+  if (moves.setup) {
+    return {
+      kind: 'setup',
+      title: moves.setup.preludesToKeep > 0 ? 'Choose a corporation, preludes and opening cards' : 'Choose a corporation and opening cards',
+      options: moves.setup,
+    };
+  }
+
+  if (moves.prelude) {
+    return {
+      kind: 'card',
+      title: 'Play a prelude',
+      cardIds: moves.prelude.remainingPreludes,
+      confirmLabel: 'Play',
+      move: preludeId => ({ type: 'PlayPrelude', preludeId }),
+    };
+  }
 
   if (moves.draft) {
     return {

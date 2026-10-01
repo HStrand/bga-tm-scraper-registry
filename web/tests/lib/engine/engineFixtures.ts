@@ -3,8 +3,8 @@ import path from 'node:path';
 import { EngineError, type EngineApi } from '@/lib/engine/client';
 import type { EngineMove, ForkPointsResponse, ImportResponse, TableResponse } from '@/lib/engine/types';
 
-// Real responses from the engine, written by tm-engine's HotSeatSession_PlaysThroughTheEndpoints test
-// (run it with TM_CONTRACT_FIXTURE_DIR pointing here to refresh them). They pin the JSON contract.
+// Real responses from the engine, written by tm-engine's HotSeatSession_* tests in TableFunctionTests
+// (run them with TM_CONTRACT_FIXTURE_DIR pointing here to refresh them). They pin the JSON contract.
 const FIXTURE_DIR = path.resolve(__dirname, '../../fixtures/engine');
 
 const read = <T>(file: string): T => JSON.parse(fs.readFileSync(path.join(FIXTURE_DIR, file), 'utf-8')) as T;
@@ -21,21 +21,33 @@ export interface Exchange {
  */
 export const session = read<Exchange[]>('hot-seat-session.json');
 
+/**
+ * The same game imported at the opening deal: the table with both players still to choose, then thirty
+ * moves. cdman234 and StrandedKnight choose their openings, play two preludes each and go on into the
+ * action phase.
+ */
+export const gameStartSession = read<Exchange[]>('game-start-session.json');
+
 export const forkPointsFixture = read<ForkPointsResponse>('fork-points.json');
 export const importFixture = read<ImportResponse>('import.json');
 
+// The opening choice is a set of preludes and a set of cards; the order they are listed in means nothing.
+const UNORDERED = ['preludeIds', 'cardIdsToBuy'];
+
 const canonical = (value: unknown): string =>
-  JSON.stringify(value, (_key, v) => v && typeof v === 'object' && !Array.isArray(v)
-    ? Object.fromEntries(Object.entries(v).filter(([, x]) => x != null).sort(([a], [b]) => a.localeCompare(b)))
-    : v);
+  JSON.stringify(value, (key, v) => Array.isArray(v) && UNORDERED.includes(key) ? [...v].sort()
+    : v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v).filter(([, x]) => x != null).sort(([a], [b]) => a.localeCompare(b)))
+      : v);
 
 export const sameMove = (a: EngineMove, b: EngineMove) => canonical(a) === canonical(b);
 
 /**
- * An engine that replays the recorded session: it accepts exactly the move that was recorded next and
+ * An engine that replays a recorded session: it accepts exactly the move that was recorded next and
  * answers with the recorded table, and refuses anything else the way the engine refuses an illegal move.
  */
-export function recordedEngine(start = 0): EngineApi & { position: () => number } {
+export function recordedEngine(start = 0, recording: Exchange[] = session): EngineApi & { position: () => number } {
+  const session = recording;
   let position = start;
   return {
     position: () => position,

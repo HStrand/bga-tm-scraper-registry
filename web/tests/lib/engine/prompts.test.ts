@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { currentPrompt, type Prompt } from '@/lib/engine/prompts';
 import type { AvailableMoves, EnginePlayer, EngineMove, MoveBody, PendingAction } from '@/lib/engine/types';
-import { session, sameMove } from './engineFixtures';
+import { gameStartSession, session, sameMove } from './engineFixtures';
 
 const player: EnginePlayer = {
   playerId: 0, corporationId: 'CORP01', terraformRating: 20,
@@ -116,6 +116,27 @@ describe('currentPrompt for pending actions', () => {
 describe('currentPrompt outside pending actions', () => {
   const base = { gameOver: false, waitingForOtherPlayer: false, pendingPlayableCards: [] };
 
+  it('asks for the whole opening at once', () => {
+    const setup = {
+      availableCorporations: ['CORP19', 'CORP07'], availablePreludes: ['P15', 'P23', 'P26', 'P28'], availableCards: ['106', '115'],
+      preludesToKeep: 2, costPerCard: 3, startingMegaCredits: { CORP19: 38, CORP07: 23 },
+    };
+
+    expect(currentPrompt({ ...base, setup }, player)).toEqual({
+      kind: 'setup', title: 'Choose a corporation, preludes and opening cards', options: setup,
+    });
+    expect(currentPrompt({ ...base, setup: { ...setup, availablePreludes: [], preludesToKeep: 0 } }, player)!.title)
+      .toBe('Choose a corporation and opening cards');
+  });
+
+  it('asks which kept prelude to play next', () => {
+    const prompt = currentPrompt({ ...base, prelude: { remainingPreludes: ['P27', 'P34'] } }, player)!;
+
+    expect(prompt).toMatchObject({ kind: 'card', title: 'Play a prelude', cardIds: ['P27', 'P34'], confirmLabel: 'Play' });
+    expect(prompt.kind === 'card' && prompt.move('P34')).toEqual({ type: 'PlayPrelude', preludeId: 'P34' });
+    expect(prompt.skip).toBeUndefined();
+  });
+
   it('asks for a draft pick', () => {
     const prompt = currentPrompt({ ...base, draft: { draftHand: ['189', '155'], passingToPlayerId: 1 } }, player)!;
 
@@ -164,11 +185,28 @@ function offeredByPrompt(prompt: Prompt, wanted: EngineMove): MoveBody[] {
       return [...(allowed ? [prompt.move(chosen)] : []), ...skip];
     }
     case 'playCard': return skip;
+    // Any corporation, the right number of preludes and any affordable cards can be chosen; check what was.
+    case 'setup': {
+      if (wanted.type !== 'Setup') return [];
+      const { options } = prompt;
+      const allowed = options.availableCorporations.includes(wanted.corporationId)
+        && wanted.preludeIds.length === options.preludesToKeep
+        && wanted.preludeIds.every(id => options.availablePreludes.includes(id))
+        && wanted.cardIdsToBuy.every(id => options.availableCards.includes(id))
+        && wanted.cardIdsToBuy.length * options.costPerCard <= options.startingMegaCredits[wanted.corporationId];
+      const { playerId: _, heat: __, ...body } = wanted;
+      return allowed ? [body] : [];
+    }
   }
 }
 
 describe('currentPrompt against a recorded engine session', () => {
-  it('offers every move the engine went on to accept outside the action menu', () => {
+  it.each([
+    // Drafts, research purchases, tile placements and draw-and-buy actions.
+    { name: 'from generation 4', session, atLeast: 20 },
+    // Both openings, four preludes, a tile one of them places, and the next generation's draft.
+    { name: 'from the opening deal', session: gameStartSession, atLeast: 10 },
+  ])('offers every move the engine went on to accept outside the action menu, $name', ({ session, atLeast }) => {
     const unoffered: string[] = [];
     let prompted = 0;
 
@@ -185,7 +223,6 @@ describe('currentPrompt against a recorded engine session', () => {
     }
 
     expect(unoffered).toEqual([]);
-    // The session includes drafts, research purchases, tile placements and draw-and-buy actions.
-    expect(prompted).toBeGreaterThan(20);
+    expect(prompted).toBeGreaterThan(atLeast);
   });
 });

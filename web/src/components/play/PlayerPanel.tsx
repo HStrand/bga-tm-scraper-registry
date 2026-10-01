@@ -42,7 +42,7 @@ export function PlayerPanel({ info, player, status, isActive, isFirstPlayer }: P
             {info.name}
             {isFirstPlayer && <img src={startingPlayerImg} alt="First player" title="First player this generation" className="ml-1.5 inline h-4 w-4" />}
           </p>
-          <p className="truncate text-xs text-slate-400">{info.corporation} · {player.played.length} cards in play</p>
+          <p className="truncate text-xs text-slate-400">{info.corporation ?? 'No corporation yet'} · {player.played.length} cards in play</p>
         </div>
         <span className="flex items-center gap-1 text-sm font-bold text-white" title="Terraform rating">
           <img src={trImg} alt="TR" className="h-5 w-5" />{player.tr}

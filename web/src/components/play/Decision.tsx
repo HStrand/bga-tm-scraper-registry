@@ -3,6 +3,7 @@ import { cardPaymentRules, defaultPayment, hasPaymentChoice, heatRange } from '@
 import type { Prompt } from '@/lib/engine/prompts';
 import type { EnginePlayer, MoveBody, PlayableCard } from '@/lib/engine/types';
 import { CardPicker, Dialog, PlayButton } from './controls';
+import { OpeningChoice } from './OpeningChoice';
 import { HeatAmount, PaymentForm } from './PaymentForm';
 
 interface DecisionProps {
@@ -25,7 +26,7 @@ export function Decision(props: DecisionProps) {
   const { prompt, actor, busy, onMove } = props;
   const who = actor && <span><b style={{ color: actor.color }}>{actor.name}</b> is choosing</span>;
   return (
-    <Dialog title={prompt.title} subtitle={who} wide={prompt.kind === 'card' || prompt.kind === 'cards' || prompt.kind === 'playCard'}>
+    <Dialog title={prompt.title} subtitle={who} wide={prompt.kind !== 'player' && prompt.kind !== 'option'}>
       <DecisionBody {...props} />
       {prompt.skip && (
         <div className="mt-4 flex justify-center">
@@ -62,6 +63,8 @@ function DecisionBody({ prompt, player, spendable, names, playerNames, busy, onM
       );
     case 'playCard':
       return <PlayCardChoice cards={prompt.cards} player={player} names={names} busy={busy} onMove={onMove} />;
+    case 'setup':
+      return <OpeningChoice options={prompt.options} names={names} busy={busy} onMove={onMove} />;
   }
 }
 

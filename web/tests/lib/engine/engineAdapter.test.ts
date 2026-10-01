@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { engineGameInfo, engineSnapshot, hexKeyAt } from '@/lib/engine/engineAdapter';
 import { buildBgaTimeline } from '@/lib/replay/bga/bgaAdapter';
-import { session } from './engineFixtures';
+import { gameStartSession, session } from './engineFixtures';
 import { TEST_LOGS, testdataAvailable, loadTestLog } from '../replay/testLogs';
 
 // The Elysium game imported at the start of generation 4, before any move.
@@ -91,8 +91,19 @@ describe('engineSnapshot', () => {
     expect(placed[0]).toMatchObject({ type: 'Ocean', placedBy: null, col: 5, row: 1 });
   });
 
+  it('has no corporation or cards for a player until the openings are chosen', () => {
+    const [dealt, oneChosen, bothChosen] = gameStartSession.map(e => e.table);
+
+    expect(engineGameInfo(dealt).players.map(p => p.corporation)).toEqual([null, null]);
+    expect(engineSnapshot(dealt).players['0']).toMatchObject({ headquarters: [], hand: [], tr: 20 });
+    // The choices take effect together, once the last player has made theirs.
+    expect(engineGameInfo(oneChosen).players.map(p => p.corporation)).toEqual([null, null]);
+    expect(engineGameInfo(bothChosen).players.map(p => p.corporation)).toEqual(['Credicor', 'Point Luna']);
+    expect(engineSnapshot(bothChosen).players['1'].resources.mc).toBe(38 - 6 * 3);
+  });
+
   it('projects every table of a recorded session', () => {
-    for (const { table } of session) {
+    for (const { table } of [...session, ...gameStartSession]) {
       const s = engineSnapshot(table);
       expect(Object.keys(s.players)).toEqual(['0', '1']);
       expect(s.index).toBe(table.state.moveNumber);
