@@ -98,4 +98,10 @@ describe('hexPlacementCost', () => {
     expect(hexPlacementCost('Hellas', { col: 4, row: 9 })).toBe(0);
     expect(hexPlacementCost('Tharsis', { col: 5, row: 9 })).toBe(0);
   });
+
+  it('charges 4 M€ for the centre hex of Vastitas Borealis', () => {
+    expect(hexPlacementCost('Vastitas Borealis', { col: 5, row: 5 })).toBe(4);
+    expect(hexPlacementCost('Vastitas Borealis', { col: 5, row: 9 })).toBe(0);
+    expect(hexPlacementCost('Hellas', { col: 5, row: 5 })).toBe(0);
+  });
 });

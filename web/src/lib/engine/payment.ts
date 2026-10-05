@@ -116,9 +116,12 @@ export function heatRange(cost: number, player: EnginePlayer): { min: number; ma
 }
 
 /**
- * M€ a tile placement costs because of the hex it goes on. Only the Hellas South Pole has such a cost: 6 M€
- * for the ocean it grants. The engine charges it; this mirrors it so the payment can be asked for up front.
+ * M€ a tile placement costs because of the hex it goes on: 6 M€ on the Hellas South Pole, for the ocean it
+ * grants, and 4 M€ on the centre hex of Vastitas Borealis, for the temperature step it grants. The engine
+ * charges it; this mirrors it so the payment can be asked for up front.
  */
 export function hexPlacementCost(mapName: string, location: HexCoord): number {
-  return mapName === 'Hellas' && location.col === 5 && location.row === 9 ? 6 : 0;
+  if (mapName === 'Hellas' && location.col === 5 && location.row === 9) return 6;
+  if (mapName === 'Vastitas Borealis' && location.col === 5 && location.row === 5) return 4;
+  return 0;
 }
