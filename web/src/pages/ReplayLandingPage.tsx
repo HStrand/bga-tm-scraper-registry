@@ -1,53 +1,125 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Play } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, Layers, ListOrdered, Play, Swords } from "lucide-react";
+import { parseTableId } from "@/lib/tableId";
+
+const EXAMPLE_TABLE_ID = "824655675";
+
+const FEATURES = [
+  {
+    icon: ListOrdered,
+    title: "Every move, in order",
+    text: "Step forward and back through the game and watch the board, the global parameters and the scores change.",
+  },
+  {
+    icon: Layers,
+    title: "Hands and tableaus",
+    text: "See what each player had in hand and in play at any point, along with their resources and production.",
+  },
+  {
+    icon: Swords,
+    title: "Play on from a position",
+    text: "In two-player games you can take over at the start of a turn and play it out differently.",
+  },
+];
 
 export function ReplayLandingPage() {
-  const [tableId, setTableId] = useState("");
+  const [input, setInput] = useState("");
+  const [showError, setShowError] = useState(false);
   const navigate = useNavigate();
+
+  const tableId = parseTableId(input);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const trimmed = tableId.trim();
-    if (trimmed) navigate(`/replay/${trimmed}`);
+    if (tableId) navigate(`/replay/${tableId}`);
+    else setShowError(true);
   }
 
   return (
-    <div className="max-w-xl mx-auto mt-12">
-      <h1 className="text-2xl font-bold mb-4">Game Replay Viewer</h1>
+    <div className="mx-auto max-w-3xl pt-4 md:pt-10">
+      <div className="flex items-center gap-4">
+        <div className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-amber-100/70 bg-amber-50 text-amber-600 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+          <Play className="h-6 w-6" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 md:text-3xl">Replay Viewer</h1>
+          <p className="mt-0.5 text-slate-600 dark:text-slate-400">
+            Watch any Terraforming Mars game from Board Game Arena, move by move.
+          </p>
+        </div>
+      </div>
 
-      <p className="text-gray-600 mb-2">
-        Watch a full replay of any Terraforming Mars game from Board Game Arena.
-        Enter the table ID to view the game step by step, including tile
-        placements, card plays, and resource changes.
-      </p>
-      <p className="text-gray-500 mb-6 text-sm">
-        You can find the table ID in the BGA game URL — it's the number at the
-        end (e.g.&nbsp;
-        <span className="font-mono text-gray-700">
-          boardgamearena.com/table?table=<strong>123456789</strong>
-        </span>
-        ).
-      </p>
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        className="mt-6 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/80 md:p-6"
+      >
+        <label htmlFor="table-id" className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
+          Table ID or game link
+        </label>
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+          <input
+            id="table-id"
+            type="text"
+            autoFocus
+            autoComplete="off"
+            spellCheck={false}
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              setShowError(false);
+            }}
+            placeholder="926358228"
+            aria-invalid={showError && !tableId}
+            aria-describedby="table-id-help"
+            className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 font-mono text-lg text-slate-900 placeholder-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-500"
+          />
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+          >
+            Open replay
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-3">
-        <input
-          type="text"
-          inputMode="numeric"
-          value={tableId}
-          onChange={(e) => setTableId(e.target.value)}
-          placeholder="Table ID, e.g. 123456789"
-          className="flex-1 rounded-lg bg-white border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-        <button
-          type="submit"
-          disabled={!tableId.trim()}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 font-medium text-white hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          <Play size={16} />
-          Watch
-        </button>
+        {showError && !tableId ? (
+          <p id="table-id-help" role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">
+            {input.trim()
+              ? "That doesn't contain a table ID. It is a number of 6 to 12 digits."
+              : "Enter a table ID or paste a link to the game."}
+          </p>
+        ) : (
+          <p id="table-id-help" className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            The number at the end of the game's address on BGA, as in{" "}
+            <span className="break-all font-mono text-slate-700 dark:text-slate-300">
+              boardgamearena.com/table?table=<span className="font-semibold text-amber-700 dark:text-amber-300">926358228</span>
+            </span>
+            . You can paste the whole link.
+          </p>
+        )}
+
+        <p className="mt-4 border-t border-slate-200 pt-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-400">
+          A game that isn't in the database yet can be fetched from BGA in about 20 seconds.{" "}
+          <Link
+            to={`/replay/${EXAMPLE_TABLE_ID}`}
+            className="font-medium text-amber-700 underline-offset-2 hover:underline dark:text-amber-300"
+          >
+            Open an example game
+          </Link>
+        </p>
       </form>
+
+      <ul className="mt-6 grid gap-4 sm:grid-cols-3">
+        {FEATURES.map(({ icon: Icon, title, text }) => (
+          <li key={title} className="rounded-2xl border border-slate-200 bg-white/60 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+            <Icon className="h-5 w-5 text-amber-600 dark:text-amber-300" />
+            <h2 className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{text}</p>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
