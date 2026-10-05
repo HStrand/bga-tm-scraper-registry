@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Info, Share2, Check, Copy, RefreshCw, MessageSquare, Send, Link, Unlink, GripHorizontal } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { ALL_MAPS, type MapDefinition } from '@/data/mapHexes';
 import { fetchGameLog, assignPlayerColors } from '@/lib/gameLog';
 import { getMapOverlays } from '@/data/mapOverlays';
@@ -25,6 +25,7 @@ import type { GameLog } from '@/types/gamelog';
 export function GameReplayPage() {
   const { tableId } = useParams<{ tableId: string }>();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [gameLog, setGameLog] = useState<GameLog | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,6 +105,18 @@ export function GameReplayPage() {
       setScraping(false);
     }
   }, [tableId]);
+
+  // Arriving from the landing page's "Open replay": fetch a game that is not stored yet without
+  // asking. A link opened directly only offers the fetch, so a mistyped or crawled address does
+  // not spend a replay view.
+  const fetchIfMissing = !!(location.state as { fetchIfMissing?: boolean } | null)?.fetchIfMissing;
+  const autoFetchedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!fetchIfMissing || loading || gameLog || !error) return;
+    if (!tableId || !/^\d{6,12}$/.test(tableId) || autoFetchedFor.current === tableId) return;
+    autoFetchedFor.current = tableId;
+    handleRescrape();
+  }, [fetchIfMissing, loading, gameLog, error, tableId, handleRescrape]);
 
   const fetchComments = useCallback(async () => {
     if (!tableId) return;

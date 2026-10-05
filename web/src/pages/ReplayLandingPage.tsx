@@ -1,27 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Layers, ListOrdered, Play, Swords } from "lucide-react";
+import { ArrowRight, Play } from "lucide-react";
 import { parseTableId } from "@/lib/tableId";
 
 const EXAMPLE_TABLE_ID = "824655675";
-
-const FEATURES = [
-  {
-    icon: ListOrdered,
-    title: "Every move, in order",
-    text: "Step forward and back through the game and watch the board, the global parameters and the scores change.",
-  },
-  {
-    icon: Layers,
-    title: "Hands and tableaus",
-    text: "See what each player had in hand and in play at any point, along with their resources and production.",
-  },
-  {
-    icon: Swords,
-    title: "Play on from a position",
-    text: "In two-player games you can take over at the start of a turn and play it out differently.",
-  },
-];
 
 export function ReplayLandingPage() {
   const [input, setInput] = useState("");
@@ -32,7 +14,8 @@ export function ReplayLandingPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (tableId) navigate(`/replay/${tableId}`);
+    // Opening a game from here fetches it from BGA when it is not stored yet.
+    if (tableId) navigate(`/replay/${tableId}`, { state: { fetchIfMissing: true } });
     else setShowError(true);
   }
 
@@ -101,25 +84,15 @@ export function ReplayLandingPage() {
         )}
 
         <p className="mt-4 border-t border-slate-200 pt-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-400">
-          A game that isn't in the database yet can be fetched from BGA in about 20 seconds.{" "}
+          A game that isn't in the database yet is fetched from BGA first, which takes about 20 seconds.{" "}
           <Link
             to={`/replay/${EXAMPLE_TABLE_ID}`}
-            className="font-medium text-amber-700 underline-offset-2 hover:underline dark:text-amber-300"
+            className="whitespace-nowrap font-medium text-amber-700 underline-offset-2 hover:underline dark:text-amber-300"
           >
             Open an example game
           </Link>
         </p>
       </form>
-
-      <ul className="mt-6 grid gap-4 sm:grid-cols-3">
-        {FEATURES.map(({ icon: Icon, title, text }) => (
-          <li key={title} className="rounded-2xl border border-slate-200 bg-white/60 p-4 dark:border-slate-700 dark:bg-slate-800/50">
-            <Icon className="h-5 w-5 text-amber-600 dark:text-amber-300" />
-            <h2 className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{text}</p>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

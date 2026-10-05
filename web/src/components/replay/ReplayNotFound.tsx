@@ -33,24 +33,34 @@ export function ReplayNotFound({ tableId, dailyLimitReached, scraping, scrapeErr
               again tomorrow.
             </p>
           </>
+        ) : scraping ? (
+          <>
+            <h1 className="mt-2 flex items-center gap-2.5 text-xl font-bold text-white">
+              <RefreshCw size={18} className="animate-spin text-amber-400" />
+              Fetching this game from Board Game Arena
+            </h1>
+            <p role="status" className="mt-2 text-sm text-slate-400">
+              It isn't in the database yet. This takes about 20 seconds, and the replay opens when it is done.
+            </p>
+          </>
         ) : (
           <>
             <h1 className="mt-2 text-xl font-bold text-white">This game isn't in the database yet</h1>
-            <p className="mt-2 text-sm text-slate-400">
-              It can be fetched from Board Game Arena now. That takes about 20 seconds, and the replay opens when it is
-              done.
-            </p>
+            {scrapeError ? (
+              <p role="alert" className="mt-2 text-sm text-red-400">{scrapeError}</p>
+            ) : (
+              <p className="mt-2 text-sm text-slate-400">
+                It can be fetched from Board Game Arena now. That takes about 20 seconds, and the replay opens when it
+                is done.
+              </p>
+            )}
             <button
               onClick={onFetch}
-              disabled={scraping}
-              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400/60 disabled:cursor-wait disabled:opacity-70"
+              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400/60"
             >
-              {scraping ? <RefreshCw size={16} className="animate-spin" /> : <CloudDownload size={16} />}
-              {scraping ? 'Fetching from BGA…' : 'Fetch this game'}
+              <CloudDownload size={16} />
+              {scrapeError ? 'Try again' : 'Fetch this game'}
             </button>
-            {scrapeError && !scraping && (
-              <p role="alert" className="mt-3 text-sm text-red-400">{scrapeError}</p>
-            )}
           </>
         )}
 

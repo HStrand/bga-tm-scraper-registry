@@ -98,6 +98,37 @@ describe('a table with no stored replay', () => {
     expect(screen.queryByPlaceholderText(/player id/i)).not.toBeInTheDocument();
   });
 
+  it('waits to be asked when the address was opened directly', async () => {
+    renderReplay('926358228');
+
+    await screen.findByRole('button', { name: 'Fetch this game' });
+
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('fetches without asking when the game was opened from the landing page', async () => {
+    let finish: (value: unknown) => void = () => {};
+    post.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+    render(
+      <MemoryRouter initialEntries={['/replay']}>
+        <Routes>
+          <Route path="/replay" element={<ReplayLandingPage />} />
+          <Route path="/replay/:tableId" element={<GameReplayPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await userEvent.type(screen.getByLabelText('Table ID or game link'), '926358228{Enter}');
+
+    expect(await screen.findByText('Fetching this game from Board Game Arena')).toBeInTheDocument();
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(post).toHaveBeenCalledWith('/api/scrape', { tableId: '926358228' });
+    finish({ data: {} });
+    // Still not stored after the fetch: it is offered again, not fetched a second time.
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    expect(post).toHaveBeenCalledTimes(1);
+  });
+
   it('explains a game BGA does not return', async () => {
     post.mockRejectedValue({ response: { status: 422, data: { detail: 'Failed to scrape table page' } } });
     renderReplay('926358228');
@@ -105,6 +136,7 @@ describe('a table with no stored replay', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Fetch this game' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent("Board Game Arena didn't return this game");
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
   it('offers no fetch when the daily limit is reached', async () => {
