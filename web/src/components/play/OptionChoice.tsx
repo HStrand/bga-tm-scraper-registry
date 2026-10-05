@@ -1,4 +1,5 @@
 import { getIcon, oxygenImg, resourceIcons, temperatureImg } from '@/components/replay/replayShared';
+import trImg from '/assets/tr.png';
 import { getCardPlaceholderImage } from '@/lib/card';
 import { getCardResourceType } from '@/lib/cardMetadata';
 import { optionArt, type ArtIcon, type ArtPart } from '@/lib/engine/optionArt';
@@ -6,13 +7,11 @@ import type { OptionPrompt } from '@/lib/engine/prompts';
 import type { EnginePlayer, MoveBody } from '@/lib/engine/types';
 import { cardImage, PlayButton } from './controls';
 
-/** The picture for something spent or gained. Terraform rating has no icon of its own. */
+/** The picture for something spent or gained. */
 export function ArtIconImage({ icon, className = 'h-9 w-9' }: { icon: ArtIcon; className?: string }) {
-  if (icon === 'tr') {
-    return <span className={`${className} flex items-center justify-center rounded-md bg-amber-500 text-sm font-extrabold text-slate-950`}>TR</span>;
-  }
   const src = icon === 'temperature' ? temperatureImg
     : icon === 'oxygen' ? oxygenImg
+    : icon === 'tr' ? trImg
     : icon === 'card' ? getCardPlaceholderImage()
     : getIcon(resourceIcons, icon);
   if (!src) return null;

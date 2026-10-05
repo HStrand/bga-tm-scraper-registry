@@ -3,6 +3,7 @@ import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CardResourceBurst, diffCardResources } from '@/components/play/CardResourceBurst';
 import { Decision } from '@/components/play/Decision';
+import { ArtIconImage } from '@/components/play/OptionChoice';
 import { optionArt } from '@/lib/engine/optionArt';
 import { currentPrompt, type Prompt } from '@/lib/engine/prompts';
 import type { EnginePlayer } from '@/lib/engine/types';
@@ -57,6 +58,14 @@ describe('A choice that comes from a card', () => {
     // The buttons keep the engine's wording as their name; the icons are decoration.
     await user.click(screen.getByRole('button', { name: 'Remove 2 microbes to raise temperature' }));
     expect(onMove).toHaveBeenCalledWith({ type: 'ChooseOption', optionIndex: 1 });
+  });
+});
+
+describe('ArtIconImage', () => {
+  it.each(['tr', 'temperature', 'oxygen', 'card', 'microbe', 'science', 'mc'] as const)('has a picture for %s', icon => {
+    const { container } = render(<ArtIconImage icon={icon} />);
+
+    expect(container.querySelector('img')?.getAttribute('src')).toBeTruthy();
   });
 });
 
