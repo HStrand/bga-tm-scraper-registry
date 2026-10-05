@@ -34,8 +34,10 @@ export function getCardResourceType(cardName: string): string | undefined {
 
 // Known card name mismatches between game logs and metadata
 const CARD_ALIASES: Record<string, string> = {
-  'excentric sponsor': 'eccentric sponsor',
+  'eccentric sponsor': 'excentric sponsor',
   'allied bank': 'allied banks',
+  'biolabs': 'biolab',
+  "ceo's favourite project": "ceo's favorite project",
 };
 
 const cardsByName = new Map<string, CardMeta>();

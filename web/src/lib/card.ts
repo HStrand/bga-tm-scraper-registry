@@ -4,6 +4,9 @@
 const CARD_NAME_ALIASES: Record<string, string> = {
   'excentric sponsor': 'eccentric sponsor',
   'allied bank': 'allied banks',
+  // The game engine's names for these two differ from the image files
+  'biolab': 'biolabs',
+  "ceo's favorite project": "ceo's favourite project",
 };
 
 /**
