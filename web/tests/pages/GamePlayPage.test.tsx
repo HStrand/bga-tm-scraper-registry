@@ -85,7 +85,8 @@ describe('GamePlayPage', () => {
     await playFromHand(user, /^Convoy From Europa/);
     const payment = screen.getByRole('dialog', { name: 'Play Convoy From Europa' });
     expect(within(payment).getByLabelText(/Titanium/)).toHaveValue(2);
-    expect(within(payment).getByText('9')).toBeInTheDocument();
+    // 9 M€ makes up the rest; it shows in the suggested payment and on the M€ line.
+    expect(within(payment).getAllByText('9').length).toBeGreaterThan(0);
     await user.click(within(payment).getByRole('button', { name: 'Pay' }));
 
     const order = await screen.findByRole('dialog', { name: 'Choose which effect to resolve first' });
