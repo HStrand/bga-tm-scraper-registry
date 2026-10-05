@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowRight, Play } from "lucide-react";
 import { parseTableId } from "@/lib/tableId";
-
-const EXAMPLE_TABLE_ID = "824655675";
 
 export function ReplayLandingPage() {
   const [input, setInput] = useState("");
@@ -84,13 +82,7 @@ export function ReplayLandingPage() {
         )}
 
         <p className="mt-4 border-t border-slate-200 pt-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-400">
-          A game that isn't in the database yet is fetched from BGA first, which takes about 20 seconds.{" "}
-          <Link
-            to={`/replay/${EXAMPLE_TABLE_ID}`}
-            className="whitespace-nowrap font-medium text-amber-700 underline-offset-2 hover:underline dark:text-amber-300"
-          >
-            Open an example game
-          </Link>
+          A game that isn't in the database yet is fetched from BGA first, which takes about 20 seconds.
         </p>
       </form>
     </div>

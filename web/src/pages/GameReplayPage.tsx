@@ -96,7 +96,9 @@ export function GameReplayPage() {
         setScrapeError(e.response.data?.detail ?? 'Daily replay limit reached');
       } else if (status === 422) {
         setScrapeError("Board Game Arena didn't return this game. Check that the table ID is right and that the game is finished.");
-      } else if (status === 503) {
+      } else if (status === 502 || status === 503 || status === 504) {
+        // 503: another fetch is running or the scraper's browser is down. 502/504: the scraper
+        // could not be reached or did not answer in time.
         setScrapeError('The scraper is busy or offline. Try again in a minute.');
       } else {
         setScrapeError(e?.response?.data?.detail ?? e?.message ?? 'Scrape failed');
