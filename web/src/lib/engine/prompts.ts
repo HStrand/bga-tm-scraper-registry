@@ -51,6 +51,8 @@ export interface CardsPrompt extends PromptBase {
 export interface OptionPrompt extends PromptBase {
   kind: 'option';
   options: { label: string; move: MoveBody }[];
+  /** The card the choice comes from, when there is one: the dialog shows it beside the options. */
+  sourceCardId?: string | null;
 }
 
 /** Play a card from hand, with payment, outside the normal action. */
@@ -190,6 +192,7 @@ function pendingPrompt(pending: PendingAction, moves: AvailableMoves, player: En
       return {
         kind: 'option',
         title: pending.description,
+        sourceCardId: pending.sourceCardId,
         options: pending.options
           .map((label, optionIndex) => ({ label, optionIndex }))
           .filter(o => !pending.validOptionIndices || pending.validOptionIndices.includes(o.optionIndex))

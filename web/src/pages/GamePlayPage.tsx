@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { ALL_MAPS } from '@/data/mapHexes';
 import { engineApi, type EngineApi } from '@/lib/engine/client';
@@ -12,6 +12,7 @@ import { EndGameSummary, type PlayerSummary } from '@/components/replay/EndGameS
 import { ReplayMap } from '@/components/replay/ReplayMap';
 import { MILESTONE_COST, playActions, type Flow } from '@/components/play/actions';
 import { CardPicker, Dialog, PlayButton, cardImage } from '@/components/play/controls';
+import { CardResourceBurst, diffCardResources, type CardResourceChange } from '@/components/play/CardResourceBurst';
 import { Decision } from '@/components/play/Decision';
 import { Hand } from '@/components/play/Hand';
 import { MoveFeed } from '@/components/play/MoveFeed';
@@ -52,6 +53,18 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
 
   const moveNumber = table?.state.moveNumber;
   useEffect(() => setFlow(null), [moveNumber, game.viewingPast]);
+
+  // Cards that gained or lost resources in the move just made, shown for a moment over the board.
+  const [burst, setBurst] = useState<{ key: number; changes: CardResourceChange[] } | null>(null);
+  const positionBefore = useRef<{ moveNumber: number; players: EnginePlayer[] } | null>(null);
+  useEffect(() => {
+    const before = positionBefore.current;
+    // Looking back through the game is not a move: forget where we were, so returning shows nothing.
+    positionBefore.current = table && !game.viewingPast ? { moveNumber: table.state.moveNumber, players: table.state.players } : null;
+    if (!table || !before || game.viewingPast || table.state.moveNumber <= before.moveNumber) return;
+    const changes = diffCardResources(before.players, table.state.players);
+    if (changes.length > 0) setBurst({ key: table.state.moveNumber, changes });
+  }, [table, game.viewingPast]);
 
   // The last card of a draft round is no choice: whoever is left holding one card takes it without being asked.
   useEffect(() => {
@@ -385,6 +398,10 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
             onCancel={() => setFlow(null)}
           />
         </Dialog>
+      )}
+
+      {burst && (
+        <CardResourceBurst key={burst.key} changes={burst.changes} names={table.cardNames} onDone={() => setBurst(null)} />
       )}
 
       {player && flow?.kind === 'sell' && (

@@ -330,6 +330,31 @@
   animation: card-popup-out 0.7s cubic-bezier(0.4, 0, 0.6, 1) both;
 }
 
+/* ── Card resource change (play view): the count pops, the change floats off ── */
+@keyframes resource-count-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+@keyframes resource-delta-float {
+  0% { opacity: 0; transform: translateY(8px) scale(0.6); }
+  20% { opacity: 1; transform: translateY(0) scale(1.1); }
+  70% { opacity: 1; transform: translateY(-10px) scale(1); }
+  100% { opacity: 0; transform: translateY(-26px) scale(1); }
+}
+.resource-count-pop {
+  animation: resource-count-pop 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.resource-delta-float {
+  animation: resource-delta-float 1.5s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .resource-count-pop,
+  .resource-delta-float {
+    animation: none;
+  }
+}
+
 /* ── Draft card slide-in animations ── */
 @keyframes slide-in-right {
   0% { opacity: 0; transform: translateX(40px) scale(0.92); }

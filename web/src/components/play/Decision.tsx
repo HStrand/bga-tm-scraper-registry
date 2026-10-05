@@ -4,6 +4,7 @@ import type { Prompt } from '@/lib/engine/prompts';
 import type { EnginePlayer, MoveBody, PlayableCard } from '@/lib/engine/types';
 import { CardPicker, Dialog, PlayButton } from './controls';
 import { OpeningChoice } from './OpeningChoice';
+import { OptionChoice } from './OptionChoice';
 import { HeatAmount, PaymentForm } from './PaymentForm';
 
 interface DecisionProps {
@@ -54,13 +55,7 @@ function DecisionBody({ prompt, player, spendable, names, playerNames, busy, onM
     case 'cards':
       return <CardsChoice prompt={prompt} player={player} spendable={spendable} names={names} busy={busy} onMove={onMove} />;
     case 'option':
-      return (
-        <div className="flex flex-col items-stretch gap-2">
-          {prompt.options.map((option, i) => (
-            <PlayButton key={i} variant="primary" disabled={busy} onClick={() => onMove(option.move)}>{option.label}</PlayButton>
-          ))}
-        </div>
-      );
+      return <OptionChoice prompt={prompt} player={player} names={names} busy={busy} onMove={onMove} />;
     case 'playCard':
       return <PlayCardChoice cards={prompt.cards} player={player} names={names} busy={busy} onMove={onMove} />;
     case 'setup':
