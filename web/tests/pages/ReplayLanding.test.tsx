@@ -139,6 +139,15 @@ describe('a table with no stored replay', () => {
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
+  it('says so when BGA no longer has the replay', async () => {
+    post.mockResolvedValue({ data: { success: false, message: 'No replay HTML content' } });
+    renderReplay('912485241');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Fetch this game' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('no longer has the replay');
+  });
+
   it('offers no fetch when the daily limit is reached', async () => {
     get.mockImplementation(async (url: string) => {
       if (url.startsWith('/api/game-log/')) throw { response: { status: 404 } };

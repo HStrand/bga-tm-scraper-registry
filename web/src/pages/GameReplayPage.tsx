@@ -82,7 +82,15 @@ export function GameReplayPage() {
     setScrapeError(null);
     setScrapeSuccess(false);
     try {
-      await api.post('/api/scrape', playerPerspective ? { tableId, playerPerspective } : { tableId });
+      const res = await api.post('/api/scrape', playerPerspective ? { tableId, playerPerspective } : { tableId });
+      // The service answers 200 with success: false when it reached BGA but got no replay.
+      if (res.data?.success === false) {
+        const message: string = res.data.message ?? '';
+        setScrapeError(/no replay/i.test(message)
+          ? 'Board Game Arena no longer has the replay for this game, so it cannot be shown.'
+          : `The game could not be fetched: ${message || 'unknown error'}`);
+        return;
+      }
       setScrapeSuccess(true);
       // Re-fetch the game log after successful scrape
       const data = await fetchGameLog(tableId);
