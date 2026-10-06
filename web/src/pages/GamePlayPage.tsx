@@ -12,6 +12,7 @@ import { EndGameSummary, type PlayerSummary } from '@/components/replay/EndGameS
 import { ReplayMap } from '@/components/replay/ReplayMap';
 import { MILESTONE_COST, playActions, type Flow } from '@/components/play/actions';
 import { CardPicker, Dialog, PlayButton, cardImage } from '@/components/play/controls';
+import { CardDrawBurst } from '@/components/play/CardDrawBurst';
 import { CardResourceBurst, diffCardResources, type CardResourceChange } from '@/components/play/CardResourceBurst';
 import { Decision } from '@/components/play/Decision';
 import { Hand } from '@/components/play/Hand';
@@ -344,25 +345,22 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
         />
       )}
 
-      {game.draw && !game.viewingPast && (
-        <Dialog title="Cards drawn" onClose={game.dismissDraw} wide={game.draw.byPlayer.some(d => d.cardIds.length > 3)}>
-          <div className="space-y-4">
-            {game.draw.byPlayer.map(d => {
-              const owner = info.players.find(p => p.id === seatId(d.playerId));
-              return (
-                <div key={d.playerId}>
-                  <p className="mb-2 text-sm text-slate-300">
-                    <b style={{ color: owner?.color }}>{owner?.name}</b> draws {d.cardIds.length === 1 ? 'a card' : `${d.cardIds.length} cards`}
-                  </p>
-                  <CardPicker cardIds={d.cardIds} names={table.cardNames} onPick={() => undefined} size={200} />
-                </div>
-              );
-            })}
-            <div className="flex justify-center">
-              <PlayButton variant="primary" onClick={game.dismissDraw}>OK</PlayButton>
-            </div>
-          </div>
-        </Dialog>
+      {/* What the last move did to cards, shown briefly over the board. It takes no clicks. */}
+      {(burst || (game.draw && !game.viewingPast)) && (
+        <div className="pointer-events-none fixed inset-0 z-[70] flex flex-wrap items-center justify-center gap-10">
+          {burst && (
+            <CardResourceBurst key={burst.key} changes={burst.changes} names={table.cardNames} onDone={() => setBurst(null)} />
+          )}
+          {game.draw && !game.viewingPast && (
+            <CardDrawBurst
+              key={game.draw.moveNumber}
+              draw={game.draw}
+              names={table.cardNames}
+              players={info.players.map(p => ({ id: Number(p.id), name: p.name, color: p.color }))}
+              onDone={game.dismissDraw}
+            />
+          )}
+        </div>
       )}
 
       {showHand && zoomed && (
@@ -398,10 +396,6 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
             onCancel={() => setFlow(null)}
           />
         </Dialog>
-      )}
-
-      {burst && (
-        <CardResourceBurst key={burst.key} changes={burst.changes} names={table.cardNames} onDone={() => setBurst(null)} />
       )}
 
       {player && flow?.kind === 'sell' && (

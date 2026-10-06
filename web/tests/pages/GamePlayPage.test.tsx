@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { GamePlayPage } from '@/pages/GamePlayPage';
@@ -95,12 +95,14 @@ describe('GamePlayPage', () => {
     expect(await within(turn).findByText(/Place an ocean tile/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Place on Hex 5,1' }));
 
-    // The ocean triggers a draw, which is shown before it silently joins the hand.
-    const drawn = await screen.findByRole('dialog', { name: 'Cards drawn' });
-    expect(within(drawn).getByRole('button', { name: 'Electro Catapult' })).toBeInTheDocument();
-    expect(within(drawn).getByRole('button', { name: 'Windmills' })).toBeInTheDocument();
-    await user.click(within(drawn).getByRole('button', { name: 'OK' }));
+    // The ocean triggers a draw, which is shown for a moment before it joins the hand. Nothing has to be
+    // clicked: the cards come up over the board, not in a dialog.
+    const drawn = await screen.findByRole('status', { name: 'Cards drawn' });
+    expect(within(drawn).getByText(/draws 2 cards/)).toBeInTheDocument();
+    expect(within(drawn).getByAltText('Electro Catapult')).toBeInTheDocument();
+    expect(within(drawn).getByAltText('Windmills')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('status', { name: 'Cards drawn' })).not.toBeInTheDocument(), { timeout: 6000 });
 
     expect(await screen.findByText('1/9')).toBeInTheDocument();
     expect(api.position()).toBe(5);
@@ -214,10 +216,9 @@ describe('GamePlayPage', () => {
     await user.click(within(stranded).getByRole('button', { name: 'Start as Point Luna' }));
 
     // Point Luna draws a card for its own Earth tag. The cards the players bought are not shown as draws.
-    const drawn = await screen.findByRole('dialog', { name: 'Cards drawn' });
-    expect(within(drawn).getByRole('button', { name: 'Tundra Farming' })).toBeInTheDocument();
-    expect(within(drawn).queryByRole('button', { name: names[mine.cardIdsToBuy[0]] })).not.toBeInTheDocument();
-    await user.click(within(drawn).getByRole('button', { name: 'OK' }));
+    const drawn = await screen.findByRole('status', { name: 'Cards drawn' });
+    expect(within(drawn).getByAltText('Tundra Farming')).toBeInTheDocument();
+    expect(within(drawn).queryByAltText(names[mine.cardIdsToBuy[0]])).not.toBeInTheDocument();
 
     expect(screen.getByText(/starts as Credicor with .*, buying 1 card$/)).toBeInTheDocument();
     expect(screen.getByLabelText("cdman234's board")).toHaveTextContent('Credicor');

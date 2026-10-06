@@ -39,7 +39,8 @@ interface CardResourceBurstProps {
 
 /**
  * A card that just gained or lost resources, shown for a moment over the board: the count on it ticks from
- * what it was to what it is, then the card goes away. It does not take clicks, so play carries on under it.
+ * what it was to what it is, then the card goes away. The page places it in an overlay that takes no clicks,
+ * so play carries on under it.
  */
 export function CardResourceBurst({ changes, names, onDone }: CardResourceBurstProps) {
   const [phase, setPhase] = useState<'old' | 'new' | 'exit'>('old');
@@ -55,7 +56,7 @@ export function CardResourceBurst({ changes, names, onDone }: CardResourceBurstP
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center gap-6" aria-live="polite">
+    <div className="flex items-center justify-center gap-6" aria-live="polite">
       {changes.slice(0, 3).map(change => {
         const name = names[change.cardId] ?? change.cardId;
         const type = getCardResourceType(name);
