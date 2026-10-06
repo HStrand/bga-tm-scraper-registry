@@ -18,6 +18,8 @@ import { StartingHandModal } from '@/components/replay/StartingHandModal';
 import { DraftModal } from '@/components/replay/DraftModal';
 import { EndGameSummary } from '@/components/replay/EndGameSummary';
 import { CardPlayPopup, computeTrackerDeltas, type TrackerDelta, type PopupType } from '@/components/replay/CardPlayPopup';
+import { SoundToggle } from '@/components/SoundToggle';
+import { playSounds, replayMoveSounds } from '@/lib/sfxEvents';
 import { PlayFromHere } from '@/components/play/PlayFromHere';
 import { ReplayNotFound } from '@/components/replay/ReplayNotFound';
 import type { GameLog } from '@/types/gamelog';
@@ -286,11 +288,17 @@ export function GameReplayPage() {
   // Trigger popup when stepping forward to a card play, milestone, or award move
   useEffect(() => {
     if (!gameLog || currentStep === prevStepRef.current) return;
-    const isForward = currentStep > prevStepRef.current;
+    const previousStep = prevStepRef.current;
+    const isForward = currentStep > previousStep;
     prevStepRef.current = currentStep;
     if (!isForward) { setCardPopup(null); return; }
     const move = gameLog.moves[currentStep];
     if (!move) { setCardPopup(null); return; }
+
+    // Sounds only for single steps: jumping ahead through the game would pile them up.
+    if (currentStep === previousStep + 1) {
+      playSounds(replayMoveSounds(move, gameLog.moves[currentStep - 1], currentStep === gameLog.moves.length - 1));
+    }
 
     const prevTrackers = currentStep > 0
       ? gameLog.moves[currentStep - 1]?.game_state?.player_trackers?.[move.player_id]
@@ -401,6 +409,7 @@ export function GameReplayPage() {
           >
             <Share2 size={18} />
           </button>
+          <SoundToggle />
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
           {gameLog.game_date && <span>{gameLog.game_date}</span>}

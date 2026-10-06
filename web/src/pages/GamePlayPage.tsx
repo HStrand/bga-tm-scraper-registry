@@ -6,8 +6,11 @@ import { engineGameInfo, engineSnapshot, hexKeyAt, seatId } from '@/lib/engine/e
 import { hexPlacementCost } from '@/lib/engine/payment';
 import { currentPrompt } from '@/lib/engine/prompts';
 import { startingPosition } from '@/lib/engine/startLink';
-import type { EnginePlayer, ImportIssue, MoveBody, PlayableCard } from '@/lib/engine/types';
+import type { EnginePlayer, EngineState, ImportIssue, MoveBody, PlayableCard } from '@/lib/engine/types';
 import { useEngineGame } from '@/lib/engine/useEngineGame';
+import { playSound } from '@/lib/sfx';
+import { engineMoveSounds, playSounds } from '@/lib/sfxEvents';
+import { SoundToggle } from '@/components/SoundToggle';
 import { EndGameSummary, type PlayerSummary } from '@/components/replay/EndGameSummary';
 import { ReplayMap } from '@/components/replay/ReplayMap';
 import { MILESTONE_COST, playActions, type Flow } from '@/components/play/actions';
@@ -57,15 +60,21 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
 
   // Cards that gained or lost resources in the move just made, shown for a moment over the board.
   const [burst, setBurst] = useState<{ key: number; changes: CardResourceChange[] } | null>(null);
-  const positionBefore = useRef<{ moveNumber: number; players: EnginePlayer[] } | null>(null);
+  const positionBefore = useRef<EngineState | null>(null);
   useEffect(() => {
     const before = positionBefore.current;
     // Looking back through the game is not a move: forget where we were, so returning shows nothing.
-    positionBefore.current = table && !game.viewingPast ? { moveNumber: table.state.moveNumber, players: table.state.players } : null;
+    positionBefore.current = table && !game.viewingPast ? table.state : null;
     if (!table || !before || game.viewingPast || table.state.moveNumber <= before.moveNumber) return;
     const changes = diffCardResources(before.players, table.state.players);
     if (changes.length > 0) setBurst({ key: table.state.moveNumber, changes });
-  }, [table, game.viewingPast]);
+    playSounds(engineMoveSounds(before, table.state, game.draw?.moveNumber === table.state.moveNumber));
+  }, [table, game.viewingPast, game.draw]);
+
+  // A refused move gets a low buzz; the message under the actions says why.
+  useEffect(() => {
+    if (game.error && table) playSound('bad');
+  }, [game.error, table]);
 
   // The last card of a draft round is no choice: whoever is left holding one card takes it without being asked.
   useEffect(() => {
@@ -186,6 +195,7 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
             </Link>
           </>
         )}
+        <SoundToggle />
       </TopBar>
 
       <div className="flex min-h-0 flex-1 gap-3 p-3">
