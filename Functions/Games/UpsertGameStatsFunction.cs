@@ -73,7 +73,7 @@ namespace BgaTmScraperRegistry
                     });
                 }
 
-                var service = new GameStatsService(sqlConnectionString, log);
+                var service = new GameStatsService(sqlConnectionString, Environment.GetEnvironmentVariable("BlobStorageConnectionString"), log);
                 await service.UpsertGameStatsAsync(gameLogData);
 
                 return new OkObjectResult(new

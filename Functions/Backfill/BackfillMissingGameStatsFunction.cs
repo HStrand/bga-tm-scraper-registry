@@ -63,7 +63,7 @@ namespace BgaTmScraperRegistry
                 // Services
                 var dbService = new GameDatabaseService(sqlConnectionString, log);
                 var blobService = new BlobStorageService(blobConnectionString, log);
-                var statsService = new GameStatsService(sqlConnectionString, log);
+                var statsService = new GameStatsService(sqlConnectionString, Environment.GetEnvironmentVariable("BlobStorageConnectionString"), log);
 
                 List<MissingStatsItem> worklist;
 

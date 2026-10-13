@@ -19,11 +19,22 @@ namespace BgaTmScraperRegistry.Services
         private const int CommandTimeoutSeconds = 180;
 
         private readonly string _connectionString;
+        private readonly string _blobConnectionString;
         private readonly ILogger _logger;
 
         public GameStatsService(string connectionString, ILogger logger)
+            : this(connectionString, null, logger)
+        {
+        }
+
+        /// <param name="blobConnectionString">
+        /// When set, every upsert also writes a StatsDocument to the "stats" blob container, the
+        /// hand-off to the nightly parquet build on the VM. Null keeps the SQL-only behaviour.
+        /// </param>
+        public GameStatsService(string connectionString, string blobConnectionString, ILogger logger)
         {
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+            _blobConnectionString = string.IsNullOrWhiteSpace(blobConnectionString) ? null : blobConnectionString;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -86,6 +97,28 @@ namespace BgaTmScraperRegistry.Services
             await UpsertGameGreeneryLocationsAsync(connection, greeneryLocations);
 
             _logger.LogInformation($"Successfully upserted GameStats for TableId {gameStats.TableId}");
+
+            // Second sink, shadow-deployed alongside SQL: the same rows as one document in blob
+            // storage, folded into the parquet files by the nightly job on the VM. A failure here
+            // must not fail the SQL path (and so must not make the blob trigger retry).
+            if (_blobConnectionString != null)
+            {
+                var document = StatsDocument.Build(
+                    gameLogData, gameStats, playerStats,
+                    startingHandCorporations, startingHandPreludes, startingHandCards,
+                    gameMilestones, gamePlayerAwards, parameterChanges, gameCards,
+                    cityLocations, greeneryLocations, resolvedMap);
+                try
+                {
+                    var blobService = new BlobStorageService(_blobConnectionString, _logger);
+                    var path = await blobService.UploadStatsDocumentAsync(document.BlobPath(), document.ToJson());
+                    _logger.LogInformation($"Wrote stats document {path} for TableId {gameStats.TableId}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to write stats document for TableId {gameStats.TableId}; SQL upsert stands");
+                }
+            }
         }
 
         private async Task UpsertGameStatsRowAsync(SqlConnection connection, SqlTransaction transaction, GameStats gameStats)

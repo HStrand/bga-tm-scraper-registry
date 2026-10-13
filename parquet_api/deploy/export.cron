@@ -1,3 +1,5 @@
 # Daily parquet export from Azure SQL, 03:00 UTC.
 # Install into the azureuser crontab with: crontab -u azureuser /opt/tfmstats-api/deploy/export.cron
-0 3 * * * cd /opt/tfmstats-api && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/export_db.py >> /var/log/tfmstats-export.log 2>&1
+# The shadow build and comparison run after the export in the same job, so they see that night's export.
+# Before the first run: venv/bin/python build_stats_parquet.py --bootstrap --out-dir data_shadow
+0 3 * * * cd /opt/tfmstats-api && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/export_db.py >> /var/log/tfmstats-export.log 2>&1; /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/build_stats_parquet.py --out-dir data_shadow >> /var/log/tfmstats-shadow.log 2>&1 && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/compare_stats_exports.py >> /var/log/tfmstats-shadow.log 2>&1

@@ -93,7 +93,7 @@ namespace BgaTmScraperRegistry
                     return;
                 }
 
-                var service = new GameStatsService(sqlConnectionString, log);
+                var service = new GameStatsService(sqlConnectionString, Environment.GetEnvironmentVariable("BlobStorageConnectionString"), log);
                 await service.UpsertGameStatsAsync(gameLogData);
 
                 log.LogInformation($"Game stats upsert completed for TableId {tableId} from blob {name}");

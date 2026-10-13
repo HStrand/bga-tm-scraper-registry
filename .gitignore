@@ -275,5 +275,7 @@ web/package-lock.json
 testdata/
 parquet_api/data/
 parquet_api/db_config.json
+parquet_api/blob_config.json
+parquet_api/data_shadow/
 id_rsa
 vm connection details.txt

@@ -180,6 +180,9 @@ namespace BgaTmScraperRegistry.Models
         [JsonProperty("parsed_at")]
         public string ParsedAt { get; set; }
 
+        [JsonProperty("scraper_version")]
+        public string ScraperVersion { get; set; }
+
         [JsonProperty("total_moves")]
         public int? TotalMoves { get; set; }
 

@@ -61,6 +61,23 @@ namespace BgaTmScraperRegistry.Services
             }
         }
 
+        /// <summary>
+        /// Writes a StatsDocument to the "stats" container (created on first use). Overwrites.
+        /// </summary>
+        public async Task<string> UploadStatsDocumentAsync(string blobPath, string jsonContent)
+        {
+            const string statsContainerName = "stats";
+            var containerClient = _blobServiceClient.GetBlobContainerClient(statsContainerName);
+            await containerClient.CreateIfNotExistsAsync();
+            var blobClient = containerClient.GetBlobClient(blobPath);
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(jsonContent));
+            await blobClient.UploadAsync(stream, new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders { ContentType = "application/json" }
+            });
+            return $"{statsContainerName}/{blobPath}";
+        }
+
         public async Task<bool> BlobExistsAsync(string playerPerspective, string tableId)
         {
             try
