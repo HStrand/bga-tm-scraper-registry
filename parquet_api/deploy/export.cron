@@ -1,5 +1,10 @@
-# Daily parquet export from Azure SQL, 03:00 UTC.
-# Install into the azureuser crontab with: crontab -u azureuser /opt/tfmstats-api/deploy/export.cron
-# The shadow build and comparison run after the export in the same job, so they see that night's export.
-# Before the first run: venv/bin/python build_stats_parquet.py --bootstrap --out-dir data_shadow
-0 3 * * * cd /opt/tfmstats-api && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/export_db.py >> /var/log/tfmstats-export.log 2>&1; /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/build_stats_parquet.py --out-dir data_shadow >> /var/log/tfmstats-shadow.log 2>&1 && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/compare_stats_exports.py >> /var/log/tfmstats-shadow.log 2>&1
+# Jobs of the azureuser crontab on the VM that belong to the Parquet API. The live crontab also holds
+# the scrape service restart (04:00) and prune_logs.sh (Mondays 09:00); add or change lines with
+# `crontab -e`, do not install this file wholesale. run_with_record.sh (~/bin) writes a run record to
+# ~/logs/runs/<job>_<ts>.json and the full output to ~/logs/<job>/run_<ts>.log.
+#
+# Nightly parquet export from Azure SQL, 03:00 UTC; takes about two hours (gamecards first, zip last).
+0 3 * * * /home/azureuser/bin/run_with_record.sh db-export -- bash -c 'cd /opt/tfmstats-api && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/export_db.py'
+# Shadow period (since 2026-10-13): fold the stats documents from blob storage into data_shadow/, up to the
+# export's start, and compare with the export. First run bootstraps data_shadow/ from data/.
+30 5 * * * /home/azureuser/bin/run_with_record.sh stats-shadow -- bash -c 'cd /opt/tfmstats-api && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/build_stats_parquet.py --out-dir data_shadow --bootstrap-if-missing --until-export-start && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/compare_stats_exports.py'

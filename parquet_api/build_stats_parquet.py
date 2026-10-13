@@ -16,9 +16,15 @@ os.replace, so the API never reads a half-written file. Tables with no new rows 
 
 Usage (on the VM, from /opt/tfmstats-api):
   venv/bin/python build_stats_parquet.py --bootstrap --out-dir data_shadow   # once: copy data/ -> data_shadow/
-  venv/bin/python build_stats_parquet.py --out-dir data_shadow               # nightly, shadow period
+  venv/bin/python build_stats_parquet.py --out-dir data_shadow --bootstrap-if-missing --until-export-start   # nightly, shadow
   venv/bin/python build_stats_parquet.py --by-card                           # nightly, live (writes data/)
   venv/bin/python build_stats_parquet.py --docs-dir ./docs --out-dir /tmp/x  # local test, no blob access
+
+Export start: the SQL export on the VM runs under run_with_record.sh, which writes
+~/logs/runs/db-export_<ts>.json with a started_at. --bootstrap sets the watermark to the latest
+export's start (falling back to the oldest stats file's mtime minus 30 minutes), and
+--until-export-start applies only documents written up to that start, so a night's blob-sourced
+files cover exactly what that night's SQL export covers and the comparison is clean.
 
 Blob access: blob_config.json next to this file, either {"connection_string": "..."} or
 {"account_url": "https://<account>.blob.core.windows.net", "sas_token": "..."} (read + list
@@ -93,6 +99,15 @@ def write_watermark(out_dir, last_modified, docs_applied):
             "docs_applied": docs_applied,
         }, f, indent=2)
     os.replace(tmp, path)
+
+
+def latest_export_start(records_glob):
+    """started_at of the newest db-export run record, or None."""
+    records = sorted(glob.glob(os.path.expanduser(records_glob)))
+    if not records:
+        return None
+    with open(records[-1], encoding="utf-8") as f:
+        return parse_utc(json.load(f)["started_at"])
 
 
 # ---------------------------------------------------------------- documents
@@ -218,7 +233,7 @@ def open_duckdb(temp_dir):
 
 # ---------------------------------------------------------------- main
 
-def bootstrap(data_dir, out_dir):
+def bootstrap(data_dir, out_dir, export_start):
     """Copy the eleven files from the SQL export and set the watermark to that export's start."""
     if os.path.abspath(data_dir) == os.path.abspath(out_dir):
         sys.exit("--bootstrap needs an --out-dir different from --data-dir")
@@ -229,11 +244,15 @@ def bootstrap(data_dir, out_dir):
         shutil.copy2(src, os.path.join(out_dir, f"{table}.parquet"))
         mtime = dt.datetime.fromtimestamp(os.path.getmtime(src), dt.timezone.utc).replace(tzinfo=None)
         oldest = mtime if oldest is None or mtime < oldest else oldest
-    # The export reads the tables one after another; a doc written during the export may or may
-    # not be in it. Start a little before the first file so such docs are (re)applied, which is harmless.
-    watermark = oldest - dt.timedelta(minutes=30)
+    if export_start is not None:
+        watermark = export_start - dt.timedelta(minutes=1)
+    else:
+        # No run record: the export reads the tables one after another, so start well before the
+        # first file. Docs re-applied needlessly are harmless (same rows, same keys).
+        watermark = oldest - dt.timedelta(minutes=30)
     write_watermark(out_dir, watermark, 0)
-    log(f"bootstrapped {out_dir} from {data_dir}; watermark {watermark:%Y-%m-%dT%H:%M:%S}Z")
+    log(f"bootstrapped {out_dir} from {data_dir}; watermark {watermark:%Y-%m-%dT%H:%M:%S}Z"
+        f" ({'export start' if export_start is not None else 'oldest file - 30 min'})")
 
 
 def main():
@@ -243,14 +262,21 @@ def main():
     ap.add_argument("--docs-dir", default=None, help="read documents from this directory instead of blob storage")
     ap.add_argument("--since", default=None, help="override the watermark (ISO-8601 UTC)")
     ap.add_argument("--bootstrap", action="store_true", help="copy data-dir's stats files to out-dir and set the watermark")
+    ap.add_argument("--bootstrap-if-missing", action="store_true",
+                    help="bootstrap instead of failing when out-dir has no watermark yet (for the cron job's first run)")
     ap.add_argument("--by-card", action="store_true", help="also rebuild gamecards_by_card.parquet when gamecards changed")
     ap.add_argument("--temp-dir", default="/mnt/duckdb-tmp")
     ap.add_argument("--keep-incoming", action="store_true", help="do not delete downloaded documents after applying them")
+    ap.add_argument("--export-records", default="~/logs/runs/db-export_*.json",
+                    help="run records of the SQL export (run_with_record.sh), used for the export start time")
+    ap.add_argument("--until-export-start", action="store_true",
+                    help="apply only documents written up to the latest SQL export's start, and advance the watermark to it")
     args = ap.parse_args()
     out_dir = args.out_dir or args.data_dir
 
-    if args.bootstrap:
-        bootstrap(args.data_dir, out_dir)
+    export_start = latest_export_start(args.export_records)
+    if args.bootstrap or (args.bootstrap_if_missing and read_watermark(out_dir) is None):
+        bootstrap(args.data_dir, out_dir, export_start)
         return
 
     started = time.time()
@@ -258,12 +284,25 @@ def main():
     if since is None:
         sys.exit(f"no {WATERMARK_FILE} in {out_dir}: run with --bootstrap first, or pass --since")
 
+    until = None
+    if args.until_export_start:
+        if export_start is None:
+            sys.exit(f"--until-export-start: no run record matches {args.export_records}")
+        until = export_start
+        if until <= since:
+            log(f"export start {until:%Y-%m-%dT%H:%M:%S}Z is not after the watermark {since:%Y-%m-%dT%H:%M:%S}Z; nothing to do")
+            return
+
     if args.docs_dir:
         docs = [(m, p) for m, p in local_docs(args.docs_dir) if m > since]
     else:
         docs = fetch_new_docs(since, os.path.join(out_dir, "incoming"))
-    log(f"{len(docs)} document(s) since {since:%Y-%m-%dT%H:%M:%S}Z")
+    if until is not None:
+        docs = [(m, p) for m, p in docs if m <= until]
+    log(f"{len(docs)} document(s) since {since:%Y-%m-%dT%H:%M:%S}Z" + (f" up to {until:%Y-%m-%dT%H:%M:%S}Z" if until else ""))
     if not docs:
+        if until is not None:
+            write_watermark(out_dir, until, 0)
         return
 
     per_table = collect_rows(docs)
@@ -285,7 +324,7 @@ def main():
         log(f"gamecards_by_card rebuilt in {time.time() - t0:.0f}s")
     con.close()
 
-    newest = max(m for m, _ in docs)
+    newest = until if until is not None else max(m for m, _ in docs)
     write_watermark(out_dir, newest, len(docs))
     if not args.docs_dir and not args.keep_incoming:
         for _, path in docs:
