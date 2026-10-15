@@ -278,6 +278,8 @@ export function GameReplayPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!gameLog) return;
+      // Typing in the comment fields shouldn't move the replay
+      if (e.target instanceof HTMLInputElement && e.target.type === 'text') return;
       // A focused slider (reached with Tab) handles its own arrow keys
       const onSlider = e.target instanceof HTMLInputElement && e.target.type === 'range';
       if (onSlider && e.key.startsWith('Arrow')) return;
