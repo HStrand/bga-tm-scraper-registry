@@ -228,6 +228,7 @@ function CardSection({ cards, title, color, cardResources, defaultViewMode = 'gr
             max={200}
             value={cardSize}
             onChange={e => setCardSize(Number(e.target.value))}
+            onMouseUp={e => (e.target as HTMLInputElement).blur()}
             className="w-20 h-1 accent-slate-400 flex-shrink-0"
             title="Card size"
           />

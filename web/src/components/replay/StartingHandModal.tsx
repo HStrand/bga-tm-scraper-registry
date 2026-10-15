@@ -130,6 +130,7 @@ export function StartingHandModal({ players, onClose, cardSize, onCardSizeChange
                 max={180}
                 value={cardSize}
                 onChange={e => setCardSize(Number(e.target.value))}
+                onMouseUp={e => (e.target as HTMLInputElement).blur()}
                 className="w-20 h-1.5 accent-amber-500"
               />
             </div>
