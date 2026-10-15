@@ -230,7 +230,7 @@ export const CardSection = memo(function CardSection({ cards, title, color, card
           ))}
         </div>
         {viewMode !== 'hidden' && (
-          <input type="range" min={60} max={180} value={cardSize} onChange={e => setCardSize(Number(e.target.value))} className="w-20 h-1.5 accent-amber-500 flex-shrink-0" title="Card size" />
+          <input type="range" min={60} max={180} value={cardSize} onChange={e => setCardSize(Number(e.target.value))} onMouseUp={e => (e.target as HTMLInputElement).blur()} className="w-20 h-1.5 accent-amber-500 flex-shrink-0" title="Card size" />
         )}
         <div className="h-px flex-1 bg-white/10" />
       </div>

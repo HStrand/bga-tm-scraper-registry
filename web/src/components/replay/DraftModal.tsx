@@ -173,6 +173,7 @@ export function DraftModal({ draft, onClose, cardSize, onCardSizeChange: setCard
                 max={160}
                 value={cardSize}
                 onChange={e => setCardSize(Number(e.target.value))}
+                onMouseUp={e => (e.target as HTMLInputElement).blur()}
                 className="w-20 h-1.5 accent-amber-500"
               />
             </div>

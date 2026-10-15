@@ -231,7 +231,7 @@ export function PlayerTrackers({ player, inline }: { player: Pick<PlayerSnapshot
             </button>
             <span>Resources</span>
             {showResources && (
-              <input type="range" min={0.6} max={1.4} step={0.05} value={resourcesZoom} onChange={e => setResourcesZoom(Number(e.target.value))} className="w-16 h-1.5 accent-amber-500" title="Resource size" />
+              <input type="range" min={0.6} max={1.4} step={0.05} value={resourcesZoom} onChange={e => setResourcesZoom(Number(e.target.value))} onMouseUp={e => (e.target as HTMLInputElement).blur()} className="w-16 h-1.5 accent-amber-500" title="Resource size" />
             )}
           </div>
           <div className="flex items-center gap-1">
@@ -244,7 +244,7 @@ export function PlayerTrackers({ player, inline }: { player: Pick<PlayerSnapshot
             </button>
             <span>Tags</span>
             {showTags && (
-              <input type="range" min={0.6} max={1.4} step={0.05} value={tagsZoom} onChange={e => setTagsZoom(Number(e.target.value))} className="w-16 h-1.5 accent-amber-500" title="Tag size" />
+              <input type="range" min={0.6} max={1.4} step={0.05} value={tagsZoom} onChange={e => setTagsZoom(Number(e.target.value))} onMouseUp={e => (e.target as HTMLInputElement).blur()} className="w-16 h-1.5 accent-amber-500" title="Tag size" />
             )}
           </div>
         </div>

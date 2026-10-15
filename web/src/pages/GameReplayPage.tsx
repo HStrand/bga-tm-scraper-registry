@@ -278,6 +278,9 @@ export function GameReplayPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!gameLog) return;
+      // A focused slider (reached with Tab) handles its own arrow keys
+      const onSlider = e.target instanceof HTMLInputElement && e.target.type === 'range';
+      if (onSlider && e.key.startsWith('Arrow')) return;
       if (e.key === 'ArrowLeft' && currentStep > 0) setCurrentStep(s => resolveStep(s - 1, 'backward'));
       else if (e.key === 'ArrowRight' && currentStep < gameLog.moves.length - 1) setCurrentStep(s => resolveStep(s + 1, 'forward'));
       else if (/^[0-9]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -592,6 +595,7 @@ export function GameReplayPage() {
                 step={0.05}
                 value={mapScale}
                 onChange={e => setMapScale(parseFloat(e.target.value))}
+                onMouseUp={e => (e.target as HTMLInputElement).blur()}
                 className="w-32 accent-amber-500"
               />
               <span className="text-xs text-slate-500">+</span>
