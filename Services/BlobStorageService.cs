@@ -78,6 +78,37 @@ namespace BgaTmScraperRegistry.Services
             return $"{statsContainerName}/{blobPath}";
         }
 
+        /// <summary>
+        /// Stores a gzipped replay page as replays/replay_{tableId}.html.gz (one per table; the
+        /// container is created on first use). Overwrites, so the newest capture wins.
+        /// </summary>
+        public async Task<string> UploadReplayHtmlAsync(int tableId, byte[] gzipContent, IDictionary<string, string> metadata)
+        {
+            const string replaysContainerName = "replays";
+            var containerClient = _blobServiceClient.GetBlobContainerClient(replaysContainerName);
+            await containerClient.CreateIfNotExistsAsync();
+            var blobPath = $"replay_{tableId}.html.gz";
+            var blobClient = containerClient.GetBlobClient(blobPath);
+            using var stream = new MemoryStream(gzipContent);
+            await blobClient.UploadAsync(stream, new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = "text/html; charset=utf-8",
+                    ContentEncoding = "gzip"
+                },
+                Metadata = metadata
+            });
+            return $"{replaysContainerName}/{blobPath}";
+        }
+
+        public async Task<bool> ReplayHtmlExistsAsync(int tableId)
+        {
+            var containerClient = _blobServiceClient.GetBlobContainerClient("replays");
+            var response = await containerClient.GetBlobClient($"replay_{tableId}.html.gz").ExistsAsync();
+            return response.Value;
+        }
+
         public async Task<bool> BlobExistsAsync(string playerPerspective, string tableId)
         {
             try

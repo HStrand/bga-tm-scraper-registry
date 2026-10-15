@@ -279,12 +279,22 @@ export function GameReplayPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!gameLog) return;
+      // Typing in the comment fields shouldn't move the replay
+      if (e.target instanceof HTMLInputElement && e.target.type === 'text') return;
+      // A focused slider (reached with Tab) handles its own arrow keys
+      const onSlider = e.target instanceof HTMLInputElement && e.target.type === 'range';
+      if (onSlider && e.key.startsWith('Arrow')) return;
       if (e.key === 'ArrowLeft' && currentStep > 0) setCurrentStep(s => resolveStep(s - 1, 'backward'));
       else if (e.key === 'ArrowRight' && currentStep < gameLog.moves.length - 1) setCurrentStep(s => resolveStep(s + 1, 'forward'));
+      else if (/^[0-9]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // 1-9 jump to generations 1-9, 0 to generation 10
+        const bounds = generationBoundaries.get(e.key === '0' ? 10 : Number(e.key));
+        if (bounds) jumpTo(bounds.start);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [gameLog, currentStep, resolveStep]);
+  }, [gameLog, currentStep, resolveStep, generationBoundaries, jumpTo]);
 
   // Trigger popup when stepping forward to a card play, milestone, or award move
   useEffect(() => {
@@ -590,6 +600,7 @@ export function GameReplayPage() {
                 step={0.05}
                 value={mapScale}
                 onChange={e => setMapScale(parseFloat(e.target.value))}
+                onMouseUp={e => (e.target as HTMLInputElement).blur()}
                 className="w-32 accent-amber-500"
               />
               <span className="text-xs text-slate-500">+</span>

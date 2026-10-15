@@ -167,6 +167,7 @@ export function DiscardPileModal({ cards, onClose }: DiscardPileModalProps) {
                 max={200}
                 value={cardSize}
                 onChange={e => setCardSize(Number(e.target.value))}
+                onMouseUp={e => (e.target as HTMLInputElement).blur()}
                 className="w-20 h-1 accent-amber-500 mr-2"
                 title="Card size"
               />

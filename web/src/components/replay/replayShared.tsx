@@ -237,7 +237,7 @@ export function PlayerTrackers({ player, inline, view, onViewChange }: {
             </button>
             <span>Resources</span>
             {showResources && (
-              <input type="range" min={MIN_TRACKER_ZOOM} max={MAX_TRACKER_ZOOM} step={0.05} value={resourcesZoom} onChange={e => change({ resourcesZoom: Number(e.target.value) })} className="w-16 h-1.5 accent-amber-500" title="Resource size" />
+              <input type="range" min={MIN_TRACKER_ZOOM} max={MAX_TRACKER_ZOOM} step={0.05} value={resourcesZoom} onChange={e => change({ resourcesZoom: Number(e.target.value) })} onMouseUp={e => (e.target as HTMLInputElement).blur()} className="w-16 h-1.5 accent-amber-500" title="Resource size" />
             )}
           </div>
           <div className="flex items-center gap-1">
@@ -250,7 +250,7 @@ export function PlayerTrackers({ player, inline, view, onViewChange }: {
             </button>
             <span>Tags</span>
             {showTags && (
-              <input type="range" min={MIN_TRACKER_ZOOM} max={MAX_TRACKER_ZOOM} step={0.05} value={tagsZoom} onChange={e => change({ tagsZoom: Number(e.target.value) })} className="w-16 h-1.5 accent-amber-500" title="Tag size" />
+              <input type="range" min={MIN_TRACKER_ZOOM} max={MAX_TRACKER_ZOOM} step={0.05} value={tagsZoom} onChange={e => change({ tagsZoom: Number(e.target.value) })} onMouseUp={e => (e.target as HTMLInputElement).blur()} className="w-16 h-1.5 accent-amber-500" title="Tag size" />
             )}
           </div>
         </div>
