@@ -123,4 +123,12 @@ describe('usePlayerAreaLayout', () => {
     expect(area.trackers).toEqual({ ...DEFAULT_TRACKER_VIEW, resourcesZoom: 1.4, showTags: false });
     expect(area.sections).toEqual({ Hand: { cardSize: 180 } });
   });
+
+  it('keeps an area placed below the fold there, since the page scrolls down to it', () => {
+    const below = window.innerHeight + 500;
+    localStorage.setItem(playerAreaKey(0), JSON.stringify({ position: { x: 100, y: below } }));
+    const [area] = renderHook(() => usePlayerAreaLayout(0)).result.current;
+
+    expect(area.position).toEqual({ x: 100, y: below });
+  });
 });

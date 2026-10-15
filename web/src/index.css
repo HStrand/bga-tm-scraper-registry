@@ -63,9 +63,18 @@
 /* ── Replay page custom styles ── */
 
 .replay-bg {
-  background: radial-gradient(ellipse at 50% 0%, #1a1040 0%, #0a0a1a 50%, #050510 100%);
   min-height: 100vh;
   position: relative;
+}
+/* Pinned to the viewport rather than painted on the div: dragged-out player areas are positioned
+   absolutely and extend the page's scroll height without making this div any taller. */
+.replay-bg::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, #1a1040 0%, #0a0a1a 50%, #050510 100%);
+  pointer-events: none;
+  z-index: -1;
 }
 .replay-bg::before {
   content: '';

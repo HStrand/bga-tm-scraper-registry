@@ -281,21 +281,28 @@ export const PlayerCard = memo(function PlayerCard({
     onCollapse();
   };
 
+  // A dragged panel is positioned absolutely against the container's offsetParent (the page
+  // background), not position:fixed, so it scrolls with the page and extends its scroll height.
+  // That ancestor also sits outside the columns' overflow-x clip, so the panel isn't clipped.
+  const toPageCoords = (rect: DOMRect) => {
+    const block = containerRef.current?.offsetParent?.getBoundingClientRect();
+    return { x: rect.left - (block?.left ?? 0), y: rect.top - (block?.top ?? 0) };
+  };
+
   const startDrag = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button')) return;
     e.preventDefault();
     const el = overlayRef.current;
     if (!el) return;
-    const rect = el.getBoundingClientRect();
-    // Use viewport coords since we switch to position:fixed when dragged
-    dragging.current = { startX: e.clientX, startY: e.clientY, startLeft: rect.left, startTop: rect.top };
+    const start = toPageCoords(el.getBoundingClientRect());
+    dragging.current = { startX: e.pageX, startY: e.pageY, startLeft: start.x, startTop: start.y };
 
     const onMove = (ev: MouseEvent) => {
       const d = dragging.current;
       if (!d) return;
       updateArea({ position: {
-        x: d.startLeft + (ev.clientX - d.startX),
-        y: d.startTop + (ev.clientY - d.startY),
+        x: d.startLeft + (ev.pageX - d.startX),
+        y: d.startTop + (ev.pageY - d.startY),
       } });
     };
     const onUp = () => {
@@ -313,11 +320,12 @@ export const PlayerCard = memo(function PlayerCard({
     const el = overlayRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const parentRect = containerRef.current?.getBoundingClientRect();
+    // Resizing from the left/top moves the panel, which detaches it into page coords like a drag
+    const start = dragPos ?? toPageCoords(rect);
     resizing.current = {
       edge, startX: e.clientX, startY: e.clientY, startW: rect.width, startH: rect.height,
-      startPosX: dragPos?.x ?? rect.left - (parentRect?.left ?? 0),
-      startPosY: dragPos?.y ?? rect.top - (parentRect?.top ?? 0),
+      startPosX: start.x,
+      startPosY: start.y,
     };
 
     const onMove = (ev: MouseEvent) => {
@@ -418,19 +426,20 @@ export const PlayerCard = memo(function PlayerCard({
   return (
     <div
       ref={containerRef}
-      className="relative"
-      style={{ zIndex: isExpanded ? 50 : 1 }}
+      // Unpositioned while dragged so the panel's containing block is the page, not this wrapper
+      className={dragPos ? undefined : 'relative'}
+      style={dragPos ? undefined : { zIndex: isExpanded ? 50 : 1 }}
       onMouseEnter={onExpand}
       onMouseLeave={() => { if (!pinned) onCollapse(); }}
     >
-      {/* Compact card — in flow when not dragged, fixed when dragged */}
+      {/* Compact card — in flow when not dragged, at the drag position when dragged */}
       {dragPos ? (
         <>
           {/* Placeholder to keep column spacing */}
           <div style={{ visibility: 'hidden' }}>{compactCard}</div>
           {/* Floating compact card at drag position — hidden while expanded */}
           {!isExpanded && (
-            <div className="w-[320px]" style={{ position: 'fixed', top: dragPos.y, left: dragPos.x, zIndex: 1 }}>
+            <div className="w-[320px]" style={{ position: 'absolute', top: dragPos.y, left: dragPos.x, zIndex: 1 }}>
               {compactCard}
             </div>
           )}
@@ -448,10 +457,11 @@ export const PlayerCard = memo(function PlayerCard({
             : 'opacity-0 pointer-events-none'
           }`}
         style={{
-          position: dragPos ? 'fixed' : 'absolute',
+          position: 'absolute',
           top: dragPos ? `${dragPos.y}px` : 0,
           left: dragPos ? `${dragPos.x}px` : 0,
-          width: isExpanded ? (customSize ? `${customSize.w}px` : 'calc(100vw - 14rem)') : '100%',
+          zIndex: dragPos ? (isExpanded ? 50 : 1) : undefined,
+          width: isExpanded ? (customSize ? `${customSize.w}px` : 'calc(100vw - 14rem)') : dragPos ? '320px' : '100%',
           maxWidth: customSize ? undefined : '900px',
           height: customSize && isExpanded ? `${customSize.h}px` : undefined,
           maxHeight: isExpanded ? (customSize ? `${customSize.h}px` : '85vh') : '0px',

@@ -49,6 +49,14 @@ function withinReach(top: number, left: number, width: number): { top: number; l
   };
 }
 
+/**
+ * Like {@link withinReach}, for a panel placed on the page rather than the viewport: the page grows
+ * to fit it and can be scrolled down to it, so only its top edge is kept from going above the page.
+ */
+function withinPageReach(top: number, left: number, width: number): { top: number; left: number } {
+  return { top: Math.max(top, 0), left: withinReach(top, left, width).left };
+}
+
 /** Re-renders on window resize, so floating panels are pulled back within reach when it shrinks. */
 function useViewportSize() {
   const [, setTick] = useState(0);
@@ -124,7 +132,7 @@ export const MIN_AREA_HEIGHT = 200;
 const COMPACT_AREA_WIDTH = 320;
 
 export type PlayerAreaLayout = {
-  /** Viewport position once dragged out of the left column, or null while it sits there. */
+  /** Page position once dragged out of the left column, or null while it sits there. */
   position: { x: number; y: number } | null;
   /** Size of the expanded area once resized, or null for the default size. */
   size: { w: number; h: number } | null;
@@ -149,7 +157,7 @@ function sanitizePlayerArea(stored: unknown): PlayerAreaLayout {
     : null;
   let position: PlayerAreaLayout['position'] = null;
   if (isObj(s.position) && isNum(s.position.x) && isNum(s.position.y)) {
-    const { top, left } = withinReach(s.position.y, s.position.x, size?.w ?? COMPACT_AREA_WIDTH);
+    const { top, left } = withinPageReach(s.position.y, s.position.x, size?.w ?? COMPACT_AREA_WIDTH);
     position = { x: left, y: top };
   }
   const t = isObj(s.trackers) ? s.trackers : {};
