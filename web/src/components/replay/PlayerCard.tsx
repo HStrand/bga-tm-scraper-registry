@@ -6,9 +6,15 @@ import type { PlayerSnapshotVM } from '@/lib/replay/viewModel';
 import { getCubeImage, startingPlayerImg, PlayerTrackers, getIcon, resourceIcons } from './replayShared';
 import trImg from '/assets/tr.png';
 import { getCardCategory, getCardResourceType } from '@/lib/cardMetadata';
+import {
+  usePlayerAreaLayout, MIN_AREA_WIDTH, MIN_AREA_HEIGHT, MIN_CARD_SIZE, MAX_CARD_SIZE,
+  type CardViewMode, type CardSectionView,
+} from '@/hooks/useReplayLayout';
 
 interface PlayerCardProps {
   playerId: string;
+  /** Position in the player column; the area's placement and view settings are remembered per slot. */
+  slot: number;
   playerName: string;
   corporation: string;
   color: string;
@@ -23,8 +29,6 @@ interface PlayerCardProps {
 }
 
 export type CardZone = 'headquarters' | 'hand' | 'played' | 'sold';
-
-type ViewMode = 'grid' | 'stack' | 'synthetic' | 'hidden';
 
 // --- Resource badge with icon ---
 function ResourceBadge({ card, count, cardSize, size = 'normal' }: { card: string; count: number; cardSize: number; size?: 'normal' | 'small' }) {
@@ -198,17 +202,19 @@ const CardSynthetic = memo(function CardSynthetic({ cards, cardResources, cardSi
   );
 });
 
-export const CardSection = memo(function CardSection({ cards, title, color, cardResources, defaultViewMode = 'grid', defaultCardSize = 140, activatedCards, costContext, onCardClick }: {
-  cards: string[]; title: string; color: string; cardResources?: Record<string, number>; defaultViewMode?: ViewMode; defaultCardSize?: number; activatedCards?: Set<string>; costContext?: CostContext; onCardClick?: (card: string) => void;
+export const CardSection = memo(function CardSection({ cards, title, color, cardResources, defaultViewMode = 'grid', defaultCardSize = 140, view, onViewChange, activatedCards, costContext, onCardClick }: {
+  cards: string[]; title: string; color: string; cardResources?: Record<string, number>; defaultViewMode?: CardViewMode; defaultCardSize?: number;
+  view?: CardSectionView; onViewChange: (view: CardSectionView) => void;
+  activatedCards?: Set<string>; costContext?: CostContext; onCardClick?: (card: string) => void;
 }) {
-  const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
-  const [cardSize, setCardSize] = useState(defaultCardSize);
+  const viewMode = view?.viewMode ?? defaultViewMode;
+  const cardSize = view?.cardSize ?? defaultCardSize;
   if (cards.length === 0) return null;
 
   const btnClass = "p-1 rounded transition-colors";
   const activeClass = "bg-white/10 text-white";
   const inactiveClass = "text-slate-500 hover:text-slate-300";
-  const viewButtons: { mode: ViewMode; icon: typeof Grid3X3; tip: string }[] = [
+  const viewButtons: { mode: CardViewMode; icon: typeof Grid3X3; tip: string }[] = [
     { mode: 'grid', icon: Grid3X3, tip: 'Grid' },
     { mode: 'stack', icon: Layers, tip: 'Stack' },
     { mode: 'synthetic', icon: List, tip: 'List' },
@@ -224,13 +230,13 @@ export const CardSection = memo(function CardSection({ cards, title, color, card
         </h3>
         <div className="flex items-center bg-white/5 rounded-lg p-0.5 gap-0.5 flex-shrink-0">
           {viewButtons.map(({ mode, icon: Icon, tip }) => (
-            <button key={mode} onClick={() => setViewMode(mode)} className={`${btnClass} ${viewMode === mode ? activeClass : inactiveClass}`} title={tip}>
+            <button key={mode} onClick={() => onViewChange({ ...view, viewMode: mode })} className={`${btnClass} ${viewMode === mode ? activeClass : inactiveClass}`} title={tip}>
               <Icon className="w-4 h-4" />
             </button>
           ))}
         </div>
         {viewMode !== 'hidden' && (
-          <input type="range" min={60} max={180} value={cardSize} onChange={e => setCardSize(Number(e.target.value))} className="w-20 h-1.5 accent-amber-500 flex-shrink-0" title="Card size" />
+          <input type="range" min={MIN_CARD_SIZE} max={MAX_CARD_SIZE} value={cardSize} onChange={e => onViewChange({ ...view, cardSize: Number(e.target.value) })} className="w-20 h-1.5 accent-amber-500 flex-shrink-0" title="Card size" />
         )}
         <div className="h-px flex-1 bg-white/10" />
       </div>
@@ -246,7 +252,7 @@ export const CardSection = memo(function CardSection({ cards, title, color, card
 });
 
 export const PlayerCard = memo(function PlayerCard({
-  playerName, corporation, color, elo, player,
+  slot, playerName, corporation, color, elo, player,
   isStartingPlayer, isExpanded, onExpand, onCollapse, onCardClick,
 }: PlayerCardProps) {
   const { vp, headquarters, played, sold, cardResources } = player;
@@ -260,17 +266,18 @@ export const PlayerCard = memo(function PlayerCard({
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const compactRef = useRef<HTMLDivElement>(null);
-  const [pinned, setPinned] = useState(false);
-  const [customSize, setCustomSize] = useState<{ w: number; h: number } | null>(null);
-  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [area, updateArea] = usePlayerAreaLayout(slot);
+  const { pinned, size: customSize, position: dragPos } = area;
+  const sectionView = (title: string) => ({
+    view: area.sections[title],
+    onViewChange: (view: CardSectionView) => updateArea(prev => ({ sections: { ...prev.sections, [title]: view } })),
+  });
   type ResizeEdge = 'right' | 'bottom' | 'left' | 'top' | 'corner-br' | 'corner-bl' | 'corner-tr' | 'corner-tl';
   const resizing = useRef<{ edge: ResizeEdge; startX: number; startY: number; startW: number; startH: number; startPosX: number; startPosY: number } | null>(null);
   const dragging = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
 
   const handleClose = () => {
-    setPinned(false);
-    setCustomSize(null);
-    setDragPos(null);
+    updateArea({ pinned: false, size: null, position: null });
     onCollapse();
   };
 
@@ -286,10 +293,10 @@ export const PlayerCard = memo(function PlayerCard({
     const onMove = (ev: MouseEvent) => {
       const d = dragging.current;
       if (!d) return;
-      setDragPos({
+      updateArea({ position: {
         x: d.startLeft + (ev.clientX - d.startX),
         y: d.startTop + (ev.clientY - d.startY),
-      });
+      } });
     };
     const onUp = () => {
       dragging.current = null;
@@ -298,7 +305,7 @@ export const PlayerCard = memo(function PlayerCard({
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
-  }, []);
+  }, [updateArea]);
 
   const startResize = useCallback((edge: ResizeEdge, e: React.MouseEvent) => {
     e.preventDefault();
@@ -328,13 +335,14 @@ export const PlayerCard = memo(function PlayerCard({
       let newX = dragPos?.x ?? r.startPosX;
       let newY = dragPos?.y ?? r.startPosY;
 
-      if (resizesRight) newW = Math.max(320, r.startW + dx);
-      if (resizesLeft) { newW = Math.max(320, r.startW - dx); newX = r.startPosX + (r.startW - newW); }
-      if (resizesBottom) newH = Math.max(200, r.startH + dy);
-      if (resizesTop) { newH = Math.max(200, r.startH - dy); newY = r.startPosY + (r.startH - newH); }
+      if (resizesRight) newW = Math.max(MIN_AREA_WIDTH, r.startW + dx);
+      if (resizesLeft) { newW = Math.max(MIN_AREA_WIDTH, r.startW - dx); newX = r.startPosX + (r.startW - newW); }
+      if (resizesBottom) newH = Math.max(MIN_AREA_HEIGHT, r.startH + dy);
+      if (resizesTop) { newH = Math.max(MIN_AREA_HEIGHT, r.startH - dy); newY = r.startPosY + (r.startH - newH); }
 
-      setCustomSize({ w: newW, h: newH });
-      if (resizesLeft || resizesTop) setDragPos({ x: newX, y: newY });
+      updateArea(resizesLeft || resizesTop
+        ? { size: { w: newW, h: newH }, position: { x: newX, y: newY } }
+        : { size: { w: newW, h: newH } });
     };
     const onUp = () => {
       resizing.current = null;
@@ -343,7 +351,7 @@ export const PlayerCard = memo(function PlayerCard({
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
-  }, [dragPos]);
+  }, [dragPos, updateArea]);
 
   useEffect(() => {
     if (!isExpanded) return;
@@ -354,10 +362,18 @@ export const PlayerCard = memo(function PlayerCard({
     return () => window.removeEventListener('keydown', onKey);
   }, [isExpanded, onCollapse]);
 
-  // Unpin if collapsed externally (e.g. another card hovered)
+  // An area left pinned last time opens expanded.
   useEffect(() => {
-    if (!isExpanded) setPinned(false);
-  }, [isExpanded]);
+    if (pinned) onExpand();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Unpin if collapsed externally (e.g. another card hovered)
+  const wasExpanded = useRef(isExpanded);
+  useEffect(() => {
+    if (wasExpanded.current && !isExpanded) updateArea({ pinned: false });
+    wasExpanded.current = isExpanded;
+  }, [isExpanded, updateArea]);
 
   const cubeImg = getCubeImage(color);
   const d = vp?.breakdown;
@@ -507,7 +523,7 @@ export const PlayerCard = memo(function PlayerCard({
               )}
             </div>
             <button
-              onClick={(e) => { e.stopPropagation(); setPinned(p => !p); }}
+              onClick={(e) => { e.stopPropagation(); updateArea(prev => ({ pinned: !prev.pinned })); }}
               className={`nav-btn w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${pinned ? 'text-amber-400' : 'text-slate-400 hover:text-white'}`}
               title={pinned ? 'Unpin' : 'Pin open'}
             >
@@ -525,7 +541,7 @@ export const PlayerCard = memo(function PlayerCard({
         {/* Stats — Resources + Tags */}
         <div className="flex flex-wrap items-start gap-1 px-3 py-2.5 flex-shrink-0 border-t border-white/10">
           {player.statsKnown && (
-            <PlayerTrackers player={player} inline />
+            <PlayerTrackers player={player} inline view={area.trackers} onViewChange={trackers => updateArea({ trackers })} />
           )}
         </div>
 
@@ -550,13 +566,13 @@ export const PlayerCard = memo(function PlayerCard({
           return (
         <div className="overflow-y-auto scrollbar-subtle flex-1 min-h-0 mr-2">
           <div className="px-3 py-2.5 space-y-3 border-t border-white/10">
-            <CardSection cards={allHQ} title="Headquarters" color={color} defaultViewMode="grid" defaultCardSize={180} onCardClick={clickIn.headquarters} />
-            <CardSection cards={hand} title="Hand" color={color} defaultViewMode="grid" defaultCardSize={130} costContext={{ played: [...allHQ, ...played], corporation }} onCardClick={clickIn.hand} />
-            <CardSection cards={actions} title="Actions" color="#60a5fa" cardResources={cardResources} defaultViewMode="grid" activatedCards={activatedCards} onCardClick={clickIn.played} />
-            <CardSection cards={effects} title="Effects" color="#60a5fa" cardResources={cardResources} defaultViewMode="stack" onCardClick={clickIn.played} />
-            <CardSection cards={automated} title="Automated" color="#4ade80" cardResources={cardResources} defaultViewMode="synthetic" onCardClick={clickIn.played} />
-            <CardSection cards={events} title="Events" color="#f87171" cardResources={cardResources} defaultViewMode="hidden" onCardClick={clickIn.played} />
-            <CardSection cards={sold} title="Sold" color={color} defaultViewMode="hidden" onCardClick={clickIn.sold} />
+            <CardSection cards={allHQ} title="Headquarters" {...sectionView('Headquarters')} color={color} defaultViewMode="grid" defaultCardSize={180} onCardClick={clickIn.headquarters} />
+            <CardSection cards={hand} title="Hand" {...sectionView('Hand')} color={color} defaultViewMode="grid" defaultCardSize={130} costContext={{ played: [...allHQ, ...played], corporation }} onCardClick={clickIn.hand} />
+            <CardSection cards={actions} title="Actions" {...sectionView('Actions')} color="#60a5fa" cardResources={cardResources} defaultViewMode="grid" activatedCards={activatedCards} onCardClick={clickIn.played} />
+            <CardSection cards={effects} title="Effects" {...sectionView('Effects')} color="#60a5fa" cardResources={cardResources} defaultViewMode="stack" onCardClick={clickIn.played} />
+            <CardSection cards={automated} title="Automated" {...sectionView('Automated')} color="#4ade80" cardResources={cardResources} defaultViewMode="synthetic" onCardClick={clickIn.played} />
+            <CardSection cards={events} title="Events" {...sectionView('Events')} color="#f87171" cardResources={cardResources} defaultViewMode="hidden" onCardClick={clickIn.played} />
+            <CardSection cards={sold} title="Sold" {...sectionView('Sold')} color={color} defaultViewMode="hidden" onCardClick={clickIn.sold} />
           </div>
         </div>
           );
@@ -583,6 +599,7 @@ export const PlayerCard = memo(function PlayerCard({
   // Custom comparator: skip re-render if card arrays haven't changed by content
   if (prev.isExpanded !== next.isExpanded) return false;
   if (prev.playerId !== next.playerId) return false;
+  if (prev.slot !== next.slot) return false;
   if (prev.player.vp?.total !== next.player.vp?.total) return false;
   if (prev.color !== next.color) return false;
   if (prev.isStartingPlayer !== next.isStartingPlayer) return false;

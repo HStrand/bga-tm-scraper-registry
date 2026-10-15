@@ -6,6 +6,7 @@ import temperatureImg from '/assets/temperature.png';
 import oxygenImg from '/assets/oxygen.png';
 import oceanImg from '/assets/ocean.png';
 import type { PlayerSnapshotVM, ResourceKey, TagKey } from '@/lib/replay/viewModel';
+import { DEFAULT_TRACKER_VIEW, MIN_TRACKER_ZOOM, MAX_TRACKER_ZOOM, type TrackerView } from '@/hooks/useReplayLayout';
 
 // --- Icon loading ---
 export const resourceIcons = import.meta.glob('../../../assets/resources/*.png', { eager: true }) as Record<string, { default: string }>;
@@ -205,12 +206,17 @@ function TagCell({ icon, value, title, large }: { icon?: string; value: number; 
   );
 }
 
-export function PlayerTrackers({ player, inline }: { player: Pick<PlayerSnapshotVM, 'resources' | 'production' | 'tags' | 'tileCounts'>; inline?: boolean }) {
+export function PlayerTrackers({ player, inline, view, onViewChange }: {
+  player: Pick<PlayerSnapshotVM, 'resources' | 'production' | 'tags' | 'tileCounts'>;
+  inline?: boolean;
+  /** Visibility and size of the inline rows; kept here unless the caller holds it. */
+  view?: TrackerView;
+  onViewChange?: (view: TrackerView) => void;
+}) {
   const { resources, production, tags, tileCounts } = player;
-  const [showResources, setShowResources] = useState(true);
-  const [showTags, setShowTags] = useState(true);
-  const [resourcesZoom, setResourcesZoom] = useState(1);
-  const [tagsZoom, setTagsZoom] = useState(1);
+  const [ownView, setOwnView] = useState(DEFAULT_TRACKER_VIEW);
+  const { showResources, resourcesZoom, showTags, tagsZoom } = view ?? ownView;
+  const change = (patch: Partial<TrackerView>) => (onViewChange ?? setOwnView)({ ...(view ?? ownView), ...patch });
 
   if (inline) {
     const toggleBtn = "p-1 rounded transition-colors";
@@ -223,7 +229,7 @@ export function PlayerTrackers({ player, inline }: { player: Pick<PlayerSnapshot
         <div className="basis-full flex items-center gap-3 text-xs text-slate-500 mb-1">
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setShowResources(v => !v)}
+              onClick={() => change({ showResources: !showResources })}
               className={`${toggleBtn} ${showResources ? activeToggle : inactiveToggle}`}
               title={showResources ? 'Hide resources' : 'Show resources'}
             >
@@ -231,12 +237,12 @@ export function PlayerTrackers({ player, inline }: { player: Pick<PlayerSnapshot
             </button>
             <span>Resources</span>
             {showResources && (
-              <input type="range" min={0.6} max={1.4} step={0.05} value={resourcesZoom} onChange={e => setResourcesZoom(Number(e.target.value))} className="w-16 h-1.5 accent-amber-500" title="Resource size" />
+              <input type="range" min={MIN_TRACKER_ZOOM} max={MAX_TRACKER_ZOOM} step={0.05} value={resourcesZoom} onChange={e => change({ resourcesZoom: Number(e.target.value) })} className="w-16 h-1.5 accent-amber-500" title="Resource size" />
             )}
           </div>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setShowTags(v => !v)}
+              onClick={() => change({ showTags: !showTags })}
               className={`${toggleBtn} ${showTags ? activeToggle : inactiveToggle}`}
               title={showTags ? 'Hide tags' : 'Show tags'}
             >
@@ -244,7 +250,7 @@ export function PlayerTrackers({ player, inline }: { player: Pick<PlayerSnapshot
             </button>
             <span>Tags</span>
             {showTags && (
-              <input type="range" min={0.6} max={1.4} step={0.05} value={tagsZoom} onChange={e => setTagsZoom(Number(e.target.value))} className="w-16 h-1.5 accent-amber-500" title="Tag size" />
+              <input type="range" min={MIN_TRACKER_ZOOM} max={MAX_TRACKER_ZOOM} step={0.05} value={tagsZoom} onChange={e => change({ tagsZoom: Number(e.target.value) })} className="w-16 h-1.5 accent-amber-500" title="Tag size" />
             )}
           </div>
         </div>

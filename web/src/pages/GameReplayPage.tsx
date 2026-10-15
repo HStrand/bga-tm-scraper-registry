@@ -22,6 +22,7 @@ import { SoundToggle } from '@/components/SoundToggle';
 import { playSounds, replayMoveSounds } from '@/lib/sfxEvents';
 import { PlayFromHere } from '@/components/play/PlayFromHere';
 import { ReplayNotFound } from '@/components/replay/ReplayNotFound';
+import { useReplayLayout, DEFAULT_MAP_SCALE } from '@/hooks/useReplayLayout';
 import type { GameLog } from '@/types/gamelog';
 
 export function GameReplayPage() {
@@ -48,17 +49,17 @@ export function GameReplayPage() {
   const [cardPopup, setCardPopup] = useState<{ type: PopupType; name: string; player: string; color: string; deltas: TrackerDelta[]; subtitle?: string } | null>(null);
   const prevStepRef = useRef<number>(-1);
   const prevDraftGen = useRef<number | null>(null);
-  const [mapScale, setMapScale] = useState(0.8);
-  const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
+  const {
+    mapScale, setMapScale, mapOffset, setMapOffset,
+    controlsUnlinked, setControlsUnlinked, controlsOffset, setControlsOffset,
+    logPosition, setLogPosition,
+  } = useReplayLayout();
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
   const collapseTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  const [controlsUnlinked, setControlsUnlinked] = useState(false);
-  const [controlsOffset, setControlsOffset] = useState({ x: 0, y: 0 });
   const [isDraggingControls, setIsDraggingControls] = useState(false);
   const controlsDragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
 
-  const [logPosition, setLogPosition] = useState<{ top: number; left: number } | null>(null);
   const [isDraggingLog, setIsDraggingLog] = useState(false);
   const logDragStart = useRef({ x: 0, y: 0, top: 0, left: 0 });
   const logContainerRef = useRef<HTMLDivElement>(null);
@@ -525,13 +526,15 @@ export function GameReplayPage() {
       <div className="flex gap-4 overflow-x-clip">
         {/* Left: Player cards */}
         <div className="w-[320px] flex-shrink-0 space-y-3">
-          {players.filter(p => snapshot.players[p.id]?.vp).map(p => {
+          {players.map((p, slot) => {
+            if (!snapshot.players[p.id]?.vp) return null;
             const player = snapshot.players[p.id];
             const corporation = p.corporation ?? '';
             return (
               <PlayerCard
                 key={p.id}
                 playerId={p.id}
+                slot={slot}
                 playerName={p.name}
                 corporation={player.headquarters.includes(corporation) ? corporation : ''}
                 color={p.color}
@@ -591,7 +594,7 @@ export function GameReplayPage() {
               />
               <span className="text-xs text-slate-500">+</span>
               <span className="text-xs text-slate-400 w-10 text-center">{Math.round(mapScale * 100)}%</span>
-              <button onClick={() => { setMapScale(0.8); setMapOffset({ x: 0, y: 0 }); }} className="text-xs text-slate-500 hover:text-slate-300 ml-1" title="Reset map zoom">↺</button>
+              <button onClick={() => { setMapScale(DEFAULT_MAP_SCALE); setMapOffset({ x: 0, y: 0 }); }} className="text-xs text-slate-500 hover:text-slate-300 ml-1" title="Reset map zoom">↺</button>
             </div>
 
             <div style={{ width: `${mapScale * 100}%` }} className="relative">
@@ -745,7 +748,8 @@ export function GameReplayPage() {
                 window.addEventListener('mousemove', onMove);
                 window.addEventListener('mouseup', onUp);
               }}
-              title="Drag to reposition"
+              onDoubleClick={() => setLogPosition(null)}
+              title="Drag to reposition, double-click to put back"
             >
               <GripHorizontal className="w-5 h-5" />
             </div>
