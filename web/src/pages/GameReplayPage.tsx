@@ -280,10 +280,15 @@ export function GameReplayPage() {
       if (!gameLog) return;
       if (e.key === 'ArrowLeft' && currentStep > 0) setCurrentStep(s => resolveStep(s - 1, 'backward'));
       else if (e.key === 'ArrowRight' && currentStep < gameLog.moves.length - 1) setCurrentStep(s => resolveStep(s + 1, 'forward'));
+      else if (/^[0-9]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // 1-9 jump to generations 1-9, 0 to generation 10
+        const bounds = generationBoundaries.get(e.key === '0' ? 10 : Number(e.key));
+        if (bounds) jumpTo(bounds.start);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [gameLog, currentStep, resolveStep]);
+  }, [gameLog, currentStep, resolveStep, generationBoundaries, jumpTo]);
 
   // Trigger popup when stepping forward to a card play, milestone, or award move
   useEffect(() => {
