@@ -180,6 +180,7 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
   const ratio = mapDefinition ? mapDefinition.imageWidth / mapDefinition.imageHeight : 1;
   const zoomed = flow?.kind === 'card' ? flow.cardId : null;
   const showHand = player != null && actor != null && !game.viewingPast;
+  const canUndo = !game.viewingPast && !flow && game.history.length > 0;
 
   return (
     <div className="flex h-screen flex-col overflow-hidden text-slate-200">
@@ -234,25 +235,30 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
 
           {showHand && (
             <div className="pointer-events-none absolute bottom-[-12px] left-0 right-0 z-40 flex flex-col items-center gap-2">
-              {actions && act && !flow && (
+              {((actions && act && !flow) || canUndo) && (
                 <div className="pointer-events-auto flex flex-wrap justify-center gap-2">
-                  {actions.canConvertPlants && (
+                  {canUndo && (
+                    <PlayButton disabled={game.busy} onClick={game.undo} title="Take back the latest move; the same cards are drawn again">
+                      ← Undo
+                    </PlayButton>
+                  )}
+                  {actions && act && !flow && actions.canConvertPlants && (
                     <PlayButton disabled={game.busy} onClick={() => act.convertPlants(actions)}>
                       🌱 {actions.plantConversionCost} plants → greenery
                     </PlayButton>
                   )}
-                  {actions.canConvertHeat && (
+                  {actions && act && !flow && actions.canConvertHeat && (
                     <PlayButton disabled={game.busy} onClick={act.convertHeat}>🔥 8 heat → temperature</PlayButton>
                   )}
-                  {actions.canPerformFirstAction && (
+                  {actions && act && !flow && actions.canPerformFirstAction && (
                     <PlayButton variant="primary" disabled={game.busy} onClick={() => submit({ type: 'PerformFirstAction' })}>
                       Corporation first action
                     </PlayButton>
                   )}
-                  {actions.canEndTurn && (
+                  {actions && act && !flow && actions.canEndTurn && (
                     <PlayButton variant="primary" disabled={game.busy} onClick={() => submit({ type: 'EndTurn' })}>End turn</PlayButton>
                   )}
-                  {actions.canPass && (
+                  {actions && act && !flow && actions.canPass && (
                     <PlayButton variant="primary" disabled={game.busy} onClick={() => submit({ type: 'Pass' })} title="Take no more actions this generation">
                       Pass for this generation
                     </PlayButton>
@@ -306,11 +312,6 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
                 )}
                 <p className="text-sm text-slate-300">{sentence}</p>
               </>
-            )}
-            {!game.viewingPast && game.history.length > 0 && (
-              <PlayButton className="mt-2" disabled={game.busy} onClick={game.undo} title="Undo the latest move; the same cards are drawn again">
-                Take back the last move
-              </PlayButton>
             )}
             {game.error && <p role="alert" className="mt-2 text-sm text-red-400">{game.error}</p>}
           </section>

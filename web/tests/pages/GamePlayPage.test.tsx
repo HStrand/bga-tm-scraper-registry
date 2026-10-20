@@ -142,13 +142,13 @@ describe('GamePlayPage', () => {
     await within(turn).findByText(/Action 2 of 2/);
     expect(api.position()).toBe(1);
 
-    await user.click(within(turn).getByRole('button', { name: 'Take back the last move' }));
+    await user.click(screen.getByRole('button', { name: '← Undo' }));
 
     expect(await within(turn).findByText(/Action 1 of 2/)).toBeInTheDocument();
     expect(api.position()).toBe(0);
     expect(screen.getByRole('button', { name: /^Protected Habitats/ })).toBeInTheDocument();
     // Nothing is left to take back at the position the game started from.
-    expect(within(turn).queryByRole('button', { name: 'Take back the last move' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '← Undo' })).not.toBeInTheDocument();
   });
 
   it('looks back at an earlier position without offering moves there', async () => {
