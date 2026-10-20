@@ -277,5 +277,6 @@ parquet_api/data/
 parquet_api/db_config.json
 parquet_api/blob_config.json
 parquet_api/data_shadow/
+parquet_api/duckdb-tmp/
 id_rsa
 vm connection details.txt

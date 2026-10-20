@@ -49,7 +49,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--a", default=os.path.join(HERE, "data"), help="SQL-sourced files")
     ap.add_argument("--b", default=os.path.join(HERE, "data_shadow"), help="blob-sourced files")
-    ap.add_argument("--temp-dir", default="/mnt/duckdb-tmp")
+    ap.add_argument("--temp-dir", default=os.path.join(HERE, "duckdb-tmp"), help="DuckDB spill directory")
     args = ap.parse_args()
 
     os.makedirs(args.temp_dir, exist_ok=True)

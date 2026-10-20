@@ -265,7 +265,7 @@ def main():
     ap.add_argument("--bootstrap-if-missing", action="store_true",
                     help="bootstrap instead of failing when out-dir has no watermark yet (for the cron job's first run)")
     ap.add_argument("--by-card", action="store_true", help="also rebuild gamecards_by_card.parquet when gamecards changed")
-    ap.add_argument("--temp-dir", default="/mnt/duckdb-tmp")
+    ap.add_argument("--temp-dir", default=os.path.join(HERE, "duckdb-tmp"), help="DuckDB spill directory")
     ap.add_argument("--keep-incoming", action="store_true", help="do not delete downloaded documents after applying them")
     ap.add_argument("--export-records", default="~/logs/runs/db-export_*.json",
                     help="run records of the SQL export (run_with_record.sh), used for the export start time")

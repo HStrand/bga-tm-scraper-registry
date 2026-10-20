@@ -122,7 +122,8 @@ conn.close()
 # Produce a card-sorted copy of gamecards for fast per-card API queries.
 # Kept separate from gamecards.parquet so the analyst bundle stays compact.
 import duckdb
-SORTED_TMP_DIR = "/mnt/duckdb-tmp"
+# Next to the code: /mnt is the root-owned ephemeral disk on the VM, wiped on reboot.
+SORTED_TMP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "duckdb-tmp")
 os.makedirs(SORTED_TMP_DIR, exist_ok=True)
 src = os.path.join(OUTPUT_DIR, "gamecards.parquet")
 dst = os.path.join(OUTPUT_DIR, "gamecards_by_card.parquet")
