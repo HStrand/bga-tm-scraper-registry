@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Gamepad2 } from 'lucide-react';
 import { engineApi, EngineError, type EngineApi } from '@/lib/engine/client';
+import { newSeed, startLinkPath } from '@/lib/engine/startLink';
 import type { ForkPoint, ForkPointsResponse } from '@/lib/engine/types';
 import { PlayButton } from './controls';
 
@@ -42,16 +43,10 @@ export function PlayFromHere({ tableId, moveIndex, playerNames, api = engineApi 
       .catch(e => setError(e instanceof EngineError ? e.message : 'The game engine could not be reached.'));
   };
 
-  const start = async (fork: ForkPoint) => {
+  // The position's page deals the game and remembers it, so its address is what to bookmark or pass on.
+  const start = (fork: ForkPoint) => {
     setStarting(true);
-    setError(null);
-    try {
-      const imported = await api.importBga(tableId, fork.moveIndex);
-      navigate(`/play/${imported.gameId}`, { state: { issues: imported.issues } });
-    } catch (e) {
-      setError(e instanceof EngineError ? e.message : 'The game could not be started.');
-      setStarting(false);
-    }
+    navigate(startLinkPath({ tableId, moveIndex: fork.moveIndex, seed: newSeed() }));
   };
 
   const fork = forkPoints ? nearestForkPoint(forkPoints.forkPoints, moveIndex) : undefined;

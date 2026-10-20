@@ -291,7 +291,7 @@ describe('GamePlayPage', () => {
 
     expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
     expect(await navigator.clipboard.readText()).toBe(
-      `${window.location.origin}/play/new?table=${source.tableId}&move=${source.moveIndex}&seed=${shuffleSeed}`);
+      `${window.location.origin}/play?table=${source.tableId}&move=${source.moveIndex}&seed=${shuffleSeed}`);
   });
 
   it('shows what the importer warned about', async () => {

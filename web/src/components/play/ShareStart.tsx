@@ -2,10 +2,7 @@ import { useState } from 'react';
 import { Share2 } from 'lucide-react';
 import { startLinkPath, type StartingPosition } from '@/lib/engine/startLink';
 
-/**
- * Copies a link that deals a fresh game from the position this game started from. The page's own address
- * is this very game, so passing that on shares the moves already made rather than the starting position.
- */
+/** Copies the starting position's address: everyone who opens it gets a game of their own from it. */
 export function ShareStart({ start }: { start: StartingPosition }) {
   const [copied, setCopied] = useState(false);
   const link = `${window.location.origin}${startLinkPath(start)}`;
