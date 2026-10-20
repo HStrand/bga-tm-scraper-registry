@@ -307,6 +307,11 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
                 <p className="text-sm text-slate-300">{sentence}</p>
               </>
             )}
+            {!game.viewingPast && game.history.length > 0 && (
+              <PlayButton className="mt-2" disabled={game.busy} onClick={game.undo} title="Undo the latest move; the same cards are drawn again">
+                Take back the last move
+              </PlayButton>
+            )}
             {game.error && <p role="alert" className="mt-2 text-sm text-red-400">{game.error}</p>}
           </section>
 
