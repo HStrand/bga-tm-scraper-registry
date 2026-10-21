@@ -24,6 +24,8 @@ export interface EngineGame {
   draw: Draw | null;
   dismissDraw: () => void;
   submit: (seat: number, move: MoveBody) => Promise<void>;
+  /** Take back the latest move. */
+  undo: () => Promise<void>;
   /** Show the position after the given move; moves can only be made from the latest one. */
   viewAt: (moveNumber: number) => Promise<void>;
   viewLatest: () => void;
@@ -93,6 +95,27 @@ export function useEngineGame(gameId: string | undefined, api: EngineApi = engin
     }
   }, [gameId, api]);
 
+  const undo = useCallback(async () => {
+    const current = latestRef.current;
+    if (!gameId || !current) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const table = await api.undo(gameId, current.state.moveNumber);
+      setLatest(table);
+      setPast(null);
+      setDraw(null);
+      for (const moveNumber of [...pastTables.current.keys()]) {
+        if (moveNumber >= table.state.moveNumber) pastTables.current.delete(moveNumber);
+      }
+      setHistory(moves => moves.filter(m => m.moveNumber <= table.state.moveNumber));
+    } catch (e) {
+      setError(e instanceof EngineError ? e.message : 'The move could not be taken back.');
+    } finally {
+      setBusy(false);
+    }
+  }, [gameId, api]);
+
   const viewAt = useCallback(async (moveNumber: number) => {
     if (!gameId || !latest) return;
     if (moveNumber >= latest.state.moveNumber) {
@@ -123,6 +146,7 @@ export function useEngineGame(gameId: string | undefined, api: EngineApi = engin
     draw,
     dismissDraw,
     submit,
+    undo,
     viewAt,
     viewLatest,
   };

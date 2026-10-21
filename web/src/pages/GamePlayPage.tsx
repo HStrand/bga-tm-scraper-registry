@@ -35,9 +35,20 @@ const SIDE_COLUMNS = 680;
  * A game on the engine, played hot-seat: every hand is visible and whoever is at the keyboard moves for
  * each player in turn. Reached from a replay's "Play from here".
  */
-export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
-  const { gameId } = useParams<{ gameId: string }>();
-  const importIssues = (useLocation().state as { issues?: ImportIssue[] } | null)?.issues ?? [];
+interface GamePlayPageProps {
+  api?: EngineApi;
+  /** The game to show; without it, the one named in the address (/play/:gameId, for links handed out earlier). */
+  gameId?: string;
+  issues?: ImportIssue[];
+  /** Offered when the page is a starting position's: forget this game and deal a fresh one from the position. */
+  onDealAgain?: () => void;
+}
+
+export function GamePlayPage({ api = engineApi, gameId: givenGameId, issues, onDealAgain }: GamePlayPageProps) {
+  const { gameId: routeGameId } = useParams<{ gameId: string }>();
+  const gameId = givenGameId ?? routeGameId;
+  const routeIssues = (useLocation().state as { issues?: ImportIssue[] } | null)?.issues;
+  const importIssues = issues ?? routeIssues ?? [];
   const game = useEngineGame(gameId, api);
   const { table } = game;
 
@@ -180,6 +191,7 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
   const ratio = mapDefinition ? mapDefinition.imageWidth / mapDefinition.imageHeight : 1;
   const zoomed = flow?.kind === 'card' ? flow.cardId : null;
   const showHand = player != null && actor != null && !game.viewingPast;
+  const canUndo = !game.viewingPast && !flow && game.history.length > 0;
 
   return (
     <div className="flex h-screen flex-col overflow-hidden text-slate-200">
@@ -190,6 +202,16 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
               Table {source.tableId}, {source.moveIndex === 0 ? 'played again from the opening deal' : `forked after move ${source.moveNumber ?? source.moveIndex + 1}`}
             </span>
             {start && <ShareStart start={start} />}
+            {onDealAgain && (
+              <button
+                type="button"
+                onClick={onDealAgain}
+                title="Forget this game and deal a fresh one from the same starting position, with the same cards in the same order"
+                className="whitespace-nowrap font-semibold text-amber-400 hover:text-amber-300"
+              >
+                Deal again
+              </button>
+            )}
             <Link to={`/replay/${source.tableId}?move=${source.moveIndex + 1}`} className="whitespace-nowrap font-semibold text-amber-400 hover:text-amber-300">
               Back to the replay
             </Link>
@@ -234,25 +256,30 @@ export function GamePlayPage({ api = engineApi }: { api?: EngineApi }) {
 
           {showHand && (
             <div className="pointer-events-none absolute bottom-[-12px] left-0 right-0 z-40 flex flex-col items-center gap-2">
-              {actions && act && !flow && (
+              {((actions && act && !flow) || canUndo) && (
                 <div className="pointer-events-auto flex flex-wrap justify-center gap-2">
-                  {actions.canConvertPlants && (
+                  {canUndo && (
+                    <PlayButton disabled={game.busy} onClick={game.undo} title="Take back the latest move; the same cards are drawn again">
+                      ← Undo
+                    </PlayButton>
+                  )}
+                  {actions && act && !flow && actions.canConvertPlants && (
                     <PlayButton disabled={game.busy} onClick={() => act.convertPlants(actions)}>
                       🌱 {actions.plantConversionCost} plants → greenery
                     </PlayButton>
                   )}
-                  {actions.canConvertHeat && (
+                  {actions && act && !flow && actions.canConvertHeat && (
                     <PlayButton disabled={game.busy} onClick={act.convertHeat}>🔥 8 heat → temperature</PlayButton>
                   )}
-                  {actions.canPerformFirstAction && (
+                  {actions && act && !flow && actions.canPerformFirstAction && (
                     <PlayButton variant="primary" disabled={game.busy} onClick={() => submit({ type: 'PerformFirstAction' })}>
                       Corporation first action
                     </PlayButton>
                   )}
-                  {actions.canEndTurn && (
+                  {actions && act && !flow && actions.canEndTurn && (
                     <PlayButton variant="primary" disabled={game.busy} onClick={() => submit({ type: 'EndTurn' })}>End turn</PlayButton>
                   )}
-                  {actions.canPass && (
+                  {actions && act && !flow && actions.canPass && (
                     <PlayButton variant="primary" disabled={game.busy} onClick={() => submit({ type: 'Pass' })} title="Take no more actions this generation">
                       Pass for this generation
                     </PlayButton>

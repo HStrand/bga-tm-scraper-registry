@@ -58,6 +58,13 @@ export function recordedEngine(start = 0, recording: Exchange[] = session): Engi
       ? session[position].table
       : { ...session[at].table, legalMoves: {}, latestMoveNumber: session[position].table.state.moveNumber },
     history: async () => ({ moves: [], cardNames: {} }),
+    undo: async (_gameId, moveNumber) => {
+      if (position === 0 || moveNumber !== session[position].table.state.moveNumber) {
+        throw new EngineError(`Cannot take back move ${moveNumber} at position ${position}`, position === 0 ? 400 : 409);
+      }
+      position--;
+      return session[position].table;
+    },
     submitMove: async (_gameId, move) => {
       const next = session[position + 1];
       if (!next?.move || !sameMove(next.move, move)) {

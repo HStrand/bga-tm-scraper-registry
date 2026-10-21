@@ -136,6 +136,21 @@ describe('GamePlayPage', () => {
     expect(screen.getByRole('button', { name: /^Protected Habitats/ })).toBeInTheDocument();
   });
 
+  it('takes back the last move and offers the position before it again', async () => {
+    const { api, turn, user } = await renderGame();
+    await playFromHand(user, /^Protected Habitats/);
+    await within(turn).findByText(/Action 2 of 2/);
+    expect(api.position()).toBe(1);
+
+    await user.click(screen.getByRole('button', { name: '← Undo' }));
+
+    expect(await within(turn).findByText(/Action 1 of 2/)).toBeInTheDocument();
+    expect(api.position()).toBe(0);
+    expect(screen.getByRole('button', { name: /^Protected Habitats/ })).toBeInTheDocument();
+    // Nothing is left to take back at the position the game started from.
+    expect(screen.queryByRole('button', { name: '← Undo' })).not.toBeInTheDocument();
+  });
+
   it('looks back at an earlier position without offering moves there', async () => {
     const { turn, user } = await renderGame();
     await playFromHand(user, /^Protected Habitats/);
@@ -276,7 +291,7 @@ describe('GamePlayPage', () => {
 
     expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
     expect(await navigator.clipboard.readText()).toBe(
-      `${window.location.origin}/play/new?table=${source.tableId}&move=${source.moveIndex}&seed=${shuffleSeed}`);
+      `${window.location.origin}/play?table=${source.tableId}&move=${source.moveIndex}&seed=${shuffleSeed}`);
   });
 
   it('shows what the importer warned about', async () => {

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { PlayFromHere, nearestForkPoint } from '@/components/play/PlayFromHere';
 import { EngineError, type EngineApi } from '@/lib/engine/client';
+import { parseStartLink } from '@/lib/engine/startLink';
 import { forkPointsFixture, importFixture, recordedEngine } from '../../lib/engine/engineFixtures';
 
 const playerNames = { '98490496': 'cdman234', '86296239': 'StrandedKnight' };
@@ -14,9 +15,11 @@ const generation4 = forkPointsFixture.forkPoints.find(f => f.generation === 4 &&
 // As for a log from before the scraper recorded what each player was dealt: nothing in generation 1.
 const fromGeneration2 = { ...forkPointsFixture, forkPoints: forkPointsFixture.forkPoints.filter(f => f.generation > 1) };
 
+/** The position's page would deal the game; here it only reports where the button went. */
 function Landed() {
   const location = useLocation();
-  return <p>Arrived at {location.pathname} with {(location.state as { issues: unknown[] }).issues.length} issues</p>;
+  const start = parseStartLink(location.search);
+  return <p>Arrived at {location.pathname} for table {start?.tableId} move {start?.moveIndex} with seed {start?.seed}</p>;
 }
 
 function renderButton(moveIndex: number, api: Partial<EngineApi> = {}) {
@@ -25,7 +28,7 @@ function renderButton(moveIndex: number, api: Partial<EngineApi> = {}) {
     <MemoryRouter initialEntries={['/replay/824655675']}>
       <Routes>
         <Route path="/replay/:tableId" element={<PlayFromHere tableId="824655675" moveIndex={moveIndex} playerNames={playerNames} api={engine} />} />
-        <Route path="/play/:gameId" element={<Landed />} />
+        <Route path="/play" element={<Landed />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -62,8 +65,8 @@ describe('PlayFromHere', () => {
 
     await user.click(screen.getByRole('button', { name: 'Play' }));
 
-    expect(importBga).toHaveBeenCalledWith('824655675', generation4.moveIndex);
-    expect(await screen.findByText('Arrived at /play/game-1 with 0 issues')).toBeInTheDocument();
+    expect(await screen.findByText(new RegExp(`Arrived at /play for table 824655675 move ${generation4.moveIndex} with seed \\d+`))).toBeInTheDocument();
+    expect(importBga).not.toHaveBeenCalled();
   });
 
   it('explains when the game can only be picked up earlier than the position shown', async () => {
@@ -92,7 +95,7 @@ describe('PlayFromHere', () => {
 
     await user.click(screen.getByRole('button', { name: 'Play' }));
 
-    expect(importBga).toHaveBeenCalledWith('824655675', 11);
+    expect(await screen.findByText(/Arrived at \/play for table 824655675 move 11 with seed \d+/)).toBeInTheDocument();
   });
 
   it('names the start of generation 1 as the point after the preludes', async () => {
@@ -116,7 +119,7 @@ describe('PlayFromHere', () => {
 
     await user.click(screen.getByRole('button', { name: 'Play' }));
 
-    expect(importBga).toHaveBeenCalledWith('824655675', 0);
+    expect(await screen.findByText(/Arrived at \/play for table 824655675 move 0 with seed \d+/)).toBeInTheDocument();
   });
 
   it('offers the opening deal from later positions as well', async () => {
@@ -126,7 +129,7 @@ describe('PlayFromHere', () => {
     await user.click(screen.getByRole('button', { name: 'Play from here' }));
     await user.click(await screen.findByRole('button', { name: 'Play from the opening deal' }));
 
-    expect(importBga).toHaveBeenCalledWith('824655675', 0);
+    expect(await screen.findByText(/Arrived at \/play for table 824655675 move 0 with seed \d+/)).toBeInTheDocument();
   });
 
   it('offers the earliest position when generation 1 cannot be picked up at all', async () => {

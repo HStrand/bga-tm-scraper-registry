@@ -57,6 +57,10 @@ export const engineApi = {
     call<TableResponse>(() => http.post(`/games/${encodeURIComponent(gameId)}/table/moves`, move)),
 
   /** The moves played so far, with the names of all cards (moves name cards that have since left play). */
+  /** Take back move `moveNumber`, which must be the latest; returns the table before it. */
+  undo: (gameId: string, moveNumber: number) =>
+    call<TableResponse>(() => http.post(`/games/${encodeURIComponent(gameId)}/table/undo`, { moveNumber })),
+
   history: (gameId: string) =>
     call<{ moves: HistoryEntry[]; cardNames: Record<string, string> }>(
       () => http.get(`/games/${encodeURIComponent(gameId)}/history`)),
