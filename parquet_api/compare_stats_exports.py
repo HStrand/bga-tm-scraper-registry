@@ -6,9 +6,13 @@ Reports, per table: rows on each side, TableIds only on one side, TableIds whose
 with a few sample ids. One line per table, meant for the stats-shadow run log.
 
 Three kinds of difference are known noise and are counted but do not fail the run:
-- late: the SQL side was updated after the export started. The export reads the tables one
-  after another for two hours while uploads keep landing; the fold stops at the export's start,
-  so such a game is ahead on the SQL side until the next night.
+- late: the SQL side was updated after the export started, or within the grace window before it
+  (default five minutes). The export reads the tables one after another for two hours while
+  uploads keep landing; the fold stops at the export's start, so such a game is ahead on the SQL
+  side until the next night. The grace window covers the other direction of the same gap: the
+  Registry API stamps UpdatedAt before its SQL writes and uploads the document after them, and
+  the writes take up to a few minutes, so a document can land after the export start while its
+  SQL rows are stamped before it.
 - dupes: the SQL side holds the same row more than once (ignoring UpdatedAt). Two uploads of
   the same game seconds apart interleave their delete-then-insert on the SQL heaps and both row
   sets survive. The document path has no such race, so the shadow is the correct side.
@@ -71,11 +75,11 @@ def per_table_digest(path):
     """
 
 
-def compare(con, a_path, b_path, export_start):
+def compare(con, a_path, b_path, export_start, grace):
     con.execute(f"CREATE OR REPLACE TEMP TABLE a AS {per_table_digest(a_path)}")
     con.execute(f"CREATE OR REPLACE TEMP TABLE b AS {per_table_digest(b_path)}")
     rows_a, rows_b = con.execute("SELECT (SELECT sum(n) FROM a), (SELECT sum(n) FROM b)").fetchone()
-    late_clause = f"a.last > TIMESTAMP '{export_start:%Y-%m-%d %H:%M:%S}'" if export_start is not None else "FALSE"
+    late_clause = f"a.last > TIMESTAMP '{export_start - grace:%Y-%m-%d %H:%M:%S}'" if export_start is not None else "FALSE"
 
     def ids(query):
         return [r[0] for r in con.execute(query).fetchall()]
@@ -103,6 +107,8 @@ def main():
     ap.add_argument("--temp-dir", default=os.path.join(HERE, "duckdb-tmp"), help="DuckDB spill directory")
     ap.add_argument("--export-records", default="~/logs/runs/db-export_*.json",
                     help="run records of the SQL export (run_with_record.sh); gives the export's start and exit code")
+    ap.add_argument("--grace-minutes", type=float, default=5,
+                    help="SQL rows stamped this long before the export start also count as late (their document may have landed after it)")
     args = ap.parse_args()
 
     stamp = f"{dt.datetime.now(dt.timezone.utc):%Y-%m-%dT%H:%M:%S}Z"
@@ -128,7 +134,7 @@ def main():
             print(f"{stamp} {table}: MISSING a={os.path.exists(a_path)} b={os.path.exists(b_path)}")
             clean = False
             continue
-        r = compare(con, a_path, b_path, export_start)
+        r = compare(con, a_path, b_path, export_start, dt.timedelta(minutes=args.grace_minutes))
         ok = not (r["only_a"] or r["only_b"] or r["differ"])
         clean = clean and ok
         sample = lambda ids: (" e.g. " + ",".join(str(i) for i in ids[:5])) if ids else ""
