@@ -1,3 +1,14 @@
+"""Export the Azure SQL database to parquet files in data/.
+
+Options (since 2026-11-10, when the eleven stats tables moved to the blob-document fold):
+  --stats-dir DIR   write the eleven stats tables to DIR instead of data/ (the safety-net week:
+                    the fold owns data/, the SQL export of the same tables goes to data_shadow/
+                    for compare_stats_exports.py)
+  --skip-stats      do not export the eleven stats tables at all
+With either option gamecards_by_card.parquet is not rebuilt here (build_stats_parquet.py --by-card
+does it). The bundle tfmstats_db.zip is always built from data/.
+"""
+import argparse
 import json
 import os
 import pyodbc
@@ -8,7 +19,24 @@ import pyarrow.parquet as pq
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db_config.json")
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
+# The eleven stats tables (lower-cased SQL names); see build_stats_parquet.py.
+STATS_TABLES = {
+    "gamestats", "gameplayerstats", "gamecards", "startinghandcorporations", "startinghandpreludes",
+    "startinghandcards", "gamemilestones", "gameplayerawards", "parameterchanges",
+    "gamecitylocations", "gamegreenerylocations",
+}
+
+ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+ap.add_argument("--stats-dir", default=None, help="write the eleven stats tables here instead of data/")
+ap.add_argument("--skip-stats", action="store_true", help="do not export the eleven stats tables")
+args = ap.parse_args()
+if args.stats_dir and args.skip_stats:
+    ap.error("--stats-dir and --skip-stats exclude each other")
+STATS_DIR = os.path.abspath(args.stats_dir) if args.stats_dir else OUTPUT_DIR
+STATS_IN_OUTPUT = not args.skip_stats and STATS_DIR == os.path.abspath(OUTPUT_DIR)
+
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(STATS_DIR, exist_ok=True)
 
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     db = json.load(f)
@@ -88,7 +116,11 @@ for _, row in tables_df.iterrows():
     schema_name = row["TABLE_SCHEMA"]
     table_name = row["TABLE_NAME"]
     filename = table_name.lower() + ".parquet"
-    filepath = os.path.join(OUTPUT_DIR, filename)
+    is_stats = table_name.lower() in STATS_TABLES
+    if is_stats and args.skip_stats:
+        print(f"Skipping [{schema_name}].[{table_name}] (--skip-stats)")
+        continue
+    filepath = os.path.join(STATS_DIR if is_stats else OUTPUT_DIR, filename)
 
     print(f"Exporting [{schema_name}].[{table_name}] -> {filename} ... ", end="", flush=True)
 
@@ -121,6 +153,7 @@ conn.close()
 
 # Produce a card-sorted copy of gamecards for fast per-card API queries.
 # Kept separate from gamecards.parquet so the analyst bundle stays compact.
+# Only when this export wrote gamecards into data/; otherwise the fold rebuilds it.
 import duckdb
 # Next to the code: /mnt is the root-owned ephemeral disk on the VM, wiped on reboot.
 SORTED_TMP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "duckdb-tmp")
@@ -128,20 +161,23 @@ os.makedirs(SORTED_TMP_DIR, exist_ok=True)
 src = os.path.join(OUTPUT_DIR, "gamecards.parquet")
 dst = os.path.join(OUTPUT_DIR, "gamecards_by_card.parquet")
 tmp = dst + ".tmp"
-print(f"Sorting {src} by Card -> {dst} ... ", end="", flush=True)
-dk = duckdb.connect()
-dk.execute("SET memory_limit='1500MB'")
-dk.execute("SET threads=1")
-dk.execute(f"SET temp_directory='{SORTED_TMP_DIR}'")
-dk.execute(
-    f"""
-    COPY (SELECT * FROM read_parquet('{src}') ORDER BY Card, TableId)
-    TO '{tmp}' (FORMAT PARQUET, COMPRESSION SNAPPY, ROW_GROUP_SIZE 50000)
-    """
-)
-dk.close()
-os.replace(tmp, dst)
-print(f"{os.path.getsize(dst) / 1024 / 1024:.1f} MB")
+if STATS_IN_OUTPUT:
+    print(f"Sorting {src} by Card -> {dst} ... ", end="", flush=True)
+    dk = duckdb.connect()
+    dk.execute("SET memory_limit='1500MB'")
+    dk.execute("SET threads=1")
+    dk.execute(f"SET temp_directory='{SORTED_TMP_DIR}'")
+    dk.execute(
+        f"""
+        COPY (SELECT * FROM read_parquet('{src}') ORDER BY Card, TableId)
+        TO '{tmp}' (FORMAT PARQUET, COMPRESSION SNAPPY, ROW_GROUP_SIZE 50000)
+        """
+    )
+    dk.close()
+    os.replace(tmp, dst)
+    print(f"{os.path.getsize(dst) / 1024 / 1024:.1f} MB")
+else:
+    print("Skipping the card-sorted copy (stats tables not exported to data/)")
 
 import zipfile
 

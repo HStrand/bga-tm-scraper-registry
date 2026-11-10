@@ -17,7 +17,7 @@ os.replace, so the API never reads a half-written file. Tables with no new rows 
 Usage (on the VM, from /opt/tfmstats-api):
   venv/bin/python build_stats_parquet.py --bootstrap --out-dir data_shadow   # once: copy data/ -> data_shadow/
   venv/bin/python build_stats_parquet.py --out-dir data_shadow --bootstrap-if-missing --until-export-start   # nightly, shadow
-  venv/bin/python build_stats_parquet.py --by-card                           # nightly, live (writes data/)
+  venv/bin/python build_stats_parquet.py --by-card --until-export-start      # nightly, live (writes data/)
   venv/bin/python build_stats_parquet.py --docs-dir ./docs --out-dir /tmp/x  # local test, no blob access
 
 Export start: the SQL export on the VM runs under run_with_record.sh, which writes
@@ -155,11 +155,21 @@ def local_docs(docs_dir):
 
 
 def collect_rows(docs):
-    """Latest document wins per (table, key). Returns {table: {key: [rows]}}, applying docs in order."""
-    per_table = {t: {} for t in TABLES}
-    for _, path in sorted(docs):
+    """Latest document wins per (table, key). Returns {table: {key: [rows]}}.
+
+    Documents are applied in the order their upsert finished: the document's WrittenAt
+    (millisecond, stamped by the Registry API after its SQL writes), falling back to the blob
+    timestamp (one-second resolution) for a document without it; ties broken by file name.
+    Two uploads of the same game within a second therefore resolve to the one that finished last.
+    """
+    loaded = []
+    for modified, path in docs:
         with open(path, encoding="utf-8") as f:
             doc = json.load(f)
+        loaded.append((parse_utc(doc.get("WrittenAt")) or modified, path, doc))
+    loaded.sort(key=lambda item: (item[0], item[1]))
+    per_table = {t: {} for t in TABLES}
+    for _, _, doc in loaded:
         tables = doc.get("Tables") or {}
         for table, key_cols in KEYS.items():
             rows = tables.get(table) or []

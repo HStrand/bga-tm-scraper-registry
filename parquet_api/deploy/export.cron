@@ -3,8 +3,11 @@
 # `crontab -e`, do not install this file wholesale. run_with_record.sh (~/bin) writes a run record to
 # ~/logs/runs/<job>_<ts>.json and the full output to ~/logs/<job>/run_<ts>.log.
 #
-# Nightly parquet export from Azure SQL, 03:00 UTC; takes about two hours (gamecards first, zip last).
-0 3 * * * /home/azureuser/bin/run_with_record.sh db-export -- bash -c 'cd /opt/tfmstats-api && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/export_db.py'
-# Shadow period (since 2026-10-13): fold the stats documents from blob storage into data_shadow/, up to the
-# export's start, and compare with the export. First run bootstraps data_shadow/ from data/.
-30 5 * * * /home/azureuser/bin/run_with_record.sh stats-shadow -- bash -c 'cd /opt/tfmstats-api && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/build_stats_parquet.py --out-dir data_shadow --bootstrap-if-missing --until-export-start && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/compare_stats_exports.py'
+# Nightly parquet export from Azure SQL, 03:00 UTC. Since the switch-over of 2026-11-10 the eleven stats
+# tables are owned by the fold below; the export still writes them, to data_shadow/, for the safety-net
+# comparison (about two hours). After that week replace --stats-dir data_shadow with --skip-stats (minutes).
+0 3 * * * /home/azureuser/bin/run_with_record.sh db-export -- bash -c 'cd /opt/tfmstats-api && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/export_db.py --stats-dir data_shadow'
+# Live fold: apply the stats documents from blob storage to data/ up to the export's start, rebuild
+# gamecards_by_card.parquet, then (safety-net week) compare the SQL export of the eleven with the fold.
+# After the week drop the comparison and --until-export-start.
+30 5 * * * /home/azureuser/bin/run_with_record.sh stats-fold -- bash -c 'cd /opt/tfmstats-api && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/build_stats_parquet.py --by-card --until-export-start && /opt/tfmstats-api/venv/bin/python /opt/tfmstats-api/compare_stats_exports.py --a data_shadow --b data'
