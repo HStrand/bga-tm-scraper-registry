@@ -161,7 +161,7 @@ export function GamePlayPage({ api = engineApi, gameId: givenGameId, issues, onD
       if (!location) return;
 
       const move = hexPrompt.move(location);
-      const cost = (hexPrompt.fixedCost ?? 0) + (hexPrompt.hexIsFree ? 0 : hexPlacementCost(state.map, location));
+      const cost = (hexPrompt.fixedCost ?? 0) + (hexPrompt.hexIsFree ? 0 : hexPlacementCost(state, location));
       if (canPayWithHeat && cost > 0) setFlow({ kind: 'heat', title: hexPrompt.title.split(':')[0], cost, send: heat => ({ ...move, heat }) });
       else submit(move);
     },

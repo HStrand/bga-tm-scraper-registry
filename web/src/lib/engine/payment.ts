@@ -1,4 +1,4 @@
-import type { EnginePlayer, HexCoord, Payment, PlayableCard, UsableCardAction } from './types';
+import type { EnginePlayer, EngineState, HexCoord, Payment, PlayableCard, UsableCardAction } from './types';
 
 /** What may be spent on a cost besides MC. A value of 0 means the resource cannot be used. */
 export interface PaymentRules {
@@ -118,10 +118,15 @@ export function heatRange(cost: number, player: EnginePlayer): { min: number; ma
 /**
  * M€ a tile placement costs because of the hex it goes on: 6 M€ on the Hellas South Pole, for the ocean it
  * grants, and 4 M€ on the centre hex of Vastitas Borealis, for the temperature step it grants. The engine
- * charges it; this mirrors it so the payment can be asked for up front.
+ * charges it; this mirrors it so the payment can be asked for up front. The Vastitas hex pays out its ocean
+ * adjacency money (2 M€ an ocean) before the 4 M€ is charged, so only the rest has to be found.
  */
-export function hexPlacementCost(mapName: string, location: HexCoord): number {
-  if (mapName === 'Hellas' && location.col === 5 && location.row === 9) return 6;
-  if (mapName === 'Vastitas Borealis' && location.col === 5 && location.row === 5) return 4;
+export function hexPlacementCost(state: Pick<EngineState, 'map' | 'placedTiles'>, location: HexCoord): number {
+  if (state.map === 'Hellas' && location.col === 5 && location.row === 9) return 6;
+  if (state.map === 'Vastitas Borealis' && location.col === 5 && location.row === 5) {
+    const around = ['4,5', '6,5', '5,4', '6,4', '5,6', '6,6'];
+    const oceans = around.filter(key => state.placedTiles[key]?.type === 'Ocean').length;
+    return Math.max(0, 4 - 2 * oceans);
+  }
   return 0;
 }

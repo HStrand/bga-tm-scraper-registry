@@ -93,15 +93,27 @@ describe('heatRange', () => {
 });
 
 describe('hexPlacementCost', () => {
+  const ocean = (col: number, row: number) => ({ type: 'Ocean', location: { col, row } });
+  const on = (map: string, ...tiles: ReturnType<typeof ocean>[]) =>
+    ({ map, placedTiles: Object.fromEntries(tiles.map(t => [`${t.location.col},${t.location.row}`, t])) });
+
   it('charges 6 M€ for the Hellas South Pole and nothing anywhere else', () => {
-    expect(hexPlacementCost('Hellas', { col: 5, row: 9 })).toBe(6);
-    expect(hexPlacementCost('Hellas', { col: 4, row: 9 })).toBe(0);
-    expect(hexPlacementCost('Tharsis', { col: 5, row: 9 })).toBe(0);
+    expect(hexPlacementCost(on('Hellas'), { col: 5, row: 9 })).toBe(6);
+    expect(hexPlacementCost(on('Hellas'), { col: 4, row: 9 })).toBe(0);
+    expect(hexPlacementCost(on('Tharsis'), { col: 5, row: 9 })).toBe(0);
   });
 
   it('charges 4 M€ for the centre hex of Vastitas Borealis', () => {
-    expect(hexPlacementCost('Vastitas Borealis', { col: 5, row: 5 })).toBe(4);
-    expect(hexPlacementCost('Vastitas Borealis', { col: 5, row: 9 })).toBe(0);
-    expect(hexPlacementCost('Hellas', { col: 5, row: 5 })).toBe(0);
+    expect(hexPlacementCost(on('Vastitas Borealis'), { col: 5, row: 5 })).toBe(4);
+    expect(hexPlacementCost(on('Vastitas Borealis'), { col: 5, row: 9 })).toBe(0);
+    expect(hexPlacementCost(on('Hellas'), { col: 5, row: 5 })).toBe(0);
+  });
+
+  it('takes the oceans next to the Vastitas centre hex off its cost', () => {
+    const centre = { col: 5, row: 5 };
+    expect(hexPlacementCost(on('Vastitas Borealis', ocean(6, 5)), centre)).toBe(2);
+    expect(hexPlacementCost(on('Vastitas Borealis', ocean(6, 5), ocean(4, 5)), centre)).toBe(0);
+    expect(hexPlacementCost(on('Vastitas Borealis', ocean(6, 5), ocean(4, 5), ocean(5, 6)), centre)).toBe(0);
+    expect(hexPlacementCost(on('Vastitas Borealis', ocean(8, 5)), centre)).toBe(4);
   });
 });
